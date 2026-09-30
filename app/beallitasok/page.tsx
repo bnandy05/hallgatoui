@@ -2,6 +2,7 @@
 
 import { useHydrated } from "@/lib/useHydrated";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
+import { FeedSettings } from "@/components/settings/FeedSettings";
 
 function SettingsSkeleton() {
   return (
@@ -19,7 +20,14 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-foreground">Beállítások</h1>
 
-      {!hydrated ? <SettingsSkeleton /> : <PlatformSettings />}
+      {!hydrated ? (
+        <SettingsSkeleton />
+      ) : (
+        <>
+          <PlatformSettings />
+          <FeedSettings />
+        </>
+      )}
     </div>
   );
 }

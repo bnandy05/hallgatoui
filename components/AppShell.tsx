@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useHydrated } from "@/lib/useHydrated";
+import { syncAllFeeds } from "@/lib/ical/client";
 
 const NAV_LINKS = [
   { href: "/", label: "Tárgyaim" },
@@ -12,6 +14,15 @@ const NAV_LINKS = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const hydrated = useHydrated();
+  const didAutoSync = useRef(false);
+
+  useEffect(() => {
+    if (!hydrated || didAutoSync.current) return;
+    didAutoSync.current = true;
+    // Fire and forget: doesn't block the UI, errors are stored per-feed.
+    void syncAllFeeds({ staleOnly: true });
+  }, [hydrated]);
 
   return (
     <div className="flex min-h-full flex-col">

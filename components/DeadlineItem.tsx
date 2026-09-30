@@ -9,6 +9,7 @@ import { getPlatform } from "@/lib/platforms";
 import { formatRelative, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 
@@ -31,6 +32,7 @@ const URGENCY_COLOR: Partial<Record<string, string>> = {
 
 export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
+  const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const toggleDone = useStore((s) => s.toggleDone);
   const updateDeadline = useStore((s) => s.updateDeadline);
@@ -105,6 +107,23 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
               />
               {course.name}
             </span>
+          )}
+          {!compact && !course && deadline.source === "ical" && deadline.courseId === null && (
+            <Select
+              aria-label="Tárgy hozzárendelése"
+              value=""
+              onChange={(e) =>
+                updateDeadline(deadline.id, { courseId: e.target.value || null })
+              }
+              className="h-6 w-auto max-w-[10rem] px-1.5 py-0 text-xs"
+            >
+              <option value="">Nincs tárgy</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
           )}
           {platform && <PlatformIcon platform={platform} size="sm" />}
           <span>{format(due, "MMM d. (EEE) HH:mm", { locale: hu })}</span>

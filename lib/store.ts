@@ -11,6 +11,9 @@ import type {
   Resource,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
+import { matchCourse } from "@/lib/ical/match";
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [] };
@@ -257,8 +260,80 @@ export const useStore = create<AppStore>()(
           deadlines: state.deadlines.filter((d) => d.feedId !== id),
         }));
       },
-      applyFeedSync: () => {
-        // Phase 5
+      applyFeedSync: (feedId, events) => {
+        set((state) => {
+          const feed = state.feeds.find((f) => f.id === feedId);
+          if (!feed) return state;
+
+          const now = Date.now();
+          const relevantEvents = events.filter(
+            (e) => now - new Date(e.start).getTime() <= THIRTY_DAYS_MS
+          );
+          const incomingUids = new Set(relevantEvents.map((e) => e.uid));
+
+          const existingByUid = new Map<string, Deadline>();
+          for (const d of state.deadlines) {
+            if (d.feedId === feedId && d.externalUid) {
+              existingByUid.set(d.externalUid, d);
+            }
+          }
+
+          // Keep every deadline that isn't part of this sync, plus this
+          // feed's deadlines that are no longer present but whose due date
+          // is already in the past (kept as history, never resurrected).
+          const carried = state.deadlines.filter((d) => {
+            if (d.feedId !== feedId) return true;
+            const stillPresent = d.externalUid && incomingUids.has(d.externalUid);
+            if (stillPresent) return false; // will be re-added below, updated
+            const isFuture = new Date(d.due).getTime() >= now;
+            return !isFuture; // drop future ones that vanished from the feed
+          });
+
+          const synced: Deadline[] = relevantEvents.map((event) => {
+            const existing = existingByUid.get(event.uid);
+
+            let courseId: string | null;
+            if (feed.courseId) {
+              courseId = feed.courseId;
+            } else {
+              const autoMatch = matchCourse(event, state.courses);
+              courseId = existing ? (existing.courseId ?? autoMatch) : autoMatch;
+            }
+
+            if (existing) {
+              return {
+                ...existing,
+                title: event.summary,
+                due: event.start,
+                url: event.url,
+                courseId,
+              };
+            }
+
+            return {
+              id: newId(),
+              courseId,
+              title: event.summary,
+              due: event.start,
+              url: event.url,
+              platformId: feed.platformId,
+              critical: false,
+              done: false,
+              source: "ical",
+              feedId,
+              externalUid: event.uid,
+            };
+          });
+
+          return {
+            deadlines: [...carried, ...synced],
+            feeds: state.feeds.map((f) =>
+              f.id === feedId
+                ? { ...f, lastSyncedAt: new Date().toISOString(), lastError: undefined }
+                : f
+            ),
+          };
+        });
       },
 
       // ---- data ----
