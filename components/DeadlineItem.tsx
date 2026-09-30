@@ -74,7 +74,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span
-            className={`truncate text-sm font-medium ${
+            className={`min-w-0 max-w-full truncate text-sm font-medium ${
               deadline.done ? "text-muted line-through" : "text-foreground"
             }`}
           >

@@ -3,6 +3,7 @@
 import { useHydrated } from "@/lib/useHydrated";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
+import { DataSettings } from "@/components/settings/DataSettings";
 
 function SettingsSkeleton() {
   return (
@@ -26,6 +27,7 @@ export default function SettingsPage() {
         <>
           <PlatformSettings />
           <FeedSettings />
+          <DataSettings />
         </>
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CourseCard } from "@/components/CourseCard";
@@ -26,6 +26,7 @@ function CourseGridSkeleton() {
 export default function Home() {
   const hydrated = useHydrated();
   const courses = useStore((s) => s.courses);
+  const loadDemo = useStore((s) => s.loadDemo);
   const [createOpen, setCreateOpen] = useState(false);
 
   const sortedCourses = useMemo(
@@ -53,7 +54,15 @@ export default function Home() {
             <EmptyState
               icon={Plus}
               title="Még nincs tárgyad"
-              action={<Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>}
+              action={
+                <>
+                  <Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>
+                  <Button variant="secondary" onClick={loadDemo}>
+                    <Sparkles className="h-4 w-4" />
+                    Demo adatok betöltése
+                  </Button>
+                </>
+              }
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

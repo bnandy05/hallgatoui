@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CourseDetail } from "@/components/CourseDetail";
 
 export const metadata: Metadata = {
-  title: "Tárgy – Hallgatói réteg",
+  title: "Tárgy",
 };
 
 export default async function Page(props: PageProps<"/targy/[id]">) {

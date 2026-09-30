@@ -70,7 +70,7 @@ export function PlatformSettings() {
             {customPlatforms.map((platform) => (
               <li
                 key={platform.id}
-                className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
               >
                 <PlatformIcon platform={platform} size="sm" />
                 <Input
@@ -103,7 +103,7 @@ export function PlatformSettings() {
           </ul>
         )}
 
-        <form onSubmit={handleAdd} className="mt-2 flex items-center gap-2">
+        <form onSubmit={handleAdd} className="mt-2 flex flex-wrap items-center gap-2">
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}

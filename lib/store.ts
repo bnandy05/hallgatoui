@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { matchCourse } from "@/lib/ical/match";
+import { buildDemoData } from "@/lib/demo";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -344,7 +345,25 @@ export const useStore = create<AppStore>()(
         set(() => emptyAppData());
       },
       loadDemo: () => {
-        // Phase 6
+        const demo = buildDemoData(new Date());
+        set((state) => ({
+          courses: [
+            ...state.courses,
+            ...demo.courses.filter((c) => !state.courses.some((existing) => existing.id === c.id)),
+          ],
+          deadlines: [
+            ...state.deadlines,
+            ...demo.deadlines.filter(
+              (d) => !state.deadlines.some((existing) => existing.id === d.id)
+            ),
+          ],
+          customPlatforms: [
+            ...state.customPlatforms,
+            ...demo.customPlatforms.filter(
+              (p) => !state.customPlatforms.some((existing) => existing.id === p.id)
+            ),
+          ],
+        }));
       },
     }),
     {

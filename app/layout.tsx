@@ -14,7 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hallgatói réteg",
+  title: {
+    template: "%s – Hallgatói réteg",
+    default: "Hallgatói réteg",
+  },
   description: "Minden tárgyad egy helyen",
 };
 

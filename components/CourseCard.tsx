@@ -75,7 +75,7 @@ export function CourseCard({ course }: CourseCardProps) {
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/targy/${course.id}`}
-          className="text-base font-semibold text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+          className="min-w-0 max-w-full truncate text-base font-semibold text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-accent"
         >
           {course.name}
         </Link>
