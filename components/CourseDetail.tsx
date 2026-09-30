@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileQuestion, Pencil, Trash2 } from "lucide-react";
+import { FileQuestion, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { CourseDialog } from "@/components/CourseDialog";
+import { DeadlineDialog } from "@/components/DeadlineDialog";
+import { DeadlineItem } from "@/components/DeadlineItem";
 import { LinkButton } from "@/components/LinkButton";
 import { LinkEditor } from "@/components/LinkEditor";
 import { ResourceList } from "@/components/ResourceList";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export interface CourseDetailProps {
@@ -43,10 +45,13 @@ export function CourseDetail({ id }: CourseDetailProps) {
   const hydrated = useHydrated();
   const course = useStore((s) => s.courses.find((c) => c.id === id));
   const deleteCourse = useStore((s) => s.deleteCourse);
+  const deadlines = useStore((s) => s.deadlines);
   const router = useRouter();
 
   const [editOpen, setEditOpen] = useState(false);
   const [linksEditing, setLinksEditing] = useState(false);
+  const [deadlineDialogOpen, setDeadlineDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
@@ -56,7 +61,23 @@ export function CourseDetail({ id }: CourseDetailProps) {
     }
   }, [hydrated, course]);
 
-  if (!hydrated) {
+  const courseDeadlines = useMemo(
+    () => deadlines.filter((d) => d.courseId === id),
+    [deadlines, id]
+  );
+  const upcomingDeadlines = useMemo(
+    () =>
+      courseDeadlines
+        .filter((d) => !d.done)
+        .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime()),
+    [courseDeadlines]
+  );
+  const doneDeadlines = useMemo(
+    () => courseDeadlines.filter((d) => d.done),
+    [courseDeadlines]
+  );
+
+  if (!hydrated || deleting) {
     return <CourseDetailSkeleton />;
   }
 
@@ -69,10 +90,8 @@ export function CourseDetail({ id }: CourseDetailProps) {
           title="A tárgy nem található"
           text="Lehet, hogy törölve lett, vagy hibás a link."
           action={
-            <Link href="/">
-              <Button type="button" variant="secondary">
-                Vissza a tárgyaimhoz
-              </Button>
+            <Link href="/" className={buttonClasses({ variant: "secondary" })}>
+              Vissza a tárgyaimhoz
             </Link>
           }
         />
@@ -83,6 +102,7 @@ export function CourseDetail({ id }: CourseDetailProps) {
   function handleDelete() {
     if (!course) return;
     if (confirm("Biztosan törlöd?")) {
+      setDeleting(true);
       router.push("/");
       deleteCourse(course.id);
     }
@@ -145,9 +165,47 @@ export function CourseDetail({ id }: CourseDetailProps) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Határidők</h2>
-        {/* Phase 4: course deadlines */}
-        <p className="text-sm text-muted">Hamarosan.</p>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-foreground">Határidők</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeadlineDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Határidő
+          </Button>
+        </div>
+
+        {upcomingDeadlines.length === 0 && doneDeadlines.length === 0 ? (
+          <p className="text-sm text-muted">Még nincs határidő ehhez a tárgyhoz.</p>
+        ) : (
+          <>
+            {upcomingDeadlines.length === 0 ? (
+              <p className="text-sm text-muted">Nincs közelgő határidő.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {upcomingDeadlines.map((d) => (
+                  <DeadlineItem key={d.id} deadline={d} />
+                ))}
+              </div>
+            )}
+
+            {doneDeadlines.length > 0 && (
+              <details className="rounded-md border border-border px-3 py-2">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
+                  Kész ({doneDeadlines.length})
+                </summary>
+                <div className="mt-2 flex flex-col gap-2">
+                  {doneDeadlines.map((d) => (
+                    <DeadlineItem key={d.id} deadline={d} />
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
@@ -156,6 +214,11 @@ export function CourseDetail({ id }: CourseDetailProps) {
       </section>
 
       <CourseDialog open={editOpen} onClose={() => setEditOpen(false)} course={course} />
+      <DeadlineDialog
+        open={deadlineDialogOpen}
+        onClose={() => setDeadlineDialogOpen(false)}
+        defaultCourseId={course.id}
+      />
     </div>
   );
 }

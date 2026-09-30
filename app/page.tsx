@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseDialog } from "@/components/CourseDialog";
+import { RadarWidget } from "@/components/RadarWidget";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -44,18 +45,24 @@ export default function Home() {
 
       {!hydrated ? (
         <CourseGridSkeleton />
-      ) : sortedCourses.length === 0 ? (
-        <EmptyState
-          icon={Plus}
-          title="Még nincs tárgyad"
-          action={<Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>}
-        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedCourses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </div>
+        <>
+          <RadarWidget />
+
+          {sortedCourses.length === 0 ? (
+            <EmptyState
+              icon={Plus}
+              title="Még nincs tárgyad"
+              action={<Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>}
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <CourseDialog open={createOpen} onClose={() => setCreateOpen(false)} />

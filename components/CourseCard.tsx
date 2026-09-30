@@ -5,11 +5,20 @@ import Link from "next/link";
 import { Link2, MoreVertical } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { Course } from "@/lib/types";
+import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
 import { CourseDialog } from "@/components/CourseDialog";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/LinkButton";
 import { LinkEditor } from "@/components/LinkEditor";
+
+const URGENCY_TEXT_CLASS: Record<Urgency, string> = {
+  overdue: "text-danger",
+  critical: "text-danger",
+  soon: "text-warning",
+  later: "text-muted",
+  done: "text-muted",
+};
 
 const MAX_VISIBLE_LINKS = 6;
 
@@ -19,6 +28,7 @@ export interface CourseCardProps {
 
 export function CourseCard({ course }: CourseCardProps) {
   const deleteCourse = useStore((s) => s.deleteCourse);
+  const deadlines = useStore((s) => s.deadlines);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
@@ -54,6 +64,8 @@ export function CourseCard({ course }: CourseCardProps) {
   }
 
   const meta = [course.code, course.semester].filter(Boolean).join(" · ");
+  const now = new Date();
+  const nextDeadline = nextDeadlineFor(course.id, deadlines, now);
 
   return (
     <div
@@ -125,7 +137,15 @@ export function CourseCard({ course }: CourseCardProps) {
         </Button>
       </div>
 
-      {/* Phase 4: next deadline */}
+      {nextDeadline ? (
+        <p
+          className={`truncate text-sm ${URGENCY_TEXT_CLASS[urgencyOf(nextDeadline, now)]}`}
+        >
+          Következő: {nextDeadline.title} · {formatRelative(new Date(nextDeadline.due), now)}
+        </p>
+      ) : (
+        <p className="text-sm text-muted">Nincs közelgő határidő.</p>
+      )}
 
       <CourseDialog open={editOpen} onClose={() => setEditOpen(false)} course={course} />
       <Dialog

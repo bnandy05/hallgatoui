@@ -8,6 +8,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
+export interface ButtonClassesOptions {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+}
+
 const variantClasses: Record<Variant, string> = {
   primary:
     "bg-accent text-white hover:opacity-90 focus-visible:outline-accent",
@@ -24,16 +30,19 @@ const sizeClasses: Record<Size, string> = {
   md: "text-sm px-4 py-2 gap-2",
 };
 
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className = "",
+}: ButtonClassesOptions = {}): string {
+  return `inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+}
+
 export function Button({
   variant = "primary",
   size = "md",
   className = "",
   ...props
 }: ButtonProps) {
-  return (
-    <button
-      className={`inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-      {...props}
-    />
-  );
+  return <button className={buttonClasses({ variant, size, className })} {...props} />;
 }

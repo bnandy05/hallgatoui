@@ -58,7 +58,8 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
           ✕
         </button>
       </div>
-      <div className="px-4 py-4">{children}</div>
+      {/* Mount children only while open so forms re-initialise on every open. */}
+      <div className="px-4 py-4">{open && children}</div>
     </dialog>
   );
 }
