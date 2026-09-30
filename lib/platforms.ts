@@ -30,3 +30,11 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   video: "Videó",
   egyeb: "Egyéb",
 };
+
+export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
+  jegyzet: "#2563eb",
+  zh: "#dc2626",
+  megoldas: "#16a34a",
+  video: "#9333ea",
+  egyeb: "#6b7280",
+};
