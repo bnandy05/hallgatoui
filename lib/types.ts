@@ -54,6 +54,25 @@ export interface Deadline {
   externalUid?: string;
 }
 
+export type CourseKind = "Ea" | "Gy" | "Lab"; // lecture / practice / lab
+
+/** A course context (e.g. one Canvas course) parsed from calendar events. */
+export interface CanvasContext {
+  key: string; // "canvas:<host>:<courseId>" or "label:<label>"
+  label: string; // raw bracket text
+  semester?: string; // "2026/27/1"
+  code?: string; // "IP-18DM1E 1"
+  name: string; // "Diszkrét matematika I Ea"
+  baseName: string; // name without kind: "Diszkrét matematika I"
+  groupKey: string; // normalized baseName, groups Ea/Gy variants
+  kind?: CourseKind;
+  courseUrl?: string;
+}
+
+export interface DiscoveredContext extends CanvasContext {
+  eventCount: number;
+}
+
 export interface IcalFeed {
   id: string;
   name: string;
@@ -62,6 +81,8 @@ export interface IcalFeed {
   courseId: string | null;
   lastSyncedAt?: string;
   lastError?: string;
+  discovered?: DiscoveredContext[]; // contexts seen in the last sync (all events)
+  ignoredContexts?: string[]; // context keys the user chose to skip
 }
 
 export interface AppData {

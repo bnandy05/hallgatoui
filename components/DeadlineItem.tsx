@@ -6,6 +6,7 @@ import { hu } from "date-fns/locale";
 import { ExternalLink, Flame, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getPlatform } from "@/lib/platforms";
+import { cleanCanvasTitle } from "@/lib/ical/canvas";
 import { formatRelative, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
@@ -113,7 +114,10 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
               aria-label="Tárgy hozzárendelése"
               value=""
               onChange={(e) =>
-                updateDeadline(deadline.id, { courseId: e.target.value || null })
+                updateDeadline(deadline.id, {
+                  courseId: e.target.value || null,
+                  ...(e.target.value && { title: cleanCanvasTitle(deadline.title) }),
+                })
               }
               className="h-6 w-auto max-w-[10rem] px-1.5 py-0 text-xs"
             >
@@ -130,7 +134,13 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
           <span>· {formatRelative(due, now)}</span>
         </div>
         {!compact && deadline.note && (
-          <p className="mt-1 text-sm text-muted">{deadline.note}</p>
+          <p
+            className={`mt-1 text-sm text-muted ${
+              deadline.source === "ical" ? "line-clamp-3 whitespace-pre-line" : ""
+            }`}
+          >
+            {deadline.note}
+          </p>
         )}
       </div>
 

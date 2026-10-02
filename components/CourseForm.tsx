@@ -108,7 +108,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
           placeholder="pl. progeg, ip-18progeg"
         />
         <p className="mt-1 text-xs text-muted">
-          iCal eseményekhez: ha a cím tartalmazza, ide kerül
+          iCal eseményekhez: ha a cím tartalmazza, ide kerül. A Canvas kurzuskódok automatikusan kitöltődnek, ha a tárgyat a naptárból veszed fel.
         </p>
       </div>
 

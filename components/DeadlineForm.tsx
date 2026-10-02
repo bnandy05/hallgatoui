@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { format } from "date-fns";
+import { hu } from "date-fns/locale";
+import { Wand2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { normalizeLinkUrl } from "@/lib/url";
 import { BUILT_IN_PLATFORMS } from "@/lib/platforms";
+import { parseQuickDeadline } from "@/lib/quickAdd";
 import type { Deadline } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -25,6 +28,7 @@ export interface DeadlineFormValues {
 export interface DeadlineFormProps {
   initial?: Deadline;
   defaultCourseId?: string | null;
+  initialQuickText?: string;
   onSubmit: (values: DeadlineFormValues) => void;
   onCancel: () => void;
 }
@@ -38,6 +42,10 @@ function defaultDueLocal(): string {
   return format(d, "yyyy-MM-dd'T'HH:mm");
 }
 
+function toDueInput(d: Date): string {
+  return format(d, "yyyy-MM-dd'T'HH:mm");
+}
+
 function toLocalInput(iso: string): string {
   return format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
 }
@@ -45,22 +53,56 @@ function toLocalInput(iso: string): string {
 export function DeadlineForm({
   initial,
   defaultCourseId,
+  initialQuickText,
   onSubmit,
   onCancel,
 }: DeadlineFormProps) {
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
 
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [courseId, setCourseId] = useState<string>(
-    initial ? initial.courseId ?? NO_COURSE : defaultCourseId ?? NO_COURSE
+  // Quick text passed in from the command palette is applied once, here.
+  const [seed] = useState(() =>
+    !initial && initialQuickText
+      ? parseQuickDeadline(initialQuickText, useStore.getState().courses, new Date())
+      : null
   );
-  const [due, setDue] = useState(initial ? toLocalInput(initial.due) : defaultDueLocal());
+  const [quickText, setQuickText] = useState(initialQuickText ?? "");
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  const [title, setTitle] = useState(initial?.title ?? seed?.title ?? "");
+  const [courseId, setCourseId] = useState<string>(
+    initial ? initial.courseId ?? NO_COURSE : seed?.courseId ?? defaultCourseId ?? NO_COURSE
+  );
+  const [due, setDue] = useState(
+    initial ? toLocalInput(initial.due) : seed?.due ? toDueInput(seed.due) : defaultDueLocal()
+  );
   const [platformId, setPlatformId] = useState(initial?.platformId ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
-  const [critical, setCritical] = useState(initial?.critical ?? false);
+  const [critical, setCritical] = useState(initial?.critical ?? seed?.critical ?? false);
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState<string | null>(null);
+
+  const parsed = useMemo(
+    () => (quickText.trim() ? parseQuickDeadline(quickText, courses, new Date()) : null),
+    [quickText, courses]
+  );
+  const parsedCourse = parsed?.courseId ? courses.find((c) => c.id === parsed.courseId) : undefined;
+
+  // Fills only the fields the parser found.
+  function applyQuick() {
+    if (!parsed) return;
+    if (parsed.title) setTitle(parsed.title);
+    if (parsed.due) setDue(toDueInput(parsed.due));
+    if (parsed.courseId) setCourseId(parsed.courseId);
+    if (parsed.critical) setCritical(true);
+    titleRef.current?.focus();
+  }
+
+  function handleQuickKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    applyQuick();
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,14 +132,60 @@ export function DeadlineForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {!initial && (
+        <div>
+          <Label htmlFor="deadline-quick">Gyors felvétel</Label>
+          <div className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4 shrink-0 text-muted" />
+            <Input
+              id="deadline-quick"
+              value={quickText}
+              onChange={(e) => setQuickText(e.target.value)}
+              onKeyDown={handleQuickKeyDown}
+              placeholder="pl. ZH jövő kedd 10:00 analízis !"
+              autoFocus
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={applyQuick}
+              disabled={!parsed}
+            >
+              Kitöltés
+            </Button>
+          </div>
+          {parsed && (
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+              {parsed.title && <span className="font-medium text-foreground">{parsed.title}</span>}
+              {parsed.due && (
+                <span>· {format(parsed.due, "yyyy. MMM d. (EEE) HH:mm", { locale: hu })}</span>
+              )}
+              {parsedCourse && (
+                <span className="inline-flex items-center gap-1">
+                  ·
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: parsedCourse.color }}
+                  />
+                  {parsedCourse.name}
+                </span>
+              )}
+              {parsed.critical && <span className="text-danger">· Kritikus</span>}
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <Label htmlFor="deadline-title">Cím</Label>
         <Input
           id="deadline-title"
+          ref={titleRef}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          autoFocus
+          autoFocus={Boolean(initial)}
         />
       </div>
 

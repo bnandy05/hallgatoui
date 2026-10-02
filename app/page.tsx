@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { CalendarPlus, Plus, Sparkles } from "lucide-react";
+import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CourseCard } from "@/components/CourseCard";
 import { CourseDialog } from "@/components/CourseDialog";
+import { DiscoveryBanner } from "@/components/DiscoveryBanner";
 import { RadarWidget } from "@/components/RadarWidget";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
@@ -48,15 +50,24 @@ export default function Home() {
         <CourseGridSkeleton />
       ) : (
         <>
+          <DiscoveryBanner />
           <RadarWidget />
 
           {sortedCourses.length === 0 ? (
             <EmptyState
               icon={Plus}
               title="Még nincs tárgyad"
+              text="Add hozzá a Canvas/Moodle naptárad, és a tárgyakat automatikusan felvesszük."
               action={
                 <>
                   <Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>
+                  <Link
+                    href="/beallitasok#naptarak"
+                    className={buttonClasses({ variant: "secondary" })}
+                  >
+                    <CalendarPlus className="h-4 w-4" />
+                    Naptár importálása
+                  </Link>
                   <Button variant="secondary" onClick={loadDemo}>
                     <Sparkles className="h-4 w-4" />
                     Demo adatok betöltése

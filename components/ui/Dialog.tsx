@@ -7,9 +7,10 @@ export interface DialogProps {
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
+  size?: "md" | "lg";
 }
 
-export function Dialog({ open, onClose, title, children }: DialogProps) {
+export function Dialog({ open, onClose, title, children, size = "md" }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -45,7 +46,9 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
   return (
     <dialog
       ref={dialogRef}
-      className="max-h-[calc(100vh-2rem)] w-full max-w-[min(32rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-border bg-card p-0 text-foreground backdrop:bg-black/40"
+      className={`max-h-[calc(100vh-2rem)] w-full ${
+        size === "lg" ? "max-w-[min(42rem,calc(100vw-2rem))]" : "max-w-[min(32rem,calc(100vw-2rem))]"
+      } overflow-y-auto rounded-lg border border-border bg-card p-0 text-foreground backdrop:bg-black/40`}
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-base font-semibold">{title}</h2>

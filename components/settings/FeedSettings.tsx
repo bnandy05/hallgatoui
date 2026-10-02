@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Loader2, Pencil, RefreshCw, Trash2 } from "lucide-react";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
+import { groupContexts, pendingContexts } from "@/lib/ical/discover";
+import { DiscoveryDialog } from "@/components/DiscoveryDialog";
 import { PlatformIcon } from "@/components/PlatformIcon";
 
 const AUTO_COURSE = "";
@@ -49,6 +51,8 @@ export function FeedSettings() {
 
   const [addForm, setAddForm] = useState<FeedFormValues>(emptyForm());
   const [addError, setAddError] = useState<string | null>(null);
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const [platformTouched, setPlatformTouched] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FeedFormValues>(emptyForm());
@@ -56,6 +60,16 @@ export function FeedSettings() {
 
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [syncingAll, setSyncingAll] = useState(false);
+
+  const pendingByFeed = useMemo(() => {
+    const counts = new Map<string, number>();
+    const pending = pendingContexts(feeds, courses);
+    for (const group of groupContexts(pending)) {
+      const feedId = group.items[0].feedId;
+      counts.set(feedId, (counts.get(feedId) ?? 0) + 1);
+    }
+    return counts;
+  }, [feeds, courses]);
 
   function deadlineCount(feedId: string): number {
     return deadlines.filter((d) => d.feedId === feedId).length;
@@ -87,23 +101,39 @@ export function FeedSettings() {
 
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmedName = addForm.name.trim();
-    if (!trimmedName) return;
-
     const normalizedUrl = normalizeFeedUrl(addForm.url);
     if (!normalizedUrl) {
       setAddError("Érvénytelen link");
       return;
     }
 
-    addFeed({
+    const trimmedName =
+      addForm.name.trim() ||
+      `${getPlatform(addForm.platformId, customPlatforms).name} naptár`;
+
+    const newId = addFeed({
       name: trimmedName,
       url: normalizedUrl,
       platformId: addForm.platformId,
       courseId: addForm.courseId === AUTO_COURSE ? null : addForm.courseId,
     });
     setAddForm(emptyForm());
+    setPlatformTouched(false);
     setAddError(null);
+    void handleSyncOne(newId);
+  }
+
+  function handleAddUrlChange(url: string) {
+    setAddForm((f) => {
+      if (platformTouched) return { ...f, url };
+      const host = url.toLowerCase();
+      const platformId = host.includes("canvas")
+        ? "canvas"
+        : host.includes("moodle")
+          ? "moodle"
+          : f.platformId;
+      return { ...f, url, platformId };
+    });
   }
 
   function startEdit(feed: IcalFeed) {
@@ -185,7 +215,7 @@ export function FeedSettings() {
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section id="naptarak" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Naptár-források (iCal)</h2>
@@ -312,6 +342,11 @@ export function FeedSettings() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {(pendingByFeed.get(feed.id) ?? 0) > 0 && (
+                    <Button type="button" size="sm" onClick={() => setDiscoveryOpen(true)}>
+                      {pendingByFeed.get(feed.id)} új tárgy
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="secondary"
@@ -357,7 +392,7 @@ export function FeedSettings() {
               id="feed-add-name"
               value={addForm.name}
               onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="pl. Programozás – Canvas"
+              placeholder="Elhagyható, pl. Canvas naptár"
             />
           </div>
           <div>
@@ -365,7 +400,7 @@ export function FeedSettings() {
             <Input
               id="feed-add-url"
               value={addForm.url}
-              onChange={(e) => setAddForm((f) => ({ ...f, url: e.target.value }))}
+              onChange={(e) => handleAddUrlChange(e.target.value)}
               placeholder="https:// vagy webcal://…"
             />
             {addError && <p className="mt-1 text-xs text-danger">{addError}</p>}
@@ -375,7 +410,10 @@ export function FeedSettings() {
             <Select
               id="feed-add-platform"
               value={addForm.platformId}
-              onChange={(e) => setAddForm((f) => ({ ...f, platformId: e.target.value }))}
+              onChange={(e) => {
+                setPlatformTouched(true);
+                setAddForm((f) => ({ ...f, platformId: e.target.value }));
+              }}
             >
               {platformOptions()}
             </Select>
@@ -392,7 +430,7 @@ export function FeedSettings() {
           </div>
         </div>
         <div className="mt-2 flex justify-end">
-          <Button type="submit" size="sm" disabled={addForm.name.trim().length === 0}>
+          <Button type="submit" size="sm" disabled={addForm.url.trim().length === 0}>
             Hozzáadás
           </Button>
         </div>
@@ -415,6 +453,7 @@ export function FeedSettings() {
           </li>
         </ul>
       </div>
+      <DiscoveryDialog open={discoveryOpen} onClose={() => setDiscoveryOpen(false)} />
     </section>
   );
 }

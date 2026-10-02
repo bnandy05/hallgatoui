@@ -28,7 +28,18 @@ function sanitizeUrls(data: AppData): AppData {
     ...d,
     url: d.url ? (normalizeLinkUrl(d.url) ?? undefined) : undefined,
   }));
-  const feeds = data.feeds.filter((f: IcalFeed) => isHttpUrl(f.url));
+  const feeds = data.feeds
+    .filter((f: IcalFeed) => isHttpUrl(f.url))
+    .map((f: IcalFeed) =>
+      Array.isArray(f.discovered)
+        ? {
+            ...f,
+            discovered: f.discovered.map((c) =>
+              c.courseUrl && !isHttpUrl(c.courseUrl) ? { ...c, courseUrl: undefined } : c
+            ),
+          }
+        : f
+    );
   return { ...data, courses, deadlines, feeds };
 }
 

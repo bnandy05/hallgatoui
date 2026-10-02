@@ -10,6 +10,7 @@ export interface DeadlineDialogProps {
   onClose: () => void;
   deadline?: Deadline;
   defaultCourseId?: string | null;
+  initialQuickText?: string;
 }
 
 export function DeadlineDialog({
@@ -17,6 +18,7 @@ export function DeadlineDialog({
   onClose,
   deadline,
   defaultCourseId,
+  initialQuickText,
 }: DeadlineDialogProps) {
   const addDeadline = useStore((s) => s.addDeadline);
   const updateDeadline = useStore((s) => s.updateDeadline);
@@ -39,6 +41,7 @@ export function DeadlineDialog({
       <DeadlineForm
         initial={deadline}
         defaultCourseId={defaultCourseId}
+        initialQuickText={initialQuickText}
         onSubmit={handleSubmit}
         onCancel={onClose}
       />

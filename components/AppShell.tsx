@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 import { LayoutGrid, Radar, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
+import { CommandPalette } from "@/components/CommandPalette";
 import { syncAllFeeds } from "@/lib/ical/client";
 
 const NAV_LINKS = [
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+          <CommandPalette />
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>

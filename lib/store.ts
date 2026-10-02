@@ -6,15 +6,40 @@ import type {
   Course,
   CourseLink,
   Deadline,
+  DiscoveredContext,
   IcalFeed,
   Platform,
   Resource,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { matchCourse } from "@/lib/ical/match";
+import { matchCourse, matchCourseInText } from "@/lib/ical/match";
+import { cleanCanvasTitle, formatKindLabel, parseCanvasEvent } from "@/lib/ical/canvas";
+import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
+import { pickCourseColor } from "@/lib/colors";
+import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const MAX_NOTE_LENGTH = 500;
+
+function noteFromDescription(description: string | undefined): string | undefined {
+  const text = description?.trim();
+  if (!text) return undefined;
+  return text.length > MAX_NOTE_LENGTH ? `${text.slice(0, MAX_NOTE_LENGTH)}…` : text;
+}
+
+/** Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles. */
+function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
+  const autoFeedIds = new Set(feeds.filter((f) => f.courseId === null).map((f) => f.id));
+  return deadlines.map((d) => {
+    if (d.source !== "ical" || d.courseId !== null || !d.feedId || !autoFeedIds.has(d.feedId)) {
+      return d;
+    }
+    const courseId = matchCourseInText(d.title, courses);
+    return courseId ? { ...d, courseId, title: cleanCanvasTitle(d.title) } : d;
+  });
+}
 
 function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [] };
@@ -69,6 +94,8 @@ export interface AppStore extends AppData {
   updateFeed: (id: string, patch: Partial<Omit<IcalFeed, "id">>) => void;
   removeFeed: (id: string) => void;
   applyFeedSync: (feedId: string, events: IcalEventDTO[]) => void;
+  rematchFeedDeadlines: () => void;
+  applyDiscovery: (decisions: DiscoveryDecision[]) => number; // returns created courses
 
   // data
   importData: (data: AppData) => void;
@@ -266,6 +293,16 @@ export const useStore = create<AppStore>()(
           const feed = state.feeds.find((f) => f.id === feedId);
           if (!feed) return state;
 
+          // Course contexts across all events, not only the 30-day window.
+          const discoveredByKey = new Map<string, DiscoveredContext>();
+          for (const event of events) {
+            const context = parseCanvasEvent(event).context;
+            if (!context) continue;
+            const known = discoveredByKey.get(context.key);
+            if (known) known.eventCount += 1;
+            else discoveredByKey.set(context.key, { ...context, eventCount: 1 });
+          }
+
           const now = Date.now();
           const relevantEvents = events.filter(
             (e) => now - new Date(e.start).getTime() <= THIRTY_DAYS_MS
@@ -292,6 +329,7 @@ export const useStore = create<AppStore>()(
 
           const synced: Deadline[] = relevantEvents.map((event) => {
             const existing = existingByUid.get(event.uid);
+            const info = parseCanvasEvent(event);
 
             let courseId: string | null;
             if (feed.courseId) {
@@ -301,22 +339,22 @@ export const useStore = create<AppStore>()(
               courseId = existing ? (existing.courseId ?? autoMatch) : autoMatch;
             }
 
+            // Keep the raw summary while unassigned so the course stays visible.
+            const title = courseId ? info.cleanTitle : event.summary;
+            const url = info.assignmentUrl ?? event.url;
+            const note = noteFromDescription(event.description);
+
             if (existing) {
-              return {
-                ...existing,
-                title: event.summary,
-                due: event.start,
-                url: event.url,
-                courseId,
-              };
+              return { ...existing, title, due: event.start, url, note, courseId };
             }
 
             return {
               id: newId(),
               courseId,
-              title: event.summary,
+              title,
               due: event.start,
-              url: event.url,
+              url,
+              note,
               platformId: feed.platformId,
               critical: false,
               done: false,
@@ -330,11 +368,90 @@ export const useStore = create<AppStore>()(
             deadlines: [...carried, ...synced],
             feeds: state.feeds.map((f) =>
               f.id === feedId
-                ? { ...f, lastSyncedAt: new Date().toISOString(), lastError: undefined }
+                ? {
+                    ...f,
+                    lastSyncedAt: new Date().toISOString(),
+                    lastError: undefined,
+                    discovered: [...discoveredByKey.values()],
+                  }
                 : f
             ),
           };
         });
+      },
+
+      rematchFeedDeadlines: () => {
+        set((state) => ({
+          deadlines: rematchDeadlines(state.deadlines, state.feeds, state.courses),
+        }));
+      },
+
+      applyDiscovery: (decisions) => {
+        let created = 0;
+        set((state) => {
+          let courses = state.courses;
+          const ignoredByFeed = new Map<string, string[]>();
+
+          for (const decision of decisions) {
+            const { items } = decision;
+            const keywords = [...new Set(items.map((i) => keywordForContext(i.context)))];
+            const links: CourseLink[] = [];
+            for (const { context } of items) {
+              const url = context.courseUrl ? normalizeLinkUrl(context.courseUrl) : null;
+              if (!url) continue;
+              links.push({
+                id: newId(),
+                platformId: "canvas",
+                url,
+                label: items.length > 1 && context.kind ? formatKindLabel(context.kind) : undefined,
+              });
+            }
+
+            if (decision.kind === "new") {
+              const codes = items.flatMap((i) => (i.context.code ? [i.context.code] : []));
+              courses = [
+                ...courses,
+                {
+                  id: newId(),
+                  name: decision.name,
+                  code: codes.length > 0 ? codes.join(", ") : undefined,
+                  semester: items[0]?.context.semester,
+                  color: pickCourseColor(state.courses.length + created),
+                  links,
+                  resources: [],
+                  matchKeywords: keywords,
+                  createdAt: new Date().toISOString(),
+                },
+              ];
+              created += 1;
+            } else if (decision.kind === "existing") {
+              courses = courses.map((c) => {
+                if (c.id !== decision.courseId) return c;
+                const known = new Set(c.matchKeywords.map((k) => k.trim().toLowerCase()));
+                const newKeywords = keywords.filter((k) => !known.has(k.trim().toLowerCase()));
+                const knownUrls = new Set(c.links.map((l) => l.url));
+                return {
+                  ...c,
+                  matchKeywords: [...c.matchKeywords, ...newKeywords],
+                  links: [...c.links, ...links.filter((l) => !knownUrls.has(l.url))],
+                };
+              });
+            } else {
+              for (const { feedId, context } of items) {
+                ignoredByFeed.set(feedId, [...(ignoredByFeed.get(feedId) ?? []), context.key]);
+              }
+            }
+          }
+
+          const feeds = state.feeds.map((f) => {
+            const keys = ignoredByFeed.get(f.id);
+            if (!keys) return f;
+            return { ...f, ignoredContexts: [...new Set([...(f.ignoredContexts ?? []), ...keys])] };
+          });
+
+          return { courses, feeds, deadlines: rematchDeadlines(state.deadlines, feeds, courses) };
+        });
+        return created;
       },
 
       // ---- data ----
