@@ -8,6 +8,7 @@ import type {
   Deadline,
   DiscoveredContext,
   IcalFeed,
+  NotificationPrefs,
   Platform,
   Resource,
 } from "@/lib/types";
@@ -45,7 +46,21 @@ function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [] };
 }
 
+const MAX_NOTIFIED_KEYS = 500;
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  enabled: false,
+  leadMinutes: [1440, 60],
+  criticalOnly: false,
+};
+
 export interface AppStore extends AppData {
+  // device preferences (persisted, but not part of AppData)
+  notificationPrefs: NotificationPrefs;
+  notifiedKeys: string[];
+  setNotificationPrefs: (patch: Partial<NotificationPrefs>) => void;
+  markNotified: (keys: string[]) => void;
+
   // courses
   addCourse: (
     input: Omit<Course, "id" | "createdAt" | "links" | "resources"> &
@@ -107,6 +122,23 @@ export const useStore = create<AppStore>()(
   persist(
     (set) => ({
       ...emptyAppData(),
+      notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+      notifiedKeys: [],
+
+      // ---- notifications ----
+      setNotificationPrefs: (patch) => {
+        set((state) => ({ notificationPrefs: { ...state.notificationPrefs, ...patch } }));
+      },
+      markNotified: (keys) => {
+        set((state) => {
+          const prefixes = state.deadlines.map((d) => `${d.id}:`);
+          // Keys look like `${deadlineId}:${lead}:${due}`; drop those of deleted deadlines.
+          const merged = [...new Set([...state.notifiedKeys, ...keys])].filter((k) =>
+            prefixes.some((p) => k.startsWith(p))
+          );
+          return { notifiedKeys: merged.slice(-MAX_NOTIFIED_KEYS) };
+        });
+      },
 
       // ---- courses ----
       addCourse: (input) => {
@@ -459,7 +491,7 @@ export const useStore = create<AppStore>()(
         set(() => ({ ...data }));
       },
       resetAll: () => {
-        set(() => emptyAppData());
+        set(() => ({ ...emptyAppData(), notifiedKeys: [] }));
       },
       loadDemo: () => {
         const demo = buildDemoData(new Date());
@@ -493,6 +525,8 @@ export const useStore = create<AppStore>()(
         deadlines: state.deadlines,
         customPlatforms: state.customPlatforms,
         feeds: state.feeds,
+        notificationPrefs: state.notificationPrefs,
+        notifiedKeys: state.notifiedKeys,
       }),
     }
   )
