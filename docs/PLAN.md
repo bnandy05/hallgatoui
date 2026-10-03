@@ -28,7 +28,7 @@ Every item below is easier to build and test against real data. Please add the e
 | File | Where to get it | Unblocks |
 | --- | --- | --- |
 | `canvas.ics` | Canvas → Calendar → "Calendar Feed" link, open it, save the file | dedup, regression tests |
-| `moodle.ics` | Moodle → Calendar → Export calendar. **ELTE Moodle has export disabled**: produce it with the Plan 6 tool | dedup, regression tests |
+| `moodle.ics` | Moodle → Calendar → Export calendar. **ELTE Moodle has export disabled**; enabling it has been requested from ELTE | dedup, regression tests |
 | `neptun-orarend.ics` | Neptun → Órarend / Naptár → export (iCal / .ics), if your Neptun offers it | Neptun timetable import |
 | `neptun-vizsga.ics` | the same, for exams (Vizsgák), if separate | dedup with Canvas exams |
 | anything else (Teams, TMS, Google) | optional | — |
@@ -110,172 +110,6 @@ The owner wants [Impeccable](https://github.com/pbakaus/impeccable) (design comm
 - Review what it writes to `.claude/`, especially the hooks, then commit and push so cloud sessions get it.
 - First use: `/impeccable init` (writes `PRODUCT.md`), then `/impeccable audit` across `/`, `/radar` and `/beallitasok`.
 
-## 6. ELTE Moodle naptár-export (helyi Python eszköz)
-
-> **Állapot: csak terv.** Nincs implementálva, és hálózati kérés sem fut, amíg a tulajdonos jóvá nem hagyja. Az eszköz **a tulajdonos gépén fut**, a saját bejelentkezett munkamenetével. A felhős sandbox nem kap Moodle-sütit, és nem is futtatja.
-
-### Cél és háttér
-
-A saját ELTE Moodle naptárból (https://moodle.elte.hu) importálható `.ics` fájl készül.
-- A Moodle felületén nincs export (valószínűleg ki van kapcsolva az `enablecalendarexport`), ezért a naptároldal saját AJAX-szolgáltatását hívjuk ugyanúgy, ahogy a böngésző.
-- A havi HTML-nézetben (`/calendar/view.php?view=month&time=<ts>`) nincs óra és perc, ezért nem HTML-t scrape-elünk.
-- Ismert kurzusok: 14258 (Tűz- és munkavédelem), 15823 (Filmklub III), 25748 (Filmklub 2026/27/1). A `courseid=1` a „Minden kurzus” nézet.
-- Példaesemény: „Az ötödik pecsét – szombati teszt megnyílik/lezárul” (`mod_quiz`, `open`/`close` típus).
-
-**Nem cél:**
-- eseményazonosítók végigpróbálgatása (brute force);
-- jelszó vagy SSO-adat kezelése;
-- párhuzamos kérések.
-
-### Fájlstruktúra és függőségek
-
-```
-tools/moodle-export/
-  README.md                 # használat, sesskey és süti megszerzése
-  pyproject.toml            # vagy requirements.txt; Python ≥ 3.11
-  .env.example              # MOODLE_SESSION=, MOODLE_SESSKEY=, MOODLE_BASE_URL=https://moodle.elte.hu
-  moodle_export/
-    __init__.py
-    config.py               # env és .env beolvasás, titkok maszkolása (redact)
-    client.py               # AJAX-hívás, retry, hibaosztályozás (az egyetlen hálózati réteg)
-    parse.py                # nyers JSON → MoodleEvent dataclass (tiszta függvény)
-    ics.py                  # MoodleEvent lista → .ics bájtok (tiszta függvény)
-    cli.py                  # argumentumok, hónapok bejárása, deduplikáció, összegzés
-  tests/
-    fixtures/monthly_2026_10.json   # a próbahívás kimenete, kitisztítva
-    fixtures/action_events.json     # opcionális, a keresztellenőrzéshez
-    test_parse.py
-    test_ics.py
-    test_cli_dedupe.py
-  raw/                      # nyers válaszok; gitignore-olva, soha nem kerül commitba
-```
-
-- Függőségek:
-  - `requests`, `icalendar` (≥ 6), `python-dotenv`;
-  - fejlesztéshez `pytest`;
-  - időzónához a beépített `zoneinfo` (és Windowson a `tzdata`).
-- A Next.js appba nem kerül új függőség: az eszköz külön mappában él, a Vercel nem építi.
-- **`.gitignore`:** a mostani `.env*` szabály az `.env.example`-t is kizárja. Ezért kell egy `!.env.example` kivétel, és be kell venni a `tools/moodle-export/raw/` mappát. A `tools/moodle-export/.env` fájlt a meglévő `.env*` szabály már lefedi.
-
-### A kérés
-
-Ugyanaz a kérés, amit a naptároldal küld:
-
-```
-POST {BASE}/lib/ajax/service.php?sesskey=<SESSKEY>&info=core_calendar_get_calendar_monthly_view
-Cookie: MoodleSession=<SESSION>
-Content-Type: application/json
-Body: [{"index":0,"methodname":"core_calendar_get_calendar_monthly_view",
-        "args":{"year":2026,"month":10,"day":1,"courseid":1,"categoryid":0,
-                "includenavigation":false,"mini":false}}]
-```
-
-- A válasz egy lista: `[{"error": false, "data": {...}}]` vagy `[{"error": true, "exception": {"errorcode": "...", "message": "..."}}]`.
-- Az események a `data.weeks[].days[].events[]` alatt vannak. A várt mezők: `id`, `name`, `timestart`, `timeduration`, `url`/`viewurl`, `eventtype`, `component`/`modulename`, `course` (objektum `id`/`fullname`/`shortname` mezőkkel, vagy hiányzik). **Ez feltételezés**: a pontos szerkezetet az 1. lépés dönti el.
-- Keresztellenőrzés: `core_calendar_get_action_events_by_timesort` (`timesortfrom`, `timesortto`, `limitnum` ≤ 50, lapozás `aftereventid`-del). Ez csak a teendős (határidős) eseményeket adja vissza, de egy tartományt egyben.
-
-### Lépések sorrendje
-
-0. **Váz:** a mappa, `.env.example`, `.gitignore`-kivételek, `config.py` titokmaszkolással és a README. Hálózat még nincs.
-1. **Próbahívás, egyetlen hónap:** `python -m moodle_export probe --month 2026-10`.
-   - Pontosan **egy** kérés megy ki. A nyers JSON a `raw/monthly_2026-10.json` fájlba kerül, változatlanul.
-   - A konzolra csak a kulcsfa (mezőnevek és típusok) és az eseményszám kerül ki, értékek nem.
-   - A tulajdonos elküldi a kulcsfát, vagy egy kitisztított változatot a fájlból. **A parser ehhez igazodik, nem feltételezésekhez.**
-2. **Parser** (`parse.py`) a mentett fixture alapján.
-   - Tiszta függvény: `parse_monthly(json) -> list[MoodleEvent]`.
-   - A nevekben HTML-entitások lehetnek, ezeket `html.unescape` oldja fel.
-   - A hiányzó kurzust („felhasználói” vagy „oldal” esemény) kezelni kell.
-   - Az ismeretlen mezők nem okoznak hibát.
-3. **ICS-generátor** (`ics.py`), lásd lent.
-4. **Tesztek** (pytest, hálózat nélkül), lásd lent.
-5. **Teljes futtatás:** `python -m moodle_export --from 2026-09 --to 2027-02`.
-   - Havonta egy kérés, köztük `time.sleep(1)`.
-   - Deduplikáció `id` alapján, az eredmény a `moodle_elte.ics` fájl, majd jön az összegzés.
-6. **Keresztellenőrzés** (opcionális `--verify` kapcsoló): egy `action_events_by_timesort` hívás a teljes tartományra. A teendős események id-halmaza legyen része a havi nézetek halmazának; az eltéréseket a program kiírja.
-7. **Integráció az oldallal**, ez külön döntés:
-   - a kitisztított `moodle_elte.ics` mehet a `fixtures/ical/moodle.ics` helyére (Step 0);
-   - az oldal most csak URL-es feedet tud. Ehhez kell egy „.ics fájl importálása” funkció, amely stabil álfeed-azonosítót használ, így újraimportáláskor a `(feedId, externalUid)` upsert frissít, és nem duplikál.
-
-### Az .ics tartalma
-
-| Mező | Érték | Megjegyzés |
-| --- | --- | --- |
-| `UID` | `moodle-<eventid>@elte.hu` | stabil, újraimportnál nincs duplikátum |
-| `DTSTART` | `timestart` UTC-ben (`...Z`) | a UTC-ben írt időpontnál nincs szükség VTIMEZONE-ra, és DST-hiba sem lehet. A kliens helyi időben (Budapest) jeleníti meg |
-| `DTEND` | `timestart + timeduration` | 0 esetén lásd lent |
-| `SUMMARY` | `name` (unescape) | |
-| `URL` | az esemény linkje (`url` vagy `viewurl`) | |
-| `DESCRIPTION` | kurzusnév + eseménytípus (pl. „Filmklub III · kvíz lezárul”) | |
-| `CATEGORIES` | kurzus teljes neve | az oldal kurzusillesztése (`lib/ical/match.ts`) a Moodle-feedeknél épp a categories-t nézi |
-| `TRANSP` | `TRANSPARENT` | egy határidő ne foglalja a naptárat |
-| `X-WR-TIMEZONE` | `Europe/Budapest` | csak tájékoztató |
-| `VALARM` | 24 órával előtte, csak `close`/`due` típusnál | `--alarm` / `--no-alarm` kapcsoló, alapból bekapcsolva |
-
-- **0 hosszú esemény:** `DTEND = DTSTART` legyen, ne 15 perc.
-  - Indok: a Moodle-esemény egy időpont (megnyílik vagy lezárul), nem egy idősáv. A 15 perc hamis „foglalt” blokkot mutatna, és eltolná a lezárás vizuális végét.
-  - A Canvas is így exportálja a határidőket, és a Google, az Apple és az Outlook is megjeleníti.
-  - Kerülőút, ha egy kliens rosszul jelenítené meg: `--min-duration 15` kapcsoló.
-- **`open` és `close` párok:** két külön esemény marad (ez a Moodle forrás szerkezete). Az oldal később a „megnyílik” típust nem határidőként kezelheti. Ehhez a generátor `X-MOODLE-EVENTTYPE:open|close|due|…` tulajdonságot is kiír.
-- Megjelenítéshez (konzolos összegzés, `DESCRIPTION`) a `zoneinfo("Europe/Budapest")` használandó, soha nem a gép helyi ideje.
-
-### CLI
-
-- `--from YYYY-MM --to YYYY-MM` (mindkét végpont benne van).
-- Alapértelmezett tartomány az aktuális félév, Budapest-dátum szerint:
-  - szeptembertől januárig az őszi félév (`YYYY-09` → `YYYY+1-01`);
-  - februártól augusztusig a tavaszi félév (`YYYY-02` → `YYYY-06`).
-- `--out moodle_elte.ics`, `--alarm/--no-alarm`, `--min-duration N`, `--verify`, `--save-raw` (minden hónap nyers JSON-ját a `raw/` mappába menti).
-- Összegzés, például:
-  ```
-  2026-10: 7 esemény · 2026-11: 4 · …
-  összesen 23 egyedi esemény (5 duplikátum kiszűrve) → moodle_elte.ics
-  ```
-
-### Hibakezelés és kockázatok
-
-| Kockázat | Kezelés |
-| --- | --- |
-| **Lejárt munkamenet** | Az `errorcode` értéke `servicerequireslogin`, `invalidsesskey` vagy `requireloginerror`, **vagy** nem JSON jön vissza (átirányítás a bejelentkezési HTML-oldalra). Ilyenkor azonnal leáll, újrapróbálás nélkül, ezzel az üzenettel: „Lejárt a Moodle-munkamenet: jelentkezz be újra, és frissítsd a MOODLE_SESSION / MOODLE_SESSKEY értékét.” A kilépési kód 2. |
-| Átmeneti hiba (5xx, időtúllépés, kapcsolat bontása) | Legfeljebb 2 újrapróbálás exponenciális várakozással (2 s, majd 4 s), utána leáll az addig sikeres hónapok megtartása nélkül, hogy ne legyen félkész fájl. A 4xx (a 429 kivételével) nem kerül újrapróbálásra. |
-| Eltérő API-szerkezet vagy verzió | Az 1. lépés a valós válaszhoz igazítja a parsert. Ha egy várt kulcs hiányzik, `SchemaError` jön, és a program a mentett nyers fájl elérési útját írja ki. Ismeretlen `errorcode` esetén a kód kerül kiírásra (a `message` mező is, mert az nem titok). |
-| Átfedő hónapok, többnapos események | Deduplikáció `id` alapján, mert egy esemény több napnál és több hónapnézetben is megjelenhet. |
-| Időzóna és DST | A `timestart` unix (UTC), az .ics-be UTC kerül. Tesztek a 2026-10-25-i és a 2027-03-28-i óraátállításra. |
-| **Titkok kiszivárgása** | A `requests` kivételüzenete tartalmazza a teljes URL-t, benne a `sesskey`-jel. Ezért minden kivétel- és logszöveg átmegy a `config.redact()` függvényen, ami a sesskey és a süti értékét `***`-ra cseréli. A fejlécek soha nem kerülnek kiírásra. A `.env` és a `raw/` gitignore-olva van. |
-| Személyes adat a nyers JSON-ban | A `raw/` nincs commitolva. A test-fixture-ből a commit előtt törölni kell a neveket, felhasználói azonosítókat és a sesskey-t tartalmazó URL-eket (a `tests/fixtures/README` leírja). |
-| Terhelés és ToS | Csak a saját fiók, sorban, 1 s szünettel, félévenként kb. 6 kérés. |
-
-### Tesztek (pytest, hálózat nélkül)
-
-- `test_parse.py`:
-  - a fixture-ből a várt számú esemény jön, helyes mezőkkel;
-  - a HTML-entitások feloldódnak;
-  - a kurzus nélküli esemény nem okoz hibát;
-  - ismeretlen extra mezők esetén sincs hiba;
-  - egy `error: true` válaszra a megfelelő kivétel jön (`SessionExpired` vagy `MoodleApiError`).
-- `test_ics.py`:
-  - az UID formátuma helyes;
-  - a DTSTART UTC-ben van;
-  - DST-határnál a Budapest-idő helyes;
-  - 0-s durationnél `DTEND == DTSTART`, `--min-duration 15` esetén +15 perc;
-  - VALARM csak `close`/`due` típusnál és csak bekapcsolt flaggel;
-  - az eredmény újraolvasva (`icalendar.Calendar.from_ical`) ugyanazokat az eseményeket adja.
-- `test_cli_dedupe.py`:
-  - két egymást átfedő hónap fixture-éből nincs duplikált UID;
-  - az alapértelmezett félévtartomány helyes szeptemberre, januárra, februárra és júliusra.
-- `client.py`: a hibaosztályozás a `requests` mockolásával, a retry-számlálóval és a redact függvénnyel együtt tesztelve.
-
-### Amit a tulajdonosnak kell megadnia
-
-1. **A `MoodleSession` süti:**
-   - jelentkezz be a https://moodle.elte.hu oldalra;
-   - nyisd meg a DevTools-t (F12), azon belül az **Application** (Chrome) vagy **Storage** (Firefox) fület, majd a Cookies → `https://moodle.elte.hu` bejegyzést;
-   - a `MoodleSession` sor **Value** mezőjét kell bemásolni. HttpOnly süti, ezért a konzolból nem olvasható ki.
-2. **A `sesskey`**, a két módszer közül bármelyikkel:
-   - Console fül, ugyanabban a lapon: `M.cfg.sesskey`;
-   - vagy Network fül: nyisd meg a naptárat, és szűrj rá a `service.php` szóra. A kérés URL-jében ott a `sesskey=…`.
-3. Mindkettő a `tools/moodle-export/.env` fájlba kerül, chatbe vagy commitba soha. A munkamenet kijelentkezéskor vagy hosszabb inaktivitás után lejár; ilyenkor mindkettőt újra ki kell másolni.
-4. Az 1. lépés (próbahívás) után a **kulcsfa-kimenetet** kell elküldeni, vagy egy kitisztított `monthly_2026-10.json` fájlt; ez lesz a teszt-fixture.
-
 ## Known limitations / small follow-ups
 
 - On the server, "(módosult)" stays until the site is opened again: the 48-hour window starts from the browser's last sync. Fix: store `dueChangedAt` from the server's own `mergeFeedSync` in a small per-token KV record.
@@ -286,8 +120,7 @@ Body: [{"index":0,"methodname":"core_calendar_get_calendar_monthly_view",
 
 1. Step 0 (owner adds the fixtures).
 2. Plan 4 (copy rewrite) while the fixtures are being collected.
-3. Plan 6 (ELTE Moodle export tool) once the owner approves; its output is the Moodle fixture.
-4. Plan 1 (dedup) with fixture tests.
-5. Plan 2 (Neptun), path (a) or (b) depending on the export.
-6. The "(módosult)" server fix and the test runner.
-7. Plan 3 (shared feeds) after an owner decision.
+3. Plan 1 (dedup) with fixture tests.
+4. Plan 2 (Neptun), path (a) or (b) depending on the export.
+5. The "(módosult)" server fix and the test runner.
+6. Plan 3 (shared feeds) after an owner decision.
