@@ -86,9 +86,9 @@ export function FeedSettings() {
   }
 
   function pastOpenCount(feedId: string): number {
-    const now = Date.now();
+    const now = new Date();
     return deadlines.filter(
-      (d) => d.feedId === feedId && !d.done && new Date(d.due).getTime() < now
+      (d) => d.feedId === feedId && !d.done && new Date(d.due) < now
     ).length;
   }
 
