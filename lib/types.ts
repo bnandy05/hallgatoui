@@ -102,3 +102,29 @@ export interface NotificationPrefs {
   leadMinutes: number[]; // e.g. [1440, 60]
   criticalOnly: boolean; // only deadlines with critical === true
 }
+
+/** Options of the combined calendar (.ics download and subscription). */
+export interface ExportOptions {
+  includeDone: boolean; // also list finished deadlines (prefixed with a check mark)
+  alarms: boolean; // VALARMs for critical deadlines
+}
+
+/** What the browser uploads for a calendar subscription; the server renders the .ics from it. */
+export interface CalendarSnapshot {
+  courses: Course[];
+  deadlines: Deadline[];
+  feeds: IcalFeed[];
+  customPlatforms: Platform[];
+  options: ExportOptions;
+}
+
+/**
+ * Local handle of an active calendar subscription. The secret (write capability) never
+ * leaves this browser except as a Bearer token. Not part of AppData: not exported/imported.
+ */
+export interface Subscription {
+  token: string;
+  secret: string;
+  lastPushedAt?: string;
+  lastError?: string;
+}
