@@ -6,7 +6,6 @@ import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
-import { TimetableSettings } from "@/components/settings/TimetableSettings";
 import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
@@ -57,7 +56,7 @@ export default function WeekSettingsPage() {
     () => sectionFromHash(window.location.hash),
     () => "naptarak" as SectionKey
   );
-  const feedCount = useStore((s) => s.feeds.length);
+  const feedCount = useStore((s) => s.feeds.length + s.timetableSources.length);
   const subscribed = useStore((s) => s.subscription !== null);
   const notificationsOn = useStore((s) => s.notificationPrefs.enabled);
   const permission = useNotificationPermission();
@@ -107,7 +106,6 @@ export default function WeekSettingsPage() {
             <TabPanel id="naptarak" active={active === "naptarak"}>
               <div className="flex flex-col gap-10">
                 <FeedSettings />
-                <TimetableSettings />
               </div>
             </TabPanel>
             <TabPanel id="elofizetes" active={active === "elofizetes"}>

@@ -9,6 +9,8 @@ import {
   parseNeptunEvent,
   parseNeptunEvents,
   summarizeSubjects,
+  timetableCutoff,
+  upcomingSessions,
   suggestCourseForSubject,
   unmappedSubjects,
   visibleSessions,
@@ -162,4 +164,37 @@ test("skipped subjects (mapping null) are hidden, unmapped ones stay, holidays s
     now: new Date("2026-10-05T08:00:00.000Z"), view: parseView("orarend"),
   });
   assert.ok(!ics.includes("SUMMARY:Programming theory"));
+});
+
+test("timetableCutoff is Monday 00:00 Budapest of the current week", () => {
+  // Wed 2026-10-07 14:00 UTC; Budapest is on CEST until 2026-10-25.
+  assert.equal(timetableCutoff(new Date("2026-10-07T14:00:00Z")).toISOString(), "2026-10-04T22:00:00.000Z");
+});
+
+test("timetableCutoff uses the Budapest week at the Sunday/Monday edge", () => {
+  // Sun 22:30 UTC = Mon 00:30 Budapest: already the new week.
+  assert.equal(timetableCutoff(new Date("2026-10-04T22:30:00Z")).toISOString(), "2026-10-04T22:00:00.000Z");
+  // Sun 21:30 UTC = Sun 23:30 Budapest: still the old week.
+  assert.equal(timetableCutoff(new Date("2026-10-04T21:30:00Z")).toISOString(), "2026-09-27T22:00:00.000Z");
+});
+
+test("upcomingSessions drops earlier weeks but keeps the current one", () => {
+  const now = new Date("2026-10-07T14:00:00Z");
+  const kept = upcomingSessions(parsed, now);
+  assert.ok(kept.length > 0 && kept.length < parsed.length);
+  const cutoff = timetableCutoff(now).getTime();
+  assert.ok(kept.every((s) => new Date(s.end).getTime() >= cutoff));
+  assert.ok(parsed.filter((s) => !kept.includes(s)).every((s) => new Date(s.end).getTime() < cutoff));
+});
+
+test("a past semester is dropped and its subjects are not asked about", () => {
+  const YEAR = 365 * 24 * 60 * 60 * 1000;
+  const past = parsed.map((s) => ({
+    ...s,
+    start: new Date(new Date(s.start).getTime() - YEAR).toISOString(),
+    end: new Date(new Date(s.end).getTime() - YEAR).toISOString(),
+  }));
+  const now = new Date("2026-10-07T14:00:00Z");
+  assert.equal(upcomingSessions(past, now).length, 0);
+  assert.equal(summarizeSubjects(upcomingSessions(past, now)).length, 0);
 });
