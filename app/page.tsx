@@ -5,7 +5,6 @@ import Link from "next/link";
 import { CalendarPlus, LayoutGrid, Plus, Sparkles } from "lucide-react";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { FlowField } from "@/components/ui/FlowField";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CourseCard } from "@/components/CourseCard";
@@ -41,28 +40,25 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-8 sm:gap-12">
-      <div className="relative overflow-hidden py-6">
-        <FlowField />
-        <div className="relative">
-          <SectionHeading
-            as="h1"
-            eyebrow="Tárgyaim"
-            icon={LayoutGrid}
-            title={
-              <>
-                Minden tárgyad, <span className="grad">egy fedélzeten</span>.
-              </>
-            }
-            sub="Linkek, anyagok és határidők egy helyen, a saját böngésződben tárolva."
-            aside="(Odüsszeusz tíz évig hajózott hazafelé. Neked csak egy félév jutott.)"
-            actions={
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Új tárgy
-              </Button>
-            }
-          />
-        </div>
+      <div className="py-6">
+        <SectionHeading
+          as="h1"
+          eyebrow="Tárgyaim"
+          icon={LayoutGrid}
+          title={
+            <>
+              Minden tárgyad, <span className="grad">egy fedélzeten</span>.
+            </>
+          }
+          sub="Linkek, anyagok és határidők egy helyen, a saját böngésződben tárolva."
+          aside="(Odüsszeusz tíz évig hajózott hazafelé. Neked csak egy félév jutott.)"
+          actions={
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Új tárgy
+            </Button>
+          }
+        />
       </div>
 
       {!hydrated ? (

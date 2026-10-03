@@ -9,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { CommandPalette } from "@/components/CommandPalette";
+import { FlowField } from "@/components/ui/FlowField";
 import { syncAllFeeds } from "@/lib/ical/client";
 
 const NAV_LINKS = [
@@ -51,7 +52,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [hydrated]);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="isolate flex min-h-full flex-1 flex-col">
+      {/* Site-wide ambient background, behind everything (isolate keeps -z-10 above the body). */}
+      <FlowField fixed className="-z-10" />
       {hydrated && <NotificationScheduler />}
       <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(17,17,17,0.88)] backdrop-blur-[10px]">
         <div className="mx-auto flex h-[60px] w-full max-w-[1080px] items-center gap-2 px-4 sm:gap-5 sm:px-[22px]">

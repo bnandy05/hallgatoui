@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 // transparent over the page background instead of painting a flat rectangle.
 const COLORS = ["#9cdef2", "#e06c75", "#5fb6cc"];
 const FADE = "rgba(0,0,0,0.06)";
-const PARTICLES = 140;
+const PARTICLES = 260; // same as the Odysseus site
 
 function n2(x: number, y: number): number {
   const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
@@ -34,8 +34,11 @@ interface Particle {
   c: string;
 }
 
-/** Ambient Perlin flow-field behind a heading block. Renders nothing under reduced motion. */
-export function FlowField({ className = "" }: { className?: string }) {
+/**
+ * Ambient Perlin flow-field. By default it fills its positioned parent; with `fixed` it
+ * covers the viewport behind the whole page. Renders nothing under reduced motion.
+ */
+export function FlowField({ fixed = false, className = "" }: { fixed?: boolean; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -56,8 +59,8 @@ export function FlowField({ className = "" }: { className?: string }) {
 
     function resize() {
       if (!canvas || !ctx || !host) return;
-      W = host.clientWidth;
-      H = host.clientHeight;
+      W = fixed ? window.innerWidth : host.clientWidth;
+      H = fixed ? window.innerHeight : host.clientHeight;
       canvas.width = W * dpr;
       canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -108,13 +111,13 @@ export function FlowField({ className = "" }: { className?: string }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [fixed]);
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 h-full w-full opacity-90 motion-reduce:hidden ${className}`}
+      className={`pointer-events-none ${fixed ? "fixed" : "absolute"} inset-0 h-full w-full opacity-90 motion-reduce:hidden ${className}`}
     />
   );
 }
