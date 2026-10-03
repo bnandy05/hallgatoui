@@ -34,3 +34,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Naptár-előfizetés / deployment
+
+Az összefésült naptár (`/api/naptar/<token>.ics`) szerveroldali tárolást igényel (Upstash Redis). Vercelen: Project → Storage → Upstash Redis hozzáadása. Környezeti változók (a Marketplace bármelyik párt beállíthatja):
+
+- `UPSTASH_REDIS_REST_URL` és `UPSTASH_REDIS_REST_TOKEN`, vagy
+- `KV_REST_API_URL` és `KV_REST_API_TOKEN`.
+
+Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló működik. Éles környezetben, ha hiányoznak, a végpontok 503-at adnak. A .ics letöltés a szerver nélkül is működik.
