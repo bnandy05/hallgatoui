@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
   CalendarClock,
@@ -16,6 +16,7 @@ import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { getPlatform } from "@/lib/platforms";
 import { syncAllFeeds } from "@/lib/ical/client";
+import { routeFor } from "@/lib/routes";
 import {
   buildSearchItems,
   searchItems,
@@ -112,6 +113,7 @@ function PaletteContent({
   onNewDeadline: (quickText: string) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -158,7 +160,7 @@ function PaletteContent({
     }
     if (!item.href) return;
     if (item.external) window.open(item.href, "_blank", "noopener,noreferrer");
-    else router.push(item.href);
+    else router.push(routeFor(pathname, item.href));
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
