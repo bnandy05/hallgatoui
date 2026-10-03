@@ -2,6 +2,8 @@
 
 # Project conventions
 
+The current roadmap (what's done, what's next, open questions) is in `docs/PLAN.md`; read it at the start of a session and keep it updated. Real iCal exports for tests go in `fixtures/ical/` (scrubbed, see its README).
+
 Hallgatói réteg: a per-course dashboard that sits on top of university systems (Neptun, Teams, Canvas, Moodle, TMS, Discord…).
 
 - **Language:** all UI text is Hungarian; code, identifiers and comments are English. Routes are Hungarian (`/`, `/targy/[id]`, `/radar`, `/beallitasok`).
