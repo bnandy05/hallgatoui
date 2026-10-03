@@ -7,7 +7,7 @@ import { ExternalLink, Flame, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getPlatform } from "@/lib/platforms";
 import { cleanCanvasTitle } from "@/lib/ical/canvas";
-import { formatRelative, urgencyOf } from "@/lib/radar";
+import { formatRelative, isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
@@ -98,6 +98,13 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
             </span>
           )}
           {badgeLabel && badgeColor && <Badge color={badgeColor}>{badgeLabel}</Badge>}
+          {deadline.previousDue && isRecentlyChanged(deadline, now) && (
+            <span
+              title={`Korábbi határidő: ${format(new Date(deadline.previousDue), "yyyy. MMM d. HH:mm", { locale: hu })}`}
+            >
+              <Badge color="var(--warning)">módosult</Badge>
+            </span>
+          )}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
           {course && (
