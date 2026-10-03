@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T18:31:11.883430+00:00",
+  "title": "Design System: Hallgatói réteg",
+  "extensions": {
+    "colorMeta": {
+      "ink-navy": {
+        "role": "neutral",
+        "displayName": "Ink Navy",
+        "canonical": "var(--bg)",
+        "tonalRamp": [
+          "#162036",
+          "#27375e",
+          "#374f86",
+          "#4766ad",
+          "#6b85c2",
+          "#93a6d2",
+          "#bec9e4",
+          "#edf0f8"
+        ]
+      },
+      "ink-inset": {
+        "role": "neutral",
+        "displayName": "Ink Inset",
+        "canonical": "var(--bg2)",
+        "tonalRamp": [
+          "#152037",
+          "#253760",
+          "#344f88",
+          "#4466b1",
+          "#6885c5",
+          "#90a6d4",
+          "#bdc9e6",
+          "#edf0f8"
+        ]
+      },
+      "panel-navy": {
+        "role": "neutral",
+        "displayName": "Panel Navy",
+        "canonical": "var(--panel)",
+        "tonalRamp": [
+          "#172035",
+          "#28385c",
+          "#395084",
+          "#4a68ab",
+          "#6d87c0",
+          "#94a7d1",
+          "#bfcae3",
+          "#edf0f7"
+        ]
+      },
+      "chalk-white": {
+        "role": "neutral",
+        "displayName": "Chalk White",
+        "canonical": "var(--fg)",
+        "tonalRamp": [
+          "#142538",
+          "#244061",
+          "#335b8a",
+          "#4276b3",
+          "#6693c7",
+          "#8fb0d6",
+          "#bccfe6",
+          "#ecf2f8"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "var(--heading)",
+        "tonalRamp": [
+          "#362e17",
+          "#5d5028",
+          "#847139",
+          "#ab9349",
+          "#c0ab6d",
+          "#d1c294",
+          "#e3dabf",
+          "#f7f5ed"
+        ]
+      },
+      "muted-chalk": {
+        "role": "neutral",
+        "displayName": "Muted Chalk",
+        "canonical": "var(--muted)",
+        "tonalRamp": [
+          "#1c2531",
+          "#303f55",
+          "#445a79",
+          "#58759d",
+          "#7992b4",
+          "#9dafc8",
+          "#c4cfde",
+          "#eff2f6"
+        ]
+      },
+      "muted-dim": {
+        "role": "neutral",
+        "displayName": "Muted Dim",
+        "canonical": "var(--muted-dim)",
+        "tonalRamp": [
+          "#1e252f",
+          "#344051",
+          "#4a5b73",
+          "#607695",
+          "#8092ad",
+          "#a2afc3",
+          "#c7cfdb",
+          "#eff2f5"
+        ]
+      },
+      "blueprint-border": {
+        "role": "neutral",
+        "displayName": "Blueprint Border",
+        "canonical": "var(--border)",
+        "tonalRamp": [
+          "#192134",
+          "#2b3a5a",
+          "#3d5280",
+          "#4f6ba6",
+          "#7289bb",
+          "#98a9cd",
+          "#c1cbe1",
+          "#eef1f7"
+        ]
+      },
+      "blueprint-border-strong": {
+        "role": "neutral",
+        "displayName": "Blueprint Border Strong",
+        "canonical": "var(--border-strong)",
+        "tonalRamp": [
+          "#192333",
+          "#2c3c59",
+          "#3f567e",
+          "#516fa4",
+          "#738dba",
+          "#99abcc",
+          "#c2cde1",
+          "#eef1f7"
+        ]
+      },
+      "highlighter-yellow": {
+        "role": "primary",
+        "displayName": "Highlighter Yellow",
+        "canonical": "var(--accent)",
+        "tonalRamp": [
+          "#4c3400",
+          "#855b00",
+          "#bd8100",
+          "#f5a800",
+          "#ffbd2e",
+          "#ffcf66",
+          "#ffe2a3",
+          "#fff7e5"
+        ]
+      },
+      "highlighter-deep": {
+        "role": "primary",
+        "displayName": "Highlighter Deep",
+        "canonical": "var(--accent-deep)",
+        "tonalRamp": [
+          "#492e03",
+          "#7f5006",
+          "#b47308",
+          "#ea950b",
+          "#f6ad37",
+          "#f8c36d",
+          "#fbdba7",
+          "#fef5e7"
+        ]
+      },
+      "highlighter-text": {
+        "role": "primary",
+        "displayName": "Highlighter Text",
+        "canonical": "var(--accent-text)",
+        "tonalRamp": [
+          "#4c3600",
+          "#855e00",
+          "#bd8600",
+          "#f5ae00",
+          "#ffc22e",
+          "#ffd366",
+          "#ffe4a3",
+          "#fff8e5"
+        ]
+      },
+      "highlighter-soft": {
+        "role": "primary",
+        "displayName": "Highlighter Soft",
+        "canonical": "var(--accent-soft)"
+      },
+      "highlighter-ink": {
+        "role": "primary",
+        "displayName": "Highlighter Ink",
+        "canonical": "var(--accent-ink)",
+        "tonalRamp": [
+          "#402f0c",
+          "#6f5115",
+          "#9e741e",
+          "#cd9627",
+          "#ddae50",
+          "#e6c47f",
+          "#f0dbb2",
+          "#fbf5ea"
+        ]
+      },
+      "chalk-mint": {
+        "role": "secondary",
+        "displayName": "Chalk Mint",
+        "canonical": "var(--accent-2)",
+        "tonalRamp": [
+          "#0c4030",
+          "#156f54",
+          "#1e9e77",
+          "#28cd9a",
+          "#50ddb2",
+          "#7fe6c6",
+          "#b2f0dd",
+          "#eafbf6"
+        ]
+      },
+      "success-green": {
+        "role": "tertiary",
+        "displayName": "Success Green",
+        "canonical": "var(--success)",
+        "tonalRamp": [
+          "#0e3f23",
+          "#186d3c",
+          "#229b56",
+          "#2bc96f",
+          "#53da8d",
+          "#81e4ab",
+          "#b4efcd",
+          "#eafaf1"
+        ]
+      },
+      "warning-orange": {
+        "role": "tertiary",
+        "displayName": "Warning Orange",
+        "canonical": "var(--warning)",
+        "tonalRamp": [
+          "#4c2100",
+          "#853900",
+          "#bd5200",
+          "#f56a00",
+          "#ff882e",
+          "#ffa866",
+          "#ffcba3",
+          "#fff1e5"
+        ]
+      },
+      "danger-red": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "var(--danger)",
+        "tonalRamp": [
+          "#4c000d",
+          "#850016",
+          "#bd0020",
+          "#f50029",
+          "#ff2e51",
+          "#ff6680",
+          "#ffa3b3",
+          "#ffe5ea"
+        ]
+      },
+      "nav-line": {
+        "role": "neutral",
+        "displayName": "Nav Line",
+        "canonical": "var(--nav-line)",
+        "tonalRamp": [
+          "#182134",
+          "#2a395b",
+          "#3c5181",
+          "#4d69a7",
+          "#7087bd",
+          "#96a7cf",
+          "#c0cae2",
+          "#eef0f7"
+        ]
+      },
+      "terminal-bar": {
+        "role": "neutral",
+        "displayName": "Terminal Bar",
+        "canonical": "var(--term-bar)",
+        "tonalRamp": [
+          "#162036",
+          "#27375e",
+          "#374e85",
+          "#4865ad",
+          "#6b84c2",
+          "#93a5d2",
+          "#bec9e4",
+          "#edf0f8"
+        ]
+      },
+      "close-red": {
+        "role": "tertiary",
+        "displayName": "Close Red",
+        "canonical": "var(--close-hover)",
+        "tonalRamp": [
+          "#3f130e",
+          "#6c2018",
+          "#9a2e23",
+          "#c83b2d",
+          "#d96154",
+          "#e38b82",
+          "#eeb9b4",
+          "#faecea"
+        ]
+      },
+      "grid-minor": {
+        "role": "neutral",
+        "displayName": "Grid Minor",
+        "canonical": "var(--grid-minor)"
+      },
+      "grid-major": {
+        "role": "neutral",
+        "displayName": "Grid Major",
+        "canonical": "var(--grid-major)"
+      },
+      "margin-line": {
+        "role": "tertiary",
+        "displayName": "Margin Line",
+        "canonical": "var(--margin-line)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page h1 in SectionHeading; may carry the yellow-to-mint .grad on the key phrase."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section h2s."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Dialog and empty-state titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, buttons, tabs, inputs; intros cap at 620px."
+      },
+      "chip": {
+        "displayName": "Chip",
+        "purpose": "Deadline titles on the week board and pill labels, two-line clamp."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase course-table column headers and the Lejárt gutter label."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Times, dates, counts and course names under chips, tabular figures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glow-accent",
+        "value": "0 6px 24px rgba(255, 194, 61, 0.25)",
+        "purpose": "Primary button hover (--glow-accent)."
+      },
+      {
+        "name": "primary-resting",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(255,194,61,0.18)",
+        "purpose": "Primary button at rest, lit top edge."
+      },
+      {
+        "name": "inset-highlight",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.04)",
+        "purpose": "Secondary button top edge."
+      },
+      {
+        "name": "terminal-float",
+        "value": "0 24px 60px rgba(0,0,0,0.4)",
+        "purpose": "Terminal panel."
+      },
+      {
+        "name": "sticky-float",
+        "value": "0 12px 32px rgba(0,0,0,0.35)",
+        "purpose": "Sticky radar filter toolbar."
+      },
+      {
+        "name": "display-text-shadow",
+        "value": "0 2px 20px rgba(0,0,0,.45)",
+        "purpose": "Text-shadow on the page h1 to lift it off the grid."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "All transitions (--ease-out)."
+      },
+      {
+        "name": "lift",
+        "value": "translateY(-2px), 0.16s",
+        "purpose": "Interactive card hover."
+      },
+      {
+        "name": "lift-sm",
+        "value": "translateY(-1px), 0.16s",
+        "purpose": "Button and launch-icon hover."
+      },
+      {
+        "name": "state-transition",
+        "value": "150ms",
+        "purpose": "Colour, border and filter changes on controls."
+      },
+      {
+        "name": "reveal",
+        "value": "opacity + translateY(24px), 0.6s",
+        "purpose": "Scroll reveal of sections."
+      },
+      {
+        "name": "reveal-stagger",
+        "value": "translateY(16px), 0.5s, delay 0.04s + i * 0.05s",
+        "purpose": "Domino entry of child items."
+      },
+      {
+        "name": "term-blink",
+        "value": "1.05s steps(1) infinite",
+        "purpose": "Terminal cursor."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion disables lifts, reveals, smooth scroll and the cursor blink."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action per header row (+ Határidő).",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Határidő</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 16px;border-radius:var(--radius-lg);cursor:pointer;transition:transform .16s var(--ease-out),border-color .16s var(--ease-out),filter .16s var(--ease-out),box-shadow .16s var(--ease-out);background:linear-gradient(135deg,var(--accent),var(--accent-deep));border:1px solid var(--accent-text);color:var(--accent-ink);font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35),0 2px 10px rgba(255,194,61,0.18);} .ds-btn-primary:hover{filter:brightness(1.07);box-shadow:var(--glow-accent);transform:translateY(-1px);} .ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary actions and icon-only week navigation.",
+      "html": "<span style=\"display:inline-flex;gap:6px\"><button class=\"ds-btn-secondary ds-btn-icon\" aria-label=\"Előző hét\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg></button><button class=\"ds-btn-secondary\">Ez a hét</button></span>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 16px;border-radius:var(--radius-lg);cursor:pointer;transition:transform .16s var(--ease-out),border-color .16s var(--ease-out),filter .16s var(--ease-out),box-shadow .16s var(--ease-out);font-size:14px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);color:var(--fg);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);} .ds-btn-secondary:hover{border-color:var(--accent);transform:translateY(-1px);} .ds-btn-secondary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-btn-icon{padding:6px 8px;}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text field: an inset well with a yellow focus edge.",
+      "html": "<input class=\"ds-input\" placeholder=\"https://canvas.example.hu/feeds/…\" />",
+      "css": ".ds-input{width:100%;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;padding:8px 12px;background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .15s;} .ds-input::placeholder{color:var(--muted-dim);} .ds-input:hover{border-color:var(--border-strong);} .ds-input:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px;}"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "Toggle filter on the radar toolbar; course pills lead with the course dot.",
+      "html": "<span style=\"display:inline-flex;gap:8px\"><button class=\"ds-pill\" aria-pressed=\"true\"><span class=\"ds-dot\" style=\"background:#5b8def\"></span>Analízis</button><button class=\"ds-pill\" aria-pressed=\"false\">Csak kritikus</button></span>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;gap:6px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:12.5px;padding:4px 12px;border-radius:9999px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;transition:border-color .15s;} .ds-pill:hover{border-color:var(--border-strong);} .ds-pill[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text);} .ds-pill:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-dot{width:8px;height:8px;border-radius:9999px;}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Panel sheet on the graph paper; interactive cards lift 2px.",
+      "html": "<div class=\"ds-card\"><h3>Naptárak</h3><p>Canvas és Moodle feedek, 15 percenként frissítve.</p></div>",
+      "css": ".ds-card{font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;color:var(--fg);transition:transform .16s var(--ease-out),border-color .16s var(--ease-out);} .ds-card:hover{transform:translateY(-2px);border-color:var(--accent);} .ds-card h3{margin:0 0 8px;font-size:16px;font-weight:700;color:var(--heading);} .ds-card p{margin:0;font-size:14px;color:var(--muted);}"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "ARIA tablist with roving focus and count badges; vertical rail on settings.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\" class=\"ds-tab\">Határidők <span class=\"ds-count\">4</span></button><button role=\"tab\" aria-selected=\"false\" class=\"ds-tab\">Linkek <span class=\"ds-count\">3</span></button><button role=\"tab\" aria-selected=\"false\" class=\"ds-tab\">Tudásbázis <span class=\"ds-count\">0</span></button></div>",
+      "css": ".ds-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);} .ds-tab{display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 12px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:color .15s;} .ds-tab:hover{color:var(--fg);} .ds-tab[aria-selected=true]{border-bottom-color:var(--accent);color:var(--accent-text);} .ds-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-count{border-radius:9999px;padding:0 6px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--muted);} .ds-tab[aria-selected=true] .ds-count{background:var(--accent);color:var(--accent-ink);}"
+    },
+    {
+      "name": "Week Board with Now-Line",
+      "kind": "custom",
+      "refersTo": "week-board",
+      "description": "Monday-to-Sunday board; overdue gutter left, today washed yellow with the red margin line as now-line.",
+      "html": "<div class=\"ds-board\"><section class=\"ds-gutter\"><header><span class=\"ds-late\">Lejárt</span><span class=\"ds-late-n\">1</span></header><div class=\"ds-chip ds-hot\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">Labor 3 jegyzőkönyv</span><span class=\"ds-meta ds-red\">okt. 1. 23:59</span></div></div></section><section class=\"ds-day ds-past\"><header><span class=\"ds-dn\">hétfő</span><span class=\"ds-dd\">okt. 27.</span></header></section><section class=\"ds-day ds-today\" aria-current=\"date\"><header><span class=\"ds-dn\">kedd</span><span class=\"ds-dd\">ma · most 14:05</span></header><div class=\"ds-chip\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">Házi feladat 4</span><span class=\"ds-meta\">23:59</span></div></div></section><section class=\"ds-day\"><header><span class=\"ds-dn\">szerda</span><span class=\"ds-dd\">okt. 29.</span></header><div class=\"ds-chip ds-hot\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">ZH 1</span><span class=\"ds-meta ds-red\">10:15 <svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-label=\"Kritikus\"><path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/></svg></span></div></div></section></div>",
+      "css": ".ds-board{display:grid;grid-template-columns:1.05fr repeat(3,1fr);font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;} .ds-board section{display:flex;flex-direction:column;gap:8px;padding:12px;min-height:200px;} .ds-board header{display:flex;flex-direction:column;} .ds-gutter{background:color-mix(in srgb,var(--danger) 6%,transparent);} .ds-gutter header{flex-direction:row;justify-content:space-between;align-items:baseline;} .ds-late{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--danger);} .ds-late-n{font-size:11px;color:var(--danger);} .ds-day{position:relative;border-left:1px solid color-mix(in srgb,var(--border) 60%,transparent);} .ds-past{background:color-mix(in srgb,var(--bg2) 40%,transparent);} .ds-today{background:color-mix(in srgb,var(--accent-soft) 40%,transparent);} .ds-today::before{content:'';position:absolute;top:0;bottom:0;left:-1px;width:2px;background:color-mix(in srgb,var(--danger) 70%,transparent);pointer-events:none;} .ds-dn{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--heading);} .ds-past .ds-dn{color:var(--muted-dim);} .ds-today .ds-dn{color:var(--accent-text);} .ds-dd{font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted-dim);} .ds-today .ds-dd{font-weight:600;color:var(--accent-text);} .ds-chip{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--bg2);border:1px solid color-mix(in srgb,var(--border) 70%,transparent);border-radius:6px;transition:border-color .15s;} .ds-chip:hover{border-color:var(--border-strong);} .ds-chip.ds-hot{border-color:color-mix(in srgb,var(--danger) 45%,transparent);} .ds-chip.ds-hot:hover{border-color:var(--danger);} .ds-chip input{accent-color:var(--accent);margin-top:3px;} .ds-chip div{display:flex;flex-direction:column;min-width:0;} .ds-chip-t{font-size:12.5px;font-weight:500;color:var(--fg);} .ds-chip-t:hover{color:var(--accent-text);text-decoration:underline;} .ds-meta{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted);} .ds-red{color:var(--danger);}"
+    },
+    {
+      "name": "Course Launch Row",
+      "kind": "custom",
+      "refersTo": "course-table",
+      "description": "One course per row: launch its platforms without opening it, see what is next.",
+      "html": "<div class=\"ds-ctable\"><div class=\"ds-chead\"><span>Tárgy</span><span>Platformok</span><span>Következő</span><span>Nyitott</span></div><div class=\"ds-crow\"><div class=\"ds-cname\"><span class=\"ds-cdot\" style=\"background:#5b8def\"></span><div><a href=\"#\">Analízis I.</a><small>BMETE90AX00 · 2025/26/1</small></div></div><div class=\"ds-launch\"><a href=\"#\" class=\"ds-pi\" style=\"background:#e4572e\" aria-label=\"Canvas megnyitása\">C</a><a href=\"#\" class=\"ds-pi\" style=\"background:#2f6fb5\" aria-label=\"Neptun megnyitása\">N</a></div><div class=\"ds-next\"><span>Házi feladat 4</span><small>2 nap múlva</small></div><span class=\"ds-open\">3</span></div></div>",
+      "css": ".ds-ctable{font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;} .ds-chead,.ds-crow{display:grid;grid-template-columns:1.5fr 1.45fr 1.7fr 4.5rem;column-gap:20px;align-items:center;} .ds-chead{padding:8px 16px;background:color-mix(in srgb,var(--bg2) 60%,transparent);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);} .ds-chead span:last-child{text-align:right;} .ds-crow{padding:14px 16px;} .ds-cname{display:flex;gap:10px;align-items:flex-start;} .ds-cdot{width:10px;height:10px;border-radius:9999px;margin-top:7px;flex-shrink:0;} .ds-cname a{display:block;font-weight:700;color:var(--heading);text-decoration:none;} .ds-cname a:hover{color:var(--accent-text);text-decoration:underline;} .ds-cname small,.ds-next small{display:block;font-size:12px;color:var(--muted);} .ds-next small{color:var(--warning);} .ds-next span{font-size:14px;color:var(--fg);} .ds-launch{display:flex;gap:6px;} .ds-pi{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-size:12px;font-weight:600;text-decoration:none;transition:transform .16s var(--ease-out);} .ds-pi:hover{transform:translateY(-1px);box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--border-strong);} .ds-pi:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-open{justify-self:end;min-width:1.75rem;text-align:center;border-radius:9999px;padding:2px 6px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent-text);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Blueprint",
+    "overview": "The app is an engineering notebook open on a desk at night. The page is ink-navy graph paper (24px minor and 120px major lines, fixed to the viewport) with a thin red margin line down the left. Panels sit on it like slightly lighter paper sheets. One highlighter-yellow marks what matters now; chalk-mint is the second pen, used for prompts and secondary marks. Everything is set in one monospace face, Fira Code, so dates, times and counts line up like notebook entries.\n\nDensity is that of a working tool rather than a showcase. A surface carries a compact header row, then a board or table that fills the 1240px container, with 11-14px type doing most of the work. Time is the structural spine: the week board lays deadlines out Monday to Sunday, so urgency reads from position (left of the now-line is late) before any colour or badge does.\n\nMotion is short and functional: a 1-2px hover lift on interactive surfaces, a 24px rise-in for content on scroll, and nothing at all under `prefers-reduced-motion`.",
+    "keyCharacteristics": [
+      "Dark only (`color-scheme: dark`): graph-paper page, lighter panel sheets, darker inset wells.",
+      "One typeface (Fira Code, weights 400-700) for every role; hierarchy from size, weight and colour.",
+      "Highlighter yellow is the single \"now / act here\" signal; danger red is reserved for late and critical.",
+      "The notebook's red margin line doubles as the \"now\" line on the week board.",
+      "Course colours are user data and appear only as small dots and spines, never as fills.",
+      "Hairline blueprint borders keep every card and control edge visible."
+    ],
+    "rules": [
+      {
+        "name": "The Ink-On-Highlighter Rule",
+        "body": "Text on a yellow or danger fill is always Highlighter Ink, never white.",
+        "section": "colors"
+      },
+      {
+        "name": "The Data-Colour Rule",
+        "body": "Raw hex appears only for user, course and platform data (and inside TraceField). Course colours render as dots (6-10px) and spines; every other colour comes from a token.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Reds Rule",
+        "body": "Danger red means late or critical. It is not decoration; the margin line is its only ambient use.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Fira Code is the only family. Do not introduce a display or sans face; build hierarchy from size, weight and colour.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Time Rule",
+        "body": "Every time, date and count uses tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal-First Rule",
+        "body": "Separate surfaces by panel/inset tone and border first; reach for a shadow only for hover feedback or for something that floats.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the tokens through their Tailwind names (`bg-card`, `bg-inset`, `border-border`, `text-muted`, `text-accent-text`, `text-accent-ink`) and the `components/ui` primitives.",
+      "**Do** put text on yellow or danger fills in Highlighter Ink.",
+      "**Do** let position carry urgency on time-based surfaces: overdue left of the now-line, today washed in Highlighter Soft.",
+      "**Do** show course identity as a small colour dot next to the course name.",
+      "**Do** use tabular figures for every time, date and count.",
+      "**Do** keep every edge visible with the 1px blueprint border; strengthen it (`--border-strong`) or turn it yellow on hover.",
+      "**Do** honour `prefers-reduced-motion`: no lifts, reveals, smooth scroll or cursor blink.",
+      "**Do** use lucide-react icons for every icon."
+    ],
+    "donts": [
+      "**Don't** put white text on accent fills.",
+      "**Don't** use raw hex outside user, course and platform data (and TraceField).",
+      "**Don't** use course colours as card or row fills; they stay dots and spines.",
+      "**Don't** add a second typeface.",
+      "**Don't** use danger red for anything other than late, critical or destructive.",
+      "**Don't** recompute urgency in a component; the board's colours follow `urgencyOf` from `lib/radar.ts`."
+    ]
+  }
+}

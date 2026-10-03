@@ -137,8 +137,10 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
             </Select>
           )}
           {platform && <PlatformIcon platform={platform} size="sm" />}
-          <span>{format(due, "MMM d. (EEE) HH:mm", { locale: hu })}</span>
-          <span>· {formatRelative(due, now)}</span>
+          <span>
+            {format(due, "MMM d. (EEE) HH:mm", { locale: hu })}
+            <span className="whitespace-nowrap"> · {formatRelative(due, now)}</span>
+          </span>
         </div>
         {!compact && deadline.note && (
           <p

@@ -12,6 +12,7 @@ import { SubscriptionSync } from "@/components/SubscriptionSync";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TraceField } from "@/components/ui/TraceField";
 import { syncAllFeeds } from "@/lib/ical/client";
+import { isNewLayout, NEW_LAYOUT_BASE, routeFor } from "@/lib/routes";
 
 const NAV_LINKS = [
   { href: "/", label: "Tárgyaim", icon: LayoutGrid },
@@ -19,7 +20,7 @@ const NAV_LINKS = [
   { href: "/beallitasok", label: "Beállítások", icon: Settings },
 ] as const;
 
-function NotificationBell() {
+function NotificationBell({ href }: { href: string }) {
   const hydrated = useHydrated();
   const enabled = useStore((s) => s.notificationPrefs.enabled);
   const permission = useNotificationPermission();
@@ -28,7 +29,7 @@ function NotificationBell() {
   const label = `Értesítések: ${on ? "bekapcsolva" : "kikapcsolva"}`;
   return (
     <Link
-      href="/beallitasok#ertesitesek"
+      href={href}
       aria-label={label}
       title={label}
       className={`lift-sm inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-lg)] border border-border bg-card p-2 text-sm font-semibold hover:border-accent ${
@@ -44,6 +45,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const didAutoSync = useRef(false);
+  const newLayout = isNewLayout(pathname);
+  const route = (href: string) => routeFor(pathname, href);
+  // The week-board layout needs room for seven day columns.
+  const container = newLayout ? "max-w-[1240px]" : "max-w-[1080px]";
 
   useEffect(() => {
     if (!hydrated || didAutoSync.current) return;
@@ -61,9 +66,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {hydrated && <NotificationScheduler />}
       {hydrated && <SubscriptionSync />}
       <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(20,28,46,0.85)] backdrop-blur-[10px]">
-        <div className="mx-auto flex h-[60px] w-full max-w-[1080px] items-center gap-2 px-4 sm:gap-5 sm:px-[22px]">
+        <div className={`mx-auto flex h-[60px] w-full ${container} items-center gap-2 px-4 sm:gap-5 sm:px-[22px]`}>
           <Link
-            href="/"
+            href={route("/")}
             className="flex shrink-0 items-center gap-2 text-[17px] font-bold tracking-[0.2px] text-heading"
           >
             <Sailboat className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
@@ -72,13 +77,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           <nav className="ml-auto flex items-center gap-1 sm:gap-5">
             {NAV_LINKS.map((link) => {
+              const href = route(link.href);
               const isActive =
-                link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                link.href === "/" ? pathname === href : pathname.startsWith(href);
               const Icon = link.icon;
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={href}
                   aria-label={link.label}
                   aria-current={isActive ? "page" : undefined}
                   className={`inline-flex items-center gap-1.5 rounded-md p-2 text-sm font-medium transition-colors sm:border-b-2 sm:rounded-none sm:px-0 sm:py-1 ${
@@ -94,14 +100,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <CommandPalette />
-          <NotificationBell />
+          <NotificationBell href={route("/beallitasok#ertesitesek")} />
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col px-4 py-8 sm:px-[22px] sm:py-10">
+      <main className={`mx-auto flex w-full ${container} flex-1 flex-col px-4 py-8 sm:px-[22px] sm:py-10`}>
         {children}
       </main>
       <footer className="border-t border-border py-[30px] text-[13px] text-muted">
-        <div className="mx-auto flex w-full max-w-[1080px] flex-wrap items-center justify-between gap-3 px-4 sm:px-[22px]">
+        <div className={`mx-auto flex w-full ${container} flex-wrap items-center justify-between gap-3 px-4 sm:px-[22px]`}>
+          <Link
+            href={
+              newLayout
+                ? pathname.slice(NEW_LAYOUT_BASE.length) || "/"
+                : pathname === "/"
+                  ? NEW_LAYOUT_BASE
+                  : `${NEW_LAYOUT_BASE}${pathname}`
+            }
+            className="w-full font-medium text-accent-text hover:underline"
+          >
+            {newLayout ? "← Vissza a régi elrendezéshez" : "Próbáld ki az új, heti elrendezést →"}
+          </Link>
           <span>Hallgatói réteg · az adataid a böngésződben maradnak (kivéve, ha bekapcsolod a naptár-előfizetést).</span>
           <span>Nem állunk kapcsolatban a Neptunnal. Sem a rendszerrel, sem az istennel.</span>
         </div>

@@ -1,4 +1,5 @@
 import {
+  addDays,
   differenceInMilliseconds,
   endOfWeek,
   format,
@@ -113,4 +114,44 @@ export function nextDeadlineFor(
 
 export function formatRelative(due: Date, now: Date): string {
   return formatDistance(due, now, { locale: hu, addSuffix: true });
+}
+
+export interface DayBucket {
+  date: Date;
+  items: Deadline[];
+}
+
+export function weekStartOf(date: Date): Date {
+  return startOfWeek(date, { weekStartsOn: 1 });
+}
+
+/** Seven Monday-first buckets for the week starting at `weekStart`, items sorted by due time. */
+export function bucketWeekByDay(deadlines: Deadline[], weekStart: Date): DayBucket[] {
+  const days: DayBucket[] = Array.from({ length: 7 }, (_, i) => ({
+    date: addDays(weekStart, i),
+    items: [],
+  }));
+  const startMs = weekStart.getTime();
+  const endMs = addDays(weekStart, 7).getTime();
+  for (const d of deadlines) {
+    const due = new Date(d.due);
+    const ms = due.getTime();
+    if (ms < startMs || ms >= endMs) continue;
+    const index = days.findIndex((day, i) => i === 6 || ms < days[i + 1].date.getTime());
+    days[index].items.push(d);
+  }
+  for (const day of days) {
+    day.items.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+  }
+  return days;
+}
+
+export function weekRangeLabel(weekStart: Date): string {
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  return `${format(weekStart, "MMM d.", { locale: hu })} – ${format(
+    weekEnd,
+    sameMonth ? "d." : "MMM d.",
+    { locale: hu }
+  )}`;
 }
