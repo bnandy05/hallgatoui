@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Flame, Plus, Radar } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +31,7 @@ function RadarSkeleton() {
 export default function WeekRadarPage() {
   const hydrated = useHydrated();
   const courses = useStore((s) => s.courses);
-  const deadlines = useStore((s) => s.deadlines);
+  const { visible: deadlines } = useDedupedDeadlines();
   const customPlatforms = useStore((s) => s.customPlatforms);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -115,7 +116,6 @@ export default function WeekRadarPage() {
           </>
         }
         sub="Minden hét egy tábla, hétfőtől vasárnapig. A lejárt elemek legfelül várnak."
-        aside="(A szirének is határidőket énekelnek. Kösd magad az árbochoz.)"
         actions={
           <Button type="button" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -223,7 +223,7 @@ export default function WeekRadarPage() {
           {overdue.length === 0 && weeks.length === 0 ? (
             <p className="text-sm text-muted">
               Nincs megjeleníthető határidő.{" "}
-              <span className="text-[11.5px] text-muted-dim">(Gyanúsan nyugodt a tenger.)</span>
+              <span className="text-[11.5px] text-muted-dim">(Gyanúsan üres a lap. Biztos, hogy minden be van írva?)</span>
             </p>
           ) : (
             <div className="flex flex-col gap-8">

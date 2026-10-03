@@ -28,6 +28,9 @@ export function SubscriptionSync() {
         state.courses !== prev.courses ||
         state.deadlines !== prev.deadlines ||
         state.feeds !== prev.feeds ||
+        state.classSessions !== prev.classSessions ||
+        state.timetableSources !== prev.timetableSources ||
+        state.ignoredDuplicatePairs !== prev.ignoredDuplicatePairs ||
         state.customPlatforms !== prev.customPlatforms ||
         state.exportOptions !== prev.exportOptions;
       if (!changed) return;

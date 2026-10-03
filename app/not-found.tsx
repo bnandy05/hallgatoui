@@ -8,8 +8,8 @@ export default function NotFound() {
       <SectionHeading
         as="h1"
         eyebrow="404"
-        title="Ez az oldal eltévedt hazafelé."
-        aside="(Mint Odüsszeusz. Csak remélhetőleg nem tíz évig.)"
+        title="Ez az oldal nem található."
+        aside="(Kihúzva a jegyzetből, vagy sosem volt benne.)"
       />
       <Link href="/" className={buttonClasses()}>
         Vissza a tárgyakhoz

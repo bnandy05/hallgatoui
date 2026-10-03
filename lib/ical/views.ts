@@ -7,6 +7,7 @@ export type CalendarView =
   | { kind: "all" }
   | { kind: "critical" }
   | { kind: "exams" }
+  | { kind: "timetable" }
   | { kind: "course"; courseId: string };
 
 export const ALL_VIEW: CalendarView = { kind: "all" };
@@ -14,7 +15,7 @@ export const ALL_VIEW: CalendarView = { kind: "all" };
 const COURSE_PREFIX = "targy-";
 
 /** Matched as substrings of the accent-stripped, lowercase title. */
-const EXAM_SUBSTRINGS = ["zarthelyi", "vizsga", "exam", "teszt", "quiz", "kollokvium", "midterm"];
+const EXAM_SUBSTRINGS = ["zarthelyi", "vizsga", "exam", "teszt", "quiz", "kviz", "kollokvium", "midterm"];
 // "zh" only as a separate token, so "zh2" and "ZH." match but "Szhoz" does not.
 const ZH_PATTERN = /(?<![a-z])zh(?![a-z])/;
 
@@ -31,6 +32,7 @@ export function isExamTitle(title: string): boolean {
 export function parseView(param: string | null | undefined, courses?: Course[]): CalendarView {
   if (param === "kritikus") return { kind: "critical" };
   if (param === "zh") return { kind: "exams" };
+  if (param === "orarend") return { kind: "timetable" };
   if (param?.startsWith(COURSE_PREFIX)) {
     const courseId = param.slice(COURSE_PREFIX.length);
     if (courseId && (!courses || courses.some((c) => c.id === courseId))) {
@@ -47,6 +49,8 @@ export function viewParam(view: CalendarView): string {
       return "kritikus";
     case "exams":
       return "zh";
+    case "timetable":
+      return "orarend";
     case "course":
       return `${COURSE_PREFIX}${view.courseId}`;
     default:
@@ -62,6 +66,8 @@ export function filterDeadlinesForView(deadlines: Deadline[], view: CalendarView
       return deadlines.filter((d) => isExamTitle(d.title));
     case "course":
       return deadlines.filter((d) => d.courseId === view.courseId);
+    case "timetable":
+      return [];
     default:
       return deadlines;
   }
@@ -75,6 +81,8 @@ export function viewCalendarName(view: CalendarView, courses: Course[]): string 
       return `${base} – Kritikus`;
     case "exams":
       return `${base} – ZH-k és vizsgák`;
+    case "timetable":
+      return `${base} – Órarend`;
     case "course": {
       const course = courses.find((c) => c.id === view.courseId);
       return course ? `${base} – ${course.name}` : base;

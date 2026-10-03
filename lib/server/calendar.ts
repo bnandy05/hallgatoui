@@ -4,10 +4,12 @@ import { buildCalendar, type HealthWarning } from "@/lib/ical/export";
 import { fetchAndParseFeed } from "@/lib/ical/fetch";
 import { parseView } from "@/lib/ical/views";
 import { mergeFeedSync } from "@/lib/ical/sync";
+import { trackDueChanges, type DueRecord } from "@/lib/server/dueChanges";
 import type { Kv } from "@/lib/server/kv";
 import {
   FEED_FETCH_TIMEOUT_MS,
   SOURCE_FRESH_MS,
+  chgKey,
   srcKey,
   TTL_SECONDS,
   WARN_AFTER_MS,
@@ -25,6 +27,9 @@ function slimEvents(events: IcalEventDTO[], now: number): IcalEventDTO[] {
     .filter((e) => now - new Date(e.start).getTime() <= KEEP_HISTORY_MS)
     .map((e) => ({
       ...e,
+      // Deadlines never use these (they are for the timetable import), so keep the cache small.
+      end: undefined,
+      location: undefined,
       description: e.description ? e.description.slice(0, MAX_DESCRIPTION) : undefined,
     }))
     .sort((a, b) => a.start.localeCompare(b.start));
@@ -86,7 +91,7 @@ export async function renderSubscription(
   appUrl: string,
   viewParam?: string | null
 ): Promise<string> {
-  const { courses, feeds, options } = sub.snapshot;
+  const { courses, feeds, options, customPlatforms } = sub.snapshot;
 
   const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, token, feed, now)));
 
@@ -110,6 +115,23 @@ export async function renderSubscription(
     deadlines = mergeFeedSync({ feed, events: source.events, deadlines, courses, now }).deadlines;
   });
 
+  // The "módosult" window starts when a change is first seen here, so it must outlive requests.
+  let record: DueRecord | null = null;
+  try {
+    record = await kv.get<DueRecord>(chgKey(token));
+  } catch {
+    record = null;
+  }
+  const tracked = trackDueChanges(record, deadlines, now, sub.snapshot.deadlines);
+  deadlines = tracked.deadlines;
+  if (tracked.changed) {
+    try {
+      await kv.set(chgKey(token), tracked.record, TTL_SECONDS);
+    } catch {
+      // Rendering still works; the next request will try again.
+    }
+  }
+
   return buildCalendar({
     courses,
     deadlines,
@@ -118,5 +140,10 @@ export async function renderSubscription(
     appUrl,
     warnings,
     view: parseView(viewParam, courses),
+    // Dedup runs inside buildCalendar, i.e. after every mergeFeedSync above.
+    feeds,
+    customPlatforms: customPlatforms ?? [],
+    ignoredDuplicatePairs: sub.snapshot.ignoredDuplicatePairs ?? [],
+    classSessions: sub.snapshot.classSessions ?? [],
   });
 }

@@ -9,6 +9,7 @@ import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Dialog } from "@/components/ui/Dialog";
 import { DeadlineItem } from "@/components/DeadlineItem";
+import { DuplicateSources } from "@/components/DuplicateSources";
 
 export interface DeadlineChipProps {
   deadline: Deadline;
@@ -63,6 +64,9 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
             <Flame className="h-3 w-3 shrink-0 text-danger" aria-label="Kritikus" />
           )}
           {changed && <span className="shrink-0 text-warning">módosult</span>}
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center">
+          <DuplicateSources deadline={deadline} small />
         </div>
         {showCourse && course && (
           <p className="mt-0.5 flex items-start gap-1 text-[11px] leading-snug text-muted">

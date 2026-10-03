@@ -4,8 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, FileQuestion, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
+import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, isCritical, nextDeadlineFor, weekRangeLabel, weekStartOf } from "@/lib/radar";
 import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
@@ -44,7 +48,8 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const hydrated = useHydrated();
   const course = useStore((s) => s.courses.find((c) => c.id === id));
   const deleteCourse = useStore((s) => s.deleteCourse);
-  const deadlines = useStore((s) => s.deadlines);
+  const { visible: deadlines } = useDedupedDeadlines();
+  const classSessions = useStore((s) => s.classSessions);
   const resourceCount = useStore(
     (s) => s.courses.find((c) => c.id === id)?.resources.length ?? 0
   );
@@ -61,6 +66,10 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const courseDeadlines = useMemo(
     () => deadlines.filter((d) => d.courseId === id),
     [deadlines, id]
+  );
+  const courseSessions = useMemo(
+    () => classSessions.filter((s) => s.courseId === id),
+    [classSessions, id]
   );
   const upcoming = useMemo(
     () =>
@@ -95,6 +104,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const activeTab: TabKey = tab ?? (course.links.length === 0 ? "linkek" : "hataridok");
   const meta = [course.code, course.semester].filter(Boolean).join(" · ");
   const next = nextDeadlineFor(course.id, deadlines, now);
+  const nextClass = nextSessionFor(course.id, courseSessions, now);
   const criticalCount = upcoming.filter((d) => isCritical(d, now)).length;
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
 
@@ -136,6 +146,15 @@ export function CourseWeekDetail({ id }: { id: string }) {
                 </>
               )}
             </p>
+            {nextClass && (
+              <p className="mt-1 text-sm text-muted">
+                Következő óra:{" "}
+                <span className="text-foreground">
+                  {format(new Date(nextClass.start), "EEEE HH:mm", { locale: hu })}
+                  {nextClass.room && `, ${nextClass.room}`}
+                </span>
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
@@ -180,6 +199,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <WeekBoard
           weekStart={weekStart}
           deadlines={courseDeadlines}
+          sessions={courseSessions}
           now={now}
           gutter={isCurrent}
           showCourse={false}

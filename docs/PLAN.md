@@ -1,0 +1,89 @@
+# Roadmap
+
+The working plan for Hallgatói réteg. It lives in the repo so every session (human or agent) starts from the same list. Update it when something ships or the plan changes.
+
+Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent writes a brief, a subagent implements it, the agent reviews it and pushes to a `claude/*` branch, and the owner tests the Vercel preview and merges. The sandbox can't reach `*.vercel.app`, so testing on the deployed site is always the owner's job.
+
+## Done (in `main`)
+
+- **Merged calendar subscription**:
+  - one `.ics` link (`/api/naptar/<token>.ics`) for Apple and Google Calendar, backed by Upstash Redis;
+  - the server re-fetches the source feeds every 15 minutes;
+  - a warning event appears when a feed has been failing for more than 24 hours.
+- **Calendar extras**:
+  - views (`?nezet=osszes|kritikus|zh|targy-<id>`);
+  - a Monday "📋 Heti radar" event;
+  - "📚 Készülés" study blocks before critical deadlines;
+  - a "(módosult)" marker for 48 hours after a due date moves;
+  - past deadlines can be marked done when a feed is added, plus a "Lejártak késznek jelölése" button for existing feeds.
+- **"Night blueprint" restyle**:
+  - graph-paper background, highlighter-yellow and chalk-mint palette, `TraceField` circuit traces;
+  - readability pass: brighter greys, a content scrim, visible borders and button edges.
+- **README** rewritten.
+- **Duplicate removal** (`lib/ical/dedupe.ts`, on by default, toggle in Beállítások → Naptár-előfizetés): source priority manual > canvas > moodle > neptun > other; "+N forrás" pill with "Nem duplikátum"; the calendar emits the primary with a "Források:" block; `ignoredDuplicatePairs` in `AppData`.
+- **Server "(módosult)" fix**: `chg:<token>` record (`lib/server/dueChanges.ts`), so the 48 h window starts when a move is first seen.
+- **Neptun timetable import** (`lib/ical/neptun.ts`): file import in the browser, one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.
+- **Test runner**: `npm test` (`node:test`, `TZ=UTC`) with fixture-based tests for parsing, sync, canvas contexts, export, dedupe, due changes and the Neptun import.
+- **Budapest all-day fix**: an all-day `DTSTART` is 23:59 Budapest time on the server too (`budapestInstant`).
+- **Copy**: the Odyssey/nautical copy is gone (notebook-and-blueprint voice, see `PRODUCT.md`), the logo is a notebook icon.
+
+### Decisions a future session needs
+
+- **Dedupe title containment is whole-token** ("zh" is not inside "ropzh 01"), and the shorter side must be at least 2 tokens or 3 characters, **or a single boilerplate word** (so a bare "ZH" still merges with "Diszkrét matematika I ZH"). `findDuplicates`/`applyDedupe` take `courses` (code and name words are stripped from titles). Exam views now match "kviz" too.
+- **Wrong timetable file**: a file that doesn't look like a Neptun export (`isNeptunCalendar`) only triggers a confirm, not a block, in case a localised Neptun isn't recognised.
+- **The "Órák" toggle only affects the home board**; the course page always shows that course's classes.
+- The fixture `neptun-orarend.ics` has 6 distinct subjects (11 subject/group pairs), not 10.
+- Timetable subjects are never matched to Canvas courses automatically (English names, no codes): the user maps them once. Mapping a subject adds its name to the course's `matchKeywords`.
+
+
+## Step 0: real iCal fixtures (owner, on their computer)
+
+Status: `canvas.ics` and `neptun-orarend.ics` are in `fixtures/ical/`; `moodle.ics` and `neptun-vizsga.ics` are still missing.
+
+Every item below is easier to build and test against real data. Please add the exports you have to `fixtures/ical/` (see [`fixtures/ical/README.md`](../fixtures/ical/README.md) for naming and what to scrub):
+
+| File | Where to get it | Unblocks |
+| --- | --- | --- |
+| `canvas.ics` | Canvas → Calendar → "Calendar Feed" link, open it, save the file | dedup, regression tests |
+| `moodle.ics` | Moodle → Calendar → Export calendar. **ELTE Moodle has export disabled**; enabling it has been requested from ELTE | dedup, regression tests |
+| `neptun-orarend.ics` | Neptun → Órarend / Naptár → export (iCal / .ics), if your Neptun offers it | Neptun timetable import |
+| `neptun-vizsga.ics` | the same, for exams (Vizsgák), if separate | dedup with Canvas exams |
+| anything else (Teams, TMS, Google) | optional | — |
+
+If Neptun has **no** iCal export, note what it does offer (a CSV or Excel timetable export, a printable page, an "add to Google Calendar" button) in the fixtures README. Plan 2 changes accordingly.
+
+## 3. Shared course feeds (later)
+
+Classmates subscribe to one curated feed per course: a "tárgyfelelős" (course owner) student maintains it, and others subscribe.
+
+Sketch:
+- A course can be "published": the server stores a public course snapshot (deadlines and resources only, never personal done or critical state) under a share token.
+- Others add it like an iCal feed (`/api/targy/<token>.ics` + JSON); its deadlines merge with `source: "shared"`.
+- The owner's write secret works like the subscription secret.
+- Moderation and abuse: rate limits like the subscription routes; no free-text pages, only structured data.
+
+This needs an owner decision on privacy wording and on whether this stays accountless.
+
+## 5. Impeccable design skill
+
+The owner wants [Impeccable](https://github.com/pbakaus/impeccable) (design commands `/impeccable audit`, `polish`, `critique`…).
+- The cloud agent may not install it: the permission system blocks skill and hook installs.
+- The owner installs it on their computer from the repo root:
+  ```bash
+  npx impeccable install --providers=claude --scope=project
+  ```
+- Review what it writes to `.claude/`, especially the hooks, then commit and push so cloud sessions get it.
+- First use: `/impeccable init` (writes `PRODUCT.md`), then `/impeccable audit` across `/`, `/radar` and `/beallitasok`.
+
+## Known limitations / small follow-ups
+
+- Neptun exams into dedup once a `neptun-vizsga.ics` fixture exists (the dedupe tests use a synthetic Neptun exam).
+- A Neptun URL feed, if Neptun ever offers one (the optional URL import already goes through `/api/ical`).
+- `moodle.ics` is still missing (ELTE Moodle has export disabled).
+- ~~On the server, "(módosult)" never expires~~ fixed (`chg:<token>`).
+- ~~No automated tests~~ `npm test`.
+- `/targy/[id]` hasn't been screenshot-checked since the restyle, and neither has the timetable UI.
+
+## Suggested order
+
+Plans 1, 2 and 4 and the known limitations above shipped. What remains: the moodle/neptun-vizsga fixtures, then Plan 3 (shared feeds) after an owner decision.

@@ -33,6 +33,22 @@ export function budapestParts(instant: Date): BudapestParts {
   return { date: [parts.year, parts.month, parts.day], hour: parts.hour % 24, minute: parts.minute };
 }
 
+/**
+ * The UTC instant of a Budapest wall-clock time (handles CET/CEST). Guesses the instant as if
+ * Budapest were UTC, reads back what Budapest shows for it and corrects by the difference;
+ * a second pass settles the guess when the offset changed between the two instants.
+ */
+export function budapestInstant([y, m, d]: YMD, hour: number, minute: number): Date {
+  const wanted = Date.UTC(y, m - 1, d, hour, minute);
+  let guess = wanted;
+  for (let i = 0; i < 2; i++) {
+    const shown = budapestParts(new Date(guess));
+    const shownMs = Date.UTC(shown.date[0], shown.date[1] - 1, shown.date[2], shown.hour, shown.minute);
+    guess += wanted - shownMs;
+  }
+  return new Date(guess);
+}
+
 /** The calendar date of an instant in Budapest. */
 export function budapestDate(instant: Date): YMD {
   return budapestParts(instant).date;

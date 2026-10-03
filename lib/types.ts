@@ -88,12 +88,44 @@ export interface IcalFeed {
   markDoneBefore?: string; // ISO; deadlines created by a sync that are due before it start as done
 }
 
+export type SessionKind = "ora" | "vizsga" | "szunnap" | "egyeb";
+
+/** One class meeting (or holiday) of a timetable import. Not a deadline. */
+export interface ClassSession {
+  id: string;
+  sourceId: string; // TimetableSource.id
+  externalUid: string; // VEVENT UID
+  kind: SessionKind;
+  subject: string; // raw subject name ("Discrete mathematics I"), holiday name for szunnap
+  subjectKey: string; // normalizeCourseName(subject), the mapping key
+  group?: string; // "4"
+  teachers: string[];
+  location?: string; // full LOCATION
+  room?: string; // short code in the trailing parentheses: "LD-0-821-01-11"
+  start: string; // ISO
+  end: string; // ISO (== start for holidays)
+  courseId: string | null;
+}
+
+export interface TimetableSource {
+  id: string;
+  name: string; // "Neptun órarend"
+  url?: string; // only when added by URL (re-fetchable through /api/ical)
+  importedAt: string;
+  subjectCourses: Record<string, string | null>; // subjectKey -> courseId (null = skipped)
+}
+
 export interface AppData {
   version: 1;
   courses: Course[];
   deadlines: Deadline[];
   customPlatforms: Platform[];
   feeds: IcalFeed[];
+  /** Pair keys (see lib/ical/dedupe.ts) the user marked "Nem duplikátum". Defaults to []. */
+  ignoredDuplicatePairs: string[];
+  /** Imported timetable (Neptun). Defaults to []. */
+  classSessions: ClassSession[];
+  timetableSources: TimetableSource[];
 }
 
 /**
@@ -112,6 +144,12 @@ export interface ExportOptions {
   alarms: boolean; // VALARMs for critical deadlines
   weeklySummary: boolean; // all-day "Heti radar" event on the Monday of the next 4 weeks
   studyBlocks: boolean; // all-day study block for the 2 days before a critical deadline
+  /**
+   * Merge the same deadline from several sources into one. Governs the in-app lists too
+   * (home, radar, course page, search, notifications), not only the calendar.
+   */
+  dedupe: boolean;
+  includeClasses: boolean; // also put the timetable into "összes" and the course views
 }
 
 /** What the browser uploads for a calendar subscription; the server renders the .ics from it. */
@@ -120,6 +158,8 @@ export interface CalendarSnapshot {
   deadlines: Deadline[];
   feeds: IcalFeed[];
   customPlatforms: Platform[];
+  ignoredDuplicatePairs: string[];
+  classSessions: ClassSession[]; // the server never re-fetches timetables
   options: ExportOptions;
 }
 

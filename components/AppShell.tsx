@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
-import { BellOff, BellRing, LayoutGrid, Radar, Sailboat, Settings } from "lucide-react";
+import { BellOff, BellRing, LayoutGrid, NotebookPen, Radar, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             href="/"
             className="flex shrink-0 items-center gap-2 text-[17px] font-bold tracking-[0.2px] text-heading"
           >
-            <Sailboat className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+            <NotebookPen className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
             <span className="hidden sm:inline">Hallgatói réteg</span>
             <span className="sm:hidden">HR</span>
           </Link>

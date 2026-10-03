@@ -1,5 +1,7 @@
 import ICAL from "ical.js";
-import type { Course, Deadline, ExportOptions } from "@/lib/types";
+import type { ClassSession, Course, Deadline, ExportOptions, IcalFeed, Platform } from "@/lib/types";
+import { applyDedupe } from "@/lib/ical/dedupe";
+import { getPlatform } from "@/lib/platforms";
 import {
   addDays,
   budapestDate,
@@ -33,6 +35,8 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   alarms: true,
   weeklySummary: true,
   studyBlocks: true,
+  dedupe: true,
+  includeClasses: false,
 };
 
 export interface HealthWarning {
@@ -51,6 +55,12 @@ export interface BuildCalendarInput {
   warnings?: HealthWarning[];
   /** Filtered view of the calendar; the full calendar when omitted. */
   view?: CalendarView;
+  /** For duplicate detection (options.dedupe) and the "Források" block. */
+  feeds?: IcalFeed[];
+  customPlatforms?: Platform[];
+  ignoredDuplicatePairs?: string[];
+  /** Timetable; only exported in the "orarend" view or with options.includeClasses. */
+  classSessions?: ClassSession[];
 }
 
 /** Short non-cryptographic hash (two independent 32-bit hashes, 16 hex chars). */
@@ -88,12 +98,21 @@ function addAlarm(vevent: ICAL.Component, trigger: string, description: string) 
   vevent.addSubcomponent(alarm);
 }
 
+function sourceName(d: Deadline, feeds: IcalFeed[], customPlatforms: Platform[]): string {
+  if (d.source === "manual") return "Kézi";
+  const feed = d.feedId ? feeds.find((f) => f.id === d.feedId) : undefined;
+  return getPlatform(feed?.platformId ?? d.platformId, customPlatforms).name;
+}
+
 function buildDeadlineEvent(
   d: Deadline,
   course: Course | undefined,
   options: ExportOptions,
   now: Date,
-  appUrl: string | undefined
+  appUrl: string | undefined,
+  copies: Deadline[] | undefined,
+  feeds: IcalFeed[],
+  customPlatforms: Platform[]
 ): ICAL.Component {
   const vevent = new ICAL.Component("vevent");
   const due = new Date(d.due);
@@ -117,6 +136,15 @@ function buildDeadlineEvent(
   }
   if (d.note) description.push(d.note);
   if (d.url) description.push(d.url);
+  if (copies && copies.length > 0) {
+    description.push(
+      "Források:",
+      ...[d, ...copies].map((c) => {
+        const name = sourceName(c, feeds, customPlatforms);
+        return c.url ? `• ${name}: ${c.url}` : `• ${name}`;
+      })
+    );
+  }
   if (appUrl && course) description.push(`Megnyitás: ${appUrl}/targy/${course.id}`);
   if (description.length > 0) {
     vevent.addPropertyWithValue("description", description.join("\n"));
@@ -213,6 +241,44 @@ function buildStudyBlock(
   return event;
 }
 
+/** Sessions are identified like feed deadlines: by source and source UID, never by id. */
+export function sessionUid(s: ClassSession): string {
+  return `class-${s.sourceId}-${shortHash(s.externalUid)}@${UID_DOMAIN}`;
+}
+
+function buildSessionEvent(
+  s: ClassSession,
+  course: Course | undefined,
+  now: Date
+): ICAL.Component {
+  const vevent = new ICAL.Component("vevent");
+  vevent.addPropertyWithValue("uid", sessionUid(s));
+  vevent.addPropertyWithValue("dtstamp", utcTime(now));
+  vevent.addPropertyWithValue("dtstart", utcTime(new Date(s.start)));
+  vevent.addPropertyWithValue("dtend", utcTime(new Date(s.end)));
+  const label = course ? course.code || course.name : "";
+  const title = `${s.subject}${s.group ? ` (${s.group})` : ""}`;
+  vevent.addPropertyWithValue("summary", `${label && s.kind !== "egyeb" ? `[${label}] ` : ""}${title}`);
+  if (s.location) vevent.addPropertyWithValue("location", s.location);
+  if (s.teachers.length > 0) {
+    vevent.addPropertyWithValue("description", `Oktató: ${s.teachers.join(", ")}`);
+  }
+  if (course) vevent.addPropertyWithValue("categories", course.name);
+  return vevent;
+}
+
+function buildHolidayEvent(s: ClassSession, now: Date): ICAL.Component {
+  const day = budapestDate(new Date(s.start));
+  const event = allDayEvent(
+    `class-${s.sourceId}-${shortHash(s.externalUid)}@${UID_DOMAIN}`,
+    day,
+    addDays(day, 1),
+    now
+  );
+  event.addPropertyWithValue("summary", `Szünnap: ${s.subject}`);
+  return event;
+}
+
 function buildWarningEvent(
   warning: HealthWarning,
   today: [number, number, number],
@@ -249,8 +315,18 @@ export function buildCalendar(input: BuildCalendarInput): string {
   const { courses, now, warnings = [] } = input;
   // Re-parsing guards against a course view whose course no longer exists.
   const view = input.view ? parseView(viewParam(input.view), courses) : ALL_VIEW;
-  const deadlines = filterDeadlinesForView(input.deadlines, view);
   const options: ExportOptions = { ...DEFAULT_EXPORT_OPTIONS, ...input.options };
+  const feeds = input.feeds ?? [];
+  const customPlatforms = input.customPlatforms ?? [];
+  // Merge duplicates before filtering the view, so a group is judged as a whole.
+  const { visible, extras } = applyDedupe(
+    input.deadlines,
+    feeds,
+    input.ignoredDuplicatePairs ?? [],
+    options.dedupe,
+    courses
+  );
+  const deadlines = filterDeadlinesForView(visible, view);
   const appUrl = input.appUrl?.replace(/\/+$/, "") || undefined;
 
   const cal = new ICAL.Component("vcalendar");
@@ -277,9 +353,26 @@ export function buildCalendar(input: BuildCalendarInput): string {
     if (seen.has(uid)) continue; // UIDs must be unique within a calendar
     seen.add(uid);
     const course = d.courseId ? courseById.get(d.courseId) : undefined;
-    cal.addSubcomponent(buildDeadlineEvent(d, course, options, now, appUrl));
+    cal.addSubcomponent(buildDeadlineEvent(d, course, options, now, appUrl, extras.get(d.id), feeds, customPlatforms)
+    );
     if (options.studyBlocks && d.critical && !d.done && dueMs > now.getTime()) {
       cal.addSubcomponent(buildStudyBlock(d, course, now));
+    }
+  }
+
+  const sessions = input.classSessions ?? [];
+  const includeSessions = view.kind === "timetable" || (options.includeClasses && (view.kind === "all" || view.kind === "course"));
+  if (includeSessions) {
+    for (const s of sessions) {
+      if (view.kind === "course" && s.courseId !== view.courseId) continue;
+      if (s.kind === "szunnap") {
+        if (view.kind !== "course") cal.addSubcomponent(buildHolidayEvent(s, now));
+        continue;
+      }
+      if (Number.isNaN(new Date(s.start).getTime())) continue;
+      cal.addSubcomponent(
+        buildSessionEvent(s, s.courseId ? courseById.get(s.courseId) : undefined, now)
+      );
     }
   }
 
@@ -289,7 +382,7 @@ export function buildCalendar(input: BuildCalendarInput): string {
     }
   }
 
-  if (warnings.length > 0) {
+  if (warnings.length > 0 && view.kind !== "timetable") {
     const today = budapestDate(now);
     for (const warning of warnings) {
       cal.addSubcomponent(buildWarningEvent(warning, today, now, appUrl));

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { dueNotifications } from "@/lib/notifications";
+import { applyDedupe } from "@/lib/ical/dedupe";
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -21,10 +22,18 @@ export function NotificationScheduler() {
       } catch {
         return;
       }
-      const { notificationPrefs, notifiedKeys, deadlines, courses, markNotified } =
-        useStore.getState();
+      const state = useStore.getState();
+      const { notificationPrefs, notifiedKeys, courses, markNotified } = state;
       if (!notificationPrefs.enabled) return;
 
+      // One notification per merged deadline, not one per source.
+      const { visible: deadlines } = applyDedupe(
+        state.deadlines,
+        state.feeds,
+        state.ignoredDuplicatePairs,
+        state.exportOptions.dedupe,
+        courses
+      );
       const pending = dueNotifications(
         deadlines,
         courses,
