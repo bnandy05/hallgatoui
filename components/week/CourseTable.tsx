@@ -7,7 +7,6 @@ import { useStore } from "@/lib/store";
 import { getPlatform } from "@/lib/platforms";
 import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
 import type { Course, CourseLink } from "@/lib/types";
-import { NEW_LAYOUT_BASE } from "@/lib/routes";
 import { CourseDialog } from "@/components/CourseDialog";
 import { LinkEditor } from "@/components/LinkEditor";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -66,7 +65,7 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
         />
         <div className="min-w-0">
           <Link
-            href={`${NEW_LAYOUT_BASE}/targy/${course.id}`}
+            href={`/targy/${course.id}`}
             className="block truncate font-bold text-heading hover:text-accent-text hover:underline hover:underline-offset-2"
           >
             {course.name}
@@ -81,7 +80,7 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
         ))}
         {extra > 0 && (
           <Link
-            href={`${NEW_LAYOUT_BASE}/targy/${course.id}`}
+            href={`/targy/${course.id}`}
             className="inline-flex h-7 items-center rounded-md border border-border px-1.5 text-xs text-muted hover:border-border-strong hover:text-foreground"
           >
             +{extra}

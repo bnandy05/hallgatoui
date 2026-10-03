@@ -7,7 +7,6 @@ import { ChevronRight, FileQuestion, Pencil, Plus, Settings2, Trash2 } from "luc
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { formatRelative, isCritical, nextDeadlineFor, weekRangeLabel, weekStartOf } from "@/lib/radar";
-import { NEW_LAYOUT_BASE } from "@/lib/routes";
 import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DeadlineItem } from "@/components/DeadlineItem";
@@ -25,7 +24,7 @@ type TabKey = "hataridok" | "tudasbazis" | "linkek";
 
 function BackLink() {
   return (
-    <Link href={NEW_LAYOUT_BASE} className="w-fit text-sm text-muted hover:text-foreground">
+    <Link href="/" className="w-fit text-sm text-muted hover:text-foreground">
       ← Heti menetrend
     </Link>
   );
@@ -83,7 +82,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
           title="A tárgy nem található"
           text="Lehet, hogy törölve lett, vagy hibás a link."
           action={
-            <Link href={NEW_LAYOUT_BASE} className={buttonClasses({ variant: "secondary" })}>
+            <Link href="/" className={buttonClasses({ variant: "secondary" })}>
               Vissza a menetrendhez
             </Link>
           }
@@ -103,7 +102,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
     if (!course) return;
     if (confirm("Biztosan törlöd?")) {
       setDeleting(true);
-      router.push(NEW_LAYOUT_BASE);
+      router.push("/");
       deleteCourse(course.id);
     }
   }

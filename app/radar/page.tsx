@@ -1,35 +1,33 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Radar } from "lucide-react";
+import { Flame, Plus, Radar } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { getPlatform } from "@/lib/platforms";
-import { groupByWeek, urgencyOf, weekSummary } from "@/lib/radar";
+import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Pill } from "@/components/ui/Pill";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { WeekSummaryTerminal } from "@/components/WeekSummaryTerminal";
 import { Select } from "@/components/ui/Select";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
-import { DeadlineItem } from "@/components/DeadlineItem";
+import { DeadlineChip } from "@/components/week/DeadlineChip";
+import { WeekBoard } from "@/components/week/WeekBoard";
 
 const NO_COURSE = "__none__";
 
 function RadarSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="h-6 w-48 animate-pulse rounded-md bg-border/40" />
-      <div className="h-16 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
-      <div className="h-40 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-14 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-56 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-56 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
     </div>
   );
 }
 
-export default function RadarPage() {
+export default function WeekRadarPage() {
   const hydrated = useHydrated();
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
@@ -38,21 +36,17 @@ export default function RadarPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [showDone, setShowDone] = useState(false);
+  const [criticalOnly, setCriticalOnly] = useState(false);
   const [platformFilter, setPlatformFilter] = useState("");
   const [now] = useState(() => new Date());
 
-  const hasUnassigned = useMemo(
-    () => deadlines.some((d) => d.courseId === null),
-    [deadlines]
-  );
-
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));
-    if (hasUnassigned) {
+    if (deadlines.some((d) => d.courseId === null)) {
       chips.push({ id: NO_COURSE, name: "Nincs tárgy", color: "#6a7c96" });
     }
     return chips;
-  }, [courses, hasUnassigned]);
+  }, [courses, deadlines]);
 
   const platformsInUse = useMemo(() => {
     const ids = new Set(
@@ -69,46 +63,48 @@ export default function RadarPage() {
         return next;
       }
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      if (next.size === courseChips.length) {
-        return new Set();
-      }
-      return next;
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next.size === courseChips.length ? new Set() : next;
     });
   }
 
-  const summary = useMemo(() => weekSummary(deadlines, now), [deadlines, now]);
+  const horizon = useMemo(() => {
+    const open = deadlines.filter((d) => !d.done);
+    return {
+      open: open.length,
+      critical: open.filter((d) => isCritical(d, now)).length,
+      changed: open.filter((d) => d.previousDue && isRecentlyChanged(d, now)).length,
+    };
+  }, [deadlines, now]);
 
-  const filtered = useMemo(() => {
-    return deadlines.filter((d) => {
-      if (!showDone && d.done) return false;
-      const courseKey = d.courseId ?? NO_COURSE;
-      if (selectedCourses.size > 0 && !selectedCourses.has(courseKey)) return false;
-      if (platformFilter && d.platformId !== platformFilter) return false;
-      return true;
-    });
-  }, [deadlines, showDone, selectedCourses, platformFilter]);
+  const filtered = useMemo(
+    () =>
+      deadlines.filter((d) => {
+        if (!showDone && d.done) return false;
+        if (criticalOnly && !isCritical(d, now)) return false;
+        if (selectedCourses.size > 0 && !selectedCourses.has(d.courseId ?? NO_COURSE)) return false;
+        if (platformFilter && d.platformId !== platformFilter) return false;
+        return true;
+      }),
+    [deadlines, showDone, criticalOnly, selectedCourses, platformFilter, now]
+  );
 
-  const { overdueItems, groups } = useMemo(() => {
-    const overdue = filtered
-      .filter((d) => urgencyOf(d, now) === "overdue")
-      .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
-    const rest = filtered.filter((d) => urgencyOf(d, now) !== "overdue");
-    return { overdueItems: overdue, groups: groupByWeek(rest, now) };
+  const { overdue, weeks } = useMemo(() => {
+    const isOverdue = (d: (typeof filtered)[number]) => urgencyOf(d, now) === "overdue";
+    return {
+      overdue: filtered
+        .filter(isOverdue)
+        .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime()),
+      weeks: groupByWeek(filtered.filter((d) => !isOverdue(d)), now),
+    };
   }, [filtered, now]);
 
-  if (!hydrated) {
-    return <RadarSkeleton />;
-  }
-
-  const nothingToShow = overdueItems.length === 0 && groups.length === 0;
+  const filtersActive =
+    selectedCourses.size > 0 || showDone || criticalOnly || platformFilter !== "";
 
   return (
-    <div className="flex flex-col gap-8 sm:gap-12">
+    <div className="flex flex-col gap-8 sm:gap-10">
       <SectionHeading
         as="h1"
         eyebrow="Határidő-radar"
@@ -118,7 +114,7 @@ export default function RadarPage() {
             Ami közeleg, azt <span className="grad">látod</span>.
           </>
         }
-        sub="Hetekre bontva, sürgősség szerint. Semmi nem lopakodik mögéd."
+        sub="Minden hét egy tábla, hétfőtől vasárnapig. A lejárt elemek legfelül várnak."
         aside="(A szirének is határidőket énekelnek. Kösd magad az árbochoz.)"
         actions={
           <Button type="button" onClick={() => setAddOpen(true)}>
@@ -128,89 +124,159 @@ export default function RadarPage() {
         }
       />
 
-      <WeekSummaryTerminal total={summary.total} critical={summary.critical} />
-
-      <Card className="flex flex-col gap-3 !p-4">
-        {courseChips.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {courseChips.map((chip) => {
-              const active = selectedCourses.size === 0 || selectedCourses.has(chip.id);
-              return (
-                <Pill key={chip.id} active={active} onClick={() => toggleCourse(chip.id)}>
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: chip.color }}
-                  />
-                  {chip.name}
-                </Pill>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={showDone}
-              onChange={(e) => setShowDone(e.target.checked)}
-              className="h-4 w-4 accent-accent"
-            />
-            Kész elemek mutatása
-          </label>
-
-          <Select
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value)}
-            className="max-w-xs"
-            aria-label="Platform szűrő"
-          >
-            <option value="">Minden platform</option>
-            {platformsInUse.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </Card>
-
-      {nothingToShow ? (
-        <p className="text-sm text-muted">
-          Nincs megjeleníthető határidő.{" "}
-          <span className="text-[11.5px] text-muted-dim">(Gyanúsan nyugodt a tenger.)</span>
-        </p>
+      {!hydrated ? (
+        <RadarSkeleton />
       ) : (
-        <div className="flex flex-col gap-8">
-          {overdueItems.length > 0 && (
-            <Reveal className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-              <div className="sticky top-20 self-start">
-                <Eyebrow className="!text-danger">Lejárt</Eyebrow>
-              </div>
-              <div className="flex flex-col gap-2">
-                {overdueItems.map((d) => (
-                  <DeadlineItem key={d.id} deadline={d} />
-                ))}
-              </div>
-            </Reveal>
-          )}
+        <>
+          <p className="-mt-2 text-sm text-muted sm:-mt-4">
+            A teljes láthatár: {horizon.open} nyitott elem
+            {horizon.critical > 0 && (
+              <>
+                , ebből <span className="font-semibold text-danger">{horizon.critical} kritikus</span>
+              </>
+            )}
+            {horizon.changed > 0 && (
+              <>
+                , <span className="text-warning">{horizon.changed} módosult</span> az elmúlt 48 órában
+              </>
+            )}
+            .
+          </p>
 
-          {groups.map((group) => (
-            <Reveal
-              key={group.weekStart.toISOString()}
-              className="grid gap-3 sm:grid-cols-[10rem_1fr]"
-            >
-              <div className="sticky top-20 self-start">
-                <Eyebrow>{group.label}</Eyebrow>
+          <div
+            role="search"
+            aria-label="Szűrők"
+            className="sticky top-[68px] z-[5] flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-[rgba(20,28,46,0.94)] px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-[10px]"
+          >
+            {courseChips.length > 0 && (
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:thin] sm:flex-wrap sm:overflow-visible">
+                {courseChips.map((chip) => {
+                  const active = selectedCourses.size === 0 || selectedCourses.has(chip.id);
+                  return (
+                    <Pill
+                      key={chip.id}
+                      active={active}
+                      onClick={() => toggleCourse(chip.id)}
+                      className="shrink-0"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: chip.color }}
+                      />
+                      {chip.name}
+                    </Pill>
+                  );
+                })}
               </div>
-              <div className="flex flex-col gap-2">
-                {group.items.map((d) => (
-                  <DeadlineItem key={d.id} deadline={d} />
+            )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)}>
+                <Flame className="h-3.5 w-3.5" />
+                Csak kritikus
+              </Pill>
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={showDone}
+                  onChange={(e) => setShowDone(e.target.checked)}
+                  className="h-4 w-4 accent-accent"
+                />
+                Kész elemek is
+              </label>
+              <Select
+                value={platformFilter}
+                onChange={(e) => setPlatformFilter(e.target.value)}
+                className="!w-auto max-w-[14rem] !py-1.5"
+                aria-label="Platform szűrő"
+              >
+                <option value="">Minden platform</option>
+                {platformsInUse.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
-              </div>
-            </Reveal>
-          ))}
-        </div>
+              </Select>
+              <span className="ml-auto text-xs tabular-nums text-muted">
+                {filtered.length} elem
+                {filtersActive && (
+                  <>
+                    {" · "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCourses(new Set());
+                        setShowDone(false);
+                        setCriticalOnly(false);
+                        setPlatformFilter("");
+                      }}
+                      className="text-accent-text hover:underline"
+                    >
+                      szűrők törlése
+                    </button>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {overdue.length === 0 && weeks.length === 0 ? (
+            <p className="text-sm text-muted">
+              Nincs megjeleníthető határidő.{" "}
+              <span className="text-[11.5px] text-muted-dim">(Gyanúsan nyugodt a tenger.)</span>
+            </p>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {overdue.length > 0 && (
+                <Reveal>
+                  <section
+                    aria-labelledby="overdue-heading"
+                    className="flex flex-col gap-3 rounded-[var(--radius)] border border-danger/40 bg-danger/[0.06] p-4"
+                  >
+                    <h2
+                      id="overdue-heading"
+                      className="flex items-baseline gap-2 text-xs font-bold uppercase tracking-[0.12em] text-danger"
+                    >
+                      Lejárt
+                      <span className="font-normal tabular-nums text-danger/80">{overdue.length}</span>
+                    </h2>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
+                      {overdue.map((d) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showDate />
+                      ))}
+                    </div>
+                  </section>
+                </Reveal>
+              )}
+
+              {weeks.map((week) => (
+                <Reveal key={week.weekStart.toISOString()}>
+                  <section className="flex flex-col gap-3" aria-label={week.label}>
+                    <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-[clamp(17px,2.2vw,21px)] font-bold text-heading">
+                        {week.label}
+                      </span>
+                      {!/\d/.test(week.label) && (
+                        <span className="text-sm text-muted">{weekRangeLabel(week.weekStart)}</span>
+                      )}
+                      <span className="text-xs tabular-nums text-muted-dim">
+                        {week.items.length} elem
+                      </span>
+                    </h2>
+                    <WeekBoard
+                      weekStart={week.weekStart}
+                      deadlines={week.items}
+                      now={now}
+                      label={week.label}
+                      hideEmptyDays
+                      dense
+                    />
+                  </section>
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <DeadlineDialog open={addOpen} onClose={() => setAddOpen(false)} />

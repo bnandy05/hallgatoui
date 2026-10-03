@@ -2,72 +2,152 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarPlus, LayoutGrid, Plus, Sparkles } from "lucide-react";
+import { CalendarPlus, CalendarRange, LayoutGrid, Plus, Sparkles } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { useHydrated } from "@/lib/useHydrated";
+import { addDays } from "date-fns";
+import { weekRangeLabel, weekStartOf, weekSummary } from "@/lib/radar";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { CourseCard } from "@/components/CourseCard";
 import { CourseDialog } from "@/components/CourseDialog";
+import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DiscoveryBanner } from "@/components/DiscoveryBanner";
-import { RadarWidget } from "@/components/RadarWidget";
-import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { CourseTable } from "@/components/week/CourseTable";
+import { WeekBoard } from "@/components/week/WeekBoard";
+import { WeekNav } from "@/components/week/WeekNav";
 
-function CourseGridSkeleton() {
+function HomeSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="h-32 animate-pulse rounded-[var(--radius)] border border-border bg-border/40"
-        />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="h-64 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-40 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
     </div>
   );
 }
 
-export default function Home() {
+export default function WeekHome() {
   const hydrated = useHydrated();
   const courses = useStore((s) => s.courses);
+  const deadlines = useStore((s) => s.deadlines);
   const loadDemo = useStore((s) => s.loadDemo);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [now] = useState(() => new Date());
+  const currentWeekStart = useMemo(() => weekStartOf(now), [now]);
+  const [weekStart, setWeekStart] = useState(currentWeekStart);
+  const [courseOpen, setCourseOpen] = useState(false);
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
 
+  const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
+  const summary = useMemo(() => weekSummary(deadlines, now), [deadlines, now]);
   const sortedCourses = useMemo(
     () => [...courses].sort((a, b) => a.name.localeCompare(b.name, "hu")),
     [courses]
   );
+  const range = weekRangeLabel(weekStart);
+  const nextWeekStart = addDays(currentWeekStart, 7);
+  const nextWeekCount = deadlines.filter((d) => {
+    const due = new Date(d.due).getTime();
+    return !d.done && due >= nextWeekStart.getTime() && due < addDays(nextWeekStart, 7).getTime();
+  }).length;
 
   return (
-    <div className="flex flex-col gap-8 sm:gap-12">
-      <div className="py-6">
+    <div className="flex flex-col gap-10 sm:gap-14">
+      <section className="flex flex-col gap-5" aria-labelledby="week-heading">
         <SectionHeading
           as="h1"
-          eyebrow="Tárgyaim"
-          icon={LayoutGrid}
+          eyebrow="Heti menetrend"
+          icon={CalendarRange}
           title={
+            <span id="week-heading">
+              {isCurrent ? (
+                <>
+                  Ez a hét: <span className="grad">{range}</span>
+                </>
+              ) : (
+                range
+              )}
+            </span>
+          }
+          sub={
+            isCurrent ? (
+              <>
+                {summary.total} határidő jár le a héten, ebből{" "}
+                <span className={summary.critical > 0 ? "font-semibold text-danger" : undefined}>
+                  {summary.critical} kritikus
+                </span>
+                .
+              </>
+            ) : (
+              "Egy másik hét a menetrendből. A lejárt elemek az aktuális hétnél vannak."
+            )
+          }
+          aside="(Ithaka messze van. A péntek közelebb.)"
+          actions={
             <>
-              Minden tárgyad, <span className="grad">egy fedélzeten</span>.
+              <WeekNav
+                weekStart={weekStart}
+                currentWeekStart={currentWeekStart}
+                onChange={setWeekStart}
+              />
+              <Button type="button" onClick={() => setDeadlineOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Határidő
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setCourseOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Tárgy
+              </Button>
             </>
           }
-          sub="Linkek, anyagok és határidők egy helyen, a saját böngésződben tárolva."
-          aside="(Odüsszeusz tíz évig hajózott hazafelé. Neked csak egy félév jutott.)"
-          actions={
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Új tárgy
-            </Button>
-          }
         />
-      </div>
 
-      {!hydrated ? (
-        <CourseGridSkeleton />
-      ) : (
-        <>
-          <DiscoveryBanner />
-          <RadarWidget />
+        {!hydrated ? (
+          <HomeSkeleton />
+        ) : (
+          <>
+            <DiscoveryBanner />
+            <WeekBoard
+              weekStart={weekStart}
+              deadlines={deadlines}
+              now={now}
+              gutter={isCurrent}
+              label={`Heti menetrend, ${range}`}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              {deadlines.length === 0 ? (
+                <p className="text-muted">
+                  Még nincs határidőd.{" "}
+                  <Link
+                    href="/beallitasok#naptarak"
+                    className="text-accent-text hover:underline"
+                  >
+                    Kösd be a Canvas/Moodle naptárad
+                  </Link>
+                  , és magától megtelik.
+                </p>
+              ) : (
+                <p className="text-muted-dim">Pipáld ki, ami kész. A címre kattintva minden részlet.</p>
+              )}
+              <Link
+                href="/radar"
+                className="font-medium text-accent-text hover:underline"
+              >
+                {isCurrent ? `Jövő hét: ${nextWeekCount} határidő · radar →` : "Több hét a radaron →"}
+              </Link>
+            </div>
+          </>
+        )}
+      </section>
 
+      {hydrated && (
+        <section className="flex flex-col gap-5">
+          <SectionHeading
+            eyebrow="Tárgyaim"
+            icon={LayoutGrid}
+            title="Egy kattintás a platformig."
+            sub="Minden tárgy egy sor: a platformjai, a következő határideje és hogy hány dolog van még nyitva."
+          />
           {sortedCourses.length === 0 ? (
             <EmptyState
               icon={Plus}
@@ -76,7 +156,7 @@ export default function Home() {
               aside="(Az első tárgy a legnehezebb. Utána már csak a ZH-k.)"
               action={
                 <>
-                  <Button onClick={() => setCreateOpen(true)}>Új tárgy</Button>
+                  <Button onClick={() => setCourseOpen(true)}>Új tárgy</Button>
                   <Link
                     href="/beallitasok#naptarak"
                     className={buttonClasses({ variant: "secondary" })}
@@ -92,16 +172,15 @@ export default function Home() {
               }
             />
           ) : (
-            <Reveal stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {sortedCourses.map((course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
+            <Reveal>
+              <CourseTable courses={sortedCourses} now={now} />
             </Reveal>
           )}
-        </>
+        </section>
       )}
 
-      <CourseDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CourseDialog open={courseOpen} onClose={() => setCourseOpen(false)} />
+      <DeadlineDialog open={deadlineOpen} onClose={() => setDeadlineOpen(false)} />
     </div>
   );
 }
