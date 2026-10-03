@@ -149,6 +149,105 @@ body {
   }
 }
 
+/* ── Week board motion ─────────────────────────────────────────────────────────────
+   Everything animates *from* a hidden keyframe with `backwards` fill, so the resting
+   state is the plain, visible markup and a skipped animation changes nothing. */
+
+/* First load: the day columns are ruled onto the page left to right, like a pen drawing
+   them down the sheet. --i is the column index (set inline by WeekBoard). */
+[data-board-motion="intro"] > .board-col {
+  animation: board-rule 0.5s var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes board-rule {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.2;
+  }
+}
+
+/* Week navigation: the frame stays put, the days slide in from the side you moved to. */
+[data-board-motion="next"] > .board-col {
+  animation: board-from-next 0.32s var(--ease-out-expo) backwards;
+}
+[data-board-motion="prev"] > .board-col {
+  animation: board-from-prev 0.32s var(--ease-out-expo) backwards;
+}
+@keyframes board-from-next {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+    filter: blur(2px);
+  }
+}
+@keyframes board-from-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+    filter: blur(2px);
+  }
+}
+
+/* The red margin line is drawn down through today's column, after the columns land. */
+.now-line::before {
+  transform-origin: top;
+  animation: now-draw 0.7s var(--ease-out-expo) 0.12s backwards;
+}
+[data-board-motion="intro"] .now-line::before {
+  animation-delay: 0.45s;
+}
+@keyframes now-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* Ticking a deadline off: a strike is drawn through the title instead of snapping on.
+   A background on an inline box sweeps across wrapped lines in reading order. */
+.strike {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 0% 1px;
+  transition:
+    background-size 0.32s var(--ease-out-expo),
+    color 0.2s var(--ease-out);
+}
+.strike[data-done="true"] {
+  background-size: 100% 1px;
+}
+
+/* Dialogs rise a few pixels into place; the backdrop fades. Closing is instant because the
+   content unmounts on close (an exit fade would show an empty sheet collapsing). */
+dialog.sheet[open] {
+  animation: sheet-in 0.28s var(--ease-out-expo);
+}
+dialog.sheet[open]::backdrop {
+  animation: backdrop-in 0.24s var(--ease-out);
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A tab panel settles in when it is shown (the `hidden` toggle restarts the animation). */
+.panel-in {
+  animation: panel-in 0.22s var(--ease-out-expo);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
 @media (max-width: 639px) {
   :root {
     --margin-x: 16px;
@@ -172,5 +271,25 @@ body {
   .lift:hover,
   .lift-sm:hover {
     transform: none !important;
+  }
+  /* Reduced motion keeps the meaning, drops the movement: the board and panels cross-fade,
+     the now-line and strike simply appear, dialogs fade without rising. */
+  [data-board-motion] > .board-col {
+    animation: board-fade 0.2s linear backwards !important;
+  }
+  .now-line::before {
+    animation: none;
+  }
+  .strike {
+    transition: color 0.2s linear;
+  }
+  dialog.sheet[open],
+  .panel-in {
+    animation-name: backdrop-in;
+  }
+}
+@keyframes board-fade {
+  from {
+    opacity: 0;
   }
 }

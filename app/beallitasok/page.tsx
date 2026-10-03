@@ -19,7 +19,7 @@ type SectionKey = (typeof SECTIONS)[number];
 
 // Anchors used by links elsewhere in the app, mapped onto their tab.
 const HASH_ALIASES: Record<string, SectionKey> = { "naptar-elofizetes": "elofizetes" };
-const HASH_EVENT = "uj-settings-hash";
+const HASH_EVENT = "settings-hash";
 
 function sectionFromHash(hash: string): SectionKey {
   const key = decodeURIComponent(hash.replace(/^#/, ""));

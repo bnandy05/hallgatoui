@@ -51,10 +51,12 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
           type="button"
           onClick={() => setOpen(true)}
           className={`line-clamp-2 w-full text-left text-[12.5px] font-medium leading-snug [overflow-wrap:anywhere] hover:text-accent-text hover:underline hover:underline-offset-2 ${
-            deadline.done ? "text-muted line-through" : "text-foreground"
+            deadline.done ? "text-muted" : "text-foreground"
           }`}
         >
-          {deadline.title}
+          <span className="strike" data-done={deadline.done}>
+            {deadline.title}
+          </span>
         </button>
         <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted">
           <span className={`shrink-0 tabular-nums ${hot && !deadline.done ? "text-danger" : ""}`}>

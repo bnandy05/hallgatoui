@@ -176,7 +176,7 @@ The app is an engineering notebook open on a desk at night. The page is ink-navy
 
 Density is that of a working tool rather than a showcase. A surface carries a compact header row, then a board or table that fills the 1240px container, with 11-14px type doing most of the work. Time is the structural spine: the week board lays deadlines out Monday to Sunday, so urgency reads from position (left of the now-line is late) before any colour or badge does.
 
-Motion is short and functional: a 1-2px hover lift on interactive surfaces, a 24px rise-in for content on scroll, and nothing at all under `prefers-reduced-motion`.
+Motion is short and functional, with one authored moment: on first load the week board's columns are ruled onto the page left to right and the red now-line is drawn down today's column. Everything else is feedback and continuity (a 1-2px hover lift, a slide when the week changes, a strike drawn through a ticked deadline, dialogs rising into place, a 24px rise-in for content on scroll). Under `prefers-reduced-motion` movement goes and meaning stays: cross-fades and instant state changes.
 
 **Key Characteristics:**
 - Dark only (`color-scheme: dark`): graph-paper page, lighter panel sheets, darker inset wells.
@@ -247,11 +247,22 @@ A night-ink palette: navy neutrals in three tonal layers, one warm highlighter a
 
 ## Layout
 
-The shell is a sticky 60px header over a centred container (1240px on the restructured routes, 1080px on the original routes) with 22px side gutters (16px on mobile). A fixed `content-scrim` band of page colour sits behind the container so text without a card stays readable over the grid and traces. Main content runs 40px top padding and stacks sections with 32-40px gaps.
+The shell is a sticky 60px header over a centred 1240px container with 22px side gutters (16px on mobile). A fixed `content-scrim` band of page colour sits behind the container so text without a card stays readable over the grid and traces. Main content runs 40px top padding and stacks sections with 32-40px gaps.
 
 The page grid is literal: the body background is 24px/120px graph paper anchored to the viewport origin, and the red margin line sits at `--margin-x` (56px, 16px below 640px).
 
 Responsive behaviour follows two breakpoints. At `lg` (1024px) the week board becomes a 7-column grid (8 with the overdue gutter, which takes 1.05fr), the course table gains its header row and 4-column template, and settings tabs stack vertically in a 13rem sticky rail. Below `lg` the board becomes one row per day (5.5rem label column, then items), hides settled past days so it effectively starts at today, and tabs scroll sideways. Below `sm` (640px) the course table rows stack.
+
+## Motion
+
+Two easings: `--ease-out` for routine state (hover, colour) and `--ease-out-expo` (`cubic-bezier(0.16, 1, 0.3, 1)`) for arrivals. Every entrance animates *from* a hidden keyframe with `backwards` fill, so the resting markup is always the visible state. All motion CSS lives in `globals.css`.
+
+- **Board intro (signature):** the lead board (`WeekBoard intro`: home and course page) clips each column in from the top, 0.5s, 45ms stagger via `--i`. Then today's now-line draws downward (`scaleY` from the top, 0.7s, 0.45s delay). Boards without `intro` (radar) only draw the now-line.
+- **Week change:** `data-board-motion="next|prev"`; the columns re-key on the week and slide 28px in from the side moved to, with a 2px blur clearing, 0.32s. The board frame does not move.
+- **Done strike:** `.strike[data-done]` sweeps a 1px currentColor line across the title (background-size, 0.32s), across wrapped lines in reading order. Replaces `line-through`.
+- **Dialog:** `dialog.sheet[open]` rises 10px from 98.5% scale, 0.28s; backdrop fades 0.24s. Closing is instant (children unmount on close).
+- **Tab panel:** `.panel-in` settles 4px, 0.22s, each time a panel is shown.
+- **Reduced motion:** board columns and panels cross-fade, dialogs fade, the strike and now-line appear without drawing.
 
 ## Elevation & Depth
 
@@ -342,7 +353,7 @@ Native `<dialog>`, Panel Navy, 8px radius, blueprint border, 32rem (lg: 42rem) m
 - **Do** show course identity as a small colour dot next to the course name.
 - **Do** use tabular figures for every time, date and count.
 - **Do** keep every edge visible with the 1px blueprint border; strengthen it (`--border-strong`) or turn it yellow on hover.
-- **Do** honour `prefers-reduced-motion`: no lifts, reveals, smooth scroll or cursor blink.
+- **Do** honour `prefers-reduced-motion`: no lifts, slides, reveals, line draws, smooth scroll or cursor blink; keep opacity and colour changes that carry state.
 - **Do** use lucide-react icons for every icon.
 
 ### Don't:

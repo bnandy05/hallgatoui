@@ -204,6 +204,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
           gutter={isCurrent}
           showCourse={false}
           dense
+          intro
           emptyDay="Ezen a héten nincs nyitott határidő."
           label={`${course.name}, ${weekRangeLabel(weekStart)}`}
         />
