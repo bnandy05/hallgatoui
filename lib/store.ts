@@ -6,29 +6,22 @@ import type {
   Course,
   CourseLink,
   Deadline,
-  DiscoveredContext,
+  ExportOptions,
   IcalFeed,
   NotificationPrefs,
   Platform,
   Resource,
+  Subscription,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { matchCourse, matchCourseInText } from "@/lib/ical/match";
-import { cleanCanvasTitle, formatKindLabel, parseCanvasEvent } from "@/lib/ical/canvas";
+import { matchCourseInText } from "@/lib/ical/match";
+import { cleanCanvasTitle, formatKindLabel } from "@/lib/ical/canvas";
+import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
+import { mergeFeedSync } from "@/lib/ical/sync";
 import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
-const MAX_NOTE_LENGTH = 500;
-
-function noteFromDescription(description: string | undefined): string | undefined {
-  const text = description?.trim();
-  if (!text) return undefined;
-  return text.length > MAX_NOTE_LENGTH ? `${text.slice(0, MAX_NOTE_LENGTH)}…` : text;
-}
 
 /** Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles. */
 function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
@@ -60,6 +53,12 @@ export interface AppStore extends AppData {
   notifiedKeys: string[];
   setNotificationPrefs: (patch: Partial<NotificationPrefs>) => void;
   markNotified: (keys: string[]) => void;
+  // calendar subscription (persisted, but not part of AppData: never exported/imported)
+  subscription: Subscription | null;
+  exportOptions: ExportOptions;
+  setSubscription: (subscription: Subscription | null) => void;
+  patchSubscription: (patch: Partial<Subscription>) => void;
+  setExportOptions: (patch: Partial<ExportOptions>) => void;
 
   // courses
   addCourse: (
@@ -124,6 +123,19 @@ export const useStore = create<AppStore>()(
       ...emptyAppData(),
       notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
       notifiedKeys: [],
+      subscription: null,
+      exportOptions: DEFAULT_EXPORT_OPTIONS,
+
+      // ---- calendar subscription ----
+      setSubscription: (subscription) => {
+        set({ subscription });
+      },
+      patchSubscription: (patch) => {
+        set((state) => (state.subscription ? { subscription: { ...state.subscription, ...patch } } : state));
+      },
+      setExportOptions: (patch) => {
+        set((state) => ({ exportOptions: { ...state.exportOptions, ...patch } }));
+      },
 
       // ---- notifications ----
       setNotificationPrefs: (patch) => {
@@ -325,86 +337,24 @@ export const useStore = create<AppStore>()(
           const feed = state.feeds.find((f) => f.id === feedId);
           if (!feed) return state;
 
-          // Course contexts across all events, not only the 30-day window.
-          const discoveredByKey = new Map<string, DiscoveredContext>();
-          for (const event of events) {
-            const context = parseCanvasEvent(event).context;
-            if (!context) continue;
-            const known = discoveredByKey.get(context.key);
-            if (known) known.eventCount += 1;
-            else discoveredByKey.set(context.key, { ...context, eventCount: 1 });
-          }
-
-          const now = Date.now();
-          const relevantEvents = events.filter(
-            (e) => now - new Date(e.start).getTime() <= THIRTY_DAYS_MS
-          );
-          const incomingUids = new Set(relevantEvents.map((e) => e.uid));
-
-          const existingByUid = new Map<string, Deadline>();
-          for (const d of state.deadlines) {
-            if (d.feedId === feedId && d.externalUid) {
-              existingByUid.set(d.externalUid, d);
-            }
-          }
-
-          // Keep every deadline that isn't part of this sync, plus this
-          // feed's deadlines that are no longer present but whose due date
-          // is already in the past (kept as history, never resurrected).
-          const carried = state.deadlines.filter((d) => {
-            if (d.feedId !== feedId) return true;
-            const stillPresent = d.externalUid && incomingUids.has(d.externalUid);
-            if (stillPresent) return false; // will be re-added below, updated
-            const isFuture = new Date(d.due).getTime() >= now;
-            return !isFuture; // drop future ones that vanished from the feed
-          });
-
-          const synced: Deadline[] = relevantEvents.map((event) => {
-            const existing = existingByUid.get(event.uid);
-            const info = parseCanvasEvent(event);
-
-            let courseId: string | null;
-            if (feed.courseId) {
-              courseId = feed.courseId;
-            } else {
-              const autoMatch = matchCourse(event, state.courses);
-              courseId = existing ? (existing.courseId ?? autoMatch) : autoMatch;
-            }
-
-            // Keep the raw summary while unassigned so the course stays visible.
-            const title = courseId ? info.cleanTitle : event.summary;
-            const url = info.assignmentUrl ?? event.url;
-            const note = noteFromDescription(event.description);
-
-            if (existing) {
-              return { ...existing, title, due: event.start, url, note, courseId };
-            }
-
-            return {
-              id: newId(),
-              courseId,
-              title,
-              due: event.start,
-              url,
-              note,
-              platformId: feed.platformId,
-              critical: false,
-              done: false,
-              source: "ical",
-              feedId,
-              externalUid: event.uid,
-            };
+          const now = new Date();
+          const { deadlines, discovered } = mergeFeedSync({
+            feed,
+            events,
+            deadlines: state.deadlines,
+            courses: state.courses,
+            now,
           });
 
           return {
-            deadlines: [...carried, ...synced],
+            deadlines,
             feeds: state.feeds.map((f) =>
               f.id === feedId
                 ? {
                     ...f,
-                    lastSyncedAt: new Date().toISOString(),
+                    lastSyncedAt: now.toISOString(),
                     lastError: undefined,
-                    discovered: [...discoveredByKey.values()],
+                    discovered,
                   }
                 : f
             ),
@@ -527,6 +477,8 @@ export const useStore = create<AppStore>()(
         feeds: state.feeds,
         notificationPrefs: state.notificationPrefs,
         notifiedKeys: state.notifiedKeys,
+        subscription: state.subscription,
+        exportOptions: state.exportOptions,
       }),
     }
   )
