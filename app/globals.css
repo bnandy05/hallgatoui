@@ -13,51 +13,41 @@
   --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
-  --color-accent-text: var(--accent-text);
-  --color-accent-soft: var(--accent-soft);
   --color-accent-ink: var(--accent-ink);
-  --color-accent-deep: var(--accent-deep);
+  --color-accent-hover: var(--accent-hover);
+  --color-danger-hover: var(--danger-hover);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-pin: var(--pin);
+  --color-canary: var(--canary);
+  --color-canary-soft: var(--canary-soft);
+  --color-salmon: var(--salmon);
+  --color-sky: var(--sky);
+  --color-felt-dark: var(--felt-dark);
+  --color-strip: var(--strip);
+  --color-strip-past: var(--strip-past);
   --radius-lg: var(--radius-lg);
-  --font-sans: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-@property --margin-x {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 56px;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :root {
-  color-scheme: dark;
-  --margin-x: 56px;
+  color-scheme: light;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 72px;
+  scroll-padding-top: 80px;
 }
 
 body {
-  /* Graph paper: 24px minor and 120px major lines, anchored to the viewport origin so the
-     TraceField canvas runs exactly on them. */
-  background:
-    linear-gradient(90deg, transparent var(--margin-x), var(--margin-line) var(--margin-x), var(--margin-line) calc(var(--margin-x) + 2px), transparent calc(var(--margin-x) + 2px)),
-    radial-gradient(1100px 520px at 90% -5%, rgba(255, 194, 61, 0.07), transparent 60%),
-    radial-gradient(900px 520px at 0% 100%, rgba(94, 224, 184, 0.06), transparent 60%),
-    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) 0 0 / 120px 120px,
-    linear-gradient(0deg, var(--grid-major) 1px, transparent 1px) 0 0 / 120px 120px,
-    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(0deg, var(--grid-minor) 1px, transparent 1px) 0 0 / 24px 24px,
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  line-height: 1.6;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 0;
 }
 
 :focus-visible {
@@ -66,161 +56,159 @@ body {
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: var(--canary);
+  color: var(--fg);
 }
 
-/* Behind the content column: a soft band of page colour over the grid and traces, fading out
-   towards the edges, so text without a card behind it stays readable. */
-.content-scrim {
-  background: linear-gradient(
-    90deg,
-    transparent calc(50% - 620px),
-    color-mix(in srgb, var(--bg) 78%, transparent) calc(50% - 540px),
-    color-mix(in srgb, var(--bg) 78%, transparent) calc(50% + 540px),
-    transparent calc(50% + 620px)
-  );
+* {
+  scrollbar-color: var(--border-strong) transparent;
 }
 
-/* Highlighter-yellow to chalk-mint gradient text. */
-.grad {
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+input,
+textarea {
+  caret-color: var(--pin);
 }
 
-/* Reveal motion: a class toggled in an effect, so SSR markup stays identical. */
-.reveal-armed {
-  opacity: 0;
-  transform: translateY(24px);
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+/* Printed-notice display type: Archivo condensed, heavy. */
+.font-display {
+  font-stretch: 72%;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 1.02;
+}
+.font-condensed {
+  font-stretch: 82%;
+}
+
+/* ── Pins ──────────────────────────────────────────────────────────────────────────
+   A round pushpin head: one flat colour (--pin-color) and a small cast shadow on the paper. */
+.pin {
+  --pin-color: var(--pin);
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  background: var(--pin-color);
+  box-shadow: 1px 2px 2px rgba(20, 24, 28, 0.35);
+  pointer-events: none;
   transition:
-    opacity 0.6s var(--ease-out),
-    transform 0.6s var(--ease-out);
-}
-.reveal-armed.reveal-in {
-  opacity: 1;
-  transform: none;
-}
-.reveal-armed.reveal-stagger {
-  opacity: 1;
-  transform: none;
-}
-/* Children start hidden and animate *from* that state, so they return to their natural
-   styles afterwards (a forwards-filled animation would pin transform and kill hover lifts). */
-.reveal-armed.reveal-stagger:not(.reveal-in) > * {
-  opacity: 0;
-  transform: translateY(16px);
-}
-.reveal-armed.reveal-stagger.reveal-in > * {
-  animation: domino-in 0.5s var(--ease-out) backwards;
-  animation-delay: calc(0.04s + var(--i, 0) * 0.05s);
-}
-@keyframes domino-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
+    transform 0.28s var(--ease-out-expo),
+    opacity 0.2s var(--ease-out);
 }
 
-/* Hover lift for buttons (1px) and cards (2px). */
-.lift,
+/* ── Paper slips ───────────────────────────────────────────────────────────────────
+   A slip hangs from its pin. Done slips lose the pin and hang loose: tilted, a little lower,
+   paler. The transition is the "unpin" moment. */
+.slip {
+  position: relative;
+  border-radius: var(--radius-slip);
+  box-shadow: var(--shadow-paper);
+  transform-origin: 85% 0;
+  transition:
+    transform 0.4s var(--ease-out-expo),
+    box-shadow 0.2s var(--ease-out),
+    opacity 0.3s var(--ease-out),
+    background-color 0.2s var(--ease-out);
+}
+.slip:hover {
+  box-shadow: var(--shadow-lift);
+}
+.slip[data-done="true"] {
+  transform: rotate(-2.2deg) translateY(2px);
+  opacity: 0.72;
+  box-shadow: 0 1px 2px rgba(30, 40, 48, 0.12);
+}
+.slip[data-done="true"] > .pin {
+  transform: translateY(-6px) scale(0);
+  opacity: 0;
+}
+
+/* Paper sheets pinned to the felt (course list, settings panels). */
+.sheet-paper {
+  background: var(--panel);
+  border-radius: var(--radius-slip);
+  box-shadow: var(--shadow-sheet);
+}
+
 .lift-sm {
   transition:
     transform 0.16s var(--ease-out),
     border-color 0.16s var(--ease-out),
     background-color 0.16s var(--ease-out),
-    filter 0.16s var(--ease-out),
     box-shadow 0.16s var(--ease-out);
-}
-.lift:hover {
-  transform: translateY(-2px);
 }
 .lift-sm:hover {
   transform: translateY(-1px);
-}
-
-.term-cursor {
-  display: inline-block;
-  animation: term-blink 1.05s steps(1) infinite;
-}
-@keyframes term-blink {
-  50% {
-    opacity: 0;
-  }
 }
 
 /* ── Week board motion ─────────────────────────────────────────────────────────────
    Everything animates *from* a hidden keyframe with `backwards` fill, so the resting
    state is the plain, visible markup and a skipped animation changes nothing. */
 
-/* First load: the day columns are ruled onto the page left to right, like a pen drawing
-   them down the sheet. --i is the column index (set inline by WeekBoard). */
-[data-board-motion="intro"] > .board-col {
-  animation: board-rule 0.5s var(--ease-out-expo) backwards;
-  animation-delay: calc(var(--i, 0) * 45ms);
+/* First load: each day's slips are pinned up, column by column, left to right. */
+[data-board-motion="intro"] > .board-col .slip {
+  animation: slip-pin 0.55s var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms + 80ms);
 }
-@keyframes board-rule {
+[data-board-motion="intro"] > .board-col .slip > .pin {
+  animation: pin-press 0.4s var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms + 260ms);
+}
+@keyframes slip-pin {
   from {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0.2;
+    opacity: 0;
+    transform: translateY(-10px) rotate(-3deg);
+  }
+}
+@keyframes pin-press {
+  from {
+    transform: translateY(-8px) scale(1.6);
+    opacity: 0;
   }
 }
 
-/* Week navigation: the frame stays put, the days slide in from the side you moved to. */
+/* Week navigation: the board stays put, the days slide in from the side you moved to. */
 [data-board-motion="next"] > .board-col {
-  animation: board-from-next 0.32s var(--ease-out-expo) backwards;
+  animation: board-from-next 0.34s var(--ease-out-expo) backwards;
 }
 [data-board-motion="prev"] > .board-col {
-  animation: board-from-prev 0.32s var(--ease-out-expo) backwards;
+  animation: board-from-prev 0.34s var(--ease-out-expo) backwards;
 }
 @keyframes board-from-next {
   from {
     opacity: 0;
-    transform: translateX(28px);
-    filter: blur(2px);
+    transform: translateX(24px);
   }
 }
 @keyframes board-from-prev {
   from {
     opacity: 0;
-    transform: translateX(-28px);
-    filter: blur(2px);
+    transform: translateX(-24px);
   }
 }
 
-/* The red margin line is drawn down through today's column, after the columns land. */
-.now-line::before {
-  transform-origin: top;
-  animation: now-draw 0.7s var(--ease-out-expo) 0.12s backwards;
-}
-[data-board-motion="intro"] .now-line::before {
-  animation-delay: 0.45s;
-}
-@keyframes now-draw {
-  from {
-    transform: scaleY(0);
-  }
-}
-
-/* Ticking a deadline off: a strike is drawn through the title instead of snapping on.
-   A background on an inline box sweeps across wrapped lines in reading order. */
+/* Ticking a deadline off: a strike is drawn through the title. */
 .strike {
   background-image: linear-gradient(currentColor, currentColor);
   background-repeat: no-repeat;
   background-position: 0 58%;
-  background-size: 0% 1px;
+  background-size: 0% 1.5px;
   transition:
-    background-size 0.32s var(--ease-out-expo),
+    background-size 0.35s var(--ease-out-expo),
     color 0.2s var(--ease-out);
 }
 .strike[data-done="true"] {
-  background-size: 100% 1px;
+  background-size: 100% 1.5px;
 }
 
-/* Dialogs rise a few pixels into place; the backdrop fades. Closing is instant because the
-   content unmounts on close (an exit fade would show an empty sheet collapsing). */
+/* Dialogs are pinned up: they drop a few pixels into place; the backdrop fades. */
 dialog.sheet[open] {
-  animation: sheet-in 0.28s var(--ease-out-expo);
+  animation: sheet-in 0.3s var(--ease-out-expo);
 }
 dialog.sheet[open]::backdrop {
   animation: backdrop-in 0.24s var(--ease-out);
@@ -228,7 +216,7 @@ dialog.sheet[open]::backdrop {
 @keyframes sheet-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translateY(-10px) rotate(-0.6deg);
   }
 }
 @keyframes backdrop-in {
@@ -237,9 +225,8 @@ dialog.sheet[open]::backdrop {
   }
 }
 
-/* A tab panel settles in when it is shown (the `hidden` toggle restarts the animation). */
 .panel-in {
-  animation: panel-in 0.22s var(--ease-out-expo);
+  animation: panel-in 0.24s var(--ease-out-expo);
 }
 @keyframes panel-in {
   from {
@@ -248,37 +235,24 @@ dialog.sheet[open]::backdrop {
   }
 }
 
-@media (max-width: 639px) {
-  :root {
-    --margin-x: 16px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .reveal-armed,
-  .reveal-armed.reveal-stagger > * {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-    animation: none !important;
-  }
-  .term-cursor {
-    animation: none;
-  }
-  .lift:hover,
   .lift-sm:hover {
     transform: none !important;
   }
-  /* Reduced motion keeps the meaning, drops the movement: the board and panels cross-fade,
-     the now-line and strike simply appear, dialogs fade without rising. */
-  [data-board-motion] > .board-col {
+  [data-board-motion] > .board-col,
+  [data-board-motion] > .board-col .slip,
+  [data-board-motion] > .board-col .slip > .pin {
     animation: board-fade 0.2s linear backwards !important;
   }
-  .now-line::before {
-    animation: none;
+  .slip,
+  .pin {
+    transition: opacity 0.2s linear, background-color 0.2s linear;
+  }
+  .slip[data-done="true"] {
+    transform: none;
   }
   .strike {
     transition: color 0.2s linear;

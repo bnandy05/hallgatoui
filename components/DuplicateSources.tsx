@@ -39,7 +39,7 @@ export function DuplicateSources({ deadline, small = false }: { deadline: Deadli
         <ul
           id={listId}
           aria-label="További források"
-          className="mt-1 flex w-full basis-full flex-col gap-1 rounded-md border border-border/70 bg-card p-1.5"
+          className="mt-1 flex w-full basis-full flex-col gap-1 rounded-[var(--radius)] border border-border/70 bg-card p-1.5"
         >
           {copies.map((copy) => {
             const feed = copy.feedId ? feeds.find((f) => f.id === copy.feedId) : undefined;

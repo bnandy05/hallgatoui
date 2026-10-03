@@ -56,13 +56,13 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm("Felülírja a jelenlegi adatokat?")) {
+      if (!confirm("A mentés felülírja a jelenlegi adatokat. Folytatod?")) {
         return;
       }
 
       importData(data);
       setImportSuccess(
-        `Importálva: ${data.courses.length} tárgy, ${data.deadlines.length} határidő`
+        `Visszaállítva: ${data.courses.length} tárgy, ${data.deadlines.length} határidő`
       );
     } catch (err) {
       setImportError(err instanceof Error ? err.message : "Nem érvényes mentésfájl");
@@ -75,7 +75,7 @@ export function DataSettings() {
   }
 
   function handleReset() {
-    if (confirm("Minden adat törlődik ebből a böngészőből. Biztos?")) {
+    if (confirm("Minden adat törlődik ebből a böngészőből. Biztosan folytatod?")) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();
@@ -89,15 +89,14 @@ export function DataSettings() {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading
-        eyebrow="Adatok"
         title="Adatok"
-        sub="Az adataid csak ebben a böngészőben tárolódnak. Készíts rendszeresen mentést."
+        sub="Az adataid csak ebben a böngészőben vannak. Érdemes rendszeresen mentést készíteni."
       />
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
           <Download className="h-4 w-4" />
-          Exportálás (JSON)
+          Mentés letöltése
         </Button>
 
         <Button
@@ -107,7 +106,7 @@ export function DataSettings() {
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="h-4 w-4" />
-          Importálás
+          Mentés visszaállítása
         </Button>
         <input
           ref={fileInputRef}
@@ -120,7 +119,7 @@ export function DataSettings() {
 
         <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
           <Sparkles className="h-4 w-4" />
-          Demo adatok betöltése
+          Mintaadatok betöltése
         </Button>
 
         <Button type="button" variant="danger" size="sm" onClick={handleReset}>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, FileQuestion, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileQuestion, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
@@ -13,13 +13,12 @@ import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, isCritical, nextDeadlineFor, weekRangeLabel, weekStartOf } from "@/lib/radar";
 import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
-import { DeadlineItem } from "@/components/DeadlineItem";
+import { DeadlineChip } from "@/components/week/DeadlineChip";
 import { LinkButton } from "@/components/LinkButton";
 import { LinkEditor } from "@/components/LinkEditor";
 import { ResourceList } from "@/components/ResourceList";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import { WeekBoard } from "@/components/week/WeekBoard";
 import { WeekNav } from "@/components/week/WeekNav";
@@ -28,8 +27,9 @@ type TabKey = "hataridok" | "tudasbazis" | "linkek";
 
 function BackLink() {
   return (
-    <Link href="/" className="w-fit text-sm text-muted hover:text-foreground">
-      ← Heti menetrend
+    <Link href="/" className="inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading">
+      <ArrowLeft className="h-4 w-4" />
+      Vissza a héthez
     </Link>
   );
 }
@@ -37,9 +37,9 @@ function BackLink() {
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-4 w-28 animate-pulse rounded-md bg-border/40" />
-      <div className="h-36 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
-      <div className="h-56 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-4 w-28 animate-pulse rounded-[var(--radius)] bg-white/40" />
+      <div className="h-36 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
+      <div className="h-56 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
     </div>
   );
 }
@@ -89,10 +89,10 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <EmptyState
           icon={FileQuestion}
           title="A tárgy nem található"
-          text="Lehet, hogy törölve lett, vagy hibás a link."
+          text="Lehet, hogy törölted, vagy hibás a link."
           action={
             <Link href="/" className={buttonClasses({ variant: "secondary" })}>
-              Vissza a menetrendhez
+              Vissza a héthez
             </Link>
           }
         />
@@ -121,42 +121,46 @@ export function CourseWeekDetail({ id }: { id: string }) {
     <div className="flex flex-col gap-8 sm:gap-10">
       <BackLink />
 
-      <header
-        className="flex flex-col gap-5 rounded-[var(--radius)] border border-border bg-card p-[22px]"
-        style={{ boxShadow: `inset 0 3px 0 ${course.color}` }}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <Eyebrow>{meta || "Tárgy"}</Eyebrow>
-            <h1 className="mt-2 break-words text-[clamp(26px,4vw,36px)] font-bold leading-[1.12] tracking-[-0.01em] text-heading">
+            <h1 className="font-display flex items-start gap-3 break-words text-[clamp(34px,5.2vw,52px)] text-heading [text-wrap:balance]">
+              <span aria-hidden="true" className="relative mt-[0.32em] h-[13px] w-[13px] shrink-0">
+                <span className="pin left-0 top-0 !h-[13px] !w-[13px]" style={{ "--pin-color": course.color } as CSSProperties} />
+              </span>
               {course.name}
             </h1>
-            <p className="mt-2 text-sm text-muted">
-              {upcoming.length} nyitott
+            <p className="mt-2 text-[15px] text-muted">
+              {meta && <span className="tabular-nums">{meta} · </span>}
+              {upcoming.length === 0 ? "Nincs nyitott határidő" : `${upcoming.length} nyitott határidő`}
               {criticalCount > 0 && (
                 <>
-                  {" · "}
-                  <span className="text-danger">{criticalCount} kritikus</span>
+                  {", ebből "}
+                  <span className="font-semibold text-danger">{criticalCount} kritikus</span>
                 </>
               )}
               {next && (
                 <>
-                  {" · következő "}
-                  <span className="text-foreground">{formatRelative(new Date(next.due), now)}</span>
+                  {" · a következő "}
+                  <span className="font-semibold text-heading">{formatRelative(new Date(next.due), now)}</span>
+                </>
+              )}
+              {nextClass && (
+                <>
+                  {" · következő óra: "}
+                  <span className="font-semibold text-heading">
+                    {format(new Date(nextClass.start), "EEEE HH:mm", { locale: hu })}
+                    {nextClass.room && `, ${nextClass.room}`}
+                  </span>
                 </>
               )}
             </p>
-            {nextClass && (
-              <p className="mt-1 text-sm text-muted">
-                Következő óra:{" "}
-                <span className="text-foreground">
-                  {format(new Date(nextClass.start), "EEEE HH:mm", { locale: hu })}
-                  {nextClass.room && `, ${nextClass.room}`}
-                </span>
-              </p>
-            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setDeadlineOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Határidő
+            </Button>
             <Button type="button" variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4" />
               Szerkesztés
@@ -166,20 +170,20 @@ export function CourseWeekDetail({ id }: { id: string }) {
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              className="text-danger hover:!bg-danger/10"
+              aria-label="Tárgy törlése"
+              className="!px-2 text-danger hover:!bg-danger/10"
             >
               <Trash2 className="h-4 w-4" />
-              Törlés
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+        <div className="flex flex-wrap items-center gap-2">
           {course.links.map((link) => (
             <LinkButton key={link.id} link={link} size="md" />
           ))}
           {course.links.length === 0 && (
-            <p className="text-sm text-muted">Még nincs linked ehhez a tárgyhoz.</p>
+            <p className="text-[14px] text-muted">Ehhez a tárgyhoz még nincs link.</p>
           )}
           <Button type="button" variant="ghost" size="sm" onClick={() => setTab("linkek")}>
             <Settings2 className="h-4 w-4" />
@@ -190,9 +194,9 @@ export function CourseWeekDetail({ id }: { id: string }) {
 
       <section className="flex flex-col gap-4" aria-labelledby="course-week-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="course-week-heading" className="text-lg font-bold text-heading">
-            {isCurrent ? "Ez a hét" : "Hét"}{" "}
-            <span className="text-sm font-normal text-muted">{weekRangeLabel(weekStart)}</span>
+          <h2 id="course-week-heading" className="flex flex-wrap items-baseline gap-x-3">
+            <span className="font-display text-[clamp(24px,3vw,30px)] text-heading">{isCurrent ? "Ez a hét" : "Hét"}</span>
+            <span className="text-[14px] text-muted">{weekRangeLabel(weekStart)}</span>
           </h2>
           <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
         </div>
@@ -205,7 +209,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
           showCourse={false}
           dense
           intro
-          emptyDay="Ezen a héten nincs nyitott határidő."
+          emptyDay="Ezen a héten nincs határidő."
           label={`${course.name}, ${weekRangeLabel(weekStart)}`}
         />
       </section>
@@ -218,40 +222,33 @@ export function CourseWeekDetail({ id }: { id: string }) {
           items={[
             { id: "hataridok", label: "Határidők", count: upcoming.length },
             { id: "linkek", label: "Linkek", count: course.links.length },
-            { id: "tudasbazis", label: "Tudásbázis", count: resourceCount },
+            { id: "tudasbazis", label: "Anyagok", count: resourceCount },
           ]}
         />
 
         <TabPanel id="hataridok" active={activeTab === "hataridok"} className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-muted">Minden határidő időrendben, nem csak ez a hét.</p>
-            <Button type="button" variant="secondary" size="sm" onClick={() => setDeadlineOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Határidő
-            </Button>
-          </div>
           {upcoming.length === 0 && done.length === 0 ? (
-            <p className="text-sm text-muted">Még nincs határidő ehhez a tárgyhoz.</p>
+            <p className="text-[14px] text-muted">Ehhez a tárgyhoz még nincs határidő.</p>
           ) : (
             <>
               {upcoming.length === 0 ? (
-                <p className="text-sm text-muted">Nincs közelgő határidő.</p>
+                <p className="text-[14px] text-muted">Nincs nyitott határidő.</p>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4 pt-1">
                   {upcoming.map((d) => (
-                    <DeadlineItem key={d.id} deadline={d} />
+                    <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate />
                   ))}
                 </div>
               )}
               {done.length > 0 && (
-                <details className="group rounded-md border border-border bg-card px-3 py-2">
-                  <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
+                <details className="group rounded-[var(--radius-slip)] bg-strip px-3 py-2.5">
+                  <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[14px] font-semibold text-heading [&::-webkit-details-marker]:hidden">
                     <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
                     Kész ({done.length})
                   </summary>
-                  <div className="mt-2 flex flex-col gap-2">
+                  <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4 pb-2">
                     {done.map((d) => (
-                      <DeadlineItem key={d.id} deadline={d} />
+                      <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate />
                     ))}
                   </div>
                 </details>

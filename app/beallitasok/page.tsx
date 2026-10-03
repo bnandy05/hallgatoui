@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
@@ -45,8 +44,8 @@ function selectSection(key: string) {
 function SettingsSkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
-      <div className="h-40 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
-      <div className="h-72 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-40 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
+      <div className="h-72 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
     </div>
   );
 }
@@ -64,24 +63,21 @@ export default function WeekSettingsPage() {
   const permission = useNotificationPermission();
 
   const status = (on: boolean) => (
-    <span className={`text-[11px] ${on ? "text-success" : "text-muted-dim"}`}>{on ? "be" : "ki"}</span>
+    <span
+      aria-label={on ? "bekapcsolva" : "kikapcsolva"}
+      className={`h-2 w-2 rounded-full ${on ? "bg-success" : "border border-border-strong"}`}
+    />
   );
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
-      <SectionHeading
-        as="h1"
-        eyebrow="Beállítások"
-        icon={Settings}
-        title="A te füzeted, a te szabályaid."
-        sub="Platformok, naptárak, értesítések és az adataid. Az adataid a böngésződben maradnak, amíg be nem kapcsolod a naptár-előfizetést."
-      />
+      <SectionHeading as="h1" title="Beállítások" />
 
       {!hydrated ? (
         <SettingsSkeleton />
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
-          <div className="min-w-0 lg:sticky lg:top-[84px] lg:self-start">
+          <div className="min-w-0 lg:sticky lg:top-[96px] lg:self-start">
             <Tabs
               label="Beállítások szakaszai"
               orientation="vertical"

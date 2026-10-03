@@ -7,6 +7,7 @@ export type CardProps<T extends ElementType = "div"> = {
   children?: ReactNode;
 } & Omit<ComponentPropsWithoutRef<T>, "as" | "className" | "children">;
 
+/** A sheet of copy paper on the felt. */
 export function Card<T extends ElementType = "div">({
   as,
   interactive = false,
@@ -17,8 +18,8 @@ export function Card<T extends ElementType = "div">({
   const Tag: ElementType = as ?? "div";
   return (
     <Tag
-      className={`rounded-[var(--radius)] border border-border bg-card p-[22px] ${
-        interactive ? "lift hover:border-accent" : ""
+      className={`sheet-paper p-5 sm:p-6 ${
+        interactive ? "transition-shadow duration-200 hover:shadow-[var(--shadow-lift)]" : ""
       } ${className}`}
       {...props}
     >

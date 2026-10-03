@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { format } from "date-fns";
-import { CalendarClock, Loader2, Pencil, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Loader2, Pencil, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useStore, type SubjectDecision } from "@/lib/store";
 import { fetchFeed } from "@/lib/ical/client";
 import { parseIcs } from "@/lib/ical/parse";
@@ -162,16 +162,14 @@ export function TimetableSettings() {
   return (
     <section id="orarend" className="flex flex-col gap-4">
       <SectionHeading
-        eyebrow="Órarend"
-        icon={CalendarClock}
-        title="Neptun órarend"
-        sub="Az óráid a heti menetrendben jelennek meg, a határidők mellett (de nem helyettük)."
+        title="Neptun-órarend"
+        sub="Az órák a heti nézetben, a határidők mellett jelennek meg."
       />
 
       <Card className="flex flex-col gap-4">
-        <p className="text-sm text-muted">
-          A Neptunban a Naptár → Exportálás menüpontban tudod letölteni az órarendedet .ics fájlként. A fájlt a
-          böngésződ dolgozza fel, nem töltődik fel sehová.
+        <p className="text-[14px] text-muted">
+          A Neptunban a Naptár → Exportálás menüpontban töltheted le az órarendet .ics fájlként. A fájlt a
+          böngésző dolgozza fel, nem kerül fel a szerverre.
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -192,12 +190,12 @@ export function TimetableSettings() {
             }}
           >
             <Upload className="h-4 w-4" />
-            Órarend importálása (.ics)
+            Órarend importálása
           </Button>
         </div>
 
         <form onSubmit={handleUrlSubmit} className="flex flex-col gap-1 border-t border-border pt-4">
-          <Label htmlFor="timetable-url">Vagy egy link (ha van)</Label>
+          <Label htmlFor="timetable-url">Vagy naptárlink</Label>
           <div className="flex flex-wrap gap-2">
             <Input
               id="timetable-url"
@@ -211,7 +209,7 @@ export function TimetableSettings() {
               Letöltés
             </Button>
           </div>
-          <p className="text-[12.5px] text-muted">A linket a szerver csak továbbítja, mint a többi naptárnál.</p>
+          <p className="text-[12.5px] text-muted">A szerver a linket csak továbbítja, nem tárolja.</p>
         </form>
 
         {error && <p className="text-xs text-danger">{error}</p>}
@@ -221,7 +219,7 @@ export function TimetableSettings() {
             {sources.map((source) => {
               const stat = stats.get(source.id);
               return (
-                <li key={source.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-border bg-inset px-3 py-2">
+                <li key={source.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius)] bg-inset px-3 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground">{source.name}</p>
                     <p className="text-xs text-muted">
@@ -237,7 +235,7 @@ export function TimetableSettings() {
                     </Button>
                     <Button type="button" variant="ghost" size="sm" onClick={() => setEditingId(source.id)}>
                       <Pencil className="h-4 w-4" />
-                      Hozzárendelés szerkesztése
+                      Hozzárendelés
                     </Button>
                     <Button type="button" variant="ghost" size="sm" onClick={() => handleDelete(source.id)} className="text-danger hover:!bg-danger/10">
                       <Trash2 className="h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Link2, Pencil, Plus } from "lucide-react";
 import { format } from "date-fns";
@@ -20,7 +20,7 @@ const URGENCY_TEXT_CLASS: Record<Urgency, string> = {
   overdue: "text-danger",
   critical: "text-danger",
   soon: "text-warning",
-  later: "text-foreground",
+  later: "text-muted",
   done: "text-muted",
 };
 
@@ -42,7 +42,7 @@ function Launcher({ link }: { link: CourseLink }) {
       rel="noopener noreferrer"
       aria-label={`${name} megnyitása`}
       title={name}
-      className="lift-sm inline-flex rounded-md ring-offset-2 ring-offset-card hover:ring-1 hover:ring-border-strong focus-visible:outline-2 focus-visible:outline-accent"
+      className="lift-sm inline-flex rounded-[var(--radius)] hover:shadow-[var(--shadow-paper)] focus-visible:outline-2 focus-visible:outline-accent"
     >
       <PlatformIcon platform={platform} size="md" />
     </a>
@@ -62,32 +62,30 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
   const extra = course.links.length - MAX_LAUNCHERS;
 
   return (
-    <li className={`relative flex flex-col gap-2.5 px-4 py-3.5 sm:items-center ${COLUMNS}`}>
-      <div className="flex min-w-0 items-start gap-2.5">
-        <span
-          aria-hidden="true"
-          className="mt-[7px] h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: course.color }}
-        />
+    <li className={`relative flex flex-col gap-3 py-4 pl-5 pr-24 transition-colors duration-150 hover:bg-black/[0.05]/60 sm:items-start lg:items-center lg:pr-5 ${COLUMNS}`}>
+      <div className="flex min-w-0 items-start gap-3">
+        <span aria-hidden="true" className="relative mt-[5px] h-[11px] w-[11px] shrink-0">
+          <span className="pin left-0 top-0" style={{ "--pin-color": course.color } as CSSProperties} />
+        </span>
         <div className="min-w-0">
           <Link
             href={`/targy/${course.id}`}
-            className="block truncate font-bold text-heading hover:text-accent-text hover:underline hover:underline-offset-2"
+            className="block truncate text-[16px] font-bold text-heading hover:underline"
           >
             {course.name}
           </Link>
-          {meta && <p className="truncate text-xs text-muted">{meta}</p>}
+          {meta && <p className="truncate text-[12.5px] tabular-nums text-muted-dim">{meta}</p>}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 pl-5 sm:pl-0">
+      <div className="flex flex-wrap items-center gap-1.5 pl-[23px] sm:pl-0">
         {course.links.slice(0, MAX_LAUNCHERS).map((link) => (
           <Launcher key={link.id} link={link} />
         ))}
         {extra > 0 && (
           <Link
             href={`/targy/${course.id}`}
-            className="inline-flex h-7 items-center rounded-md border border-border px-1.5 text-xs text-muted hover:border-border-strong hover:text-foreground"
+            className="inline-flex h-7 items-center rounded-[var(--radius)] border border-border px-1.5 text-[12px] font-semibold text-muted hover:border-border-strong hover:text-heading"
           >
             +{extra}
           </Link>
@@ -97,37 +95,37 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
           onClick={() => setLinksOpen(true)}
           aria-label={course.links.length > 0 ? `Linkek szerkesztése – ${course.name}` : `Link hozzáadása – ${course.name}`}
           title={course.links.length > 0 ? "Linkek szerkesztése" : "Link hozzáadása"}
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-dashed border-border px-1.5 text-xs text-muted transition-colors hover:border-accent hover:text-accent-text"
+          className="inline-flex h-7 items-center gap-1 rounded-[var(--radius)] border border-dashed border-border-strong px-1.5 text-[12px] font-medium text-muted transition-colors hover:border-accent hover:text-heading"
         >
           {course.links.length > 0 ? <Link2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           {course.links.length === 0 && "Link"}
         </button>
       </div>
 
-      <div className="min-w-0 pl-5 sm:col-span-2 sm:pl-[1.25rem] lg:col-span-1 lg:pl-0">
+      <div className="min-w-0 pl-[23px] sm:col-span-2 lg:col-span-1 lg:pl-0">
         {next ? (
-          <p className="min-w-0 text-sm">
-            <span className="block truncate text-foreground">{next.title}</span>
-            <span className={`text-xs ${URGENCY_TEXT_CLASS[urgencyOf(next, now)]}`}>
+          <p className="min-w-0 text-[14px]">
+            <span className="block truncate font-medium text-foreground">{next.title}</span>
+            <span className={`text-[12.5px] font-semibold ${URGENCY_TEXT_CLASS[urgencyOf(next, now)]}`}>
               {formatRelative(new Date(next.due), now)}
             </span>
           </p>
         ) : (
-          <p className="text-xs text-muted-dim">Nincs közelgő határidő.</p>
+          <p className="text-[13px] text-muted-dim">Nincs közelgő határidő</p>
         )}
         {nextClass && (
-          <p className="mt-0.5 truncate text-[11px] text-muted-dim">
+          <p className="mt-0.5 truncate text-[12px] text-muted-dim">
             Óra: {format(new Date(nextClass.start), "EEE HH:mm", { locale: hu })}
             {nextClass.room && ` · ${nextClass.room}`}
           </p>
         )}
       </div>
 
-      <div className="absolute right-3 top-3 flex items-center gap-2 sm:static sm:col-span-2 sm:justify-self-end lg:col-span-1">
+      <div className="absolute right-4 top-4 flex items-center gap-2 lg:static lg:justify-self-end">
         <span
           title="Nyitott határidők"
-          className={`min-w-[1.75rem] rounded-full px-1.5 py-0.5 text-center text-[11px] tabular-nums ${
-            open > 0 ? "bg-accent-soft text-accent-text" : "text-muted-dim"
+          className={`min-w-[1.75rem] rounded-full px-1.5 py-0.5 text-center text-[12px] font-semibold tabular-nums ${
+            open > 0 ? "bg-canary text-heading" : "text-muted-dim"
           }`}
         >
           {open}
@@ -136,7 +134,7 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
           type="button"
           onClick={() => setEditOpen(true)}
           aria-label={`${course.name} szerkesztése`}
-          className="rounded-md p-1.5 text-muted hover:bg-inset hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+          className="rounded-[var(--radius)] p-1.5 text-muted hover:bg-black/[0.06] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
         >
           <Pencil className="h-4 w-4" />
         </button>
@@ -150,20 +148,22 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
   );
 }
 
-/** Every course as one row: launch its platforms without opening it, see what's next. */
+/** Every course as one row on a pinned sheet: launch its platforms without opening it, see what's next. */
 export function CourseTable({ courses, now }: { courses: Course[]; now: Date }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+    <div className="sheet-paper relative">
+      <span aria-hidden="true" className="pin -top-[4px] left-4" style={{ "--pin-color": "var(--border-strong)" } as CSSProperties} />
+      <span aria-hidden="true" className="pin -top-[4px] right-4" style={{ "--pin-color": "var(--border-strong)" } as CSSProperties} />
       <div
         aria-hidden="true"
-        className={`hidden border-b border-border bg-inset/60 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted lg:grid ${WIDE_COLUMNS}`}
+        className={`hidden border-b border-border px-5 pb-2.5 pt-4 text-[12.5px] font-semibold text-muted-dim lg:grid ${WIDE_COLUMNS}`}
       >
         <span>Tárgy</span>
         <span>Platformok</span>
-        <span>Következő</span>
+        <span>Következő határidő</span>
         <span className="text-right">Nyitott</span>
       </div>
-      <ul className="divide-y divide-border/60">
+      <ul className="divide-y divide-border/70">
         {courses.map((course) => (
           <CourseRow key={course.id} course={course} now={now} />
         ))}

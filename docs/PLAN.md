@@ -26,6 +26,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 - **Neptun timetable import** (`lib/ical/neptun.ts`): file import in the browser, one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.
 - **Test runner**: `npm test` (`node:test`, `TZ=UTC`) with fixture-based tests for parsing, sync, canvas contexts, export, dedupe, due changes and the Neptun import.
 - **Budapest all-day fix**: an all-day `DTSTART` is 23:59 Budapest time on the server too (`budapestInstant`).
+- **"Hirdetőtábla" redesign** (replaces night blueprint): light felt ground, white copy-paper slips and sheets, toner-black primary, red pushpin for now/critical, canary/salmon/sky papers for today/overdue/classes, Archivo (condensed display). Deadlines are pinned slips whose pin carries state; done slips unpin and tilt. `PinboardField` canvas background (ghost slips seeded from open deadlines). Structure: nav Hét / Határidők / Beállítások, global "Új határidő" in the header, a "Következő" notice on the home page, eyebrows and asides removed, copy rewritten in plain professional Hungarian. See DESIGN.md.
 - **Copy**: the Odyssey/nautical copy is gone (notebook-and-blueprint voice, see `PRODUCT.md`), the logo is a notebook icon.
 
 ### Decisions a future session needs
@@ -77,6 +78,8 @@ The owner wants [Impeccable](https://github.com/pbakaus/impeccable) (design comm
 - First use: `/impeccable init` (writes `PRODUCT.md`), then `/impeccable audit` across `/`, `/radar` and `/beallitasok`.
 
 ## Known limitations / small follow-ups
+
+- Destructive actions still use the browser's `confirm()`; replace them with a pinned confirmation `Dialog`.
 
 - Neptun exams into dedup once a `neptun-vizsga.ics` fixture exists (the dedupe tests use a synthetic Neptun exam).
 - A Neptun URL feed, if Neptun ever offers one (the optional URL import already goes through `/api/ical`).

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Határidő-radar",
+  title: "Határidők",
 };
 
 export default function RadarLayout({ children }: LayoutProps<"/radar">) {

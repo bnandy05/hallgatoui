@@ -6,12 +6,15 @@ export interface BadgeProps {
   className?: string;
 }
 
+/** A small stamped label: tinted fill, text in the colour mixed towards ink for contrast. */
 export function Badge({ color, children, className = "" }: BadgeProps) {
-  // color-mix keeps the tint working for both hex values and var() tokens.
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}
-      style={{ backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)`, color }}
+      className={`inline-flex items-center rounded-[3px] px-1.5 py-px text-[11.5px] font-semibold ${className}`}
+      style={{
+        backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+        color: `color-mix(in srgb, ${color} 72%, #000)`,
+      }}
     >
       {children}
     </span>

@@ -50,18 +50,14 @@ export function NotificationSettings() {
 
   return (
     <section id="ertesitesek" className="flex flex-col gap-4">
-      <SectionHeading eyebrow="Értesítések" title="Böngésző-értesítések" />
+      <SectionHeading title="Értesítések" sub="A böngésző szól, mielőtt egy határidő lejár." />
 
       <Card className="flex flex-col gap-4">
         {permission === "unsupported" ? (
-          <p className="text-sm text-muted">
-            Ez a böngésző nem támogatja az értesítéseket.{" "}
-            <span className="text-[11.5px] text-muted-dim">(Hermész is szabadnapos néha.)</span>
-          </p>
+          <p className="text-[14px] text-muted">Ez a böngésző nem támogatja az értesítéseket.</p>
         ) : permission === "denied" ? (
-          <p className="text-sm text-muted">
-            Az értesítéseket letiltottad a böngészőben. A címsor melletti lakat ikonnál
-            engedélyezheted újra.
+          <p className="text-[14px] text-muted">
+            Az értesítések le vannak tiltva a böngészőben. A címsor melletti lakat ikonnál engedélyezheted őket.
           </p>
         ) : !active ? (
           <div>
@@ -72,7 +68,7 @@ export function NotificationSettings() {
         ) : (
           <>
             <div>
-              <p className="mb-2 text-sm font-medium text-foreground">Mikor szóljunk?</p>
+              <p className="mb-2 text-[13px] font-semibold text-heading">Mikor szóljon?</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label="Emlékeztető időpontok">
                 {LEAD_OPTIONS.map((opt) => (
                   <Pill
@@ -86,14 +82,14 @@ export function NotificationSettings() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex items-center gap-2 text-[14px] text-foreground">
               <input
                 type="checkbox"
                 checked={prefs.criticalOnly}
                 onChange={(e) => setNotificationPrefs({ criticalOnly: e.target.checked })}
                 className="h-4 w-4 accent-accent"
               />
-              Csak a kritikusnak jelölt határidők
+              Csak a kritikus határidőknél
             </label>
 
             <div className="flex flex-wrap gap-2">
@@ -105,15 +101,13 @@ export function NotificationSettings() {
                 Kikapcsolás
               </Button>
               <Button type="button" variant="ghost" onClick={sendTest}>
-                Teszt értesítés
+                Próbaértesítés
               </Button>
             </div>
           </>
         )}
 
-        <p className="text-[12.5px] text-muted">
-          Az értesítések csak akkor érkeznek, ha az oldal nyitva van egy böngészőlapon.
-        </p>
+        <p className="text-[13px] text-muted">Értesítés csak akkor érkezik, ha az oldal nyitva van egy böngészőlapon.</p>
       </Card>
     </section>
   );

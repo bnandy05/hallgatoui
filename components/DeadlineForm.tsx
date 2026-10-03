@@ -136,13 +136,13 @@ export function DeadlineForm({
         <div>
           <Label htmlFor="deadline-quick">Gyors felvétel</Label>
           <div className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 shrink-0 text-muted" />
+            <Wand2 className="h-4 w-4 shrink-0 text-muted-dim" aria-hidden="true" />
             <Input
               id="deadline-quick"
               value={quickText}
               onChange={(e) => setQuickText(e.target.value)}
               onKeyDown={handleQuickKeyDown}
-              placeholder="pl. ZH jövő kedd 10:00 analízis !"
+              placeholder="Például: ZH jövő kedd 10:00 analízis !"
               autoFocus
             />
             <Button
@@ -155,8 +155,13 @@ export function DeadlineForm({
               Kitöltés
             </Button>
           </div>
+          {!parsed && (
+            <p className="mt-1.5 text-[12.5px] text-muted">
+              Írd be egy sorban, Enterrel kitöltöm a mezőket. A <span className="font-semibold">!</span> kritikusnak jelöli.
+            </p>
+          )}
           {parsed && (
-            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
               {parsed.title && <span className="font-medium text-foreground">{parsed.title}</span>}
               {parsed.due && (
                 <span>· {format(parsed.due, "yyyy. MMM d. (EEE) HH:mm", { locale: hu })}</span>
@@ -245,7 +250,7 @@ export function DeadlineForm({
           </Select>
         </div>
         <div>
-          <Label htmlFor="deadline-url">URL</Label>
+          <Label htmlFor="deadline-url">Link</Label>
           <Input
             id="deadline-url"
             value={url}

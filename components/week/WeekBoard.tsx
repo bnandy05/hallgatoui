@@ -30,11 +30,6 @@ export interface WeekBoardProps {
 
 type BoardMotion = "intro" | "next" | "prev" | undefined;
 
-// The red notebook margin line, drawn as the vertical "now" line on today's column
-// (`now-line` draws it down the column on mount, see globals.css).
-const NOW_LINE =
-  "now-line before:pointer-events-none before:absolute before:inset-y-0 before:-left-px before:w-0.5 before:bg-danger/70";
-
 const colIndex = (i: number) => ({ "--i": i }) as CSSProperties;
 
 /**
@@ -97,7 +92,7 @@ export function WeekBoard({
       role="group"
       aria-label={label}
       data-board-motion={shown.motion}
-      className={`overflow-hidden rounded-[var(--radius)] border border-border bg-card lg:grid ${
+      className={`flex flex-col gap-1 lg:grid lg:gap-2 ${
         showGutter
           ? "lg:grid-cols-[minmax(0,1.05fr)_repeat(7,minmax(0,1fr))]"
           : "lg:grid-cols-[repeat(7,minmax(0,1fr))]"
@@ -108,13 +103,13 @@ export function WeekBoard({
           key={`gutter-${week}`}
           aria-label={`Lejárt, ${overdue.length} elem`}
           style={colIndex(0)}
-          className="board-col grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 bg-danger/[0.06] px-3 py-3 lg:flex lg:flex-col lg:gap-2"
+          className="board-col relative grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 lg:flex lg:flex-col lg:gap-3 lg:px-2.5"
         >
-          <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between">
-            <span className="text-xs font-bold uppercase tracking-[0.12em] text-danger">Lejárt</span>
-            <span className="text-[11px] tabular-nums text-danger/80">{overdue.length}</span>
+          <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between lg:px-0.5">
+            <span className="font-display text-[19px] text-danger">Lejárt</span>
+            <span className="text-[12px] font-semibold tabular-nums text-danger">{overdue.length}</span>
           </header>
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-3 pt-1">
             {overdue.map((d) => (
               <DeadlineChip key={d.id} deadline={d} now={now} showCourse={showCourse} showDate />
             ))}
@@ -123,7 +118,7 @@ export function WeekBoard({
       )}
 
       {narrowEmpty && (
-        <p className="px-3 py-3 text-xs text-muted-dim lg:hidden">{emptyDay}</p>
+        <p className="rounded-[var(--radius-slip)] bg-strip px-3 py-3 text-[13.5px] text-muted lg:hidden">{emptyDay}</p>
       )}
 
       {days.map((day, i) => {
@@ -139,43 +134,55 @@ export function WeekBoard({
             style={colIndex(i + (showGutter ? 1 : 0))}
             aria-label={`${format(day.date, "EEEE, MMM d.", { locale: hu })}${today ? " (ma)" : ""}`}
             aria-current={today ? "date" : undefined}
-            className={`board-col relative grid-cols-[5.5rem_minmax(0,1fr)] gap-3 border-border/60 px-3 py-3 lg:flex ${dense ? "lg:min-h-[7.5rem]" : "lg:min-h-[12.5rem]"} lg:flex-col lg:gap-2 ${
-              // Every row draws its top rule and shifts up 1px, so the first visible row's rule is
-              // clipped by the board's edge whichever past days are hidden.
-              `-mt-px border-t lg:mt-0 lg:border-t-0 ${i > 0 || showGutter ? "lg:border-l" : ""}`
-            } ${(past && settled) || (empty && (hideEmptyDays || narrowEmpty)) ? "hidden lg:flex" : "grid"} ${past ? "lg:bg-inset/40" : holiday ? "bg-accent-2/[0.06]" : ""} ${
-              today ? `bg-accent-soft/40 ${NOW_LINE}` : ""
+            className={`board-col relative grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] px-3 pb-4 pt-3 lg:flex lg:flex-col lg:gap-3 lg:px-2.5 ${
+              dense ? "lg:min-h-[8rem]" : "lg:min-h-[15rem]"
+            } ${(past && settled) || (empty && (hideEmptyDays || narrowEmpty)) ? "hidden lg:flex" : "grid"} ${
+              today
+                ? "bg-canary-soft"
+                : holiday
+                  ? "bg-sky"
+                  : past
+                    ? "bg-strip-past"
+                    : "bg-strip"
             }`}
           >
-            <header className="flex flex-col">
+            {today && (
+              <span aria-hidden="true" className="pin -top-[5px] left-1/2 -ml-[5.5px] max-lg:left-[22px]" />
+            )}
+            <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between lg:gap-2 lg:px-0.5">
               <span
-                className={`text-xs font-bold lowercase tracking-[0.04em] ${
-                  today ? "text-accent-text" : past ? "text-muted-dim" : "text-heading"
+                className={`font-display text-[19px] capitalize ${
+                  past ? "text-muted" : "text-heading"
                 }`}
               >
                 {format(day.date, "EEEE", { locale: hu })}
               </span>
               <span
-                className={`text-[11px] tabular-nums ${
-                  today ? "font-semibold text-accent-text" : "text-muted-dim"
+                className={`text-[12px] tabular-nums ${
+                  today ? "font-semibold text-heading" : "text-muted"
                 }`}
               >
-                {today ? `ma · most ${format(now, "HH:mm")}` : format(day.date, "MMM d.", { locale: hu })}
+                {today ? `ma, ${format(now, "HH:mm")}` : format(day.date, "MMM d.", { locale: hu })}
               </span>
               {holiday && (
-                <span className="mt-0.5 text-[11px] leading-snug text-accent-2 [overflow-wrap:anywhere]">
+                <span className="mt-0.5 text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:hidden">
                   Szünnap · {holiday.subject}
                 </span>
               )}
             </header>
-            <div className="flex min-w-0 flex-col gap-1.5">
+            {holiday && (
+              <span className="hidden text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:block lg:px-0.5">
+                Szünnap · {holiday.subject}
+              </span>
+            )}
+            <div className="flex min-w-0 flex-col gap-3 pt-1">
               {daySessions.map((s) => (
                 <ClassChip key={s.id} session={s} showCourse={showCourse} />
               ))}
               {day.items.map((d) => (
                 <DeadlineChip key={d.id} deadline={d} now={now} showCourse={showCourse} />
               ))}
-              {empty && <span className="text-xs text-muted-dim lg:hidden">{emptyDay}</span>}
+              {empty && <span className="text-[13px] text-muted-dim lg:hidden">{emptyDay}</span>}
             </div>
           </section>
         );

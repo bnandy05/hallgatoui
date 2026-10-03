@@ -38,8 +38,8 @@ const KIND_WEIGHT: Record<SearchKind, number> = {
 export function buildSearchItems(input: SearchInput): SearchItem[] {
   const { courses, deadlines, customPlatforms, feeds } = input;
   const items: SearchItem[] = [
-    { id: "page:/", kind: "page", title: "Tárgyaim", href: "/" },
-    { id: "page:/radar", kind: "page", title: "Határidő-radar", href: "/radar" },
+    { id: "page:/", kind: "page", title: "Hét", subtitle: "Heti nézet és tárgyak", href: "/" },
+    { id: "page:/radar", kind: "page", title: "Határidők", href: "/radar" },
     { id: "page:/beallitasok", kind: "page", title: "Beállítások", href: "/beallitasok" },
     { id: "action:new-deadline", kind: "action", title: "Új határidő", actionId: "new-deadline" },
   ];
@@ -47,7 +47,7 @@ export function buildSearchItems(input: SearchInput): SearchItem[] {
     items.push({
       id: "action:sync-feeds",
       kind: "action",
-      title: "Naptárak szinkronizálása",
+      title: "Naptárak frissítése",
       actionId: "sync-feeds",
     });
   }

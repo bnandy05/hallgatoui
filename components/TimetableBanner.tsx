@@ -18,17 +18,18 @@ export function TimetableBanner() {
   if (count === 0 || dismissed) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-accent/30 bg-accent-soft px-4 py-3">
-      <CalendarClock className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-      <p className="min-w-0 flex-1 text-sm font-medium text-foreground">
-        {count} órarendi tárgy még nincs a tárgyaidhoz rendelve
+    <div className="slip flex flex-wrap items-center gap-3 bg-canary py-3 pl-9 pr-4">
+      <span aria-hidden="true" className="pin left-3.5 top-1/2 -mt-[5.5px]" />
+      <CalendarClock className="h-5 w-5 shrink-0" aria-hidden="true" />
+      <p className="min-w-0 flex-1 text-[14.5px] font-semibold text-heading">
+        {count} órarendi tárgy még nincs tárgyhoz rendelve
       </p>
       <div className="flex items-center gap-2">
         <Link href="/beallitasok#naptarak" className={buttonClasses({ size: "sm" })}>
           Hozzárendelés
         </Link>
         <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>
-          <span className="text-muted">Később</span>
+          Később
         </Button>
       </div>
     </div>

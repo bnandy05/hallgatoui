@@ -78,11 +78,11 @@ export function CommandPalette() {
         aria-label="Keresés"
         onClick={() => setOpen(true)}
         disabled={!hydrated}
-        className="lift-sm inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-lg)] border border-border bg-card p-2 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-foreground sm:px-3"
+        className="inline-flex h-8 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2 text-[13.5px] font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
       >
-        <Search className="h-5 w-5 sm:h-4 sm:w-4" />
-        <span className="hidden sm:inline">Keresés</span>
-        <kbd className="hidden rounded border border-border bg-inset px-1 text-[10px] sm:inline">
+        <Search className="h-4 w-4" />
+        <span className="hidden lg:inline">Keresés</span>
+        <kbd className="hidden rounded-[3px] bg-inset px-1.5 font-sans text-[11px] font-semibold text-muted lg:inline">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
@@ -180,14 +180,12 @@ function PaletteContent({
   return (
     <div className="flex flex-col gap-3">
       <div className="relative">
-        <span
+        <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-accent"
-        >
-          {">"}
-        </span>
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-dim"
+        />
         <Input
-        className="pl-8"
+        className="pl-9"
         autoFocus
         role="combobox"
         aria-expanded="true"
@@ -199,12 +197,12 @@ function PaletteContent({
           setActive(0);
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Tárgy, link, határidő, jegyzet…"
+        placeholder="Keress tárgyra, linkre, határidőre vagy anyagra"
         />
       </div>
 
       {results.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted">Nincs találat.</p>
+        <p className="py-6 text-center text-[14px] text-muted">Nincs találat.</p>
       ) : (
         <ul
           id="palette-results"
@@ -215,7 +213,7 @@ function PaletteContent({
           {results.map((item, index) => (
             <li key={item.id} role="presentation">
               {(index === 0 || results[index - 1].kind !== item.kind) && (
-                <p className="px-2 pb-1 pt-2 text-xs font-bold uppercase tracking-[0.12em] text-accent-text">
+                <p className="px-2 pb-1 pt-3 text-[12.5px] font-semibold text-muted-dim">
                   {KIND_HEADINGS[item.kind]}
                 </p>
               )}
@@ -226,8 +224,8 @@ function PaletteContent({
                 data-index={index}
                 onMouseMove={() => setActive(index)}
                 onClick={() => activate(item)}
-                className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-                  index === active ? "bg-inset" : ""
+                className={`flex cursor-pointer items-center gap-2.5 rounded-[var(--radius)] px-2 py-2 text-[14px] ${
+                  index === active ? "bg-canary" : ""
                 }`}
               >
                 <ItemIcon item={item} customPlatforms={customPlatforms} />

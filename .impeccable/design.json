@@ -1,432 +1,427 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T18:31:11.883430+00:00",
+  "generatedAt": "2026-10-03T22:00:55.012330+00:00",
   "title": "Design System: Hallgatói réteg",
   "extensions": {
     "colorMeta": {
-      "ink-navy": {
+      "felt": {
         "role": "neutral",
-        "displayName": "Ink Navy",
-        "canonical": "var(--bg)",
+        "displayName": "Felt",
+        "canonical": "#dde2e4",
         "tonalRamp": [
-          "#162036",
-          "#27375e",
-          "#374f86",
-          "#4766ad",
-          "#6b85c2",
-          "#93a6d2",
-          "#bec9e4",
-          "#edf0f8"
+          "#22282b",
+          "#384347",
+          "#4f5e63",
+          "#667880",
+          "#8899a0",
+          "#aab6bb",
+          "#cfd6d9",
+          "#f1f3f4"
         ]
       },
-      "ink-inset": {
+      "felt-dark": {
         "role": "neutral",
-        "displayName": "Ink Inset",
-        "canonical": "var(--bg2)",
+        "displayName": "Felt Dark",
+        "canonical": "#c9cfd2",
         "tonalRamp": [
-          "#152037",
-          "#253760",
-          "#344f88",
-          "#4466b1",
-          "#6885c5",
-          "#90a6d4",
-          "#bdc9e6",
-          "#edf0f8"
+          "#23272a",
+          "#3a4246",
+          "#515c61",
+          "#68767d",
+          "#8a979e",
+          "#acb5b9",
+          "#d0d5d8",
+          "#f1f3f3"
         ]
       },
-      "panel-navy": {
+      "day-strip": {
         "role": "neutral",
-        "displayName": "Panel Navy",
-        "canonical": "var(--panel)",
+        "displayName": "Day Strip",
+        "canonical": "#e9ecee",
         "tonalRamp": [
-          "#172035",
-          "#28385c",
-          "#395084",
-          "#4a68ab",
-          "#6d87c0",
-          "#94a7d1",
-          "#bfcae3",
-          "#edf0f7"
+          "#21272b",
+          "#384148",
+          "#4e5c65",
+          "#647681",
+          "#8697a2",
+          "#a9b4bc",
+          "#ced5d9",
+          "#f1f3f4"
         ]
       },
-      "chalk-white": {
+      "day-strip-past": {
         "role": "neutral",
-        "displayName": "Chalk White",
-        "canonical": "var(--fg)",
+        "displayName": "Day Strip Past",
+        "canonical": "#d6dbde",
         "tonalRamp": [
-          "#142538",
-          "#244061",
-          "#335b8a",
-          "#4276b3",
-          "#6693c7",
-          "#8fb0d6",
-          "#bccfe6",
-          "#ecf2f8"
+          "#22272a",
+          "#394147",
+          "#505c63",
+          "#66767f",
+          "#88979f",
+          "#aab5bb",
+          "#cfd5d8",
+          "#f1f3f4"
         ]
       },
-      "paper-white": {
+      "copy-paper": {
         "role": "neutral",
-        "displayName": "Paper White",
-        "canonical": "var(--heading)",
+        "displayName": "Copy Paper",
+        "canonical": "#fdfdfa",
         "tonalRamp": [
-          "#362e17",
-          "#5d5028",
-          "#847139",
-          "#ab9349",
-          "#c0ab6d",
-          "#d1c294",
-          "#e3dabf",
-          "#f7f5ed"
+          "#373716",
+          "#5b5b24",
+          "#808033",
+          "#a4a442",
+          "#c2c266",
+          "#d3d392",
+          "#e6e6c1",
+          "#f8f8ed"
         ]
       },
-      "muted-chalk": {
+      "paper-inset": {
         "role": "neutral",
-        "displayName": "Muted Chalk",
-        "canonical": "var(--muted)",
+        "displayName": "Paper Inset",
+        "canonical": "#f1f2ee",
         "tonalRamp": [
-          "#1c2531",
-          "#303f55",
-          "#445a79",
-          "#58759d",
-          "#7992b4",
-          "#9dafc8",
-          "#c4cfde",
-          "#eff2f6"
+          "#292b21",
+          "#444837",
+          "#5f654d",
+          "#7a8263",
+          "#9ba286",
+          "#b8bda8",
+          "#d7d9ce",
+          "#f3f4f1"
+        ]
+      },
+      "toner-ink": {
+        "role": "primary",
+        "displayName": "Toner Ink",
+        "canonical": "#1b1c1e",
+        "tonalRamp": [
+          "#242628",
+          "#3c3f43",
+          "#55585e",
+          "#6d7179",
+          "#8e929a",
+          "#aeb1b7",
+          "#d1d3d6",
+          "#f2f2f3"
+        ]
+      },
+      "heading-ink": {
+        "role": "neutral",
+        "displayName": "Heading Ink",
+        "canonical": "#111214",
+        "tonalRamp": [
+          "#232529",
+          "#3b3e45",
+          "#525760",
+          "#69707c",
+          "#8b919d",
+          "#acb0b9",
+          "#d0d2d7",
+          "#f1f2f3"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#45484c",
+        "tonalRamp": [
+          "#242628",
+          "#3d3f43",
+          "#55595e",
+          "#6d7278",
+          "#8f9399",
+          "#afb2b6",
+          "#d2d3d6",
+          "#f2f2f3"
         ]
       },
       "muted-dim": {
         "role": "neutral",
         "displayName": "Muted Dim",
-        "canonical": "var(--muted-dim)",
+        "canonical": "#585c61",
         "tonalRamp": [
-          "#1e252f",
-          "#344051",
-          "#4a5b73",
-          "#607695",
-          "#8092ad",
-          "#a2afc3",
-          "#c7cfdb",
-          "#eff2f5"
+          "#242628",
+          "#3d3f43",
+          "#55595e",
+          "#6d7278",
+          "#8f9399",
+          "#afb2b6",
+          "#d2d3d6",
+          "#f2f2f3"
         ]
       },
-      "blueprint-border": {
+      "paper-edge": {
         "role": "neutral",
-        "displayName": "Blueprint Border",
-        "canonical": "var(--border)",
+        "displayName": "Paper Edge",
+        "canonical": "#c2c8cb",
         "tonalRamp": [
-          "#192134",
-          "#2b3a5a",
-          "#3d5280",
-          "#4f6ba6",
-          "#7289bb",
-          "#98a9cd",
-          "#c1cbe1",
-          "#eef1f7"
+          "#232729",
+          "#3b4145",
+          "#525c60",
+          "#6a767c",
+          "#8b979c",
+          "#acb5b9",
+          "#d0d5d7",
+          "#f1f3f3"
         ]
       },
-      "blueprint-border-strong": {
+      "paper-edge-strong": {
         "role": "neutral",
-        "displayName": "Blueprint Border Strong",
-        "canonical": "var(--border-strong)",
+        "displayName": "Paper Edge Strong",
+        "canonical": "#9aa2a7",
         "tonalRamp": [
-          "#192333",
-          "#2c3c59",
-          "#3f567e",
-          "#516fa4",
-          "#738dba",
-          "#99abcc",
-          "#c2cde1",
-          "#eef1f7"
+          "#242729",
+          "#3b4144",
+          "#535b5f",
+          "#6b757b",
+          "#8d969b",
+          "#adb4b8",
+          "#d1d4d7",
+          "#f1f2f3"
         ]
       },
-      "highlighter-yellow": {
-        "role": "primary",
-        "displayName": "Highlighter Yellow",
-        "canonical": "var(--accent)",
-        "tonalRamp": [
-          "#4c3400",
-          "#855b00",
-          "#bd8100",
-          "#f5a800",
-          "#ffbd2e",
-          "#ffcf66",
-          "#ffe2a3",
-          "#fff7e5"
-        ]
-      },
-      "highlighter-deep": {
-        "role": "primary",
-        "displayName": "Highlighter Deep",
-        "canonical": "var(--accent-deep)",
-        "tonalRamp": [
-          "#492e03",
-          "#7f5006",
-          "#b47308",
-          "#ea950b",
-          "#f6ad37",
-          "#f8c36d",
-          "#fbdba7",
-          "#fef5e7"
-        ]
-      },
-      "highlighter-text": {
-        "role": "primary",
-        "displayName": "Highlighter Text",
-        "canonical": "var(--accent-text)",
-        "tonalRamp": [
-          "#4c3600",
-          "#855e00",
-          "#bd8600",
-          "#f5ae00",
-          "#ffc22e",
-          "#ffd366",
-          "#ffe4a3",
-          "#fff8e5"
-        ]
-      },
-      "highlighter-soft": {
-        "role": "primary",
-        "displayName": "Highlighter Soft",
-        "canonical": "var(--accent-soft)"
-      },
-      "highlighter-ink": {
-        "role": "primary",
-        "displayName": "Highlighter Ink",
-        "canonical": "var(--accent-ink)",
-        "tonalRamp": [
-          "#402f0c",
-          "#6f5115",
-          "#9e741e",
-          "#cd9627",
-          "#ddae50",
-          "#e6c47f",
-          "#f0dbb2",
-          "#fbf5ea"
-        ]
-      },
-      "chalk-mint": {
+      "ballpoint-blue": {
         "role": "secondary",
-        "displayName": "Chalk Mint",
-        "canonical": "var(--accent-2)",
+        "displayName": "Ballpoint Blue",
+        "canonical": "#2b5b84",
         "tonalRamp": [
-          "#0c4030",
-          "#156f54",
-          "#1e9e77",
-          "#28cd9a",
-          "#50ddb2",
-          "#7fe6c6",
-          "#b2f0dd",
-          "#eafbf6"
+          "#13283a",
+          "#1f4260",
+          "#2c5d87",
+          "#3877ad",
+          "#5d98ca",
+          "#8cb6d9",
+          "#bed5ea",
+          "#ecf3f9"
         ]
       },
-      "success-green": {
+      "pin-red": {
         "role": "tertiary",
-        "displayName": "Success Green",
-        "canonical": "var(--success)",
+        "displayName": "Pin Red",
+        "canonical": "#d8352a",
         "tonalRamp": [
-          "#0e3f23",
-          "#186d3c",
-          "#229b56",
-          "#2bc96f",
-          "#53da8d",
-          "#81e4ab",
-          "#b4efcd",
-          "#eafaf1"
-        ]
-      },
-      "warning-orange": {
-        "role": "tertiary",
-        "displayName": "Warning Orange",
-        "canonical": "var(--warning)",
-        "tonalRamp": [
-          "#4c2100",
-          "#853900",
-          "#bd5200",
-          "#f56a00",
-          "#ff882e",
-          "#ffa866",
-          "#ffcba3",
-          "#fff1e5"
+          "#410f0c",
+          "#6c1914",
+          "#97231c",
+          "#c22e24",
+          "#de534a",
+          "#e7847e",
+          "#f2bab6",
+          "#fbebe9"
         ]
       },
       "danger-red": {
         "role": "tertiary",
         "displayName": "Danger Red",
-        "canonical": "var(--danger)",
+        "canonical": "#b3261e",
         "tonalRamp": [
-          "#4c000d",
-          "#850016",
-          "#bd0020",
-          "#f50029",
-          "#ff2e51",
-          "#ff6680",
-          "#ffa3b3",
-          "#ffe5ea"
+          "#420e0b",
+          "#6d1712",
+          "#99201a",
+          "#c52a21",
+          "#e05048",
+          "#e9827c",
+          "#f3b8b5",
+          "#fbeae9"
         ]
       },
-      "nav-line": {
+      "canary": {
         "role": "neutral",
-        "displayName": "Nav Line",
-        "canonical": "var(--nav-line)",
+        "displayName": "Canary",
+        "canonical": "#f7e27e",
         "tonalRamp": [
-          "#182134",
-          "#2a395b",
-          "#3c5181",
-          "#4d69a7",
-          "#7087bd",
-          "#96a7cf",
-          "#c0cae2",
-          "#eef0f7"
+          "#483c04",
+          "#786507",
+          "#a88d0a",
+          "#d8b50d",
+          "#f2d235",
+          "#f6df6f",
+          "#faedad",
+          "#fefae7"
         ]
       },
-      "terminal-bar": {
+      "canary-soft": {
         "role": "neutral",
-        "displayName": "Terminal Bar",
-        "canonical": "var(--term-bar)",
+        "displayName": "Canary Soft",
+        "canonical": "#f1e6ab",
         "tonalRamp": [
-          "#162036",
-          "#27375e",
-          "#374e85",
-          "#4865ad",
-          "#6b84c2",
-          "#93a5d2",
-          "#bec9e4",
-          "#edf0f8"
+          "#42390b",
+          "#6d5f12",
+          "#998519",
+          "#c5ab21",
+          "#e0c847",
+          "#e9d87c",
+          "#f3e9b5",
+          "#fbf8e9"
         ]
       },
-      "close-red": {
-        "role": "tertiary",
-        "displayName": "Close Red",
-        "canonical": "var(--close-hover)",
+      "salmon": {
+        "role": "neutral",
+        "displayName": "Salmon",
+        "canonical": "#f8cfc2",
         "tonalRamp": [
-          "#3f130e",
-          "#6c2018",
-          "#9a2e23",
-          "#c83b2d",
-          "#d96154",
-          "#e38b82",
-          "#eeb9b4",
-          "#faecea"
+          "#451708",
+          "#72260d",
+          "#a03512",
+          "#ce4418",
+          "#e9683f",
+          "#ef9376",
+          "#f6c2b1",
+          "#fcede8"
         ]
       },
-      "grid-minor": {
+      "sky": {
         "role": "neutral",
-        "displayName": "Grid Minor",
-        "canonical": "var(--grid-minor)"
+        "displayName": "Sky",
+        "canonical": "#d4e6f3",
+        "tonalRamp": [
+          "#112a3c",
+          "#1c4664",
+          "#27618c",
+          "#327db3",
+          "#589ed0",
+          "#87b9de",
+          "#bbd8ec",
+          "#ebf3f9"
+        ]
       },
-      "grid-major": {
+      "success-green": {
         "role": "neutral",
-        "displayName": "Grid Major",
-        "canonical": "var(--grid-major)"
+        "displayName": "Success Green",
+        "canonical": "#1a6b3c",
+        "tonalRamp": [
+          "#0f3e23",
+          "#19673a",
+          "#239051",
+          "#2db968",
+          "#53d589",
+          "#84e1ab",
+          "#b9eecf",
+          "#eafaf1"
+        ]
       },
-      "margin-line": {
-        "role": "tertiary",
-        "displayName": "Margin Line",
-        "canonical": "var(--margin-line)"
+      "warning-amber": {
+        "role": "neutral",
+        "displayName": "Warning Amber",
+        "canonical": "#94470a",
+        "tonalRamp": [
+          "#482205",
+          "#773908",
+          "#a7500b",
+          "#d7670f",
+          "#f18936",
+          "#f5ab70",
+          "#facfae",
+          "#fdf1e7"
+        ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Page h1 in SectionHeading; may carry the yellow-to-mint .grad on the key phrase."
+        "purpose": "Page h1, condensed heavy printed-notice voice."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Section h2s."
+        "purpose": "Section h2s; dialog and empty-state titles at 24px."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Dialog and empty-state titles."
+        "purpose": "Day-strip and Lejárt headings."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Running text, buttons, tabs, inputs; intros cap at 620px."
-      },
-      "chip": {
-        "displayName": "Chip",
-        "purpose": "Deadline titles on the week board and pill labels, two-line clamp."
+        "purpose": "UI text, fields, buttons."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Uppercase course-table column headers and the Lejárt gutter label."
+        "purpose": "Form labels and the inline Következő label."
       },
-      "meta": {
-        "displayName": "Meta",
-        "purpose": "Times, dates, counts and course names under chips, tabular figures."
+      "slip-title": {
+        "displayName": "Slip Title",
+        "purpose": "A deadline title on its slip."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Code blocks only."
       }
     },
     "shadows": [
       {
-        "name": "glow-accent",
-        "value": "0 6px 24px rgba(255, 194, 61, 0.25)",
-        "purpose": "Primary button hover (--glow-accent)."
+        "name": "shadow-paper",
+        "value": "0 1px 1px rgba(30, 40, 48, 0.08), 0 3px 8px -3px rgba(30, 40, 48, 0.22)",
+        "purpose": "Slips, active nav item and vertical tab."
       },
       {
-        "name": "primary-resting",
-        "value": "inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(255,194,61,0.18)",
-        "purpose": "Primary button at rest, lit top edge."
+        "name": "shadow-sheet",
+        "value": "0 1px 2px rgba(30, 40, 48, 0.08), 0 10px 24px -12px rgba(30, 40, 48, 0.3)",
+        "purpose": "Sheets pinned to the felt: cards, course list, settings panels."
       },
       {
-        "name": "inset-highlight",
-        "value": "inset 0 1px 0 rgba(255,255,255,0.04)",
-        "purpose": "Secondary button top edge."
+        "name": "shadow-lift",
+        "value": "0 2px 3px rgba(30, 40, 48, 0.1), 0 12px 22px -10px rgba(30, 40, 48, 0.35)",
+        "purpose": "Hover on slips and interactive cards."
       },
       {
-        "name": "terminal-float",
-        "value": "0 24px 60px rgba(0,0,0,0.4)",
-        "purpose": "Terminal panel."
+        "name": "dialog",
+        "value": "0 24px 60px -20px rgba(20,28,34,0.5)",
+        "purpose": "Dialogs, over a rgba(40,48,54,0.45) backdrop."
       },
       {
-        "name": "sticky-float",
-        "value": "0 12px 32px rgba(0,0,0,0.35)",
-        "purpose": "Sticky radar filter toolbar."
-      },
-      {
-        "name": "display-text-shadow",
-        "value": "0 2px 20px rgba(0,0,0,.45)",
-        "purpose": "Text-shadow on the page h1 to lift it off the grid."
+        "name": "pin-cast",
+        "value": "1px 2px 2px rgba(20, 24, 28, 0.35)",
+        "purpose": "The pin head's cast shadow on paper."
       }
     ],
     "motion": [
       {
         "name": "ease-out",
         "value": "cubic-bezier(0.2, 0.7, 0.2, 1)",
-        "purpose": "All transitions (--ease-out)."
+        "purpose": "Short state transitions (colour, border, shadow)."
       },
       {
-        "name": "lift",
-        "value": "translateY(-2px), 0.16s",
-        "purpose": "Interactive card hover."
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Physical moves: pinning, unpinning, slides, dialog drop."
       },
       {
-        "name": "lift-sm",
-        "value": "translateY(-1px), 0.16s",
-        "purpose": "Button and launch-icon hover."
+        "name": "slip-pin",
+        "value": "0.55s ease-out-expo, 55ms stagger per column + 80ms",
+        "purpose": "First load: slips pinned up column by column; pin-press 0.4s follows at +260ms."
       },
       {
-        "name": "state-transition",
-        "value": "150ms",
-        "purpose": "Colour, border and filter changes on controls."
+        "name": "board-slide",
+        "value": "0.34s ease-out-expo, translateX ±24px",
+        "purpose": "Week navigation: days slide in from the side moved to."
       },
       {
-        "name": "reveal",
-        "value": "opacity + translateY(24px), 0.6s",
-        "purpose": "Scroll reveal of sections."
+        "name": "unpin",
+        "value": "transform 0.4s ease-out-expo; pin 0.28s scale(0)",
+        "purpose": "Done: the pin pops, the slip tilts -2.2deg and drops 2px at 72% opacity; a strike draws through the title in 0.35s."
       },
       {
-        "name": "reveal-stagger",
-        "value": "translateY(16px), 0.5s, delay 0.04s + i * 0.05s",
-        "purpose": "Domino entry of child items."
+        "name": "sheet-in",
+        "value": "0.3s ease-out-expo, translateY(-10px) rotate(-0.6deg)",
+        "purpose": "Dialogs drop into place; backdrop fades 0.24s."
       },
       {
-        "name": "term-blink",
-        "value": "1.05s steps(1) infinite",
-        "purpose": "Terminal cursor."
+        "name": "panel-in",
+        "value": "0.24s ease-out-expo, translateY(4px)",
+        "purpose": "Tab panels appearing."
+      },
+      {
+        "name": "pinboard-swap",
+        "value": "every ~5.2s (x0.7-1.3); fall 1.7s, pin 0.7s; 30fps",
+        "purpose": "Background canvas: one ghost slip falls, another is pinned up."
       },
       {
         "name": "reduced-motion",
-        "value": "none",
-        "purpose": "prefers-reduced-motion disables lifts, reveals, smooth scroll and the cursor blink."
+        "value": "0.2s linear opacity",
+        "purpose": "All board, slip, pin and dialog motion becomes a cross-fade; done slips do not tilt; the canvas renders one static frame."
       }
     ],
     "breakpoints": [
@@ -435,8 +430,16 @@
         "value": "640px"
       },
       {
+        "name": "md",
+        "value": "768px"
+      },
+      {
         "name": "lg",
         "value": "1024px"
+      },
+      {
+        "name": "container",
+        "value": "1240px"
       }
     ]
   },
@@ -445,127 +448,139 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one main action per header row (+ Határidő).",
-      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Határidő</button>",
-      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 16px;border-radius:var(--radius-lg);cursor:pointer;transition:transform .16s var(--ease-out),border-color .16s var(--ease-out),filter .16s var(--ease-out),box-shadow .16s var(--ease-out);background:linear-gradient(135deg,var(--accent),var(--accent-deep));border:1px solid var(--accent-text);color:var(--accent-ink);font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35),0 2px 10px rgba(255,194,61,0.18);} .ds-btn-primary:hover{filter:brightness(1.07);box-shadow:var(--glow-accent);transform:translateY(-1px);} .ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
+      "description": "Toner-black primary action, e.g. Új határidő.",
+      "html": "<button class=\"ds-btn-primary\">Új határidő</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:var(--radius);background:var(--accent);border:1px solid var(--accent);color:var(--accent-ink);font:600 14.5px/1 var(--font-archivo,Archivo,sans-serif);box-shadow:0 1px 2px rgba(20,24,28,0.25);cursor:pointer;transition:background-color .15s var(--ease-out),transform .15s var(--ease-out)}.ds-btn-primary:hover{background:#33363a}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Secondary actions and icon-only week navigation.",
-      "html": "<span style=\"display:inline-flex;gap:6px\"><button class=\"ds-btn-secondary ds-btn-icon\" aria-label=\"Előző hét\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg></button><button class=\"ds-btn-secondary\">Ez a hét</button></span>",
-      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 16px;border-radius:var(--radius-lg);cursor:pointer;transition:transform .16s var(--ease-out),border-color .16s var(--ease-out),filter .16s var(--ease-out),box-shadow .16s var(--ease-out);font-size:14px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);color:var(--fg);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);} .ds-btn-secondary:hover{border-color:var(--accent);transform:translateY(-1px);} .ds-btn-secondary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-btn-icon{padding:6px 8px;}"
+      "description": "A paper-slip button for secondary actions.",
+      "html": "<button class=\"ds-btn-secondary\">Mégse</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--border);color:var(--fg);font:500 14.5px/1 var(--font-archivo,Archivo,sans-serif);box-shadow:0 1px 1px rgba(30,40,48,0.06);cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}.ds-btn-secondary:hover{border-color:var(--border-strong);box-shadow:var(--shadow-paper)}.ds-btn-secondary:active{transform:translateY(1px)}.ds-btn-secondary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
     },
     {
-      "name": "Input",
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action in the red pin's ink.",
+      "html": "<button class=\"ds-btn-danger\">Törlés</button>",
+      "css": ".ds-btn-danger{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:var(--radius);background:var(--danger);border:1px solid var(--danger);color:var(--accent-ink);font:600 14.5px/1 var(--font-archivo,Archivo,sans-serif);cursor:pointer;transition:background-color .15s}.ds-btn-danger:hover{background:#9a1f18}.ds-btn-danger:focus-visible{outline:2px solid var(--danger);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Text field: an inset well with a yellow focus edge.",
-      "html": "<input class=\"ds-input\" placeholder=\"https://canvas.example.hu/feeds/…\" />",
-      "css": ".ds-input{width:100%;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;padding:8px 12px;background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .15s;} .ds-input::placeholder{color:var(--muted-dim);} .ds-input:hover{border-color:var(--border-strong);} .ds-input:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px;}"
+      "description": "Copy-paper field with a toner focus outline and a red caret.",
+      "html": "<input class=\"ds-input\" placeholder=\"Határidő címe\">",
+      "css": ".ds-input{width:100%;max-width:320px;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--panel);color:var(--fg);font:400 14.5px/1.4 var(--font-archivo,Archivo,sans-serif);box-shadow:inset 0 1px 2px rgba(30,40,48,0.06);caret-color:var(--pin);transition:border-color .15s}.ds-input::placeholder{color:var(--muted-dim)}.ds-input:hover{border-color:var(--border-strong)}.ds-input:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:0}"
     },
     {
       "name": "Filter Pill",
       "kind": "chip",
       "refersTo": "pill",
-      "description": "Toggle filter on the radar toolbar; course pills lead with the course dot.",
-      "html": "<span style=\"display:inline-flex;gap:8px\"><button class=\"ds-pill\" aria-pressed=\"true\"><span class=\"ds-dot\" style=\"background:#5b8def\"></span>Analízis</button><button class=\"ds-pill\" aria-pressed=\"false\">Csak kritikus</button></span>",
-      "css": ".ds-pill{display:inline-flex;align-items:center;gap:6px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:12.5px;padding:4px 12px;border-radius:9999px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;transition:border-color .15s;} .ds-pill:hover{border-color:var(--border-strong);} .ds-pill[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text);} .ds-pill:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-dot{width:8px;height:8px;border-radius:9999px;}"
+      "description": "Round toggle; active is toner.",
+      "html": "<button class=\"ds-pill\">Mind</button> <button class=\"ds-pill ds-pill-active\">Kritikus</button>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font:500 13px/1 var(--font-archivo,Archivo,sans-serif);cursor:pointer;transition:color .15s,border-color .15s}.ds-pill:hover{border-color:var(--border-strong);color:var(--heading)}.ds-pill-active{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}.ds-pill-active:hover{background:#33363a;color:var(--accent-ink)}.ds-pill:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
     },
     {
-      "name": "Card",
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Top-bar links on felt; the active route is a paper tab.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-active\" href=\"#\">Hét</a><a class=\"ds-nav-link\" href=\"#\">Határidők</a><a class=\"ds-nav-link\" href=\"#\">Beállítások</a></nav>",
+      "css": ".ds-nav{display:flex;gap:4px;padding:12px;background:var(--bg)}.ds-nav-link{display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:var(--radius);color:var(--muted);font:600 14.5px/1 var(--font-archivo,Archivo,sans-serif);text-decoration:none;transition:background-color .15s,color .15s}.ds-nav-link:hover{background:rgba(253,253,250,0.6);color:var(--heading)}.ds-nav-active{background:var(--panel);color:var(--heading);box-shadow:var(--shadow-paper)}.ds-nav-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Paper Sheet",
       "kind": "card",
       "refersTo": "card",
-      "description": "Panel sheet on the graph paper; interactive cards lift 2px.",
-      "html": "<div class=\"ds-card\"><h3>Naptárak</h3><p>Canvas és Moodle feedek, 15 percenként frissítve.</p></div>",
-      "css": ".ds-card{font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;color:var(--fg);transition:transform .16s var(--ease-out),border-color .16s var(--ease-out);} .ds-card:hover{transform:translateY(-2px);border-color:var(--accent);} .ds-card h3{margin:0 0 8px;font-size:16px;font-weight:700;color:var(--heading);} .ds-card p{margin:0;font-size:14px;color:var(--muted);}"
+      "description": "A sheet of copy paper on the felt.",
+      "html": "<div class=\"ds-felt\"><div class=\"ds-card\"><h2 class=\"ds-h2\">Tárgyak</h2><p class=\"ds-sub\">Linkek és határidők tárgyanként.</p></div></div>",
+      "css": ".ds-felt{background:var(--bg);padding:24px}.ds-card{background:var(--panel);border-radius:var(--radius-slip);box-shadow:var(--shadow-sheet);padding:24px;transition:box-shadow .2s}.ds-card:hover{box-shadow:var(--shadow-lift)}.ds-h2{margin:0;font-family:var(--font-archivo,Archivo,sans-serif);font-stretch:72%;font-weight:800;font-size:28px;line-height:1.02;color:var(--heading)}.ds-sub{margin:8px 0 0;font-size:15px;color:var(--muted)}"
     },
     {
-      "name": "Tabs",
-      "kind": "nav",
-      "refersTo": "tab-active",
-      "description": "ARIA tablist with roving focus and count badges; vertical rail on settings.",
-      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\" class=\"ds-tab\">Határidők <span class=\"ds-count\">4</span></button><button role=\"tab\" aria-selected=\"false\" class=\"ds-tab\">Linkek <span class=\"ds-count\">3</span></button><button role=\"tab\" aria-selected=\"false\" class=\"ds-tab\">Tudásbázis <span class=\"ds-count\">0</span></button></div>",
-      "css": ".ds-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);} .ds-tab{display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;font-family: var(--font-fira-code), ui-monospace, monospace;font-size:14px;font-weight:500;padding:8px 12px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:color .15s;} .ds-tab:hover{color:var(--fg);} .ds-tab[aria-selected=true]{border-bottom-color:var(--accent);color:var(--accent-text);} .ds-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-count{border-radius:9999px;padding:0 6px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--muted);} .ds-tab[aria-selected=true] .ds-count{background:var(--accent);color:var(--accent-ink);}"
-    },
-    {
-      "name": "Week Board with Now-Line",
+      "name": "Deadline Slip",
       "kind": "custom",
-      "refersTo": "week-board",
-      "description": "Monday-to-Sunday board; overdue gutter left, today washed yellow with the red margin line as now-line.",
-      "html": "<div class=\"ds-board\"><section class=\"ds-gutter\"><header><span class=\"ds-late\">Lejárt</span><span class=\"ds-late-n\">1</span></header><div class=\"ds-chip ds-hot\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">Labor 3 jegyzőkönyv</span><span class=\"ds-meta ds-red\">okt. 1. 23:59</span></div></div></section><section class=\"ds-day ds-past\"><header><span class=\"ds-dn\">hétfő</span><span class=\"ds-dd\">okt. 27.</span></header></section><section class=\"ds-day ds-today\" aria-current=\"date\"><header><span class=\"ds-dn\">kedd</span><span class=\"ds-dd\">ma · most 14:05</span></header><div class=\"ds-chip\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">Házi feladat 4</span><span class=\"ds-meta\">23:59</span></div></div></section><section class=\"ds-day\"><header><span class=\"ds-dn\">szerda</span><span class=\"ds-dd\">okt. 29.</span></header><div class=\"ds-chip ds-hot\"><input type=\"checkbox\" aria-label=\"Kész\"/><div><span class=\"ds-chip-t\">ZH 1</span><span class=\"ds-meta ds-red\">10:15 <svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-label=\"Kritikus\"><path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/></svg></span></div></div></section></div>",
-      "css": ".ds-board{display:grid;grid-template-columns:1.05fr repeat(3,1fr);font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;} .ds-board section{display:flex;flex-direction:column;gap:8px;padding:12px;min-height:200px;} .ds-board header{display:flex;flex-direction:column;} .ds-gutter{background:color-mix(in srgb,var(--danger) 6%,transparent);} .ds-gutter header{flex-direction:row;justify-content:space-between;align-items:baseline;} .ds-late{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--danger);} .ds-late-n{font-size:11px;color:var(--danger);} .ds-day{position:relative;border-left:1px solid color-mix(in srgb,var(--border) 60%,transparent);} .ds-past{background:color-mix(in srgb,var(--bg2) 40%,transparent);} .ds-today{background:color-mix(in srgb,var(--accent-soft) 40%,transparent);} .ds-today::before{content:'';position:absolute;top:0;bottom:0;left:-1px;width:2px;background:color-mix(in srgb,var(--danger) 70%,transparent);pointer-events:none;} .ds-dn{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--heading);} .ds-past .ds-dn{color:var(--muted-dim);} .ds-today .ds-dn{color:var(--accent-text);} .ds-dd{font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted-dim);} .ds-today .ds-dd{font-weight:600;color:var(--accent-text);} .ds-chip{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--bg2);border:1px solid color-mix(in srgb,var(--border) 70%,transparent);border-radius:6px;transition:border-color .15s;} .ds-chip:hover{border-color:var(--border-strong);} .ds-chip.ds-hot{border-color:color-mix(in srgb,var(--danger) 45%,transparent);} .ds-chip.ds-hot:hover{border-color:var(--danger);} .ds-chip input{accent-color:var(--accent);margin-top:3px;} .ds-chip div{display:flex;flex-direction:column;min-width:0;} .ds-chip-t{font-size:12.5px;font-weight:500;color:var(--fg);} .ds-chip-t:hover{color:var(--accent-text);text-decoration:underline;} .ds-meta{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted);} .ds-red{color:var(--danger);}"
+      "refersTo": "deadline-slip",
+      "description": "A pinned deadline slip; the pin carries state, done slips unpin and tilt.",
+      "html": "<div class=\"ds-felt2\"><div class=\"ds-slip\"><span class=\"ds-pin\" style=\"--pin-color:#2b5b84\"></span><label class=\"ds-slip-row\"><input type=\"checkbox\" class=\"ds-check\"><span><span class=\"ds-slip-title\">Beadandó 02</span><span class=\"ds-slip-meta\">23:59 · Analízis I.</span></span></label><span class=\"ds-bar\" style=\"width:40%\"></span></div><div class=\"ds-slip ds-overdue\"><span class=\"ds-pin\"></span><label class=\"ds-slip-row\"><input type=\"checkbox\" class=\"ds-check\"><span><span class=\"ds-slip-title\">Labor jegyzőkönyv</span><span class=\"ds-slip-meta ds-late\">okt. 2. 12:00</span></span></label></div><div class=\"ds-slip ds-done\"><span class=\"ds-pin\"></span><label class=\"ds-slip-row\"><input type=\"checkbox\" class=\"ds-check\" checked><span><span class=\"ds-slip-title\" style=\"color:var(--muted)\">ZH felkészülés</span><span class=\"ds-slip-meta\">10:00</span></span></label></div></div>",
+      "css": ".ds-felt2{display:flex;flex-direction:column;gap:12px;width:220px;padding:16px 10px;background:var(--strip);border-radius:var(--radius-slip)}.ds-slip{position:relative;background:var(--panel);border-radius:var(--radius-slip);box-shadow:var(--shadow-paper);padding:12px 10px 10px;transform-origin:85% 0;transition:transform .4s var(--ease-out-expo),box-shadow .2s,opacity .3s}.ds-slip:hover{box-shadow:var(--shadow-lift)}.ds-overdue{background:var(--salmon)}.ds-done{transform:rotate(-2.2deg) translateY(2px);opacity:.72;box-shadow:0 1px 2px rgba(30,40,48,0.12)}.ds-pin{--pin-color:var(--pin);position:absolute;top:-4px;left:11px;width:11px;height:11px;border-radius:9999px;background:var(--pin-color);box-shadow:1px 2px 2px rgba(20,24,28,0.35);transition:transform .28s var(--ease-out-expo),opacity .2s}.ds-done .ds-pin{transform:translateY(-6px) scale(0);opacity:0}.ds-slip-row{display:flex;gap:8px;align-items:flex-start;cursor:pointer}.ds-check{margin-top:3px;width:15px;height:15px;accent-color:var(--accent)}.ds-slip-title{display:block;font:600 13.5px/1.375 var(--font-archivo,Archivo,sans-serif);color:var(--heading)}.ds-done .ds-slip-title{text-decoration:line-through}.ds-slip-meta{display:block;margin-top:4px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.ds-late{color:var(--danger);font-weight:600}.ds-bar{position:absolute;bottom:0;left:0;height:2px;border-radius:0 9999px 9999px 0;background:rgba(17,18,20,0.2)}"
     },
     {
-      "name": "Course Launch Row",
-      "kind": "custom",
-      "refersTo": "course-table",
-      "description": "One course per row: launch its platforms without opening it, see what is next.",
-      "html": "<div class=\"ds-ctable\"><div class=\"ds-chead\"><span>Tárgy</span><span>Platformok</span><span>Következő</span><span>Nyitott</span></div><div class=\"ds-crow\"><div class=\"ds-cname\"><span class=\"ds-cdot\" style=\"background:#5b8def\"></span><div><a href=\"#\">Analízis I.</a><small>BMETE90AX00 · 2025/26/1</small></div></div><div class=\"ds-launch\"><a href=\"#\" class=\"ds-pi\" style=\"background:#e4572e\" aria-label=\"Canvas megnyitása\">C</a><a href=\"#\" class=\"ds-pi\" style=\"background:#2f6fb5\" aria-label=\"Neptun megnyitása\">N</a></div><div class=\"ds-next\"><span>Házi feladat 4</span><small>2 nap múlva</small></div><span class=\"ds-open\">3</span></div></div>",
-      "css": ".ds-ctable{font-family: var(--font-fira-code), ui-monospace, monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;} .ds-chead,.ds-crow{display:grid;grid-template-columns:1.5fr 1.45fr 1.7fr 4.5rem;column-gap:20px;align-items:center;} .ds-chead{padding:8px 16px;background:color-mix(in srgb,var(--bg2) 60%,transparent);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);} .ds-chead span:last-child{text-align:right;} .ds-crow{padding:14px 16px;} .ds-cname{display:flex;gap:10px;align-items:flex-start;} .ds-cdot{width:10px;height:10px;border-radius:9999px;margin-top:7px;flex-shrink:0;} .ds-cname a{display:block;font-weight:700;color:var(--heading);text-decoration:none;} .ds-cname a:hover{color:var(--accent-text);text-decoration:underline;} .ds-cname small,.ds-next small{display:block;font-size:12px;color:var(--muted);} .ds-next small{color:var(--warning);} .ds-next span{font-size:14px;color:var(--fg);} .ds-launch{display:flex;gap:6px;} .ds-pi{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-size:12px;font-weight:600;text-decoration:none;transition:transform .16s var(--ease-out);} .ds-pi:hover{transform:translateY(-1px);box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--border-strong);} .ds-pi:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-open{justify-self:end;min-width:1.75rem;text-align:center;border-radius:9999px;padding:2px 6px;font-size:11px;font-variant-numeric:tabular-nums;background:var(--accent-soft);color:var(--accent-text);}"
+      "name": "Class Chip",
+      "kind": "chip",
+      "refersTo": "class-chip",
+      "description": "A class taped flat on sky paper: no pin, no checkbox, no shadow.",
+      "html": "<div class=\"ds-class\"><span class=\"ds-dot\"></span><div><p class=\"ds-class-time\">10:15–11:45 <span class=\"ds-room\">QBF13</span></p><p class=\"ds-class-name\">Analízis I.</p></div></div>",
+      "css": ".ds-class{display:flex;gap:6px;align-items:flex-start;max-width:220px;padding:6px 8px;border-radius:var(--radius-slip);background:color-mix(in srgb,var(--sky) 80%,transparent);font:400 12px/1.375 var(--font-archivo,Archivo,sans-serif);color:var(--muted)}.ds-dot{margin-top:5px;width:6px;height:6px;border-radius:9999px;background:var(--accent-2);flex-shrink:0}.ds-class p{margin:0}.ds-class-time{font-weight:600;color:var(--heading);font-variant-numeric:tabular-nums}.ds-room{font-weight:400;color:var(--muted)}"
     }
   ],
   "narrative": {
-    "northStar": "The Night Blueprint",
-    "overview": "The app is an engineering notebook open on a desk at night. The page is ink-navy graph paper (24px minor and 120px major lines, fixed to the viewport) with a thin red margin line down the left. Panels sit on it like slightly lighter paper sheets. One highlighter-yellow marks what matters now; chalk-mint is the second pen, used for prompts and secondary marks. Everything is set in one monospace face, Fira Code, so dates, times and counts line up like notebook entries.\n\nDensity is that of a working tool rather than a showcase. A surface carries a compact header row, then a board or table that fills the 1240px container, with 11-14px type doing most of the work. Time is the structural spine: the week board lays deadlines out Monday to Sunday, so urgency reads from position (left of the now-line is late) before any colour or badge does.\n\nMotion is short and functional: a 1-2px hover lift on interactive surfaces, a 24px rise-in for content on scroll, and nothing at all under `prefers-reduced-motion`.",
+    "northStar": "The Corridor Notice Board, Made Calm",
+    "overview": "The app is the faculty corridor notice board with the noise taken out. A cool grey-blue felt ground carries white copy-paper sheets and slips; every deadline is a slip hung from a round pushpin, and the pin is the state. Coloured copy paper does the rest of the signalling: canary for today, salmon for overdue, sky for classes. Type is black toner. Headings are set like a printed notice, in heavy condensed Archivo; everything else is normal-width Archivo at working size.\n\nTime is the spine. The week board runs Monday to Sunday as seven lighter felt strips, with an overdue gutter on salmon paper at the left when something is late. Density is moderate: one board, one \"Következő\" notice that owns focus, one sheet for the course list. Behind every page a canvas draws faint ghost slips in the colours of the student's real open deadlines, swaying in a corridor draught; one falls off every few seconds and another is pinned up elsewhere.\n\nThe world is light only and flat in colour. It rejects the dark dashboard with neon accents it replaced, and the generic white SaaS calendar. Depth comes from paper physically sitting on felt (soft, short, cool-tinted shadows), never from gradients, glows or glass.",
     "keyCharacteristics": [
-      "Dark only (`color-scheme: dark`): graph-paper page, lighter panel sheets, darker inset wells.",
-      "One typeface (Fira Code, weights 400-700) for every role; hierarchy from size, weight and colour.",
-      "Highlighter yellow is the single \"now / act here\" signal; danger red is reserved for late and critical.",
-      "The notebook's red margin line doubles as the \"now\" line on the week board.",
-      "Course colours are user data and appear only as small dots and spines, never as fills.",
-      "Hairline blueprint borders keep every card and control edge visible."
+      "Felt ground, copy-paper surfaces, toner ink, one red pushpin colour.",
+      "Pins encode state; done slips unpin and hang loose.",
+      "Coloured copy paper as a state wash, not as decoration.",
+      "Condensed heavy Archivo for headings, normal-width Archivo for UI, tabular figures for times and counts.",
+      "Cut-paper corners (2 to 4px), soft paper shadows, flat colour.",
+      "Motion is physical and short: pinning, unpinning, dropping into place."
     ],
     "rules": [
       {
-        "name": "The Ink-On-Highlighter Rule",
-        "body": "Text on a yellow or danger fill is always Highlighter Ink, never white.",
+        "name": "The Copy-Paper Code Rule",
+        "body": "Canary means today (and attention), salmon means overdue, sky means classes. Never use a wash for decoration or swap their meanings.",
         "section": "colors"
       },
       {
-        "name": "The Data-Colour Rule",
-        "body": "Raw hex appears only for user, course and platform data (and inside TraceField). Course colours render as dots (6-10px) and spines; every other colour comes from a token.",
+        "name": "The One Red Pin Rule",
+        "body": "Red is reserved for now, late, critical and destructive. A slip that is merely open carries its course colour, not red.",
         "section": "colors"
       },
       {
-        "name": "The Two-Reds Rule",
-        "body": "Danger red means late or critical. It is not decoration; the margin line is its only ambient use.",
+        "name": "The Data-Only Hex Rule",
+        "body": "Raw hex appears only for user, course and platform data and inside the `PinboardField` canvas. Everything else uses the tokens in `app/tokens.css` through the Tailwind colours in `globals.css`.",
         "section": "colors"
       },
       {
-        "name": "The One Face Rule",
-        "body": "Fira Code is the only family. Do not introduce a display or sans face; build hierarchy from size, weight and colour.",
+        "name": "The Printed Notice Rule",
+        "body": "Condensed heavy Archivo (the display class) is for headings only. Body, controls and slips stay at normal width.",
         "section": "typography"
       },
       {
-        "name": "The Tabular Time Rule",
-        "body": "Every time, date and count uses tabular figures.",
+        "name": "The No Kicker Rule",
+        "body": "A heading is a title and at most one line of subtext under it (`SectionHeading`). No eyebrows, kickers or uppercase tracked labels above headings.",
         "section": "typography"
       },
       {
-        "name": "The Tonal-First Rule",
-        "body": "Separate surfaces by panel/inset tone and border first; reach for a shadow only for hover feedback or for something that floats.",
+        "name": "The Flat Pin Rule",
+        "body": "A pin is one flat colour with a small cast shadow. No gradients, glows, highlights or glass on pins or anywhere else.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Taped Class Rule",
+        "body": "Classes are not deadlines: class chips are taped flat, with no pin, no checkbox and no shadow.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** use the tokens through their Tailwind names (`bg-card`, `bg-inset`, `border-border`, `text-muted`, `text-accent-text`, `text-accent-ink`) and the `components/ui` primitives.",
-      "**Do** put text on yellow or danger fills in Highlighter Ink.",
-      "**Do** let position carry urgency on time-based surfaces: overdue left of the now-line, today washed in Highlighter Soft.",
-      "**Do** show course identity as a small colour dot next to the course name.",
-      "**Do** use tabular figures for every time, date and count.",
-      "**Do** keep every edge visible with the 1px blueprint border; strengthen it (`--border-strong`) or turn it yellow on hover.",
-      "**Do** honour `prefers-reduced-motion`: no lifts, reveals, smooth scroll or cursor blink.",
-      "**Do** use lucide-react icons for every icon."
+      "Do let the pin carry state: course colour while open, Pushpin Red when overdue or critical, gone when done.",
+      "Do use the copy-paper code: Canary Soft for today, Salmon for overdue, Sky for classes and holidays.",
+      "Do make Toner Ink the primary button and active-control colour, with Copy Paper text on it.",
+      "Do head pages and sections with `SectionHeading`: a condensed heavy title and at most one line of subtext.",
+      "Do use tabular figures for times, dates and counts.",
+      "Do keep motion physical and short (0.24 to 0.55s, ease-out-expo) and give every animation a cross-fade under `prefers-reduced-motion`.",
+      "Do write concise, professional Hungarian UI copy."
     ],
     "donts": [
-      "**Don't** put white text on accent fills.",
-      "**Don't** use raw hex outside user, course and platform data (and TraceField).",
-      "**Don't** use course colours as card or row fills; they stay dots and spines.",
-      "**Don't** add a second typeface.",
-      "**Don't** use danger red for anything other than late, critical or destructive.",
-      "**Don't** recompute urgency in a component; the board's colours follow `urgencyOf` from `lib/radar.ts`."
+      "Don't use gradients, glows or glass, on pins or anywhere else.",
+      "Don't put eyebrows, kickers or uppercase tracked labels above headings.",
+      "Don't use raw hex outside user, course and platform data and `PinboardField`.",
+      "Don't pin a class chip or give it a shadow; classes are taped flat.",
+      "Don't use red for anything that is not now, late, critical or destructive.",
+      "Don't introduce a dark theme; the world is light only."
     ]
   }
 }

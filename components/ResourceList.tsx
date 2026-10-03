@@ -119,7 +119,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
         <EmptyState
           icon={BookOpen}
           title="Még nincs anyag"
-          text="Még nincs anyag ehhez a tárgyhoz. Ide gyűjtsd a jegyzeteket, korábbi zh-kat, mintamegoldásokat."
+          text="Gyűjtsd ide a jegyzeteket, a korábbi ZH-kat és a mintamegoldásokat."
           action={
             <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
             return (
               <li
                 key={resource.id}
-                className="flex flex-col gap-1 rounded-md border border-border px-3 py-2"
+                className="flex flex-col gap-1 rounded-[var(--radius-slip)] bg-card px-3.5 py-2.5 shadow-[var(--shadow-paper)]"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge color={RESOURCE_KIND_COLORS[resource.kind]}>
@@ -238,7 +238,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                       type="button"
                       aria-label="Szerkesztés"
                       onClick={() => startEdit(resource)}
-                      className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                      className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -246,7 +246,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                       type="button"
                       aria-label="Törlés"
                       onClick={() => handleRemove(resource.id)}
-                      className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                      className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -273,10 +273,11 @@ function FilterChip({ active, onClick, label }: FilterChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
+      aria-pressed={active}
+      className={`h-8 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
         active
-          ? "border-accent bg-accent/10 text-accent"
-          : "border-border text-muted hover:bg-inset"
+          ? "border-accent bg-accent text-accent-ink"
+          : "border-border bg-card text-muted hover:border-border-strong hover:text-heading"
       }`}
     >
       {label}
@@ -302,7 +303,7 @@ function ResourceForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-3 rounded-md border border-dashed border-border p-3"
+      className="sheet-paper flex flex-col gap-3 p-4"
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
