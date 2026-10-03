@@ -17,7 +17,7 @@ import { useHydrated } from "@/lib/useHydrated";
 
 function CourseGridSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
@@ -96,7 +96,7 @@ export default function Home() {
               }
             />
           ) : (
-            <Reveal stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Reveal stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sortedCourses.map((course) => (
                 <CourseCard key={course.id} course={course} />
               ))}

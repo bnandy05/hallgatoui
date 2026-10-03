@@ -71,7 +71,7 @@ export function CourseCard({ course }: CourseCardProps) {
   return (
     <Card
       interactive
-      className="relative flex flex-col gap-2 !p-4 !pl-5 hover:z-10 focus-within:z-10"
+      className="relative flex min-w-0 flex-col gap-2 !p-4 !pl-5 hover:z-10 focus-within:z-10"
       style={{ borderLeftColor: course.color, borderLeftWidth: "4px" }}
     >
       <div className="flex items-start justify-between gap-2">
