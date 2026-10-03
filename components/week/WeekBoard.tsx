@@ -3,13 +3,16 @@
 import { useMemo, type ReactNode } from "react";
 import { format, isSameDay, startOfDay } from "date-fns";
 import { hu } from "date-fns/locale";
-import { bucketWeekByDay, urgencyOf } from "@/lib/radar";
-import type { Deadline } from "@/lib/types";
+import { bucketSessionsByDay, bucketWeekByDay, urgencyOf } from "@/lib/radar";
+import type { ClassSession, Deadline } from "@/lib/types";
+import { ClassChip } from "@/components/week/ClassChip";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
 
 export interface WeekBoardProps {
   weekStart: Date;
   deadlines: Deadline[];
+  /** Timetable entries to show (classes above the deadlines of each day, holidays in the header). */
+  sessions?: ClassSession[];
   now: Date;
   /** Pull every overdue item (any week) into a "Lejárt" gutter left of Monday. */
   gutter?: boolean;
@@ -34,6 +37,7 @@ const NOW_LINE =
 export function WeekBoard({
   weekStart,
   deadlines,
+  sessions = [],
   now,
   gutter = false,
   showCourse = true,
@@ -53,15 +57,20 @@ export function WeekBoard({
     return { overdue: overdueItems, days: bucketWeekByDay(placed, weekStart) };
   }, [deadlines, now, gutter, weekStart]);
 
+  const classDays = useMemo(() => bucketSessionsByDay(sessions, weekStart), [sessions, weekStart]);
+
   const showGutter = overdue.length > 0;
   const todayStart = startOfDay(now);
+  const isPastDay = (date: Date) => date < todayStart && !isSameDay(date, now);
+  // Classes and holidays count as content, but a past day with nothing open is settled.
+  const hasContent = (i: number) =>
+    days[i].items.length > 0 || classDays[i].sessions.length > 0 || !!classDays[i].holiday;
   // Narrow screens: when nothing but dashes would remain, collapse the board to one line.
   const narrowEmpty =
     !showGutter &&
     days.every(
-      (day) =>
-        day.items.length === 0 ||
-        (day.date < todayStart && !isSameDay(day.date, now) && day.items.every((d) => d.done))
+      (day, i) =>
+        !hasContent(i) || (isPastDay(day.date) && day.items.every((d) => d.done))
     );
 
   return (
@@ -98,8 +107,10 @@ export function WeekBoard({
       {days.map((day, i) => {
         const today = isSameDay(day.date, now);
         const past = !today && day.date < todayStart;
-        const empty = day.items.length === 0;
+        const empty = !hasContent(i);
         const settled = day.items.every((d) => d.done);
+        const holiday = classDays[i].holiday;
+        const daySessions = classDays[i].sessions;
         return (
           <section
             key={day.date.toISOString()}
@@ -109,7 +120,7 @@ export function WeekBoard({
               // Every row draws its top rule and shifts up 1px, so the first visible row's rule is
               // clipped by the board's edge whichever past days are hidden.
               `-mt-px border-t lg:mt-0 lg:border-t-0 ${i > 0 || showGutter ? "lg:border-l" : ""}`
-            } ${(past && settled) || (empty && (hideEmptyDays || narrowEmpty)) ? "hidden lg:flex" : "grid"} ${past ? "lg:bg-inset/40" : ""} ${
+            } ${(past && settled) || (empty && (hideEmptyDays || narrowEmpty)) ? "hidden lg:flex" : "grid"} ${past ? "lg:bg-inset/40" : holiday ? "bg-accent-2/[0.06]" : ""} ${
               today ? `bg-accent-soft/40 ${NOW_LINE}` : ""
             }`}
           >
@@ -128,8 +139,16 @@ export function WeekBoard({
               >
                 {today ? `ma · most ${format(now, "HH:mm")}` : format(day.date, "MMM d.", { locale: hu })}
               </span>
+              {holiday && (
+                <span className="mt-0.5 text-[11px] leading-snug text-accent-2 [overflow-wrap:anywhere]">
+                  Szünnap · {holiday.subject}
+                </span>
+              )}
             </header>
             <div className="flex min-w-0 flex-col gap-1.5">
+              {daySessions.map((s) => (
+                <ClassChip key={s.id} session={s} showCourse={showCourse} />
+              ))}
               {day.items.map((d) => (
                 <DeadlineChip key={d.id} deadline={d} now={now} showCourse={showCourse} />
               ))}

@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
+import { TimetableSettings } from "@/components/settings/TimetableSettings";
 import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
@@ -72,7 +73,7 @@ export default function WeekSettingsPage() {
         as="h1"
         eyebrow="Beállítások"
         icon={Settings}
-        title="A te hajód, a te szabályaid."
+        title="A te füzeted, a te szabályaid."
         sub="Platformok, naptárak, értesítések és az adataid. Az adataid a böngésződben maradnak, amíg be nem kapcsolod a naptár-előfizetést."
       />
 
@@ -108,7 +109,10 @@ export default function WeekSettingsPage() {
 
           <div className="min-w-0 max-w-[760px]">
             <TabPanel id="naptarak" active={active === "naptarak"}>
-              <FeedSettings />
+              <div className="flex flex-col gap-10">
+                <FeedSettings />
+                <TimetableSettings />
+              </div>
             </TabPanel>
             <TabPanel id="elofizetes" active={active === "elofizetes"}>
               <CalendarSubscriptionSettings />

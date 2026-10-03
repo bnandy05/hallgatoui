@@ -6,6 +6,7 @@ import {
   parseToken,
   readSnapshotBody,
   requireKv,
+  chgKey,
   srcKey,
   storageErrorResponse,
   subKey,
@@ -95,21 +96,28 @@ export async function PUT(req: Request, ctx: RouteContext<"/api/naptar/[token]">
     // Source caches of removed feeds are no longer needed.
     const kept = new Set(snapshot.feeds.map((f) => f.id));
     const removed = sub.snapshot.feeds.filter((f) => !kept.has(f.id));
-    await kv.del(...removed.map((f) => srcKey(token, f.id)));
+    await kv.del(
+      ...removed.map((f) => srcKey(token, f.id)),
+      ...(snapshot.feeds.length === 0 ? [chgKey(token)] : [])
+    );
   } catch {
     return storageErrorResponse();
   }
   return Response.json({ ok: true, updatedAt: stored.updatedAt });
 }
 
-/** Deletes the subscription and its source caches. Requires the secret. */
+/** Deletes the subscription, its source caches and due-change record. Requires the secret. */
 export async function DELETE(req: Request, ctx: RouteContext<"/api/naptar/[token]">): Promise<Response> {
   const auth = await authorize(req, (await ctx.params).token);
   if (auth instanceof Response) return auth;
   const { kv, token, sub } = auth;
 
   try {
-    await kv.del(subKey(token), ...sub.snapshot.feeds.map((f) => srcKey(token, f.id)));
+    await kv.del(
+      subKey(token),
+      chgKey(token),
+      ...sub.snapshot.feeds.map((f) => srcKey(token, f.id))
+    );
   } catch {
     return storageErrorResponse();
   }

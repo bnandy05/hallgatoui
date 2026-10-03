@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { syncAllFeeds } from "@/lib/ical/client";
 import {
@@ -113,7 +114,7 @@ function PaletteContent({
 }) {
   const router = useRouter();
   const courses = useStore((s) => s.courses);
-  const deadlines = useStore((s) => s.deadlines);
+  const { visible: deadlines } = useDedupedDeadlines();
   const customPlatforms = useStore((s) => s.customPlatforms);
   const feeds = useStore((s) => s.feeds);
 

@@ -3,8 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Link2, Pencil, Plus } from "lucide-react";
+import { format } from "date-fns";
+import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
+import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
+import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
 import type { Course, CourseLink } from "@/lib/types";
 import { CourseDialog } from "@/components/CourseDialog";
@@ -46,11 +50,13 @@ function Launcher({ link }: { link: CourseLink }) {
 }
 
 function CourseRow({ course, now }: { course: Course; now: Date }) {
-  const deadlines = useStore((s) => s.deadlines);
+  const { visible: deadlines } = useDedupedDeadlines();
+  const classSessions = useStore((s) => s.classSessions);
   const [editOpen, setEditOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
 
   const next = nextDeadlineFor(course.id, deadlines, now);
+  const nextClass = nextSessionFor(course.id, classSessions, now);
   const open = deadlines.filter((d) => d.courseId === course.id && !d.done).length;
   const meta = [course.code, course.semester].filter(Boolean).join(" · ");
   const extra = course.links.length - MAX_LAUNCHERS;
@@ -108,6 +114,12 @@ function CourseRow({ course, now }: { course: Course; now: Date }) {
           </p>
         ) : (
           <p className="text-xs text-muted-dim">Nincs közelgő határidő.</p>
+        )}
+        {nextClass && (
+          <p className="mt-0.5 truncate text-[11px] text-muted-dim">
+            Óra: {format(new Date(nextClass.start), "EEE HH:mm", { locale: hu })}
+            {nextClass.room && ` · ${nextClass.room}`}
+          </p>
         )}
       </div>
 

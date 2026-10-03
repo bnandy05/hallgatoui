@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
+import { DuplicateSources } from "@/components/DuplicateSources";
 
 export interface DeadlineItemProps {
   deadline: Deadline;
@@ -137,6 +138,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
             </Select>
           )}
           {platform && <PlatformIcon platform={platform} size="sm" />}
+          <DuplicateSources deadline={deadline} small={compact} />
           <span>
             {format(due, "MMM d. (EEE) HH:mm", { locale: hu })}
             <span className="whitespace-nowrap"> · {formatRelative(due, now)}</span>

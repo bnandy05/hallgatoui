@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import type { CalendarSnapshot, ExportOptions } from "@/lib/types";
+import type { CalendarSnapshot, ClassSession, ExportOptions } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { getKv, type Kv } from "@/lib/server/kv";
 
@@ -10,6 +10,8 @@ export const TTL_SECONDS = 180 * 24 * 60 * 60; // 180 days without writes
 export const SOURCE_FRESH_MS = 15 * 60 * 1000;
 export const FEED_FETCH_TIMEOUT_MS = 6_000;
 export const WARN_AFTER_MS = 24 * 60 * 60 * 1000;
+export const MAX_IGNORED_PAIRS = 2000;
+export const MAX_CLASS_SESSIONS = 1500;
 export const MAX_FEEDS = 20; // bounds the source fetches one calendar request can trigger
 const CREATE_LIMIT = 5; // new subscriptions per client IP...
 const CREATE_WINDOW_SECONDS = 60 * 60; // ...per hour
@@ -32,6 +34,8 @@ export interface SourceCache {
 
 export const subKey = (token: string) => `sub:${token}`;
 export const srcKey = (token: string, feedId: string) => `src:${token}:${feedId}`;
+/** Per-subscription record of seen due-date changes (see lib/server/dueChanges.ts). */
+export const chgKey = (token: string) => `chg:${token}`;
 
 export function errorResponse(error: string, status: number): Response {
   return Response.json({ error }, { status });
@@ -145,12 +149,39 @@ export function validateSnapshot(value: unknown): CalendarSnapshot | null {
     alarms: opts.alarms !== false,
     weeklySummary: opts.weeklySummary !== false,
     studyBlocks: opts.studyBlocks !== false,
+    dedupe: opts.dedupe !== false,
+    includeClasses: opts.includeClasses === true,
   };
+  const classSessions = (Array.isArray(value.classSessions) ? value.classSessions : [])
+    .filter(
+      (s): s is ClassSession =>
+        isObject(s) &&
+        typeof s.id === "string" &&
+        typeof s.sourceId === "string" &&
+        typeof s.externalUid === "string" &&
+        typeof s.subject === "string" &&
+        typeof s.start === "string" &&
+        typeof s.end === "string" &&
+        !Number.isNaN(new Date(s.start).getTime()) &&
+        !Number.isNaN(new Date(s.end).getTime()) &&
+        (s.kind === "ora" || s.kind === "vizsga" || s.kind === "szunnap" || s.kind === "egyeb") &&
+        Array.isArray(s.teachers) &&
+        s.teachers.every((t) => typeof t === "string") &&
+        (s.courseId === null || typeof s.courseId === "string")
+    )
+    .slice(0, MAX_CLASS_SESSIONS);
+  const ignoredDuplicatePairs = Array.isArray(value.ignoredDuplicatePairs)
+    ? value.ignoredDuplicatePairs
+        .filter((p): p is string => typeof p === "string" && p.length <= 600)
+        .slice(0, MAX_IGNORED_PAIRS)
+    : [];
   return {
     courses: courses as CalendarSnapshot["courses"],
     deadlines: deadlines as CalendarSnapshot["deadlines"],
     feeds: feeds as CalendarSnapshot["feeds"],
     customPlatforms: customPlatforms as CalendarSnapshot["customPlatforms"],
+    ignoredDuplicatePairs,
+    classSessions,
     options: normalized,
   };
 }

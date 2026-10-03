@@ -1,4 +1,4 @@
-import type { AppData, Course, Deadline, IcalFeed } from "@/lib/types";
+import type { AppData, ClassSession, Course, Deadline, IcalFeed, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
 
 function isHttpUrl(value: unknown): boolean {
@@ -68,6 +68,44 @@ function isDeadlineShaped(value: unknown): value is Deadline {
   );
 }
 
+const SESSION_KINDS = ["ora", "vizsga", "szunnap", "egyeb"];
+
+/** Drops malformed timetable entries instead of failing the whole import. */
+function sessionsFrom(value: unknown): ClassSession[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((s): s is ClassSession => {
+    if (!s || typeof s !== "object") return false;
+    const o = s as Record<string, unknown>;
+    return (
+      typeof o.id === "string" &&
+      typeof o.sourceId === "string" &&
+      typeof o.externalUid === "string" &&
+      typeof o.subject === "string" &&
+      typeof o.subjectKey === "string" &&
+      typeof o.start === "string" &&
+      typeof o.end === "string" &&
+      SESSION_KINDS.includes(o.kind as string) &&
+      Array.isArray(o.teachers) &&
+      (o.courseId === null || typeof o.courseId === "string")
+    );
+  });
+}
+
+function sourcesFrom(value: unknown): TimetableSource[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((s): s is TimetableSource => {
+    if (!s || typeof s !== "object") return false;
+    const o = s as Record<string, unknown>;
+    return (
+      typeof o.id === "string" &&
+      typeof o.name === "string" &&
+      typeof o.importedAt === "string" &&
+      !!o.subjectCourses &&
+      typeof o.subjectCourses === "object"
+    );
+  });
+}
+
 /**
  * Validates an arbitrary JSON value as an AppData export and returns it
  * typed. Throws an Error with a Hungarian message when the shape doesn't
@@ -107,5 +145,12 @@ export function parseAppData(json: unknown): AppData {
     deadlines: data.deadlines,
     customPlatforms: data.customPlatforms as AppData["customPlatforms"],
     feeds: data.feeds as AppData["feeds"],
+    classSessions: sessionsFrom(data.classSessions),
+    timetableSources: sourcesFrom(data.timetableSources),
+    ignoredDuplicatePairs: Array.isArray(data.ignoredDuplicatePairs)
+      ? data.ignoredDuplicatePairs
+          .filter((p): p is string => typeof p === "string" && p.length <= 600)
+          .slice(0, 2000)
+      : [],
   });
 }

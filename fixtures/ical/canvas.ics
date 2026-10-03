@@ -1,0 +1,635 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:icalendar-ruby
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Diák (XXXXXX) Naptár (Canvas)
+X-WR-CALDESC:Naptáresemények ehhez a felhasználóhoz: Diák (XXXXXX)
+BEGIN:VEVENT
+DTSTAMP:20260912T003500Z
+UID:event-assignment-513930
+DTSTART;VALUE=DATE:20260911T000000
+DTEND;VALUE=DATE:20260911T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Jelenlét 1. hét [2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matema
+ tika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513930
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260910T072100Z
+UID:event-assignment-512897
+DTSTART;VALUE=DATE:20260913T000000
+DTEND;VALUE=DATE:20260913T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Otthoni kvíz 01 [2026/27/1 IP-18DM1E 1 - Diszkrét matematika I Ea
+ ]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66066&month=09&
+ year=2026#assignment_512897
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T113600Z
+UID:event-assignment-override-79658
+DTSTART:20260914T180000Z
+DTEND:20260914T180000Z
+CLASS:PUBLIC
+DESCRIPTION:Takáts Marcella csoportjának (1-es csoport\, szerda 10-12):\n
+ Papíron kell beadni\, kézzel írva\, a déli tömb 3.609 szoba ajtaján
+ ál lévő tartóba téve\, legkésőbb kedd 14:00-ig. Canvasbe feltölten
+ i nem kell.\nFontos: a papírra a feladatot is le kell írni\, nemcsak a m
+ egoldást! \n\n \n\nLehocki Dávid csoportjának (szerda 17:45-19:15\, 4
+ -es csoport):\nHatáridő:  hétfő 20:00.\nFormátum: Kézzel\, papírra
+  írt megoldás (feladat leírással együtt)\, jól olvashatóan beszkenn
+ elve vagy befotózva\, egyetlen PDF fájlként.\nA lap tetejére írjátok
+  fel: Név\, Neptun-kód\, a beadandó feladatsor száma.\n\n \n\nFülöp
+  Ágnes csoportjainak (péntek\, 2-es és 3-as csoport)\n\nPapíron kell b
+ eadni a megoldást a gyakorlat elején.
+SEQUENCE:0
+SUMMARY:Beadandó 01 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [
+ 2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513546
+X-ALT-DESC;FMTTYPE=text/html:<p>Takáts Marcella csoportjának (1-es csopor
+ t\, szerda 10-12):<br>Papíron kell beadni\, kézzel írva\, a déli tömb
+  3.609 szoba ajtajánál lévő tartóba téve\, legkésőbb kedd 14:00-ig
+ . Canvasbe feltölteni nem kell.<br>Fontos: a papírra a feladatot is le k
+ ell írni\, nemcsak a megoldást! </p>\n<p> </p>\n<p>Lehocki Dávid csop
+ ortjának (szerda 17:45-19:15\, 4-es csoport):<br>Határidő:  hétfő 20
+ :00.<br>Formátum: Kézzel\, papírra írt megoldás (feladat leírással 
+ együtt)\, jól olvashatóan beszkennelve vagy befotózva\, egyetlen PDF f
+ ájlként.<br>A lap tetejére írjátok fel: Név\, Neptun-kód\, a beadan
+ dó feladatsor száma.</p>\n<p> </p>\n<p>Fülöp Ágnes csoportjainak (p
+ éntek\, 2-es és 3-as csoport)</p>\n<p>Papíron kell beadni a megoldást 
+ a gyakorlat elején.</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260908T091100Z
+UID:event-assignment-510033
+DTSTART;VALUE=DATE:20260915T000000
+DTEND;VALUE=DATE:20260915T000000
+CLASS:PUBLIC
+DESCRIPTION:Teszt kitöltése sikeresnek tekinthető legalább 7 pont (70 %
+ ) elérésével.
+SEQUENCE:0
+SUMMARY:1. Bevezetés [2026/27/1 H1UXY5-ALG-2026271 - Algoritmusok és adat
+ szerkezetek I Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65757&month=09&
+ year=2026#assignment_510033
+X-ALT-DESC;FMTTYPE=text/html:<p><span>Teszt kitöltése sikeresnek tekinthe
+ tő legalább 7 pont (70 %) elérésével.</span></p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260917T193300Z
+UID:event-assignment-508289
+DTSTART:20260916T140000Z
+DTEND:20260916T140000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:1. Verem\, sor adattípus [2026/27/1 IP-18eAA1E 1 - Algoritmusok é
+ s adatszerkezetek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=09&
+ year=2026#assignment_508289
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260923T171600Z
+UID:event-assignment-override-79981
+DTSTART:20260916T160000Z
+DTEND:20260916T160000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:röpZh 01 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [202
+ 6/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513557
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260916T161000Z
+UID:event-assignment-override-80004
+DTSTART:20260916T162000Z
+DTEND:20260916T162000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Röp zh 01_ 2. kérdés (2026/27/1 IP-18DM1G 4 - Diszkrét matemati
+ ka I. Gy) [2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_517525
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260916T092300Z
+UID:event-assignment-517388
+DTSTART;VALUE=DATE:20260918T000000
+DTEND;VALUE=DATE:20260918T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Jelenlét 2. hét [2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matema
+ tika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_517388
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260916T191400Z
+UID:event-assignment-512898
+DTSTART;VALUE=DATE:20260920T000000
+DTEND;VALUE=DATE:20260920T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Otthoni kvíz 02 [2026/27/1 IP-18DM1E 1 - Diszkrét matematika I Ea
+ ]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66066&month=09&
+ year=2026#assignment_512898
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T103800Z
+UID:event-assignment-override-80220
+DTSTART:20260921T180000Z
+DTEND:20260921T180000Z
+CLASS:PUBLIC
+DESCRIPTION:Takáts Marcella csoportjának (1-es csoport\, szerda 10-12):\n
+ A megoldást papíron kell beadni\, kézzel írva\, a feladatot is le kell
+  írni. A/4-es méret\, függőlegesen kettéhajtva\, név a külső oldal
+ on.\n\nBeadás: déli tömb 3.609 szoba ajtaja melletti tartó. Canvasbe f
+ eltölteni nem kell.\nHatáridő: kedd 14:00.\n\n \n\nLehocki Dávid csop
+ ortjának (szerda 17:45-19:15\, 4-es csoport):\nHatáridő:  hétfő 20:0
+ 0.\nFormátum: Kézzel\, papírra írt megoldás (feladat leírással egy
+ ütt)\, jól olvashatóan beszkennelve vagy befotózva\, egyetlen fájlké
+ nt.\nA lap tetejére írjátok fel: Név\, Neptun-kód\, a beadandó felad
+ atsor száma.\n\n \n\nFülöp Ágnes csoportjainak (péntek\, 2-es és 3-
+ as csoport):\n\nPapíron kell beadni a megoldást a gyakorlat elején.
+SEQUENCE:0
+SUMMARY:Beadandó 02 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [
+ 2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513547
+X-ALT-DESC;FMTTYPE=text/html:<p><strong>Takáts Marcella csoportjának (1-e
+ s csoport\, szerda 10-12):</strong><br><span>A megoldást papíron kell be
+ adni\, kézzel írva\, a feladatot is le kell írni. A/4-es méret\, <span
+  style="font-size: 12pt\;">függőlegesen kettéhajtva\, név a külső ol
+ dalon. </span></span></p>\n<p><span><span style="font-size: 12pt\;">Beadá
+ s: déli</span> tömb 3.609 szoba ajtaja melletti tartó. Canvasbe feltöl
+ teni nem kell.</span><br><span>Határidő: kedd 14:00.</span></p>\n<p> </
+ p>\n<p><strong>Lehocki Dávid csoportjának (szerda 17:45-19:15\, 4-es cso
+ port):</strong><br><span>Határidő:  hétfő 20:00.</span><br><span>Form
+ átum: Kézzel\, papírra írt megoldás (feladat leírással együtt)\, j
+ ól olvashatóan beszkennelve vagy befotózva\, egyetlen fájlként.</span
+ ><br><span>A lap tetejére írjátok fel: Név\, Neptun-kód\, a beadandó
+  feladatsor száma.</span></p>\n<p> </p>\n<p><strong>Fülöp Ágnes csopo
+ rtjainak (péntek\, 2-es és 3-as csoport):</strong></p>\n<p>Papíron kell
+  beadni a megoldást a gyakorlat elején.</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260915T050000Z
+UID:event-assignment-510273
+DTSTART;VALUE=DATE:20260921T000000
+DTEND;VALUE=DATE:20260921T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:1. kvíz: Állapottér és feladat [2026/27/1 S7BQJU-ProgElm - Prog
+ ramozáselmélet Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66744&month=09&
+ year=2026#assignment_510273
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260922T094900Z
+UID:event-assignment-512940
+DTSTART:20260922T095900Z
+DTEND:20260922T095900Z
+CLASS:PUBLIC
+DESCRIPTION:A kérdéseket lásd a kivetítőn!
+SEQUENCE:0
+SUMMARY:Pluszpont K 3/1 [2026/27/1 IP-18DM1E 1 - Diszkrét matematika I Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66066&month=09&
+ year=2026#assignment_512940
+X-ALT-DESC;FMTTYPE=text/html:<p>A kérdéseket lásd a kivetítőn!</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260915T120400Z
+UID:event-assignment-510036
+DTSTART;VALUE=DATE:20260922T000000
+DTEND;VALUE=DATE:20260922T000000
+CLASS:PUBLIC
+DESCRIPTION:Teszt kitöltése sikeresnek tekinthető legalább 7 pont (70 %
+ ) elérésével.
+SEQUENCE:0
+SUMMARY:2. Verem\, Lengyel forma [2026/27/1 H1UXY5-ALG-2026271 - Algoritmus
+ ok és adatszerkezetek I Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65757&month=09&
+ year=2026#assignment_510036
+X-ALT-DESC;FMTTYPE=text/html:<p><span>Teszt kitöltése sikeresnek tekinthe
+ tő legalább 7 pont (70 %) elérésével.</span></p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260930T082500Z
+UID:event-assignment-override-80304
+DTSTART:20260923T160000Z
+DTEND:20260923T160000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:röpZh 02 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [202
+ 6/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513558
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260923T170400Z
+UID:event-assignment-512899
+DTSTART;VALUE=DATE:20260927T000000
+DTEND;VALUE=DATE:20260927T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Otthoni kvíz 03 [2026/27/1 IP-18DM1E 1 - Diszkrét matematika I Ea
+ ]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66066&month=09&
+ year=2026#assignment_512899
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260915T050000Z
+UID:event-assignment-510274
+DTSTART;VALUE=DATE:20260928T000000
+DTEND;VALUE=DATE:20260928T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:2. kvíz: A program [2026/27/1 S7BQJU-ProgElm - Programozáselméle
+ t Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66744&month=09&
+ year=2026#assignment_510274
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T132400Z
+UID:event-assignment-override-80383
+DTSTART;VALUE=DATE:20260928T000000
+DTEND;VALUE=DATE:20260928T000000
+CLASS:PUBLIC
+DESCRIPTION:Lehocki Dávid csoportjának (szerda 17:45-19:15\, 4-es csoport
+ ):\nHatáridő:  hétfő 23:59.\nFormátum: Kézzel\, papírra írt megol
+ dás (feladat leírással együtt)\, jól olvashatóan beszkennelve vagy b
+ efotózva\, egyetlen fájlként.\nA lap tetejére írjátok fel: Név\, Ne
+ ptun-kód\, a beadandó feladatsor száma.\n\nFülöp Ágnes csoportjainak
+  (péntek\, 2-es és 3-as csoport):\n\nPapíron kell beadni a megoldást a
+  gyakorlat elején.\n\nTakáts Marcella csoportjának (1-es csoport\, szer
+ da 10-12):\n\nA megoldást papíron kell beadni\, kézzel írva\, a felada
+ tot is le kell írni. A/4-es méret\, függőlegesen kettéhajtva\, név a
+  külső oldalon.\n\nBeadás: déli tömb 3.609 szoba ajtaja melletti tart
+ ó. Canvasbe feltölteni nem kell.\n\nHatáridő: kedd 14:00.
+SEQUENCE:0
+SUMMARY:Beadandó 03 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [
+ 2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513548
+X-ALT-DESC;FMTTYPE=text/html:<p><strong>Lehocki Dávid csoportjának (szerd
+ a 17:45-19:15\, 4-es csoport):</strong><br><span>Határidő:  hétfő 23:
+ 59.</span><br><span>Formátum: Kézzel\, papírra írt megoldás (feladat 
+ leírással együtt)\, jól olvashatóan beszkennelve vagy befotózva\, eg
+ yetlen fájlként.</span><br><span>A lap tetejére írjátok fel: Név\, N
+ eptun-kód\, a beadandó feladatsor száma.</span></p>\n<p><strong style="
+ font-family: sans-serif\; font-size: 1rem\;">Fülöp Ágnes csoportjainak 
+ (péntek\, 2-es és 3-as csoport):</strong></p>\n<p><span style="font-fami
+ ly: sans-serif\; font-size: 1rem\;">Papíron kell beadni a megoldást a gy
+ akorlat elején.</span></p>\n<p><strong style="font-family: sans-serif\; f
+ ont-size: 1rem\;">Takáts Marcella csoportjának (1-es csoport\, szerda 10
+ -12):</strong></p>\n<p><span style="font-family: sans-serif\; font-size: 1
+ rem\;">A megoldást papíron kell beadni\, kézzel írva\, a feladatot is 
+ le kell írni. A/4-es méret\, függőlegesen kettéhajtva\, név a küls
+ ő oldalon.</span></p>\n<p><span style="font-family: sans-serif\; font-siz
+ e: 1rem\;">Beadás: déli tömb 3.609 szoba ajtaja melletti tartó. Canvas
+ be feltölteni nem kell.</span></p>\n<p><span style="font-family: sans-ser
+ if\; font-size: 1rem\;">Határidő: kedd 14:00.</span></p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260923T094700Z
+UID:event-assignment-510037
+DTSTART;VALUE=DATE:20260929T000000
+DTEND;VALUE=DATE:20260929T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:3. egyszerű lista\, sor [2026/27/1 H1UXY5-ALG-2026271 - Algoritmus
+ ok és adatszerkezetek I Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65757&month=09&
+ year=2026#assignment_510037
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260930T144100Z
+UID:event-assignment-519274
+DTSTART:20260930T145000Z
+DTEND:20260930T145000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:Jelenlét4 [2026/27/1 IP-18eAA1E 1 - Algoritmusok és adatszerkezet
+ ek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=09&
+ year=2026#assignment_519274
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261002T120000Z
+UID:event-assignment-override-80449
+DTSTART:20260930T160000Z
+DTEND:20260930T160000Z
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:röpZh 03 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [202
+ 6/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=09&
+ year=2026#assignment_513559
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260930T215200Z
+UID:event-assignment-517053
+DTSTART;VALUE=DATE:20260930T000000
+DTEND;VALUE=DATE:20260930T000000
+CLASS:PUBLIC
+DESCRIPTION:Tükrözött-e a szöveg? Adott egy legfeljebb m hosszú\, bet
+ űkből és ’#’ szimbólumokból álló sorozat. A sorozatot\ntükröz
+ öttnek nevezzük\, ha felbontható olyan páratlan hosszú\, palindrom ka
+ raktersorozatokból álló részekre\,\nmelyek középső karaktere egy 
+ ’#’ karakter. Egyszer végig olvasva a szöveget döntsük el\, hogy t
+ ükrözött-e? Az\nalgoritmus egyetlen vermet\, és egyszerű segédválto
+ zókat használhat. (Segédtömböt pl. nem)\n\nPélda:\nTükrözött: #\,
+  ####\, abc#cba\, ##a#aabc#cba\nNem tükrözött: abc\, abc#cb\, abc#cbaa#
+ aa\, ab#bac##c\n\nBeadandó: a struktogram kép formátumban. (jpg\, png)
+SEQUENCE:0
+SUMMARY:Tükrözött szöveg [2026/27/1 H1UXY5-ALG-2026271 - Algoritmusok 
+ és adatszerkezetek I Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65757&month=09&
+ year=2026#assignment_517053
+X-ALT-DESC;FMTTYPE=text/html:<p>Tükrözött-e a szöveg? Adott egy legfelj
+ ebb m hosszú\, betűkből és ’#’ szimbólumokból álló sorozat. A 
+ sorozatot<br>tükrözöttnek nevezzük\, ha felbontható olyan páratlan h
+ osszú\, palindrom karaktersorozatokból álló részekre\,<br>melyek köz
+ épső karaktere egy ’#’ karakter. Egyszer végig olvasva a szöveget 
+ döntsük el\, hogy tükrözött-e? Az<br>algoritmus egyetlen vermet\, és
+  egyszerű segédváltozókat használhat. (Segédtömböt pl. nem)</p>\n<
+ p><br>Példa:<br>Tükrözött: #\, ####\, abc#cba\, ##a#aabc#cba<br>Nem t
+ ükrözött: abc\, abc#cb\, abc#cbaa#aa\, ab#bac##c</p>\n<p>Beadandó: a s
+ truktogram <em>kép formátumban</em>. (jpg\, png)</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261001T061900Z
+UID:event-assignment-508292
+DTSTART;VALUE=DATE:20261004T000000
+DTEND;VALUE=DATE:20261004T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:2. Egyszerű\, egyirányú lista  [2026/27/1 IP-18eAA1E 1 - Algorit
+ musok és adatszerkezetek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=10&
+ year=2026#assignment_508292
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261001T072200Z
+UID:event-assignment-508293
+DTSTART;VALUE=DATE:20261004T000000
+DTEND;VALUE=DATE:20261004T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:3.  Kétirányú lista [2026/27/1 IP-18eAA1E 1 - Algoritmusok és a
+ datszerkezetek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=10&
+ year=2026#assignment_508293
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T115200Z
+UID:event-assignment-override-80509
+DTSTART:20261005T180000Z
+DTEND:20261005T180000Z
+CLASS:PUBLIC
+DESCRIPTION:Fülöp Ágnes csoportjainak (péntek\, 2-es és 3-as csoport):
+ \n\nPapíron kell beadni a megoldást a gyakorlat elején.\n\n \n\nLehock
+ i Dávid csoportjának (szerda 17:45-19:15\, 4-es csoport):\nHatáridő: 
+  hétfő 20:00.\nFormátum: Kézzel\, papírra írt megoldás (feladat le
+ írással együtt)\, jól olvashatóan beszkennelve vagy befotózva\, egye
+ tlen fájlként. A fájl neve tartalmazza a hallgató NEVÉT. \nA lap tet
+ ejére írjátok fel: Név\, Neptun-kód\, a beadandó feladatsor száma.
+SEQUENCE:0
+SUMMARY:Beadandó 04 (2026/27/1 IP-18DM1G 4 - Diszkrét matematika I. Gy) [
+ 2026/27/1 K8VOV1-DM1gy2026osz - Diszkrét matematika I. Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66092&month=10&
+ year=2026#assignment_513549
+X-ALT-DESC;FMTTYPE=text/html:<div class="description user_content teacher-v
+ ersion enhanced">\n<p><strong>Fülöp Ágnes csoportjainak (péntek\, 2-es
+  és 3-as csoport):</strong></p>\n<p>Papíron kell beadni a megoldást a g
+ yakorlat elején.</p>\n<p> </p>\n<p><strong>Lehocki Dávid csoportjának 
+ (szerda 17:45-19:15\, 4-es csoport):</strong><br><span>Határidő:  hétf
+ ő 20:00.</span><br><span>Formátum: Kézzel\, papírra írt megoldás (fe
+ ladat leírással együtt)\, jól olvashatóan beszkennelve vagy befotózv
+ a\, egyetlen fájlként. A fájl neve tartalmazza a hallgató NEVÉT. <br
+ ></span><span>A lap tetejére írjátok fel: Név\, Neptun-kód\, a beadan
+ dó feladatsor száma.</span></p>\n</div>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260915T050000Z
+UID:event-assignment-510275
+DTSTART;VALUE=DATE:20261005T000000
+DTEND;VALUE=DATE:20261005T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:3. kvíz: Programfüggvény\, megoldás [2026/27/1 S7BQJU-ProgElm -
+  Programozáselmélet Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66744&month=10&
+ year=2026#assignment_510275
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260930T075600Z
+UID:event-assignment-510038
+DTSTART;VALUE=DATE:20261006T000000
+DTEND;VALUE=DATE:20261006T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:4. H1L és C2L algoritmusok [2026/27/1 H1UXY5-ALG-2026271 - Algorit
+ musok és adatszerkezetek I Gy]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65757&month=10&
+ year=2026#assignment_510038
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T133300Z
+UID:event-assignment-512900
+DTSTART;VALUE=DATE:20261006T000000
+DTEND;VALUE=DATE:20261006T000000
+CLASS:PUBLIC
+DESCRIPTION:Figyelem!\nMivel a kvíz betegség miatt későn került kiír
+ ásra\, ezért a határideje a szokásostól eltérően az előadást köv
+ ető hét kedd éjfél.
+SEQUENCE:0
+SUMMARY:Otthoni  kvíz 04 [2026/27/1 IP-18DM1E 1 - Diszkrét matematika I E
+ a]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66066&month=10&
+ year=2026#assignment_512900
+X-ALT-DESC;FMTTYPE=text/html:<p>Figyelem!<br>Mivel a kvíz betegség miatt 
+ későn került kiírásra\, ezért a határideje a szokásostól eltérő
+ en az előadást követő hét kedd éjfél.</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260915T050000Z
+UID:event-assignment-510276
+DTSTART;VALUE=DATE:20261012T000000
+DTEND;VALUE=DATE:20261012T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:4. kvíz: Logikai függvények\, leggyengébb előfeltétel [2026/2
+ 7/1 S7BQJU-ProgElm - Programozáselmélet Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66744&month=10&
+ year=2026#assignment_510276
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260929T143800Z
+UID:event-assignment-508294
+DTSTART;VALUE=DATE:20261014T000000
+DTEND;VALUE=DATE:20261014T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:4. Beszúró rendezés és összefésüléses rendezés [2026/27/1 
+ IP-18eAA1E 1 - Algoritmusok és adatszerkezetek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=10&
+ year=2026#assignment_508294
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261001T072300Z
+UID:event-assignment-508295
+DTSTART;VALUE=DATE:20261014T000000
+DTEND;VALUE=DATE:20261014T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:5. Quicksort [2026/27/1 IP-18eAA1E 1 - Algoritmusok és adatszerkez
+ etek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=10&
+ year=2026#assignment_508295
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261003T091200Z
+UID:event-assignment-508296
+DTSTART;VALUE=DATE:20261014T000000
+DTEND;VALUE=DATE:20261014T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:6. Aszimptotika [2026/27/1 IP-18eAA1E 1 - Algoritmusok és adatszer
+ kezetek I. Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_65801&month=10&
+ year=2026#assignment_508296
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261001T220000Z
+UID:event-assignment-510277
+DTSTART;VALUE=DATE:20261019T000000
+DTEND;VALUE=DATE:20261019T000000
+CLASS:PUBLIC
+DESCRIPTION:
+SEQUENCE:0
+SUMMARY:5. kvíz: Specifikáció tétele [2026/27/1 S7BQJU-ProgElm - Progra
+ mozáselmélet Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66744&month=10&
+ year=2026#assignment_510277
+X-ALT-DESC;FMTTYPE=text/html:
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20261002T102400Z
+UID:event-assignment-515494
+DTSTART;VALUE=DATE:20261030T000000
+DTEND;VALUE=DATE:20261030T000000
+CLASS:PUBLIC
+DESCRIPTION:Task:\n\nFind errors in a conversation with ChatGPT or DeepSeak
+ .\n\nPrepare documentation to demonstrate or highlight the error.\n\n \n\
+ nFILE:\n\nUploaded files must have the following naming convention and fil
+ e extension\n\nNAME_OF_THE_STUDENT.pdf\n\n(this can be a presentation styl
+ e saved in PDF format or a written text with explanations and images).\nTh
+ e documentation must also include the Neptun code.\n\nFailure to meet the 
+ formal requirements and deadline will result in a loss of points.\n\nThe d
+ eadline is part of the task. (There is no late submission.)
+SEQUENCE:0
+SUMMARY:ChatGPT mistake [2026/27/1 IP-18KVSZBGTE 90 - Bevezetés a gépi ta
+ nulásba Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66716&month=10&
+ year=2026#assignment_515494
+X-ALT-DESC;FMTTYPE=text/html:<p><strong>Task:</strong></p>\n<p>Find errors 
+ in a conversation with ChatGPT or DeepSeak.</p>\n<p>Prepare documentation 
+ to demonstrate or highlight the error.</p>\n<p> </p>\n<p><strong>FILE:</s
+ trong></p>\n<p>Uploaded files must have the following naming convention an
+ d file extension</p>\n<p style="text-align: center\;"><strong>NAME_OF_THE_
+ STUDENT.pdf</strong></p>\n<p><br>(this can be a presentation style saved i
+ n PDF format or a written text with explanations and images).<br>The docum
+ entation must also include the Neptun code.</p>\n<p>Failure to meet the fo
+ rmal requirements and deadline will result in a loss of points.</p>\n<p>Th
+ e deadline is part of the task. (There is no late submission.)</p>
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260930T145300Z
+UID:event-assignment-515488
+DTSTART;VALUE=DATE:20261129T000000
+DTEND;VALUE=DATE:20261129T000000
+CLASS:PUBLIC
+DESCRIPTION:Task:\nCreate an image using generative AI.\nThe theme of the a
+ rt competition:\n\n"Majestic Creature"\n\nDocumentation:\n\nThe documentat
+ ion should include the type of artificial intelligence application used\, 
+ the prompts for each step\, and the images generated after each step\, sho
+ wing the creative process. At the end of the documentation\, select an ima
+ ge that clearly shows the final work.\n\nFILE:\n\nUploaded files must have
+  the following naming convention and file extension\n\nNAME_OF_THE_STUDENT
+ .pdf\n\n(this can be a presentation style saved in PDF format or a written
+  text with explanations and images).\nThe documentation must also include 
+ the Neptun code.\n\nFailure to meet the formal requirements and deadline w
+ ill result in a loss of points.\n\nThe deadline is part of the assignment.
+  (There will be no late submissions.)
+SEQUENCE:0
+SUMMARY:GenArt [2026/27/1 IP-18KVSZBGTE 90 - Bevezetés a gépi tanulásba 
+ Ea]
+URL:https://canvas.elte.hu/calendar?include_contexts=course_66716&month=11&
+ year=2026#assignment_515488
+X-ALT-DESC;FMTTYPE=text/html:<p><strong>Task:</strong><br>Create an image u
+ sing generative AI.<br>The theme of the art competition:</p>\n<p>"Majestic
+  Creature"</p>\n<p>Documentation:</p>\n<p>The documentation should include
+  the type of artificial intelligence application used\, the prompts for ea
+ ch step\, and the images generated after each step\, showing the creative 
+ process. At the end of the documentation\, select an image that clearly sh
+ ows the final work.</p>\n<p><strong>FILE:</strong></p>\n<p>Uploaded files 
+ must have the following naming convention and file extension</p>\n<p style
+ ="text-align: center\;"><strong>NAME_OF_THE_STUDENT.pdf</strong></p>\n<p><
+ br>(this can be a presentation style saved in PDF format or a written text
+  with explanations and images).<br>The documentation must also include the
+  Neptun code.</p>\n<p>Failure to meet the formal requirements and deadline
+  will result in a loss of points.</p>\n<p>The deadline is part of the assi
+ gnment. (There will be no late submissions.)</p>
+END:VEVENT
+END:VCALENDAR

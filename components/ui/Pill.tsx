@@ -6,9 +6,12 @@ export interface PillProps {
   children: ReactNode;
   className?: string;
   title?: string;
+  /** For pills that open something: sets aria-expanded (instead of aria-pressed). */
+  expanded?: boolean;
+  controls?: string;
 }
 
-export function Pill({ active = false, onClick, children, className = "", title }: PillProps) {
+export function Pill({ active = false, onClick, children, className = "", title, expanded, controls }: PillProps) {
   const base = `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] ${
     active
       ? "border-accent bg-accent-soft text-accent-text"
@@ -19,7 +22,7 @@ export function Pill({ active = false, onClick, children, className = "", title 
       <button
         type="button"
         onClick={onClick}
-        aria-pressed={active}
+        {...(expanded === undefined ? { "aria-pressed": active } : { "aria-expanded": expanded, "aria-controls": controls })}
         title={title}
         className={`${base} cursor-pointer transition-colors duration-150 hover:border-border-strong ${
           active ? "hover:border-accent" : ""

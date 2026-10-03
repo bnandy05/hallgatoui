@@ -15,6 +15,8 @@ Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord�
   - hétfőnként **📋 Heti radar** összesítő, a kritikus határidők előtti két napon **📚 Készülés** blokk;
   - ha egy forrás áthelyez egy határidőt, 48 óráig **(módosult)** jelzést kap;
   - a szerver magától is frissíti a forrásfeedeket, és szól, ha valamelyik több mint 24 órája nem elérhető.
+- **Órarend-import** – a Neptunból exportált `.ics` órarend (Naptár → Exportálás) a böngészőben dolgozódik fel, nem töltődik fel sehová. Egyszer hozzárendeled a tárgyakhoz az órákat, utána a heti menetrendben (halványabb, szaggatott keretű blokkokként), a tárgy oldalán és a naptár `?nezet=orarend` nézetében jelennek meg; a szünnapok külön jelölést kapnak.
+- **Duplikátumok összevonása** – ha ugyanaz a határidő több forrásból (Canvas, Moodle, Neptun, kézi) is megjön, egyszer látszik, "+N forrás" jelzéssel; a "Nem duplikátum" gombbal kivételt tehetsz. Az alkalmazásban és a naptárban is, kikapcsolható.
 - **Keresés és gyors felvétel** – `Ctrl K`, ékezetfüggetlen keresés.
 - **Értesítések** – böngészőértesítés a közelgő határidőkről, amíg nyitva van egy lap.
 
@@ -29,6 +31,7 @@ npm install
 npm run dev     # http://localhost:3000
 npm run lint
 npm run build
+npm test        # node:test, TZ=UTC, valódi iCal-fixture-ökkel (fixtures/ical)
 ```
 
 Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, lucide-react. A projekt konvenciói (mappaszerkezet, design-tokenek, iCal-szabályok) a [`CLAUDE.md`](CLAUDE.md)-ben vannak.

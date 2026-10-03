@@ -1,4 +1,5 @@
 import ICAL from "ical.js";
+import { budapestInstant } from "@/lib/ical/budapest";
 import type { IcalEventDTO } from "@/lib/ical/types";
 
 /**
@@ -21,13 +22,17 @@ export function parseIcs(text: string): IcalEventDTO[] {
 
     let start: string;
     if (startDate.isDate) {
-      // All-day event: student deadlines treat "all day" as end of day, 23:59 local.
-      const jsDate = startDate.toJSDate();
-      jsDate.setHours(23, 59, 0, 0);
-      start = jsDate.toISOString();
+      // All-day event: student deadlines treat "all day" as end of day, 23:59 Budapest time
+      // (never the runtime's zone: the server runs in UTC).
+      start = budapestInstant([startDate.year, startDate.month, startDate.day], 23, 59).toISOString();
     } else {
       start = startDate.toJSDate().toISOString();
     }
+
+    // All-day events and events without a usable DTEND end where they start.
+    const endDate = event.endDate;
+    const end = !startDate.isDate && endDate ? endDate.toJSDate().toISOString() : start;
+    const location = event.location?.trim() || undefined;
 
     const summary = event.summary || "(névtelen)";
     // Recurrence overrides share their master's UID; qualify them so every
@@ -49,6 +54,8 @@ export function parseIcs(text: string): IcalEventDTO[] {
       uid,
       summary,
       start,
+      end,
+      location,
       url,
       description: event.description || undefined,
       categories,

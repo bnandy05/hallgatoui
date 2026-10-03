@@ -8,7 +8,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { hu } from "date-fns/locale";
-import type { Deadline } from "@/lib/types";
+import type { ClassSession, Deadline } from "@/lib/types";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -143,6 +143,33 @@ export function bucketWeekByDay(deadlines: Deadline[], weekStart: Date): DayBuck
   for (const day of days) {
     day.items.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
   }
+  return days;
+}
+
+export interface ClassDayBucket {
+  date: Date;
+  /** Classes and exams of the day, sorted by start. */
+  sessions: ClassSession[];
+  /** The holiday ("szunnap") of the day, if any. */
+  holiday?: ClassSession;
+}
+
+/** Seven Monday-first buckets of class sessions (client local time, like bucketWeekByDay). */
+export function bucketSessionsByDay(sessions: ClassSession[], weekStart: Date): ClassDayBucket[] {
+  const days: ClassDayBucket[] = Array.from({ length: 7 }, (_, i) => ({
+    date: addDays(weekStart, i),
+    sessions: [],
+  }));
+  const startMs = weekStart.getTime();
+  const endMs = addDays(weekStart, 7).getTime();
+  for (const s of sessions) {
+    const ms = new Date(s.start).getTime();
+    if (ms < startMs || ms >= endMs) continue;
+    const index = days.findIndex((_, i) => i === 6 || ms < days[i + 1].date.getTime());
+    if (s.kind === "szunnap") days[index].holiday ??= s;
+    else days[index].sessions.push(s);
+  }
+  for (const day of days) day.sessions.sort((a, b) => a.start.localeCompare(b.start));
   return days;
 }
 

@@ -1,3 +1,4 @@
+import { visibleSessions } from "@/lib/ical/neptun";
 import { buildCalendar, DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { useStore, type AppStore } from "@/lib/store";
 import type { CalendarSnapshot, Subscription } from "@/lib/types";
@@ -7,7 +8,7 @@ const GENERIC_ERROR = "A naptár-előfizetés nem érhető el";
 
 type SnapshotSource = Pick<
   AppStore,
-  "courses" | "deadlines" | "feeds" | "customPlatforms" | "exportOptions"
+  "courses" | "deadlines" | "feeds" | "customPlatforms" | "exportOptions" | "ignoredDuplicatePairs" | "classSessions" | "timetableSources"
 >;
 
 /**
@@ -28,6 +29,8 @@ export function buildSnapshot(state: SnapshotSource): CalendarSnapshot {
       markDoneBefore: f.markDoneBefore,
     })),
     customPlatforms: state.customPlatforms,
+    ignoredDuplicatePairs: state.ignoredDuplicatePairs,
+    classSessions: visibleSessions(state.classSessions, state.timetableSources),
     options: { ...DEFAULT_EXPORT_OPTIONS, ...state.exportOptions },
   };
 }
@@ -164,13 +167,18 @@ export async function rotateSubscription(): Promise<string | null> {
 
 /** One-time .ics download built in the browser; works without a subscription or server. */
 export function downloadCalendar(): void {
-  const { courses, deadlines, exportOptions } = useStore.getState();
+  const { courses, deadlines, exportOptions, feeds, customPlatforms, ignoredDuplicatePairs, classSessions, timetableSources } =
+    useStore.getState();
   const ics = buildCalendar({
     courses,
     deadlines,
     options: exportOptions,
     now: new Date(),
     appUrl: window.location.origin,
+    feeds,
+    customPlatforms,
+    ignoredDuplicatePairs,
+    classSessions: visibleSessions(classSessions, timetableSources),
   });
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
   const link = document.createElement("a");

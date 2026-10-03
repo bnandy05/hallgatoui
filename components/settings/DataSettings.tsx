@@ -12,6 +12,9 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 export function DataSettings() {
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
+  const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
+  const classSessions = useStore((s) => s.classSessions);
+  const timetableSources = useStore((s) => s.timetableSources);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const feeds = useStore((s) => s.feeds);
   const importData = useStore((s) => s.importData);
@@ -23,7 +26,11 @@ export function DataSettings() {
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   function handleExport() {
-    const data: AppData = { version: 1, courses, deadlines, customPlatforms, feeds };
+    const data: AppData = { version: 1, courses, deadlines, customPlatforms, feeds,
+      ignoredDuplicatePairs,
+      classSessions,
+      timetableSources,
+    };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
     });

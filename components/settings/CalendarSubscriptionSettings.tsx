@@ -27,6 +27,8 @@ export function CalendarSubscriptionSettings() {
   const courses = useStore((s) => s.courses);
   const exportOptions = useStore((s) => s.exportOptions);
   const setExportOptions = useStore((s) => s.setExportOptions);
+  const ignoredCount = useStore((s) => s.ignoredDuplicatePairs.length);
+  const clearIgnoredDuplicates = useStore((s) => s.clearIgnoredDuplicates);
 
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +128,41 @@ export function CalendarSubscriptionSettings() {
             />
             Készülési sáv kritikus határidők előtt (2 nap)
           </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={exportOptions.includeClasses}
+              onChange={(e) => setExportOptions({ includeClasses: e.target.checked })}
+              className="h-4 w-4 accent-accent"
+            />
+            Órarend is az összes- és a tárgynézetben
+          </label>
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={exportOptions.dedupe}
+                onChange={(e) => setExportOptions({ dedupe: e.target.checked })}
+                className="h-4 w-4 accent-accent"
+              />
+              Duplikátumok összevonása
+            </label>
+            <p className="ml-6 mt-0.5 text-[12.5px] text-muted">
+              Ugyanaz a határidő több forrásból (például Canvas és kézzel felvett) egyszer jelenik meg, az
+              alkalmazásban és a naptárban is.
+            </p>
+            {ignoredCount > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ml-6 mt-1"
+                onClick={clearIgnoredDuplicates}
+              >
+                Kivételek törlése ({ignoredCount})
+              </Button>
+            )}
+          </div>
         </div>
 
         {!subscription ? (
@@ -163,6 +200,7 @@ export function CalendarSubscriptionSettings() {
                 <option value="osszes">Mindent</option>
                 <option value="kritikus">Csak kritikus</option>
                 <option value="zh">ZH-k és vizsgák</option>
+                <option value="orarend">Órarend</option>
                 {courses.map((c) => (
                   <option key={c.id} value={`targy-${c.id}`}>
                     {c.name}

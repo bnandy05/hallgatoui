@@ -11,6 +11,7 @@ import type {
   NotificationPrefs,
   Platform,
   Resource,
+  TimetableSource,
   Subscription,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
@@ -18,6 +19,12 @@ import { matchCourseInText } from "@/lib/ical/match";
 import { cleanCanvasTitle, formatKindLabel } from "@/lib/ical/canvas";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync } from "@/lib/ical/sync";
+import { findDuplicates, pairKey } from "@/lib/ical/dedupe";
+import {
+  applySubjectMapping,
+  mergeTimetableImport,
+  type ParsedSession,
+} from "@/lib/ical/neptun";
 import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
@@ -36,7 +43,10 @@ function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Cou
 }
 
 function emptyAppData(): AppData {
-  return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [] };
+  return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
+    classSessions: [],
+    timetableSources: [],
+  };
 }
 
 const MAX_NOTIFIED_KEYS = 500;
@@ -46,6 +56,12 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   leadMinutes: [1440, 60],
   criticalOnly: false,
 };
+
+/** What the user chose for one timetable subject in the mapping dialog. */
+export type SubjectDecision =
+  | { kind: "existing"; courseId: string }
+  | { kind: "new"; name: string }
+  | { kind: "skip" };
 
 export interface AppStore extends AppData {
   // device preferences (persisted, but not part of AppData)
@@ -59,6 +75,9 @@ export interface AppStore extends AppData {
   setSubscription: (subscription: Subscription | null) => void;
   patchSubscription: (patch: Partial<Subscription>) => void;
   setExportOptions: (patch: Partial<ExportOptions>) => void;
+  // home board: show the timetable (device preference, not part of AppData)
+  showClasses: boolean;
+  setShowClasses: (show: boolean) => void;
 
   // courses
   addCourse: (
@@ -112,10 +131,84 @@ export interface AppStore extends AppData {
   rematchFeedDeadlines: () => void;
   applyDiscovery: (decisions: DiscoveryDecision[]) => number; // returns created courses
 
+  // timetable
+  /** Creates (or, with sourceId, re-imports) a timetable source and maps its subjects. */
+  importTimetable: (
+    meta: { sourceId?: string; name: string; url?: string },
+    parsed: ParsedSession[],
+    decisions: Record<string, SubjectDecision>
+  ) => string;
+  /** Changes the subject -> course mapping of a source (and its sessions). */
+  remapTimetable: (sourceId: string, decisions: Record<string, SubjectDecision>) => void;
+  removeTimetableSource: (sourceId: string) => void;
+
+  // duplicates
+  ignoreDuplicate: (aId: string, bId: string) => void;
+  clearIgnoredDuplicates: () => void;
+
   // data
   importData: (data: AppData) => void;
   resetAll: () => void;
   loadDemo: () => void;
+}
+
+/**
+ * Turns the dialog's decisions into courses and a subject -> course mapping: creates the new
+ * courses and adds the subject name to the keywords of the courses it is mapped onto.
+ */
+function resolveDecisions(
+  courses: Course[],
+  decisions: Record<string, SubjectDecision>,
+  subjectNames: Record<string, string>
+): { courses: Course[]; mapping: Record<string, string | null> } {
+  const mapping: Record<string, string | null> = {};
+  let next = courses;
+  let created = 0;
+  for (const [key, decision] of Object.entries(decisions)) {
+    const subject = subjectNames[key] ?? key;
+    if (decision.kind === "skip") {
+      mapping[key] = null;
+    } else if (decision.kind === "existing") {
+      mapping[key] = decision.courseId;
+      next = next.map((c) => {
+        if (c.id !== decision.courseId) return c;
+        const known = c.matchKeywords.some((k) => k.trim().toLowerCase() === subject.toLowerCase());
+        return known ? c : { ...c, matchKeywords: [...c.matchKeywords, subject] };
+      });
+    } else {
+      const id = newId();
+      mapping[key] = id;
+      next = [
+        ...next,
+        {
+          id,
+          name: decision.name.trim() || subject,
+          color: pickCourseColor(courses.length + created),
+          links: [],
+          resources: [],
+          matchKeywords: [subject],
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      created += 1;
+    }
+  }
+  return { courses: next, mapping };
+}
+
+/**
+ * Ids of the other copies when `id` is the primary of a duplicate group (and merging is on),
+ * so done/critical on the primary applies to the whole group.
+ */
+function groupFollowerIds(state: AppData & { exportOptions: ExportOptions }, id: string): Set<string> {
+  if (!state.exportOptions.dedupe) return new Set();
+  const group = findDuplicates(
+    state.deadlines,
+    state.feeds,
+    state.ignoredDuplicatePairs,
+    state.courses
+  ).find((g) => g.primary.id === id);
+  return new Set(group?.others.map((d) => d.id));
 }
 
 export const useStore = create<AppStore>()(
@@ -126,6 +219,7 @@ export const useStore = create<AppStore>()(
       notifiedKeys: [],
       subscription: null,
       exportOptions: DEFAULT_EXPORT_OPTIONS,
+      showClasses: true,
 
       // ---- calendar subscription ----
       setSubscription: (subscription) => {
@@ -136,6 +230,10 @@ export const useStore = create<AppStore>()(
       },
       setExportOptions: (patch) => {
         set((state) => ({ exportOptions: { ...state.exportOptions, ...patch } }));
+      },
+
+      setShowClasses: (showClasses) => {
+        set({ showClasses });
       },
 
       // ---- notifications ----
@@ -180,6 +278,15 @@ export const useStore = create<AppStore>()(
           feeds: state.feeds.map((f) =>
             f.courseId === id ? { ...f, courseId: null } : f
           ),
+          classSessions: state.classSessions.map((s) =>
+            s.courseId === id ? { ...s, courseId: null } : s
+          ),
+          timetableSources: state.timetableSources.map((src) => ({
+            ...src,
+            subjectCourses: Object.fromEntries(
+              Object.entries(src.subjectCourses).filter(([, courseId]) => courseId !== id)
+            ),
+          })),
         }));
       },
 
@@ -275,19 +382,40 @@ export const useStore = create<AppStore>()(
         return id;
       },
       updateDeadline: (id, patch) => {
-        set((state) => ({
-          deadlines: state.deadlines.map((d) => (d.id === id ? { ...d, ...patch } : d)),
-        }));
+        set((state) => {
+          const shared =
+            "done" in patch || "critical" in patch
+              ? { done: patch.done, critical: patch.critical }
+              : null;
+          const followers = shared ? groupFollowerIds(state, id) : new Set<string>();
+          return {
+            deadlines: state.deadlines.map((d) => {
+              if (d.id === id) return { ...d, ...patch };
+              if (!followers.has(d.id) || !shared) return d;
+              return {
+                ...d,
+                ...(shared.done !== undefined && { done: shared.done }),
+                ...(shared.critical !== undefined && { critical: shared.critical }),
+              };
+            }),
+          };
+        });
       },
       removeDeadline: (id) => {
         set((state) => ({ deadlines: state.deadlines.filter((d) => d.id !== id) }));
       },
       toggleDone: (id) => {
-        set((state) => ({
-          deadlines: state.deadlines.map((d) =>
-            d.id === id ? { ...d, done: !d.done } : d
-          ),
-        }));
+        set((state) => {
+          const target = state.deadlines.find((d) => d.id === id);
+          if (!target) return state;
+          const done = !target.done;
+          const followers = groupFollowerIds(state, id);
+          return {
+            deadlines: state.deadlines.map((d) =>
+              d.id === id || followers.has(d.id) ? { ...d, done } : d
+            ),
+          };
+        });
       },
 
       // ---- platforms ----
@@ -449,6 +577,70 @@ export const useStore = create<AppStore>()(
         return created;
       },
 
+      // ---- timetable ----
+      importTimetable: (meta, parsed, decisions) => {
+        const sourceId = meta.sourceId ?? newId();
+        set((state) => {
+          const subjectNames = Object.fromEntries(parsed.map((p) => [p.subjectKey, p.subject]));
+          const { courses, mapping } = resolveDecisions(state.courses, decisions, subjectNames);
+          const previous = state.timetableSources.find((s) => s.id === sourceId);
+          const source: TimetableSource = {
+            id: sourceId,
+            name: meta.name,
+            url: meta.url ?? previous?.url,
+            importedAt: new Date().toISOString(),
+            // A re-import reuses the earlier mapping; only new subjects were asked about.
+            subjectCourses: { ...previous?.subjectCourses, ...mapping },
+          };
+          return {
+            courses,
+            timetableSources: previous
+              ? state.timetableSources.map((s) => (s.id === sourceId ? source : s))
+              : [...state.timetableSources, source],
+            classSessions: mergeTimetableImport(source, parsed, state.classSessions),
+          };
+        });
+        return sourceId;
+      },
+      remapTimetable: (sourceId, decisions) => {
+        set((state) => {
+          const previous = state.timetableSources.find((s) => s.id === sourceId);
+          if (!previous) return state;
+          const subjectNames: Record<string, string> = {};
+          for (const s of state.classSessions) {
+            if (s.sourceId === sourceId) subjectNames[s.subjectKey] = s.subject;
+          }
+          const { courses, mapping } = resolveDecisions(state.courses, decisions, subjectNames);
+          const source = { ...previous, subjectCourses: { ...previous.subjectCourses, ...mapping } };
+          return {
+            courses,
+            timetableSources: state.timetableSources.map((s) => (s.id === sourceId ? source : s)),
+            classSessions: applySubjectMapping(source, state.classSessions),
+          };
+        });
+      },
+      removeTimetableSource: (sourceId) => {
+        set((state) => ({
+          timetableSources: state.timetableSources.filter((s) => s.id !== sourceId),
+          classSessions: state.classSessions.filter((s) => s.sourceId !== sourceId),
+        }));
+      },
+
+      // ---- duplicates ----
+      ignoreDuplicate: (aId, bId) => {
+        set((state) => {
+          const a = state.deadlines.find((d) => d.id === aId);
+          const b = state.deadlines.find((d) => d.id === bId);
+          if (!a || !b) return state;
+          const key = pairKey(a, b);
+          if (state.ignoredDuplicatePairs.includes(key)) return state;
+          return { ignoredDuplicatePairs: [...state.ignoredDuplicatePairs, key] };
+        });
+      },
+      clearIgnoredDuplicates: () => {
+        set({ ignoredDuplicatePairs: [] });
+      },
+
       // ---- data ----
       importData: (data) => {
         set(() => ({ ...data }));
@@ -489,6 +681,10 @@ export const useStore = create<AppStore>()(
           ...current,
           ...saved,
           exportOptions: { ...DEFAULT_EXPORT_OPTIONS, ...saved.exportOptions },
+          ignoredDuplicatePairs: saved.ignoredDuplicatePairs ?? [],
+          classSessions: saved.classSessions ?? [],
+          timetableSources: saved.timetableSources ?? [],
+          showClasses: saved.showClasses ?? true,
         };
       },
       partialize: (state) => ({
@@ -497,6 +693,10 @@ export const useStore = create<AppStore>()(
         deadlines: state.deadlines,
         customPlatforms: state.customPlatforms,
         feeds: state.feeds,
+        ignoredDuplicatePairs: state.ignoredDuplicatePairs,
+        classSessions: state.classSessions,
+        timetableSources: state.timetableSources,
+        showClasses: state.showClasses,
         notificationPrefs: state.notificationPrefs,
         notifiedKeys: state.notifiedKeys,
         subscription: state.subscription,

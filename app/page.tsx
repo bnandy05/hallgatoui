@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarPlus, CalendarRange, LayoutGrid, Plus, Sparkles } from "lucide-react";
+import { CalendarClock, CalendarPlus, CalendarRange, LayoutGrid, Plus, Sparkles } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { visibleSessions } from "@/lib/ical/neptun";
+import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { addDays } from "date-fns";
 import { weekRangeLabel, weekStartOf, weekSummary } from "@/lib/radar";
 import { Button, buttonClasses } from "@/components/ui/Button";
@@ -14,6 +16,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DiscoveryBanner } from "@/components/DiscoveryBanner";
+import { TimetableBanner } from "@/components/TimetableBanner";
+import { Pill } from "@/components/ui/Pill";
 import { CourseTable } from "@/components/week/CourseTable";
 import { WeekBoard } from "@/components/week/WeekBoard";
 import { WeekNav } from "@/components/week/WeekNav";
@@ -30,8 +34,13 @@ function HomeSkeleton() {
 export default function WeekHome() {
   const hydrated = useHydrated();
   const courses = useStore((s) => s.courses);
-  const deadlines = useStore((s) => s.deadlines);
+  const { visible: deadlines } = useDedupedDeadlines();
   const loadDemo = useStore((s) => s.loadDemo);
+  const allSessions = useStore((s) => s.classSessions);
+  const timetableSources = useStore((s) => s.timetableSources);
+  const classSessions = useMemo(() => visibleSessions(allSessions, timetableSources), [allSessions, timetableSources]);
+  const showClasses = useStore((s) => s.showClasses);
+  const setShowClasses = useStore((s) => s.setShowClasses);
   const [now] = useState(() => new Date());
   const currentWeekStart = useMemo(() => weekStartOf(now), [now]);
   const [weekStart, setWeekStart] = useState(currentWeekStart);
@@ -82,9 +91,19 @@ export default function WeekHome() {
               "Egy másik hét a menetrendből. A lejárt elemek az aktuális hétnél vannak."
             )
           }
-          aside="(Ithaka messze van. A péntek közelebb.)"
+          aside="(A határidő közelebb van, mint amilyennek a naptárban látszik.)"
           actions={
             <>
+              {hydrated && classSessions.length > 0 && (
+                <Pill
+                  active={showClasses}
+                  onClick={() => setShowClasses(!showClasses)}
+                  title="Az órarendi órák megjelenítése a heti menetrendben"
+                >
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Órák
+                </Pill>
+              )}
               <WeekNav
                 weekStart={weekStart}
                 currentWeekStart={currentWeekStart}
@@ -107,9 +126,11 @@ export default function WeekHome() {
         ) : (
           <>
             <DiscoveryBanner />
+            <TimetableBanner />
             <WeekBoard
               weekStart={weekStart}
               deadlines={deadlines}
+              sessions={showClasses ? classSessions : undefined}
               now={now}
               gutter={isCurrent}
               label={`Heti menetrend, ${range}`}
@@ -151,9 +172,8 @@ export default function WeekHome() {
           {sortedCourses.length === 0 ? (
             <EmptyState
               icon={Plus}
-              title="Még üres a fedélzet"
+              title="Még üres a füzet"
               text="Add hozzá a Canvas/Moodle naptárad, és a tárgyakat automatikusan felvesszük."
-              aside="(Az első tárgy a legnehezebb. Utána már csak a ZH-k.)"
               action={
                 <>
                   <Button onClick={() => setCourseOpen(true)}>Új tárgy</Button>
