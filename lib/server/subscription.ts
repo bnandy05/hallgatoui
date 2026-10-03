@@ -143,6 +143,8 @@ export function validateSnapshot(value: unknown): CalendarSnapshot | null {
   const normalized: ExportOptions = {
     includeDone: opts.includeDone === true,
     alarms: opts.alarms !== false,
+    weeklySummary: opts.weeklySummary !== false,
+    studyBlocks: opts.studyBlocks !== false,
   };
   return {
     courses: courses as CalendarSnapshot["courses"],

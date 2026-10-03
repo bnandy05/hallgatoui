@@ -53,6 +53,7 @@ export function mergeFeedSync({
   }
 
   const now = nowDate.getTime();
+  const markDoneBefore = feed.markDoneBefore ? new Date(feed.markDoneBefore).getTime() : NaN;
   const relevantEvents = events.filter(
     (e) => now - new Date(e.start).getTime() <= THIRTY_DAYS_MS
   );
@@ -94,7 +95,16 @@ export function mergeFeedSync({
     const note = noteFromDescription(event.description);
 
     if (existing) {
-      return { ...existing, title, due: event.start, url, note, courseId };
+      const dueChanged = new Date(existing.due).getTime() !== new Date(event.start).getTime();
+      return {
+        ...existing,
+        title,
+        due: event.start,
+        url,
+        note,
+        courseId,
+        ...(dueChanged && { previousDue: existing.due, dueChangedAt: nowDate.toISOString() }),
+      };
     }
 
     return {
@@ -106,7 +116,8 @@ export function mergeFeedSync({
       note,
       platformId: feed.platformId,
       critical: false,
-      done: false,
+      // Deadlines that were already over when the feed was added start as done.
+      done: new Date(event.start).getTime() < markDoneBefore,
       source: "ical",
       feedId,
       externalUid: event.uid,

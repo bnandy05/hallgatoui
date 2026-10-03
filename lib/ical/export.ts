@@ -1,12 +1,39 @@
 import ICAL from "ical.js";
 import type { Course, Deadline, ExportOptions } from "@/lib/types";
+import {
+  addDays,
+  budapestDate,
+  budapestTime,
+  dateKey,
+  dayAbbreviation,
+  formatBudapest,
+  mondayOf,
+  type YMD,
+} from "@/lib/ical/budapest";
+import { isRecentlyChanged } from "@/lib/radar";
+import {
+  ALL_VIEW,
+  filterDeadlinesForView,
+  isExamTitle,
+  parseView,
+  viewCalendarName,
+  viewParam,
+  type CalendarView,
+} from "@/lib/ical/views";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 60;
 const UID_DOMAIN = "hallgatoireteg";
 const TIME_ZONE = "Europe/Budapest";
+const SUMMARY_WEEKS = 4; // the current week and the next three
+const STUDY_BLOCK_DAYS = 2;
 
-export const DEFAULT_EXPORT_OPTIONS: ExportOptions = { includeDone: false, alarms: true };
+export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
+  includeDone: false,
+  alarms: true,
+  weeklySummary: true,
+  studyBlocks: true,
+};
 
 export interface HealthWarning {
   feedId: string;
@@ -22,6 +49,8 @@ export interface BuildCalendarInput {
   appUrl?: string;
   /** Feeds that have not refreshed for a long time; each becomes an all-day notice event. */
   warnings?: HealthWarning[];
+  /** Filtered view of the calendar; the full calendar when omitted. */
+  view?: CalendarView;
 }
 
 /** Short non-cryptographic hash (two independent 32-bit hashes, 16 hex chars). */
@@ -51,18 +80,6 @@ function utcTime(date: Date): ICAL.Time {
   return ICAL.Time.fromJSDate(date, true);
 }
 
-/** Today's calendar date in Europe/Budapest as [year, month, day]. */
-function budapestDate(now: Date): [number, number, number] {
-  const text = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-  const [y, m, d] = text.split("-").map(Number);
-  return [y, m, d];
-}
-
 function addAlarm(vevent: ICAL.Component, trigger: string, description: string) {
   const alarm = new ICAL.Component("valarm");
   alarm.addPropertyWithValue("action", "DISPLAY");
@@ -90,9 +107,14 @@ function buildDeadlineEvent(
   let summary = label ? `[${label}] ${d.title}` : d.title;
   if (d.critical) summary = `🔴 ${summary}`;
   if (d.done) summary = `✓ ${summary}`;
+  const changed = isRecentlyChanged(d, now);
+  if (changed) summary = `${summary} (módosult)`;
   vevent.addPropertyWithValue("summary", summary);
 
   const description: string[] = [];
+  if (changed && d.previousDue) {
+    description.push(`Korábbi határidő: ${formatBudapest(new Date(d.previousDue))}`);
+  }
   if (d.note) description.push(d.note);
   if (d.url) description.push(d.url);
   if (appUrl && course) description.push(`Megnyitás: ${appUrl}/targy/${course.id}`);
@@ -107,6 +129,88 @@ function buildDeadlineEvent(
     addAlarm(vevent, "-PT1H", "Kritikus határidő egy óra múlva");
   }
   return vevent;
+}
+
+function allDayEvent(uid: string, start: YMD, end: YMD, now: Date): ICAL.Component {
+  const vevent = new ICAL.Component("vevent");
+  vevent.addPropertyWithValue("uid", uid);
+  vevent.addPropertyWithValue("dtstamp", utcTime(now));
+  vevent.addPropertyWithValue("dtstart", dateValue(start));
+  vevent.addPropertyWithValue("dtend", dateValue(end));
+  // Informational events must not make the day look busy.
+  vevent.addPropertyWithValue("transp", "TRANSPARENT");
+  return vevent;
+}
+
+function dateValue([year, month, day]: YMD): ICAL.Time {
+  return ICAL.Time.fromData({ year, month, day, isDate: true });
+}
+
+function courseLabel(d: Deadline, courseById: Map<string, Course>): string {
+  const course = d.courseId ? courseById.get(d.courseId) : undefined;
+  return course ? course.code || course.name : "";
+}
+
+/** One "Heti radar" event per week (current + next 3) that has an open deadline. */
+function buildWeeklySummaries(
+  deadlines: Deadline[],
+  courseById: Map<string, Course>,
+  view: CalendarView,
+  now: Date
+): ICAL.Component[] {
+  const open = deadlines
+    .filter((d) => !d.done && !Number.isNaN(new Date(d.due).getTime()))
+    .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+  const viewSuffix = view.kind === "all" ? "" : `-${viewParam(view).replace(/[^A-Za-z0-9-]/g, "")}`;
+  const firstMonday = mondayOf(budapestDate(now));
+  const events: ICAL.Component[] = [];
+
+  for (let week = 0; week < SUMMARY_WEEKS; week++) {
+    const monday = addDays(firstMonday, week * 7);
+    const first = dateKey(monday);
+    const last = dateKey(addDays(monday, 6));
+    const inWeek = open.filter((d) => {
+      const key = dateKey(budapestDate(new Date(d.due)));
+      return key >= first && key <= last;
+    });
+    if (inWeek.length === 0) continue;
+
+    const critical = inWeek.filter((d) => d.critical || isExamTitle(d.title)).length;
+    const event = allDayEvent(
+      `week-${first}${viewSuffix}@${UID_DOMAIN}`,
+      monday,
+      addDays(monday, 1),
+      now
+    );
+    event.addPropertyWithValue(
+      "summary",
+      `📋 Heti radar: ${inWeek.length} határidő${critical > 0 ? `, ${critical} kritikus` : ""}`
+    );
+    const lines = inWeek.map((d) => {
+      const due = new Date(d.due);
+      const label = courseLabel(d, courseById);
+      return `• ${dayAbbreviation(budapestDate(due))} ${budapestTime(due)} ${label ? `[${label}] ` : ""}${d.title}`;
+    });
+    event.addPropertyWithValue("description", lines.join("\n"));
+    events.push(event);
+  }
+  return events;
+}
+
+/** All-day block covering the two Budapest days before a critical deadline. */
+function buildStudyBlock(
+  d: Deadline,
+  course: Course | undefined,
+  now: Date
+): ICAL.Component {
+  const due = new Date(d.due);
+  const dueDay = budapestDate(due);
+  const base = deadlineUid(d);
+  const event = allDayEvent(`prep-${base}`, addDays(dueDay, -STUDY_BLOCK_DAYS), dueDay, now);
+  const label = course ? course.code || course.name : "";
+  event.addPropertyWithValue("summary", `📚 Készülés: ${label ? `[${label}] ` : ""}${d.title}`);
+  event.addPropertyWithValue("description", `Határidő: ${formatBudapest(due)}`);
+  return event;
 }
 
 function buildWarningEvent(
@@ -142,7 +246,10 @@ function buildWarningEvent(
  * ical.js takes care of escaping and line folding.
  */
 export function buildCalendar(input: BuildCalendarInput): string {
-  const { courses, deadlines, now, warnings = [] } = input;
+  const { courses, now, warnings = [] } = input;
+  // Re-parsing guards against a course view whose course no longer exists.
+  const view = input.view ? parseView(viewParam(input.view), courses) : ALL_VIEW;
+  const deadlines = filterDeadlinesForView(input.deadlines, view);
   const options: ExportOptions = { ...DEFAULT_EXPORT_OPTIONS, ...input.options };
   const appUrl = input.appUrl?.replace(/\/+$/, "") || undefined;
 
@@ -151,7 +258,7 @@ export function buildCalendar(input: BuildCalendarInput): string {
   cal.addPropertyWithValue("prodid", "-//Hallgatoi reteg//HU");
   cal.addPropertyWithValue("calscale", "GREGORIAN");
   cal.addPropertyWithValue("method", "PUBLISH");
-  cal.addPropertyWithValue("x-wr-calname", "Hallgatói réteg");
+  cal.addPropertyWithValue("x-wr-calname", viewCalendarName(view, courses));
   cal.addPropertyWithValue("x-wr-timezone", TIME_ZONE);
   const refresh = new ICAL.Property("refresh-interval");
   refresh.setValue(ICAL.Duration.fromString("PT1H"));
@@ -171,6 +278,15 @@ export function buildCalendar(input: BuildCalendarInput): string {
     seen.add(uid);
     const course = d.courseId ? courseById.get(d.courseId) : undefined;
     cal.addSubcomponent(buildDeadlineEvent(d, course, options, now, appUrl));
+    if (options.studyBlocks && d.critical && !d.done && dueMs > now.getTime()) {
+      cal.addSubcomponent(buildStudyBlock(d, course, now));
+    }
+  }
+
+  if (options.weeklySummary) {
+    for (const event of buildWeeklySummaries(deadlines, courseById, view, now)) {
+      cal.addSubcomponent(event);
+    }
   }
 
   if (warnings.length > 0) {

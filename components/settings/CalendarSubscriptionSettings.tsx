@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { hu } from "date-fns/locale";
 import { CalendarCheck, CalendarPlus, Download, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { parseView, viewParam } from "@/lib/ical/views";
 import {
   createSubscription,
   deleteSubscription,
@@ -14,6 +15,8 @@ import {
 } from "@/lib/subscription/client";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Label } from "@/components/ui/Label";
+import { Select } from "@/components/ui/Select";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -21,11 +24,13 @@ type Busy = "create" | "rotate" | "delete" | null;
 
 export function CalendarSubscriptionSettings() {
   const subscription = useStore((s) => s.subscription);
+  const courses = useStore((s) => s.courses);
   const exportOptions = useStore((s) => s.exportOptions);
   const setExportOptions = useStore((s) => s.setExportOptions);
 
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewValue, setViewValue] = useState("osszes");
 
   async function run(kind: Exclude<Busy, null>, action: () => Promise<string | null>) {
     setBusy(kind);
@@ -54,7 +59,10 @@ export function CalendarSubscriptionSettings() {
   }
 
   const origin = typeof window === "undefined" ? "" : window.location.origin;
-  const path = subscription ? subscriptionPath(subscription.token) : "";
+  // A deleted course falls back to the full calendar, like the server does.
+  const view = parseView(viewValue, courses);
+  const query = view.kind === "all" ? "" : `?nezet=${encodeURIComponent(viewParam(view))}`;
+  const path = subscription ? `${subscriptionPath(subscription.token)}${query}` : "";
   const httpsUrl = `${origin}${path}`;
   const webcalUrl = `webcal://${origin.replace(/^https?:\/\//, "")}${path}`;
   const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`;
@@ -72,7 +80,7 @@ export function CalendarSubscriptionSettings() {
       <Card className="flex flex-col gap-4">
         <div>
           <p className="mb-2 text-sm text-muted">
-            Egyszeri pillanatkép, amit a böngésződben állítunk elő. Nem frissül magától, és nem
+            Egyszeri pillanatkép az összes határidőddel, amit a böngésződben állítunk elő. Nem frissül magától, és nem
             kell hozzá bekapcsolni az előfizetést.
           </p>
           <Button type="button" variant="secondary" onClick={downloadCalendar}>
@@ -99,6 +107,24 @@ export function CalendarSubscriptionSettings() {
               className="h-4 w-4 accent-accent"
             />
             Emlékeztetők a kritikus határidőkhöz
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={exportOptions.weeklySummary}
+              onChange={(e) => setExportOptions({ weeklySummary: e.target.checked })}
+              className="h-4 w-4 accent-accent"
+            />
+            Heti összefoglaló hétfőnként
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={exportOptions.studyBlocks}
+              onChange={(e) => setExportOptions({ studyBlocks: e.target.checked })}
+              className="h-4 w-4 accent-accent"
+            />
+            Készülési sáv kritikus határidők előtt (2 nap)
           </label>
         </div>
 
@@ -127,6 +153,27 @@ export function CalendarSubscriptionSettings() {
           </div>
         ) : (
           <div className="flex flex-col gap-3 border-t border-border pt-4">
+            <div>
+              <Label htmlFor="naptar-nezet">Nézet</Label>
+              <Select
+                id="naptar-nezet"
+                value={view.kind === "all" ? "osszes" : viewValue}
+                onChange={(e) => setViewValue(e.target.value)}
+              >
+                <option value="osszes">Mindent</option>
+                <option value="kritikus">Csak kritikus</option>
+                <option value="zh">ZH-k és vizsgák</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={`targy-${c.id}`}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+              <p className="mt-1 text-[12.5px] text-muted">
+                Minden nézetre külön is feliratkozhatsz, például tárgyanként más színnel.
+              </p>
+            </div>
+
             <div>
               <p className="mb-2 text-sm font-medium text-foreground">Előfizetési link</p>
               <CodeBlock prompt={false}>{httpsUrl}</CodeBlock>

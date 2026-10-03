@@ -107,6 +107,7 @@ export interface AppStore extends AppData {
   addFeed: (feed: Omit<IcalFeed, "id">) => string;
   updateFeed: (id: string, patch: Partial<Omit<IcalFeed, "id">>) => void;
   removeFeed: (id: string) => void;
+  markFeedPastDone: (feedId: string) => number; // returns how many deadlines were marked
   applyFeedSync: (feedId: string, events: IcalEventDTO[]) => void;
   rematchFeedDeadlines: () => void;
   applyDiscovery: (decisions: DiscoveryDecision[]) => number; // returns created courses
@@ -332,6 +333,18 @@ export const useStore = create<AppStore>()(
           deadlines: state.deadlines.filter((d) => d.feedId !== id),
         }));
       },
+      markFeedPastDone: (feedId) => {
+        let marked = 0;
+        const now = Date.now();
+        set((state) => ({
+          deadlines: state.deadlines.map((d) => {
+            if (d.feedId !== feedId || d.done || new Date(d.due).getTime() >= now) return d;
+            marked += 1;
+            return { ...d, done: true };
+          }),
+        }));
+        return marked;
+      },
       applyFeedSync: (feedId, events) => {
         set((state) => {
           const feed = state.feeds.find((f) => f.id === feedId);
@@ -469,6 +482,15 @@ export const useStore = create<AppStore>()(
       name: "hallgatoireteg-v1",
       version: 1,
       storage: createJSONStorage(() => localStorage),
+      // persist merges shallowly, so options added in newer versions need their defaults here.
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<AppStore>;
+        return {
+          ...current,
+          ...saved,
+          exportOptions: { ...DEFAULT_EXPORT_OPTIONS, ...saved.exportOptions },
+        };
+      },
       partialize: (state) => ({
         version: state.version,
         courses: state.courses,

@@ -32,7 +32,15 @@ export async function GET(req: Request, ctx: RouteContext<"/api/naptar/[token]">
   }
   if (!sub) return errorResponse(NOT_FOUND, 404);
 
-  const ics = await renderSubscription(kv, token, sub, new Date(), new URL(req.url).origin);
+  const url = new URL(req.url);
+  const ics = await renderSubscription(
+    kv,
+    token,
+    sub,
+    new Date(),
+    url.origin,
+    url.searchParams.get("nezet")
+  );
   return new Response(ics, {
     headers: {
       "content-type": "text/calendar; charset=utf-8",

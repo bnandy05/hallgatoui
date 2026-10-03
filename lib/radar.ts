@@ -12,6 +12,7 @@ import type { Deadline } from "@/lib/types";
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const CRITICAL_THRESHOLD_MS = 48 * HOUR_MS;
+const CHANGED_MARKER_MS = 48 * HOUR_MS;
 const SOON_THRESHOLD_MS = 7 * DAY_MS;
 
 export type Urgency = "overdue" | "critical" | "soon" | "later" | "done";
@@ -24,6 +25,13 @@ export function urgencyOf(d: Deadline, now: Date): Urgency {
   if (d.critical || diff <= CRITICAL_THRESHOLD_MS) return "critical";
   if (diff <= SOON_THRESHOLD_MS) return "soon";
   return "later";
+}
+
+/** True while a feed-reported due date change is younger than 48 hours. */
+export function isRecentlyChanged(d: Deadline, now: Date): boolean {
+  if (!d.dueChangedAt) return false;
+  const age = now.getTime() - new Date(d.dueChangedAt).getTime();
+  return Number.isFinite(age) && age <= CHANGED_MARKER_MS;
 }
 
 export function isCritical(d: Deadline, now: Date): boolean {
