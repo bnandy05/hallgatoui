@@ -36,10 +36,17 @@ interface FeedFormValues {
   url: string;
   platformId: string;
   courseId: string; // AUTO_COURSE for "automatikus"
+  markPastDone: boolean; // add form only: mark already-expired deadlines done on the first sync
 }
 
 function emptyForm(): FeedFormValues {
-  return { name: "", url: "", platformId: DEFAULT_PLATFORM, courseId: AUTO_COURSE };
+  return {
+    name: "",
+    url: "",
+    platformId: DEFAULT_PLATFORM,
+    courseId: AUTO_COURSE,
+    markPastDone: true,
+  };
 }
 
 export function FeedSettings() {
@@ -50,6 +57,7 @@ export function FeedSettings() {
   const addFeed = useStore((s) => s.addFeed);
   const updateFeed = useStore((s) => s.updateFeed);
   const removeFeed = useStore((s) => s.removeFeed);
+  const markFeedPastDone = useStore((s) => s.markFeedPastDone);
 
   const [addForm, setAddForm] = useState<FeedFormValues>(emptyForm());
   const [addError, setAddError] = useState<string | null>(null);
@@ -75,6 +83,19 @@ export function FeedSettings() {
 
   function deadlineCount(feedId: string): number {
     return deadlines.filter((d) => d.feedId === feedId).length;
+  }
+
+  function pastOpenCount(feedId: string): number {
+    const now = Date.now();
+    return deadlines.filter(
+      (d) => d.feedId === feedId && !d.done && new Date(d.due).getTime() < now
+    ).length;
+  }
+
+  function handleMarkPastDone(feedId: string, count: number) {
+    if (confirm(`${count} lejárt határidő késznek lesz jelölve. Folytatod?`)) {
+      markFeedPastDone(feedId);
+    }
   }
 
   async function handleSyncOne(feedId: string) {
@@ -118,6 +139,7 @@ export function FeedSettings() {
       url: normalizedUrl,
       platformId: addForm.platformId,
       courseId: addForm.courseId === AUTO_COURSE ? null : addForm.courseId,
+      markDoneBefore: addForm.markPastDone ? new Date().toISOString() : undefined,
     });
     setAddForm(emptyForm());
     setPlatformTouched(false);
@@ -145,6 +167,7 @@ export function FeedSettings() {
       url: feed.url,
       platformId: feed.platformId,
       courseId: feed.courseId ?? AUTO_COURSE,
+      markPastDone: false,
     });
     setEditError(null);
   }
@@ -249,6 +272,7 @@ export function FeedSettings() {
             const course = feed.courseId ? courses.find((c) => c.id === feed.courseId) : null;
             const isSyncing = syncingIds.has(feed.id);
             const isEditing = editingId === feed.id;
+            const pastOpen = pastOpenCount(feed.id);
 
             if (isEditing) {
               return (
@@ -348,6 +372,16 @@ export function FeedSettings() {
                       {pendingByFeed.get(feed.id)} új tárgy
                     </Button>
                   )}
+                  {pastOpen > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMarkPastDone(feed.id, pastOpen)}
+                    >
+                      Lejártak késznek jelölése ({pastOpen})
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="secondary"
@@ -433,7 +467,21 @@ export function FeedSettings() {
             </Select>
           </div>
         </div>
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
+          <label className="flex items-start gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={addForm.markPastDone}
+              onChange={(e) => setAddForm((f) => ({ ...f, markPastDone: e.target.checked }))}
+              className="mt-0.5 h-4 w-4 accent-accent"
+            />
+            <span>
+              Lejárt határidők megjelölése késznek
+              <span className="block text-xs text-muted">
+                A hozzáadás előtt lejárt feladatok rögtön késznek számítanak.
+              </span>
+            </span>
+          </label>
           <Button type="submit" size="sm" disabled={addForm.url.trim().length === 0}>
             Hozzáadás
           </Button>

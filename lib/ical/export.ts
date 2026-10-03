@@ -6,7 +6,12 @@ const HISTORY_DAYS = 60;
 const UID_DOMAIN = "hallgatoireteg";
 const TIME_ZONE = "Europe/Budapest";
 
-export const DEFAULT_EXPORT_OPTIONS: ExportOptions = { includeDone: false, alarms: true };
+export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
+  includeDone: false,
+  alarms: true,
+  weeklySummary: true,
+  studyBlocks: true,
+};
 
 export interface HealthWarning {
   feedId: string;

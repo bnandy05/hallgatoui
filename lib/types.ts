@@ -52,6 +52,8 @@ export interface Deadline {
   source: DeadlineSource;
   feedId?: string;
   externalUid?: string;
+  previousDue?: string; // ISO, the due date before the last change reported by the feed
+  dueChangedAt?: string; // ISO, when that change was noticed
 }
 
 export type CourseKind = "Ea" | "Gy" | "Lab"; // lecture / practice / lab
@@ -83,6 +85,7 @@ export interface IcalFeed {
   lastError?: string;
   discovered?: DiscoveredContext[]; // contexts seen in the last sync (all events)
   ignoredContexts?: string[]; // context keys the user chose to skip
+  markDoneBefore?: string; // ISO; deadlines created by a sync that are due before it start as done
 }
 
 export interface AppData {
@@ -107,6 +110,8 @@ export interface NotificationPrefs {
 export interface ExportOptions {
   includeDone: boolean; // also list finished deadlines (prefixed with a check mark)
   alarms: boolean; // VALARMs for critical deadlines
+  weeklySummary: boolean; // all-day "Heti radar" event on the Monday of the next 4 weeks
+  studyBlocks: boolean; // all-day study block for the 2 days before a critical deadline
 }
 
 /** What the browser uploads for a calendar subscription; the server renders the .ics from it. */

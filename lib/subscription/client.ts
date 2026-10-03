@@ -1,4 +1,4 @@
-import { buildCalendar } from "@/lib/ical/export";
+import { buildCalendar, DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { useStore, type AppStore } from "@/lib/store";
 import type { CalendarSnapshot, Subscription } from "@/lib/types";
 
@@ -25,9 +25,10 @@ export function buildSnapshot(state: SnapshotSource): CalendarSnapshot {
       platformId: f.platformId,
       courseId: f.courseId,
       ignoredContexts: f.ignoredContexts,
+      markDoneBefore: f.markDoneBefore,
     })),
     customPlatforms: state.customPlatforms,
-    options: state.exportOptions,
+    options: { ...DEFAULT_EXPORT_OPTIONS, ...state.exportOptions },
   };
 }
 
