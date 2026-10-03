@@ -12,6 +12,8 @@ export interface Kv {
   del(...keys: string[]): Promise<void>;
   /** Resets the expiry of an existing key. */
   expire(key: string, ttlSeconds: number): Promise<void>;
+  /** Increments a counter; a new counter expires after ttlSeconds. Returns the new value. */
+  incr(key: string, ttlSeconds: number): Promise<number>;
 }
 
 interface MemoryEntry {
@@ -49,6 +51,15 @@ function createMemoryKv(): Kv {
       const entry = live(key);
       if (entry) entry.expiresAt = Date.now() + ttlSeconds * 1000;
     },
+    async incr(key, ttlSeconds) {
+      const entry = live(key);
+      const value = (entry ? Number(JSON.parse(entry.value)) : 0) + 1;
+      store.set(key, {
+        value: JSON.stringify(value),
+        expiresAt: entry ? entry.expiresAt : Date.now() + ttlSeconds * 1000,
+      });
+      return value;
+    },
   };
 }
 
@@ -66,6 +77,11 @@ function createRedisKv(url: string, token: string): Kv {
     },
     async expire(key, ttlSeconds) {
       await redis.expire(key, ttlSeconds);
+    },
+    async incr(key, ttlSeconds) {
+      const value = await redis.incr(key);
+      if (value === 1) await redis.expire(key, ttlSeconds);
+      return value;
     },
   };
 }

@@ -1,4 +1,5 @@
 import {
+  checkCreateLimit,
   generateCredentials,
   hashSecret,
   readSnapshotBody,
@@ -15,6 +16,9 @@ import {
 export async function POST(req: Request): Promise<Response> {
   const kv = requireKv();
   if (kv instanceof Response) return kv;
+
+  const limited = await checkCreateLimit(kv, req);
+  if (limited) return limited;
 
   const snapshot = await readSnapshotBody(req);
   if (snapshot instanceof Response) return snapshot;

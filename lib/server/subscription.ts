@@ -10,6 +10,9 @@ export const TTL_SECONDS = 180 * 24 * 60 * 60; // 180 days without writes
 export const SOURCE_FRESH_MS = 15 * 60 * 1000;
 export const FEED_FETCH_TIMEOUT_MS = 6_000;
 export const WARN_AFTER_MS = 24 * 60 * 60 * 1000;
+export const MAX_FEEDS = 20; // bounds the source fetches one calendar request can trigger
+const CREATE_LIMIT = 5; // new subscriptions per client IP...
+const CREATE_WINDOW_SECONDS = 60 * 60; // ...per hour
 
 export const NOT_CONFIGURED_ERROR = "A naptár-előfizetés nincs beállítva a szerveren";
 
@@ -41,6 +44,25 @@ export function requireKv(): Kv | Response {
 
 export function storageErrorResponse(): Response {
   return errorResponse("A tároló átmenetileg nem érhető el", 503);
+}
+
+/** Best-effort client IP; Vercel sets x-forwarded-for. */
+function clientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || req.headers.get("x-real-ip") || "unknown";
+}
+
+/** Limits how many subscriptions one IP can create; returns a 429 response when over the limit. */
+export async function checkCreateLimit(kv: Kv, req: Request): Promise<Response | null> {
+  let count: number;
+  try {
+    count = await kv.incr(`rl:create:${clientIp(req)}`, CREATE_WINDOW_SECONDS);
+  } catch {
+    return storageErrorResponse();
+  }
+  return count > CREATE_LIMIT
+    ? errorResponse("Túl sok új előfizetés, próbáld újra később", 429)
+    : null;
 }
 
 function randomToken(): string {
@@ -84,7 +106,8 @@ export function validateSnapshot(value: unknown): CalendarSnapshot | null {
     !Array.isArray(courses) ||
     !Array.isArray(deadlines) ||
     !Array.isArray(feeds) ||
-    !Array.isArray(customPlatforms)
+    !Array.isArray(customPlatforms) ||
+    feeds.length > MAX_FEEDS
   ) {
     return null;
   }
