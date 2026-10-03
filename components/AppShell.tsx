@@ -56,6 +56,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="isolate flex min-h-full flex-1 flex-col">
       {/* Site-wide ambient background, behind everything (isolate keeps -z-10 above the body). */}
       <TraceField fixed className="-z-10" />
+      {/* Dims the grid and traces behind the content column so loose text stays readable. */}
+      <div aria-hidden="true" className="content-scrim pointer-events-none fixed inset-0 -z-[5]" />
       {hydrated && <NotificationScheduler />}
       {hydrated && <SubscriptionSync />}
       <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(20,28,46,0.85)] backdrop-blur-[10px]">
