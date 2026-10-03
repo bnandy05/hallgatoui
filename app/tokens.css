@@ -1,26 +1,35 @@
+/*
+ * "Night blueprint" theme: an engineering notebook at night.
+ * Ink-navy graph paper, highlighter-yellow accent, chalk-mint secondary,
+ * monospace Fira Code. Panels are slightly lighter than the page, like paper sheets.
+ */
 :root {
-  /* Odysseus default theme values; deviations are marked. */
-  --bg: #282c34;
-  --bg2: #1e2228; /* inset: inputs, code, terminal body, raised/hover */
-  --panel: #111111; /* cards, dialogs, header */
-  --fg: #9cdef2;
-  --heading: #9cdef2;
-  --muted: #86a7b1; /* DEVIATION: Odysseus #6b8a94 is 3.8:1 on --bg; this is 5.4:1 (AA) */
-  --muted-dim: #6b8a94; /* original muted: footnotes on --panel only, decorative */
-  --border: #355a66;
-  --border-strong: #4a7c8c; /* hover state for neutral borders */
-  --accent: #e06c75;
-  --accent-2: #f0989e;
-  --accent-text: #f0989e; /* accent-coloured small text (links, eyebrows, active nav): 6+:1 */
-  --accent-soft: rgba(224, 108, 117, 0.14);
-  --success: #50fa7b;
-  --warning: #f0ad4e;
-  --danger: #ff6b6b; /* DEVIATION: Odysseus --red == --accent; overdue must not look like a CTA */
-  --nav-line: #9cdef2;
-  --term-bar: #20242c; /* terminal title bar */
-  --close-hover: #c0392b; /* window-close hover */
+  --bg: #0e1422; /* ink navy */
+  --bg2: #0a0f1a; /* inset: inputs, code, terminal body */
+  --panel: #141c2e; /* cards, dialogs, header */
+  --fg: #d6e2f0; /* chalk white */
+  --heading: #f3efe3; /* paper white */
+  --muted: #91a3bd; /* 6.6:1 on panel */
+  --muted-dim: #6a7c96; /* 4.0:1 on panel, footnotes only */
+  --border: #253250;
+  --border-strong: #3a4d70;
+  --accent: #ffc23d; /* highlighter / pencil yellow */
+  --accent-2: #5ee0b8; /* chalk mint */
+  --accent-deep: #f5a524; /* deeper yellow, gradient end on primary buttons */
+  --accent-text: #ffd46b;
+  --accent-soft: rgba(255, 194, 61, 0.14);
+  --accent-ink: #1a1305; /* text on accent fills, 11.4:1 on --accent */
+  --success: #4fd98a;
+  --warning: #ff9a4d; /* orange, distinct from the yellow accent */
+  --danger: #ff5f7a;
+  --nav-line: #253250; /* header bottom border */
+  --term-bar: #111829;
+  --close-hover: #c0392b;
+  --grid-minor: rgba(120, 160, 220, 0.06); /* graph paper lines */
+  --grid-major: rgba(120, 160, 220, 0.11);
+  --margin-line: rgba(255, 95, 122, 0.16); /* notebook red margin line */
   --radius: 8px;
-  --radius-lg: 10px; /* buttons, code blocks (Odysseus .btn uses 10px) */
+  --radius-lg: 10px; /* buttons, code blocks */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --glow-accent: 0 6px 24px rgba(224, 108, 117, 0.28);
+  --glow-accent: 0 6px 24px rgba(255, 194, 61, 0.25);
 }

@@ -132,7 +132,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                 {group.items.map(({ context }) => (
                   <li key={context.key} className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
                     {context.kind && (
-                      <Badge color="#9cdef2">{formatKindLabel(context.kind)}</Badge>
+                      <Badge color="var(--accent-2)">{formatKindLabel(context.kind)}</Badge>
                     )}
                     {context.code && <span>{context.code}</span>}
                     <span>· {context.eventCount} határidő</span>
