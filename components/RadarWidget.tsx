@@ -6,6 +6,8 @@ import { Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { weekSummary } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { WeekSummaryTerminal } from "@/components/WeekSummaryTerminal";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DeadlineItem } from "@/components/DeadlineItem";
 
@@ -28,24 +30,21 @@ export function RadarWidget() {
 
   if (deadlines.length === 0) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4">
+      <Card className="flex flex-wrap items-center justify-between gap-3 !p-4">
         <p className="text-sm text-muted">Nincs rögzített határidő.</p>
         <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
           <Plus className="h-4 w-4" />
           Határidő
         </Button>
         <DeadlineDialog open={addOpen} onClose={() => setAddOpen(false)} />
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-foreground">
-          Ezen a héten <strong>{summary.total}</strong> dolog jár le, ebből{" "}
-          <strong>{summary.critical}</strong> kritikus.
-        </p>
+    <Card className="flex flex-col gap-4">
+      <WeekSummaryTerminal total={summary.total} critical={summary.critical} />
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="secondary" size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -53,7 +52,7 @@ export function RadarWidget() {
           </Button>
           <Link
             href="/radar"
-            className="text-sm font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+            className="text-sm font-medium text-accent-text hover:underline"
           >
             Teljes radar →
           </Link>
@@ -69,6 +68,6 @@ export function RadarWidget() {
       )}
 
       <DeadlineDialog open={addOpen} onClose={() => setAddOpen(false)} />
-    </div>
+    </Card>
   );
 }

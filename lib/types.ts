@@ -92,3 +92,13 @@ export interface AppData {
   customPlatforms: Platform[];
   feeds: IcalFeed[];
 }
+
+/**
+ * Device-level notification preferences. Deliberately not part of AppData: they are not
+ * exported/imported and importData leaves them alone.
+ */
+export interface NotificationPrefs {
+  enabled: boolean;
+  leadMinutes: number[]; // e.g. [1440, 60]
+  criticalOnly: boolean; // only deadlines with critical === true
+}

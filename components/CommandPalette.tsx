@@ -77,11 +77,11 @@ export function CommandPalette() {
         aria-label="Keresés"
         onClick={() => setOpen(true)}
         disabled={!hydrated}
-        className="ml-auto inline-flex items-center gap-2 rounded-md p-2 text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent sm:border sm:border-border sm:px-2.5 sm:py-1.5"
+        className="lift-sm inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-lg)] border border-border bg-card p-2 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-foreground sm:px-3"
       >
         <Search className="h-5 w-5 sm:h-4 sm:w-4" />
         <span className="hidden sm:inline">Keresés</span>
-        <kbd className="hidden rounded border border-border px-1 text-[10px] sm:inline">
+        <kbd className="hidden rounded border border-border bg-inset px-1 text-[10px] sm:inline">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
@@ -178,7 +178,15 @@ function PaletteContent({
 
   return (
     <div className="flex flex-col gap-3">
-      <Input
+      <div className="relative">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-accent"
+        >
+          {">"}
+        </span>
+        <Input
+        className="pl-8"
         autoFocus
         role="combobox"
         aria-expanded="true"
@@ -191,7 +199,8 @@ function PaletteContent({
         }}
         onKeyDown={handleKeyDown}
         placeholder="Tárgy, link, határidő, jegyzet…"
-      />
+        />
+      </div>
 
       {results.length === 0 ? (
         <p className="py-4 text-center text-sm text-muted">Nincs találat.</p>
@@ -205,7 +214,7 @@ function PaletteContent({
           {results.map((item, index) => (
             <li key={item.id} role="presentation">
               {(index === 0 || results[index - 1].kind !== item.kind) && (
-                <p className="px-2 pb-1 pt-2 text-xs font-medium text-muted">
+                <p className="px-2 pb-1 pt-2 text-xs font-bold uppercase tracking-[0.12em] text-accent-text">
                   {KIND_HEADINGS[item.kind]}
                 </p>
               )}
@@ -217,7 +226,7 @@ function PaletteContent({
                 onMouseMove={() => setActive(index)}
                 onClick={() => activate(item)}
                 className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-                  index === active ? "bg-border/40" : ""
+                  index === active ? "bg-inset" : ""
                 }`}
               >
                 <ItemIcon item={item} customPlatforms={customPlatforms} />

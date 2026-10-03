@@ -26,9 +26,9 @@ const URGENCY_LABEL: Partial<Record<string, string>> = {
 };
 
 const URGENCY_COLOR: Partial<Record<string, string>> = {
-  overdue: "#dc2626",
-  critical: "#dc2626",
-  soon: "#d97706",
+  overdue: "var(--danger)",
+  critical: "var(--danger)",
+  soon: "var(--warning)",
 };
 
 export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
@@ -61,7 +61,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-md border border-border ${
+      className={`flex items-start gap-2 rounded-md border border-border bg-card transition-colors duration-150 hover:border-border-strong ${
         compact ? "px-2 py-1.5" : "px-3 py-2"
       }`}
     >
@@ -152,7 +152,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 type="button"
                 aria-label="Szerkesztés"
                 onClick={() => setEditOpen(true)}
-                className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -160,7 +160,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 type="button"
                 aria-label="Törlés"
                 onClick={handleDelete}
-                className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -172,7 +172,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 deadline.critical ? "Kritikus jelölés eltávolítása" : "Megjelölés kritikusnak"
               }
               onClick={toggleCritical}
-              className={`rounded-md p-1 hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent ${
+              className={`rounded-md p-1 hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent ${
                 deadline.critical ? "text-danger" : "text-muted"
               }`}
             >

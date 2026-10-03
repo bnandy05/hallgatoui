@@ -16,13 +16,12 @@ export interface ButtonClassesOptions {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-accent text-white hover:opacity-90 focus-visible:outline-accent",
+    "bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] font-semibold text-white hover:brightness-[1.07] hover:shadow-[var(--glow-accent)] lift-sm",
   secondary:
-    "bg-card border border-border text-foreground hover:bg-border/40 focus-visible:outline-accent",
-  ghost:
-    "bg-transparent text-foreground hover:bg-border/40 focus-visible:outline-accent",
+    "bg-card border border-border text-foreground hover:border-accent lift-sm",
+  ghost: "bg-transparent text-foreground hover:bg-inset",
   danger:
-    "bg-danger text-white hover:opacity-90 focus-visible:outline-danger",
+    "bg-danger font-semibold text-card hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -35,7 +34,7 @@ export function buttonClasses({
   size = "md",
   className = "",
 }: ButtonClassesOptions = {}): string {
-  return `inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  return `inline-flex items-center justify-center rounded-[var(--radius-lg)] font-medium transition-[background-color,border-color,filter,box-shadow,transform] duration-150 ease-[var(--ease-out)] disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 }
 
 export function Button({

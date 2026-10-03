@@ -24,7 +24,7 @@ export function DiscoveryBanner() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-accent/30 bg-accent-soft px-4 py-3">
         <Sparkles className="h-5 w-5 shrink-0 text-accent" />
         <p className="min-w-0 flex-1 text-sm font-medium text-foreground">
           {groupCount} új tárgyat találtunk a naptáradban

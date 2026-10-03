@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { BUILT_IN_PLATFORMS } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -41,12 +42,11 @@ export function PlatformSettings() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Platformok</h2>
-        <p className="mt-1 text-sm text-muted">
-          Ha a karodnak saját rendszere van (pl. TMS), add hozzá itt.
-        </p>
-      </div>
+      <SectionHeading
+        eyebrow="Platformok"
+        title="Platformok"
+        sub="Ha a karodnak saját rendszere van (pl. TMS), add hozzá itt."
+      />
 
       <div>
         <Label>Beépített platformok</Label>
@@ -94,7 +94,7 @@ export function PlatformSettings() {
                   type="button"
                   aria-label="Törlés"
                   onClick={() => handleRemove(platform.id)}
-                  className="shrink-0 rounded-md p-1.5 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                  className="shrink-0 rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
