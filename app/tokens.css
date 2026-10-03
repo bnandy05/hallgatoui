@@ -11,8 +11,8 @@
   --heading: #f3efe3; /* paper white */
   --muted: #a8b8ce; /* 8.4:1 on panel */
   --muted-dim: #8496b0; /* 5.6:1 on panel (AA), footnotes */
-  --border: #253250;
-  --border-strong: #3a4d70;
+  --border: #42598a; /* 2.5:1 on panel, so card and button edges stay visible */
+  --border-strong: #5a78ad; /* hover state for neutral borders */
   --accent: #ffc23d; /* highlighter / pencil yellow */
   --accent-2: #5ee0b8; /* chalk mint */
   --accent-deep: #f5a524; /* deeper yellow, gradient end on primary buttons */

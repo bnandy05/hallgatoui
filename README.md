@@ -1,39 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hallgatói réteg
 
-## Getting Started
+Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord…) fölött: minden tárgyad linkjei, anyagai és határidői egy helyen, plusz **egyetlen összefésült naptár**, amire Apple és Google Naptárból is fel tudsz iratkozni.
 
-First, run the development server:
+Élő oldal: <https://hallgatoui.vercel.app>
+
+## Mit tud?
+
+- **Tárgyak** – tárgyanként a platformlinkek (Neptun, Canvas, Teams…), anyagok (jegyzet, ZH, megoldás, videó) és határidők.
+- **Naptár-import** – Canvas, Moodle (és bármilyen iCal) feed hozzáadása. A határidők automatikusan a megfelelő tárgyhoz kerülnek, a Canvas-kurzusokból tárgyak is létrehozhatók. Hozzáadáskor a már lejárt határidők egy pipával késznek jelölhetők.
+- **Határidő-radar** – hetekre bontva, sürgősség szerint, kritikus jelöléssel és heti összesítővel.
+- **Összefésült naptár-előfizetés** – egy `.ics` link, ami minden forrást és a saját határidőidet is tartalmazza:
+  - a kész elemek kimaradnak, a kritikusak 🔴 jelet és emlékeztetőt (1 nap és 1 óra előtte) kapnak;
+  - **nézetek**: minden / csak kritikus / ZH-k / egy tárgy (`?nezet=…`), így tárgyanként külön színnel is feliratkozhatsz;
+  - hétfőnként **📋 Heti radar** összesítő, a kritikus határidők előtti két napon **📚 Készülés** blokk;
+  - ha egy forrás áthelyez egy határidőt, 48 óráig **(módosult)** jelzést kap;
+  - a szerver magától is frissíti a forrásfeedeket, és szól, ha valamelyik több mint 24 órája nem elérhető.
+- **Keresés és gyors felvétel** – `Ctrl K`, ékezetfüggetlen keresés.
+- **Értesítések** – böngészőértesítés a közelgő határidőkről, amíg nyitva van egy lap.
+
+## Adatvédelem
+
+Nincs fiók és nincs bejelentkezés: minden adat a böngésződben (localStorage) marad. Kivétel a naptár-előfizetés, ha bekapcsolod: ekkor a tárgyaid és határidőid egy pillanatképe a szerverre kerül, hogy a naptáralkalmazásod le tudja kérni. A feliratkozási link csak olvasni enged; módosítani csak a böngésződben tárolt titkos kulccsal lehet. Az előfizetés bármikor törölhető a Beállításokban. A `.ics` letöltés szerver nélkül is működik.
+
+## Fejlesztés
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, lucide-react. A projekt konvenciói (mappaszerkezet, design-tokenek, iCal-szabályok) a [`CLAUDE.md`](CLAUDE.md)-ben vannak.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Felépítés
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Hely | Tartalom |
+| --- | --- |
+| `app/` | Oldalak (`/`, `/targy/[id]`, `/radar`, `/beallitasok`) és API-útvonalak |
+| `app/api/ical` | CORS-proxy az iCal feedekhez (SSRF-védelemmel) |
+| `app/api/naptar` | A naptár-előfizetés végpontjai |
+| `components/` | UI; `components/ui/` az alapelemek, `components/settings/` a beállítások szekciói |
+| `lib/` | Tiszta logika: store, radar, keresés, iCal-feldolgozás és -export |
+| `app/tokens.css` | Design-tokenek („night blueprint” sötét téma, Fira Code) |
 
 ## Naptár-előfizetés / deployment
 
@@ -42,4 +51,4 @@ Az összefésült naptár (`/api/naptar/<token>.ics`) szerveroldali tárolást i
 - `UPSTASH_REDIS_REST_URL` és `UPSTASH_REDIS_REST_TOKEN`, vagy
 - `KV_REST_API_URL` és `KV_REST_API_TOKEN`.
 
-Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló működik. Éles környezetben, ha hiányoznak, a végpontok 503-at adnak. A .ics letöltés a szerver nélkül is működik.
+Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló működik. Éles környezetben, ha hiányoznak, a végpontok 503-at adnak.
