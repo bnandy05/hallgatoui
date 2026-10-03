@@ -10,7 +10,7 @@ import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { SubscriptionSync } from "@/components/SubscriptionSync";
 import { CommandPalette } from "@/components/CommandPalette";
-import { FlowField } from "@/components/ui/FlowField";
+import { TraceField } from "@/components/ui/TraceField";
 import { syncAllFeeds } from "@/lib/ical/client";
 
 const NAV_LINKS = [
@@ -55,10 +55,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="isolate flex min-h-full flex-1 flex-col">
       {/* Site-wide ambient background, behind everything (isolate keeps -z-10 above the body). */}
-      <FlowField fixed className="-z-10" />
+      <TraceField fixed className="-z-10" />
       {hydrated && <NotificationScheduler />}
       {hydrated && <SubscriptionSync />}
-      <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(17,17,17,0.88)] backdrop-blur-[10px]">
+      <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(20,28,46,0.85)] backdrop-blur-[10px]">
         <div className="mx-auto flex h-[60px] w-full max-w-[1080px] items-center gap-2 px-4 sm:gap-5 sm:px-[22px]">
           <Link
             href="/"

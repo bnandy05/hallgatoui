@@ -9,13 +9,13 @@ export interface TerminalProps {
   className?: string;
 }
 
-/** A line prefixed with the coral `> ` prompt. */
+/** A line prefixed with the mint `› ` prompt. */
 export function TerminalLine({ prompt = false, children }: { prompt?: boolean; children: ReactNode }) {
   return (
     <div>
       {prompt && (
-        <span aria-hidden="true" className="text-accent">
-          {"> "}
+        <span aria-hidden="true" className="text-accent-2">
+          {"› "}
         </span>
       )}
       {children}
@@ -41,7 +41,7 @@ export function Terminal({ title, children, cursor = false, className = "" }: Te
 
   return (
     <div
-      className={`overflow-hidden rounded-[var(--radius)] border border-border bg-inset shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className}`}
+      className={`overflow-hidden rounded-[var(--radius)] border border-l-2 border-border border-l-accent bg-inset shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className}`}
     >
       <div className="flex items-center justify-between border-b border-border bg-[var(--term-bar)] py-[5px] pl-3 pr-1.5">
         <span className="truncate text-xs text-muted">{title}</span>

@@ -49,7 +49,7 @@ export default function RadarPage() {
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));
     if (hasUnassigned) {
-      chips.push({ id: NO_COURSE, name: "Nincs tárgy", color: "#4a7c8c" });
+      chips.push({ id: NO_COURSE, name: "Nincs tárgy", color: "#6a7c96" });
     }
     return chips;
   }, [courses, hasUnassigned]);

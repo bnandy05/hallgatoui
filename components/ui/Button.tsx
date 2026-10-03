@@ -16,12 +16,12 @@ export interface ButtonClassesOptions {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] font-semibold text-white hover:brightness-[1.07] hover:shadow-[var(--glow-accent)] lift-sm",
+    "bg-[linear-gradient(135deg,var(--accent),var(--accent-deep))] font-semibold text-accent-ink hover:brightness-[1.07] hover:shadow-[var(--glow-accent)] lift-sm",
   secondary:
     "bg-card border border-border text-foreground hover:border-accent lift-sm",
   ghost: "bg-transparent text-foreground hover:bg-inset",
   danger:
-    "bg-danger font-semibold text-card hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
+    "bg-danger font-semibold text-accent-ink hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
 };
 
 const sizeClasses: Record<Size, string> = {
