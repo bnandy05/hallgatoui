@@ -9,6 +9,7 @@ import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/
 import { CourseDialog } from "@/components/CourseDialog";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/LinkButton";
 import { LinkEditor } from "@/components/LinkEditor";
 
@@ -68,14 +69,15 @@ export function CourseCard({ course }: CourseCardProps) {
   const nextDeadline = nextDeadlineFor(course.id, deadlines, now);
 
   return (
-    <div
-      className="relative flex flex-col gap-2 rounded-lg border border-border bg-card p-4 pl-5"
+    <Card
+      interactive
+      className="relative flex flex-col gap-2 !p-4 !pl-5 hover:z-10 focus-within:z-10"
       style={{ borderLeftColor: course.color, borderLeftWidth: "4px" }}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/targy/${course.id}`}
-          className="min-w-0 max-w-full truncate text-base font-semibold text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+          className="min-w-0 max-w-full truncate text-base font-bold text-heading hover:underline focus-visible:outline-2 focus-visible:outline-accent"
         >
           {course.name}
         </Link>
@@ -84,26 +86,26 @@ export function CourseCard({ course }: CourseCardProps) {
             type="button"
             aria-label="Műveletek"
             onClick={() => setMenuOpen((v) => !v)}
-            className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+            className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
           >
             <MoreVertical className="h-4 w-4" />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-md border border-border bg-card py-1 shadow-md">
+            <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-md border border-border bg-card py-1 shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
               <button
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
                   setEditOpen(true);
                 }}
-                className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-border/40"
+                className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-inset"
               >
                 Szerkesztés
               </button>
               <button
                 type="button"
                 onClick={handleDelete}
-                className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-border/40"
+                className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-inset"
               >
                 Törlés
               </button>
@@ -121,7 +123,7 @@ export function CourseCard({ course }: CourseCardProps) {
         {course.links.length > MAX_VISIBLE_LINKS && (
           <Link
             href={`/targy/${course.id}`}
-            className="inline-flex items-center rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+            className="inline-flex items-center rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
           >
             +{course.links.length - MAX_VISIBLE_LINKS}
           </Link>
@@ -155,6 +157,6 @@ export function CourseCard({ course }: CourseCardProps) {
       >
         <LinkEditor courseId={course.id} />
       </Dialog>
-    </div>
+    </Card>
   );
 }

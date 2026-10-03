@@ -56,7 +56,7 @@ export function Dialog({ open, onClose, title, children, size = "md" }: DialogPr
           type="button"
           aria-label="Bezárás"
           onClick={onClose}
-          className="inline-flex h-5 w-7 items-center justify-center rounded text-xs text-muted transition-colors hover:bg-[#c0392b] hover:text-white"
+          className="inline-flex h-5 w-7 items-center justify-center rounded text-xs text-muted transition-colors hover:bg-[var(--close-hover)] hover:text-white"
         >
           ✕
         </button>

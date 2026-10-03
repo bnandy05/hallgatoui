@@ -21,7 +21,7 @@ const variantClasses: Record<Variant, string> = {
     "bg-card border border-border text-foreground hover:border-accent lift-sm",
   ghost: "bg-transparent text-foreground hover:bg-inset",
   danger:
-    "bg-danger font-semibold text-[#111] hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
+    "bg-danger font-semibold text-card hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
 };
 
 const sizeClasses: Record<Size, string> = {

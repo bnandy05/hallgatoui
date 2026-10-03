@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
+import { CodeBlock } from "@/components/ui/CodeBlock";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { groupContexts, pendingContexts } from "@/lib/ical/discover";
 import { DiscoveryDialog } from "@/components/DiscoveryDialog";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -216,30 +218,29 @@ export function FeedSettings() {
 
   return (
     <section id="naptarak" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Naptár-források (iCal)</h2>
-          <p className="mt-1 text-sm text-muted">
-            Canvas és Moodle határidőit iCal feed URL-ből lehet importálni.
-          </p>
-        </div>
-        {feeds.length > 0 && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={handleSyncAll}
-            disabled={syncingAll}
-          >
-            {syncingAll ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Mind szinkronizálása
-          </Button>
-        )}
-      </div>
+      <SectionHeading
+        eyebrow="Naptárak"
+        title="Naptár-források (iCal)"
+        sub="Canvas és Moodle határidőit iCal feed URL-ből lehet importálni."
+        actions={
+          feeds.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleSyncAll}
+              disabled={syncingAll}
+            >
+              {syncingAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Mind szinkronizálása
+            </Button>
+          ) : undefined
+        }
+      />
 
       {feeds.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -251,7 +252,7 @@ export function FeedSettings() {
 
             if (isEditing) {
               return (
-                <li key={feed.id} className="rounded-md border border-border px-3 py-3">
+                <li key={feed.id} className="rounded-md border border-border bg-card px-3 py-3">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div>
                       <Label htmlFor={`feed-edit-name-${feed.id}`}>Név</Label>
@@ -314,7 +315,7 @@ export function FeedSettings() {
             return (
               <li
                 key={feed.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-border-strong"
               >
                 <PlatformIcon platform={platform} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -365,7 +366,7 @@ export function FeedSettings() {
                     type="button"
                     aria-label="Szerkesztés"
                     onClick={() => startEdit(feed)}
-                    className="rounded-md p-1.5 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -373,18 +374,21 @@ export function FeedSettings() {
                     type="button"
                     aria-label="Törlés"
                     onClick={() => handleDelete(feed.id)}
-                    className="rounded-md p-1.5 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+                <CodeBlock prompt={false} className="w-full text-xs">
+                  {feed.url}
+                </CodeBlock>
               </li>
             );
           })}
         </ul>
       )}
 
-      <form onSubmit={handleAdd} className="rounded-md border border-dashed border-border p-3">
+      <form onSubmit={handleAdd} className="rounded-md border border-dashed border-border bg-card p-3">
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <Label htmlFor="feed-add-name">Név</Label>

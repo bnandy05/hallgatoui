@@ -1,12 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Radar } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { getPlatform } from "@/lib/platforms";
 import { groupByWeek, urgencyOf, weekSummary } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Pill } from "@/components/ui/Pill";
+import { Reveal } from "@/components/ui/Reveal";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { WeekSummaryTerminal } from "@/components/WeekSummaryTerminal";
 import { Select } from "@/components/ui/Select";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DeadlineItem } from "@/components/DeadlineItem";
@@ -17,8 +23,8 @@ function RadarSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <div className="h-6 w-48 animate-pulse rounded-md bg-border/40" />
-      <div className="h-16 animate-pulse rounded-lg border border-border bg-border/40" />
-      <div className="h-40 animate-pulse rounded-lg border border-border bg-border/40" />
+      <div className="h-16 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-40 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
     </div>
   );
 }
@@ -43,7 +49,7 @@ export default function RadarPage() {
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));
     if (hasUnassigned) {
-      chips.push({ id: NO_COURSE, name: "Nincs tárgy", color: "#6b7280" });
+      chips.push({ id: NO_COURSE, name: "Nincs tárgy", color: "#4a7c8c" });
     }
     return chips;
   }, [courses, hasUnassigned]);
@@ -102,44 +108,41 @@ export default function RadarPage() {
   const nothingToShow = overdueItems.length === 0 && groups.length === 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-foreground">Határidő-radar</h1>
-        <Button type="button" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Határidő
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8 sm:gap-12">
+      <SectionHeading
+        as="h1"
+        eyebrow="Határidő-radar"
+        icon={Radar}
+        title={
+          <>
+            Ami közeleg, azt <span className="grad">látod</span>.
+          </>
+        }
+        sub="Hetekre bontva, sürgősség szerint. Semmi nem lopakodik mögéd."
+        aside="(A szirének is határidőket énekelnek. Kösd magad az árbochoz.)"
+        actions={
+          <Button type="button" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Határidő
+          </Button>
+        }
+      />
 
-      <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-foreground">
-          Ezen a héten <strong>{summary.total}</strong> dolog jár le, ebből{" "}
-          <strong>{summary.critical}</strong> kritikus.
-        </p>
-      </div>
+      <WeekSummaryTerminal total={summary.total} critical={summary.critical} />
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      <Card className="flex flex-col gap-3 !p-4">
         {courseChips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {courseChips.map((chip) => {
               const active = selectedCourses.size === 0 || selectedCourses.has(chip.id);
               return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => toggleCourse(chip.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
-                    active
-                      ? "border-accent bg-accent/10 text-accent"
-                      : "border-border text-muted hover:bg-border/40"
-                  }`}
-                >
+                <Pill key={chip.id} active={active} onClick={() => toggleCourse(chip.id)}>
                   <span
                     className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: chip.color }}
                   />
                   {chip.name}
-                </button>
+                </Pill>
               );
             })}
           </div>
@@ -170,36 +173,42 @@ export default function RadarPage() {
             ))}
           </Select>
         </div>
-      </div>
+      </Card>
 
       {nothingToShow ? (
-        <p className="text-sm text-muted">Nincs megjeleníthető határidő.</p>
+        <p className="text-sm text-muted">
+          Nincs megjeleníthető határidő.{" "}
+          <span className="text-[11.5px] text-muted-dim">(Gyanúsan nyugodt a tenger.)</span>
+        </p>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           {overdueItems.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-              <div className="sticky top-16 self-start text-sm font-semibold text-danger">
-                Lejárt
+            <Reveal className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+              <div className="sticky top-20 self-start">
+                <Eyebrow className="!text-danger">Lejárt</Eyebrow>
               </div>
               <div className="flex flex-col gap-2">
                 {overdueItems.map((d) => (
                   <DeadlineItem key={d.id} deadline={d} />
                 ))}
               </div>
-            </div>
+            </Reveal>
           )}
 
           {groups.map((group) => (
-            <div key={group.weekStart.toISOString()} className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-              <div className="sticky top-16 self-start text-sm font-semibold text-foreground">
-                {group.label}
+            <Reveal
+              key={group.weekStart.toISOString()}
+              className="grid gap-3 sm:grid-cols-[10rem_1fr]"
+            >
+              <div className="sticky top-20 self-start">
+                <Eyebrow>{group.label}</Eyebrow>
               </div>
               <div className="flex flex-col gap-2">
                 {group.items.map((d) => (
                   <DeadlineItem key={d.id} deadline={d} />
                 ))}
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       )}

@@ -1,9 +1,13 @@
 "use client";
 
+import { Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
+import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
+import { Reveal } from "@/components/ui/Reveal";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 function SettingsSkeleton() {
   return (
@@ -18,16 +22,31 @@ export default function SettingsPage() {
   const hydrated = useHydrated();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-foreground">Beállítások</h1>
+    <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8 sm:gap-12">
+      <SectionHeading
+        as="h1"
+        eyebrow="Beállítások"
+        icon={Settings}
+        title="A te hajód, a te szabályaid."
+        sub="Platformok, naptárak, értesítések és az adataid. Az adataid a böngésződben maradnak."
+      />
 
       {!hydrated ? (
         <SettingsSkeleton />
       ) : (
         <>
-          <PlatformSettings />
-          <FeedSettings />
-          <DataSettings />
+          <Reveal>
+            <PlatformSettings />
+          </Reveal>
+          <Reveal>
+            <FeedSettings />
+          </Reveal>
+          <Reveal>
+            <NotificationSettings />
+          </Reveal>
+          <Reveal>
+            <DataSettings />
+          </Reveal>
         </>
       )}
     </div>

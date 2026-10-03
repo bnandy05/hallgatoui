@@ -178,7 +178,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     aria-label="Feljebb"
                     disabled={index === 0}
                     onClick={() => moveLink(courseId, link.id, -1)}
-                    className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronUp className="h-4 w-4" />
                   </button>
@@ -187,7 +187,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     aria-label="Lejjebb"
                     disabled={index === course.links.length - 1}
                     onClick={() => moveLink(courseId, link.id, 1)}
-                    className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </button>
@@ -195,7 +195,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     type="button"
                     aria-label="Szerkesztés"
                     onClick={() => startEdit(link)}
-                    className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -203,7 +203,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     type="button"
                     aria-label="Törlés"
                     onClick={() => handleRemove(link.id)}
-                    className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <h1 className="text-2xl font-semibold text-foreground">Az oldal nem található</h1>
-      <p className="max-w-sm text-sm text-muted">
-        A keresett oldal nem létezik, vagy időközben elköltözött.
-      </p>
+    <div className="flex flex-col items-start gap-6 py-12">
+      <SectionHeading
+        as="h1"
+        eyebrow="404"
+        title="Ez az oldal eltévedt hazafelé."
+        aside="(Mint Odüsszeusz. Csak remélhetőleg nem tíz évig.)"
+      />
       <Link href="/" className={buttonClasses()}>
-        Vissza a főoldalra
+        Vissza a tárgyakhoz
       </Link>
     </div>
   );

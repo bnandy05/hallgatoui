@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function DataSettings() {
   const courses = useStore((s) => s.courses);
@@ -80,12 +81,11 @@ export function DataSettings() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Adatok</h2>
-        <p className="mt-1 text-sm text-muted">
-          Az adataid csak ebben a böngészőben tárolódnak. Készíts rendszeresen mentést.
-        </p>
-      </div>
+      <SectionHeading
+        eyebrow="Adatok"
+        title="Adatok"
+        sub="Az adataid csak ebben a böngészőben tárolódnak. Készíts rendszeresen mentést."
+      />
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
@@ -124,7 +124,7 @@ export function DataSettings() {
 
       {importError && <p className="text-sm text-danger">{importError}</p>}
       {importSuccess && (
-        <p className="text-sm text-green-600 dark:text-green-400">{importSuccess}</p>
+        <p className="text-sm text-success">{importSuccess}</p>
       )}
     </section>
   );

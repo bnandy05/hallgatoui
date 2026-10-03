@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export interface RevealProps {
   children: ReactNode;
@@ -11,12 +11,11 @@ export interface RevealProps {
 
 /**
  * Fades/slides content in once when it scrolls into view. The server and the first client
- * render are identical (visible); the hidden state is armed in an effect, so a missing
- * IntersectionObserver or reduced motion simply leaves the content visible.
+ * render are identical (visible); the hidden state is armed by toggling classes in an
+ * effect, so a missing IntersectionObserver or reduced motion simply leaves it visible.
  */
 export function Reveal({ children, stagger = false, className = "" }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<"idle" | "armed" | "in">("idle");
 
   useEffect(() => {
     const el = ref.current;
@@ -33,33 +32,25 @@ export function Reveal({ children, stagger = false, className = "" }: RevealProp
         (child as HTMLElement).style.setProperty("--i", String(i));
       });
     }
-    setState("armed");
+    el.classList.add("reveal-armed");
     const io = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setState("in");
-            io.disconnect();
-          }
+        if (entries.some((entry) => entry.isIntersecting)) {
+          el.classList.add("reveal-in");
+          io.disconnect();
         }
       },
       { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      el.classList.remove("reveal-armed", "reveal-in");
+    };
   }, [stagger]);
 
-  const classes = [
-    state !== "idle" ? "reveal-armed" : "",
-    state === "in" ? "reveal-in" : "",
-    stagger ? "reveal-stagger" : "",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   return (
-    <div ref={ref} className={classes}>
+    <div ref={ref} className={`${stagger ? "reveal-stagger" : ""} ${className}`.trim()}>
       {children}
     </div>
   );

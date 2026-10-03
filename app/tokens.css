@@ -17,6 +17,8 @@
   --warning: #f0ad4e;
   --danger: #ff6b6b; /* DEVIATION: Odysseus --red == --accent; overdue must not look like a CTA */
   --nav-line: #9cdef2;
+  --term-bar: #20242c; /* terminal title bar */
+  --close-hover: #c0392b; /* window-close hover */
   --radius: 8px;
   --radius-lg: 10px; /* buttons, code blocks (Odysseus .btn uses 10px) */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);

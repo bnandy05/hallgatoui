@@ -13,7 +13,9 @@ import { LinkButton } from "@/components/LinkButton";
 import { LinkEditor } from "@/components/LinkEditor";
 import { ResourceList } from "@/components/ResourceList";
 import { Button, buttonClasses } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export interface CourseDetailProps {
   id: string;
@@ -23,7 +25,7 @@ function BackLink() {
   return (
     <Link
       href="/"
-      className="w-fit text-sm text-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+      className="w-fit text-sm text-muted hover:text-foreground"
     >
       ← Tárgyaim
     </Link>
@@ -32,11 +34,11 @@ function BackLink() {
 
 function CourseDetailSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="h-4 w-20 animate-pulse rounded-md bg-border/40" />
-      <div className="h-24 animate-pulse rounded-lg border border-border bg-border/40" />
-      <div className="h-32 animate-pulse rounded-lg border border-border bg-border/40" />
-      <div className="h-32 animate-pulse rounded-lg border border-border bg-border/40" />
+      <div className="h-24 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-32 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
+      <div className="h-32 animate-pulse rounded-[var(--radius)] border border-border bg-border/40" />
     </div>
   );
 }
@@ -83,7 +85,7 @@ export function CourseDetail({ id }: CourseDetailProps) {
 
   if (!course) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <BackLink />
         <EmptyState
           icon={FileQuestion}
@@ -111,16 +113,18 @@ export function CourseDetail({ id }: CourseDetailProps) {
   const meta = [course.code, course.semester].filter(Boolean).join(" · ");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <BackLink />
 
-      <div
-        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-5 pl-6 sm:flex-row sm:items-start sm:justify-between"
+      <Card
+        className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
         style={{ borderLeftColor: course.color, borderLeftWidth: "4px" }}
       >
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{course.name}</h1>
-          {meta && <p className="mt-1 text-sm text-muted">{meta}</p>}
+        <div className="min-w-0">
+          <Eyebrow>{meta || "Tárgy"}</Eyebrow>
+          <h1 className="mt-2 break-words text-[clamp(26px,4vw,36px)] font-bold leading-[1.12] tracking-[-0.01em] text-heading">
+            {course.name}
+          </h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
@@ -132,11 +136,11 @@ export function CourseDetail({ id }: CourseDetailProps) {
             Törlés
           </Button>
         </div>
-      </div>
+      </Card>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-foreground">Gyorslinkek</h2>
+          <h2 className="text-lg font-bold text-heading">Gyorslinkek</h2>
           <Button
             type="button"
             variant="ghost"
@@ -166,7 +170,7 @@ export function CourseDetail({ id }: CourseDetailProps) {
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-foreground">Határidők</h2>
+          <h2 className="text-lg font-bold text-heading">Határidők</h2>
           <Button
             type="button"
             variant="ghost"
@@ -193,7 +197,7 @@ export function CourseDetail({ id }: CourseDetailProps) {
             )}
 
             {doneDeadlines.length > 0 && (
-              <details className="rounded-md border border-border px-3 py-2">
+              <details className="rounded-md border border-border bg-card px-3 py-2">
                 <summary className="cursor-pointer text-sm font-medium text-foreground">
                   Kész ({doneDeadlines.length})
                 </summary>
@@ -209,7 +213,7 @@ export function CourseDetail({ id }: CourseDetailProps) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Tudásbázis</h2>
+        <h2 className="text-lg font-bold text-heading">Tudásbázis</h2>
         <ResourceList courseId={course.id} />
       </section>
 

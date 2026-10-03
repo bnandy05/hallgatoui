@@ -75,22 +75,24 @@ body {
   opacity: 1;
   transform: none;
 }
-.reveal-armed.reveal-stagger > * {
-  opacity: 0;
-  transform: translateY(16px);
-}
-.reveal-armed.reveal-stagger.reveal-in > * {
-  animation: domino-in 0.5s var(--ease-out) forwards;
-  animation-delay: calc(0.04s + var(--i, 0) * 0.05s);
-}
 .reveal-armed.reveal-stagger {
   opacity: 1;
   transform: none;
 }
+/* Children start hidden and animate *from* that state, so they return to their natural
+   styles afterwards (a forwards-filled animation would pin transform and kill hover lifts). */
+.reveal-armed.reveal-stagger:not(.reveal-in) > * {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.reveal-armed.reveal-stagger.reveal-in > * {
+  animation: domino-in 0.5s var(--ease-out) backwards;
+  animation-delay: calc(0.04s + var(--i, 0) * 0.05s);
+}
 @keyframes domino-in {
-  to {
-    opacity: 1;
-    transform: none;
+  from {
+    opacity: 0;
+    transform: translateY(16px);
   }
 }
 

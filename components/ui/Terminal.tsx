@@ -43,13 +43,13 @@ export function Terminal({ title, children, cursor = false, className = "" }: Te
     <div
       className={`overflow-hidden rounded-[var(--radius)] border border-border bg-inset shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className}`}
     >
-      <div className="flex items-center justify-between border-b border-border bg-[#20242c] py-[5px] pl-3 pr-1.5">
+      <div className="flex items-center justify-between border-b border-border bg-[var(--term-bar)] py-[5px] pl-3 pr-1.5">
         <span className="truncate text-xs text-muted">{title}</span>
         <button
           type="button"
           aria-label="Terminál bezárása"
           onClick={() => setClosed(true)}
-          className="inline-flex h-5 w-7 shrink-0 items-center justify-center rounded text-xs leading-none text-muted transition-colors hover:bg-[#c0392b] hover:text-white"
+          className="inline-flex h-5 w-7 shrink-0 items-center justify-center rounded text-xs leading-none text-muted transition-colors hover:bg-[var(--close-hover)] hover:text-white"
         >
           ✕
         </button>

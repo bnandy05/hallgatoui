@@ -238,7 +238,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                       type="button"
                       aria-label="Szerkesztés"
                       onClick={() => startEdit(resource)}
-                      className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                      className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -246,7 +246,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                       type="button"
                       aria-label="Törlés"
                       onClick={() => handleRemove(resource.id)}
-                      className="rounded-md p-1 text-muted hover:bg-border/40 focus-visible:outline-2 focus-visible:outline-accent"
+                      className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -276,7 +276,7 @@ function FilterChip({ active, onClick, label }: FilterChipProps) {
       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
         active
           ? "border-accent bg-accent/10 text-accent"
-          : "border-border text-muted hover:bg-border/40"
+          : "border-border text-muted hover:bg-inset"
       }`}
     >
       {label}
