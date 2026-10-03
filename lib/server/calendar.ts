@@ -2,6 +2,7 @@ import type { Deadline, IcalFeed } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { buildCalendar, type HealthWarning } from "@/lib/ical/export";
 import { fetchAndParseFeed } from "@/lib/ical/fetch";
+import { parseView } from "@/lib/ical/views";
 import { mergeFeedSync } from "@/lib/ical/sync";
 import type { Kv } from "@/lib/server/kv";
 import {
@@ -82,7 +83,8 @@ export async function renderSubscription(
   token: string,
   sub: StoredSubscription,
   now: Date,
-  appUrl: string
+  appUrl: string,
+  viewParam?: string | null
 ): Promise<string> {
   const { courses, feeds, options } = sub.snapshot;
 
@@ -108,5 +110,13 @@ export async function renderSubscription(
     deadlines = mergeFeedSync({ feed, events: source.events, deadlines, courses, now }).deadlines;
   });
 
-  return buildCalendar({ courses, deadlines, options, now, appUrl, warnings });
+  return buildCalendar({
+    courses,
+    deadlines,
+    options,
+    now,
+    appUrl,
+    warnings,
+    view: parseView(viewParam, courses),
+  });
 }
