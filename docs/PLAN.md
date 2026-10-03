@@ -23,7 +23,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 - **Redesign is the default**: the former `/uj` routes replaced the old pages. Motion pass: the board's columns are drawn in and the now-line is drawn through today, the days slide when you change week, ticked deadlines get a drawn strike, and dialogs and tab panels have entrances (see DESIGN.md → Motion).
 - **Duplicate removal** (`lib/ical/dedupe.ts`, on by default, toggle in Beállítások → Naptár-előfizetés): source priority manual > canvas > moodle > neptun > other; "+N forrás" pill with "Nem duplikátum"; the calendar emits the primary with a "Források:" block; `ignoredDuplicatePairs` in `AppData`.
 - **Server "(módosult)" fix**: `chg:<token>` record (`lib/server/dueChanges.ts`), so the 48 h window starts when a move is first seen.
-- **Neptun timetable import** (`lib/ical/neptun.ts`): file import in the browser, one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.
+- **Neptun timetable import** (`lib/ical/neptun.ts`): one unified calendar import in Beállítások → Naptárak (link or .ics file, Neptun auto-detected by content), only current-week and future classes (existing users get past semesters purged on their next re-import), one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.
 - **Test runner**: `npm test` (`node:test`, `TZ=UTC`) with fixture-based tests for parsing, sync, canvas contexts, export, dedupe, due changes and the Neptun import.
 - **Budapest all-day fix**: an all-day `DTSTART` is 23:59 Budapest time on the server too (`budapestInstant`).
 - **Copy**: the Odyssey/nautical copy is gone (notebook-and-blueprint voice, see `PRODUCT.md`), the logo is a notebook icon.
@@ -31,7 +31,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 ### Decisions a future session needs
 
 - **Dedupe title containment is whole-token** ("zh" is not inside "ropzh 01"), and the shorter side must be at least 2 tokens or 3 characters, **or a single boilerplate word** (so a bare "ZH" still merges with "Diszkrét matematika I ZH"). `findDuplicates`/`applyDedupe` take `courses` (code and name words are stripped from titles). Exam views now match "kviz" too.
-- **Wrong timetable file**: a file that doesn't look like a Neptun export (`isNeptunCalendar`) only triggers a confirm, not a block, in case a localised Neptun isn't recognised.
+- **Calendar routing**: `isNeptunCalendar` decides, by content, whether an imported link/file is a timetable or a deadline feed (no confirm any more). A file that isn't Neptun is rejected with a hint, since feeds need a link to re-sync. A localised Neptun that isn't recognised would be added as a deadline feed.
 - **The "Órák" toggle only affects the home board**; the course page always shows that course's classes.
 - The fixture `neptun-orarend.ics` has 6 distinct subjects (11 subject/group pairs), not 10.
 - Timetable subjects are never matched to Canvas courses automatically (English names, no codes): the user maps them once. Mapping a subject adds its name to the course's `matchKeywords`.

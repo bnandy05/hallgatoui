@@ -4,6 +4,7 @@ import type { IcalEventDTO } from "@/lib/ical/types";
 import { normalizeCourseName } from "@/lib/ical/canvas";
 import { matchCourseInText } from "@/lib/ical/match";
 import { normalizeSearch } from "@/lib/text";
+import { budapestDate, budapestInstant, mondayOf } from "@/lib/ical/budapest";
 
 // Neptun timetable export: a static .ics, one VEVENT per class meeting, no RRULE, UTC times,
 // SUMMARY "<subject> ( - <group>) - <teachers ;-separated> - <type>". Pure, no store.
@@ -104,6 +105,17 @@ export function isNeptunCalendar(events: IcalEventDTO[], text?: string): boolean
     return at !== -1 && kindOfType(e.summary.slice(at + 3)) !== null;
   }).length;
   return recognised / events.length >= 0.6;
+}
+
+/** Monday 00:00 Budapest time of the week containing `now`: older sessions are not imported. */
+export function timetableCutoff(now: Date): Date {
+  return budapestInstant(mondayOf(budapestDate(now)), 0, 0);
+}
+
+/** Current-week and future sessions only (holidays follow the same rule). */
+export function upcomingSessions(parsed: ParsedSession[], now: Date): ParsedSession[] {
+  const cutoff = timetableCutoff(now).getTime();
+  return parsed.filter((s) => new Date(s.end).getTime() >= cutoff);
 }
 
 export interface SubjectInfo {
