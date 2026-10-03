@@ -20,6 +20,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
   - graph-paper background, highlighter-yellow and chalk-mint palette, `TraceField` circuit traces;
   - readability pass: brighter greys, a content scrim, visible borders and button edges.
 - **README** rewritten.
+- **Redesign is the default**: the former `/uj` routes replaced the old pages. Motion pass: the board's columns are drawn in and the now-line is drawn through today, the days slide when you change week, ticked deadlines get a drawn strike, and dialogs and tab panels have entrances (see DESIGN.md → Motion).
 - **Duplicate removal** (`lib/ical/dedupe.ts`, on by default, toggle in Beállítások → Naptár-előfizetés): source priority manual > canvas > moodle > neptun > other; "+N forrás" pill with "Nem duplikátum"; the calendar emits the primary with a "Források:" block; `ignoredDuplicatePairs` in `AppData`.
 - **Server "(módosult)" fix**: `chg:<token>` record (`lib/server/dueChanges.ts`), so the 48 h window starts when a move is first seen.
 - **Neptun timetable import** (`lib/ical/neptun.ts`): file import in the browser, one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.

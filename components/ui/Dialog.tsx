@@ -46,7 +46,7 @@ export function Dialog({ open, onClose, title, children, size = "md" }: DialogPr
   return (
     <dialog
       ref={dialogRef}
-      className={`max-h-[calc(100vh-2rem)] w-full ${
+      className={`sheet max-h-[calc(100vh-2rem)] w-full ${
         size === "lg" ? "max-w-[min(42rem,calc(100vw-2rem))]" : "max-w-[min(32rem,calc(100vw-2rem))]"
       } overflow-y-auto rounded-[var(--radius)] border border-border bg-card p-0 text-foreground backdrop:bg-black/60 backdrop:backdrop-blur-sm`}
     >

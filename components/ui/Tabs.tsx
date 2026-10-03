@@ -121,7 +121,7 @@ export function TabPanel({
       aria-labelledby={tabId(id)}
       hidden={!active}
       tabIndex={0}
-      className={`focus-visible:outline-offset-4 ${className}`}
+      className={`panel-in focus-visible:outline-offset-4 ${className}`}
     >
       {active && children}
     </div>

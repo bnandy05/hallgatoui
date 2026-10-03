@@ -133,6 +133,7 @@ export default function WeekHome() {
               sessions={showClasses ? classSessions : undefined}
               now={now}
               gutter={isCurrent}
+              intro
               label={`Heti menetrend, ${range}`}
             />
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">

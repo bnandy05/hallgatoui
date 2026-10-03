@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { format, isSameDay, startOfDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { bucketSessionsByDay, bucketWeekByDay, urgencyOf } from "@/lib/radar";
@@ -24,11 +24,18 @@ export interface WeekBoardProps {
   hideEmptyDays?: boolean;
   /** Shorter columns, for stacks of boards and secondary weeks. */
   dense?: boolean;
+  /** Rule the columns in on first mount (the page's lead board); week changes always slide. */
+  intro?: boolean;
 }
 
-// The red notebook margin line, drawn as the vertical "now" line on today's column.
+type BoardMotion = "intro" | "next" | "prev" | undefined;
+
+// The red notebook margin line, drawn as the vertical "now" line on today's column
+// (`now-line` draws it down the column on mount, see globals.css).
 const NOW_LINE =
-  "before:pointer-events-none before:absolute before:inset-y-0 before:-left-px before:w-0.5 before:bg-danger/70";
+  "now-line before:pointer-events-none before:absolute before:inset-y-0 before:-left-px before:w-0.5 before:bg-danger/70";
+
+const colIndex = (i: number) => ({ "--i": i }) as CSSProperties;
 
 /**
  * Monday-to-Sunday board. Wide screens: one column per day. Narrow screens: one row per day,
@@ -45,7 +52,19 @@ export function WeekBoard({
   emptyDay = "—",
   hideEmptyDays = false,
   dense = false,
+  intro = false,
 }: WeekBoardProps) {
+  // Which way the week moved, derived during render (no ref, no effect): the columns re-key
+  // on the week, so their entrance animation replays with the matching direction.
+  const week = weekStart.getTime();
+  const [shown, setShown] = useState<{ week: number; motion: BoardMotion }>({
+    week,
+    motion: intro ? "intro" : undefined,
+  });
+  if (shown.week !== week) {
+    setShown({ week, motion: week > shown.week ? "next" : "prev" });
+  }
+
   const { overdue, days } = useMemo(() => {
     const isOverdue = (d: Deadline) => urgencyOf(d, now) === "overdue";
     const overdueItems = gutter
@@ -77,6 +96,7 @@ export function WeekBoard({
     <div
       role="group"
       aria-label={label}
+      data-board-motion={shown.motion}
       className={`overflow-hidden rounded-[var(--radius)] border border-border bg-card lg:grid ${
         showGutter
           ? "lg:grid-cols-[minmax(0,1.05fr)_repeat(7,minmax(0,1fr))]"
@@ -85,8 +105,10 @@ export function WeekBoard({
     >
       {showGutter && (
         <section
+          key={`gutter-${week}`}
           aria-label={`Lejárt, ${overdue.length} elem`}
-          className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 bg-danger/[0.06] px-3 py-3 lg:flex lg:flex-col lg:gap-2"
+          style={colIndex(0)}
+          className="board-col grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 bg-danger/[0.06] px-3 py-3 lg:flex lg:flex-col lg:gap-2"
         >
           <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between">
             <span className="text-xs font-bold uppercase tracking-[0.12em] text-danger">Lejárt</span>
@@ -114,9 +136,10 @@ export function WeekBoard({
         return (
           <section
             key={day.date.toISOString()}
+            style={colIndex(i + (showGutter ? 1 : 0))}
             aria-label={`${format(day.date, "EEEE, MMM d.", { locale: hu })}${today ? " (ma)" : ""}`}
             aria-current={today ? "date" : undefined}
-            className={`relative grid-cols-[5.5rem_minmax(0,1fr)] gap-3 border-border/60 px-3 py-3 lg:flex ${dense ? "lg:min-h-[7.5rem]" : "lg:min-h-[12.5rem]"} lg:flex-col lg:gap-2 ${
+            className={`board-col relative grid-cols-[5.5rem_minmax(0,1fr)] gap-3 border-border/60 px-3 py-3 lg:flex ${dense ? "lg:min-h-[7.5rem]" : "lg:min-h-[12.5rem]"} lg:flex-col lg:gap-2 ${
               // Every row draws its top rule and shifts up 1px, so the first visible row's rule is
               // clipped by the board's edge whichever past days are hidden.
               `-mt-px border-t lg:mt-0 lg:border-t-0 ${i > 0 || showGutter ? "lg:border-l" : ""}`

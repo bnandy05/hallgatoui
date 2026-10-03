@@ -1,13 +1,13 @@
 ---
 version: 1
-slug: "app-uj-page-tsx"
-primary_target: "app/uj/page.tsx"
-related_targets: ["app/uj/radar/page.tsx","app/uj/beallitasok/page.tsx"]
+slug: "app-page-tsx"
+primary_target: "app/page.tsx"
+related_targets: ["app/radar/page.tsx","app/beallitasok/page.tsx","components/week/CourseWeekDetail.tsx"]
 ---
 
-# Surface brief: /uj (restructured app, all pages)
+# Surface brief: the app (all pages)
 
-Scope: parallel routes /uj, /uj/radar, /uj/targy/[id], /uj/beallitasok. The current routes stay untouched. Visitor mode: Operate. Same visual world (night blueprint tokens, Fira Code, existing components/ui).
+Scope: `/`, `/radar`, `/targy/[id]`, `/beallitasok`. The former `/uj` parallel routes replaced the old pages and are now the default; the card-grid home, `CourseCard`, `CourseDetail` and `RadarWidget` are gone. Visitor mode: Operate. Same visual world (night blueprint tokens, Fira Code, existing components/ui).
 
 Job: daily triage (what is due, tick it off, open the right platform) and setup (courses, links, feeds, subscription).
 
@@ -21,6 +21,6 @@ STORY: The student sees this week's load immediately, sees what is overdue to th
 
 FIRST VIEWPORT: Compact header row (eyebrow "Heti menetrend", week range, prev/next/today controls, + Határidő, + Tárgy). Under it, a full-width 7-column week board (overdue gutter at the left, the red now-line through today's column). Each day holds compact deadline chips (course dot, title, time). Below: the course launch table (colour, name, code, platform icon buttons, next deadline, open count). On mobile the board becomes a day-by-day list starting at today.
 
-FORM: Week board (Heti menetrend), position 3 on the ranked list, seed key f8ed939a. Radar = the multi-week board with a toolbar of filters. Course page = header, its own week strip, tabs Határidők / Linkek / Tudásbázis. Settings = tabs with hash sync.
+FORM: Week board (Heti menetrend). Radar = the multi-week board with a toolbar of filters. Course page = header, its own week strip, tabs Határidők / Linkek / Tudásbázis. Settings = tabs with hash sync.
 
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+MOTION: One authored moment: on first load the lead board's columns are ruled in left to right (clip-path, 45 ms stagger), then the red now-line is drawn down today's column. Week navigation slides the days in from the side moved to, inside a fixed frame. Ticking a deadline draws a strike through its title. Dialogs rise 10 px into place; tab panels settle in. Radar boards keep the scroll reveal and only draw the now-line. Reduced motion: cross-fades and instant strikes, no movement.

@@ -31,5 +31,6 @@
   --radius: 8px;
   --radius-lg: 10px; /* buttons, code blocks */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* confident arrivals: board, dialogs, strikes */
   --glow-accent: 0 6px 24px rgba(255, 194, 61, 0.25);
 }
