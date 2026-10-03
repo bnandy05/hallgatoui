@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CourseDetail } from "@/components/CourseDetail";
+import { CourseWeekDetail } from "@/components/week/CourseWeekDetail";
 
 export const metadata: Metadata = {
   title: "Tárgy",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 
 export default async function Page(props: PageProps<"/targy/[id]">) {
   const { id } = await props.params;
-  return <CourseDetail id={id} />;
+  return <CourseWeekDetail id={id} />;
 }
