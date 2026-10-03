@@ -7,20 +7,20 @@ related_targets: ["app/radar/page.tsx","app/beallitasok/page.tsx","components/we
 
 # Surface brief: the app (all pages)
 
-Scope: `/`, `/radar`, `/targy/[id]`, `/beallitasok`. The former `/uj` parallel routes replaced the old pages and are now the default; the card-grid home, `CourseCard`, `CourseDetail` and `RadarWidget` are gone. Visitor mode: Operate. Same visual world (night blueprint tokens, Fira Code, existing components/ui).
+Scope: `/`, `/radar`, `/targy/[id]`, `/beallitasok`, dialogs and the command palette. Visitor mode: Operate. Redesign: the night-blueprint world is retired.
 
-Job: daily triage (what is due, tick it off, open the right platform) and setup (courses, links, feeds, subscription).
+Job: daily triage (what is due, tick it off, open the right platform) and setup (courses, links, feeds, subscription). Copy: concise, professional Hungarian, no asides.
 
 ## Direction contract
 
-THESIS: Time is the page's spine. Home is this week laid out Monday to Sunday, so urgency reads by position rather than by badge. It refuses the category default: a card grid of courses with a duplicated "upcoming" widget.
+THESIS: The app is the faculty corridor notice board, made calm. Time stays the spine (the week board), but every deadline is a paper slip pinned to it, and the pin carries meaning: course colour while open, red for now, removed when done. It refuses both the dark-dashboard-with-neon look it replaces and the generic white SaaS calendar.
 
-OWN-WORLD: Ink-navy graph paper, panel cards, highlighter-yellow accent, chalk-mint secondary, Fira Code, § eyebrows, terminal summary. The red notebook margin line becomes the vertical NOW line on the week board. Course colours appear as dots and spines.
+OWN-WORLD: Cool grey-blue felt ground (light, flat), white copy-paper sheets and slips with soft paper shadows, coloured copy paper as state washes (canary = today, salmon = overdue, sky = classes), black toner ink for type and primary buttons, one red pushpin colour for now/critical. Archivo grotesk, condensed heavy for headings like a printed notice, normal width for UI, tabular figures. Small radii (cut paper). Pins are round heads in course colours.
 
-STORY: The student sees this week's load immediately, sees what is overdue to the left of the now-line, ticks things done in place, and launches Canvas/Neptun/Teams from the course table without opening a course.
+STORY: The student opens the app, sees the week pinned up Monday to Sunday with overdue slips on salmon paper at the left and today on a canary sheet under a red pin, reads the single "next" notice, ticks slips off (the pin pops and the slip hangs loose), and launches Canvas/Neptun/Teams from the course list without opening a course.
 
-FIRST VIEWPORT: Compact header row (eyebrow "Heti menetrend", week range, prev/next/today controls, + Határidő, + Tárgy). Under it, a full-width 7-column week board (overdue gutter at the left, the red now-line through today's column). Each day holds compact deadline chips (course dot, title, time). Below: the course launch table (colour, name, code, platform icon buttons, next deadline, open count). On mobile the board becomes a day-by-day list starting at today.
+FIRST VIEWPORT: Slim top bar on felt (wordmark with pin, nav Hét / Határidők / Beállítások, search ⌘K, primary "Új határidő"). Heading row: week range as condensed h1, one summary line, week nav + Órák toggle on the right. A one-line "Következő" notice with a red pin. Full-width 7-day board of pinned slips. Below: the course list on one pinned white sheet.
 
-FORM: Week board (Heti menetrend). Radar = the multi-week board with a toolbar of filters. Course page = header, its own week strip, tabs Határidők / Linkek / Tudásbázis. Settings = tabs with hash sync.
+FORM: Pinned week board + course list (candidate 5 of 7 grounded list: leckekönyv, MÁV menetrend, library due-date slip, risograph HÖK flyer, corridor notice board, highlighter study notes, wall planner). Seed key be9480da. Signature move: pins encode state; the background canvas draws faint drifting ghost slips and pinholes seeded from the user's real open deadlines (course colours), static under reduced motion. Raises: length is time (a thin bar under each open slip shows time left within the week), flat colour only (no gradients, glows, glass), one item owns focus (the Következő notice).
 
-MOTION: One authored moment: on first load the lead board's columns are ruled in left to right (clip-path, 45 ms stagger), then the red now-line is drawn down today's column. Week navigation slides the days in from the side moved to, inside a fixed frame. Ticking a deadline draws a strike through its title. Dialogs rise 10 px into place; tab panels settle in. Radar boards keep the scroll reveal and only draw the now-line. Reduced motion: cross-fades and instant strikes, no movement.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

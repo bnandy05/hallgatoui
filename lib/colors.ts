@@ -1,12 +1,13 @@
+// Pushpin colours. Red is left out on purpose: the red pin means "now" and "critical".
 export const COURSE_COLORS: string[] = [
-  "#6366f1", // indigo
-  "#0ea5e9", // sky
-  "#10b981", // emerald
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#a855f7", // purple
-  "#ec4899", // pink
-  "#14b8a6", // teal
+  "#2f5bd3", // cobalt
+  "#2e8b57", // green
+  "#e2a900", // yellow
+  "#e06c1f", // orange
+  "#7a4fc9", // violet
+  "#12858a", // teal
+  "#d24b8b", // pink
+  "#3b4148", // graphite
 ];
 
 export function pickCourseColor(index: number): string {

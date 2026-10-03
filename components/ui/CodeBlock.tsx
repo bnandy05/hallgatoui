@@ -31,11 +31,11 @@ export function CodeBlock({ children, prompt = true, className = "" }: CodeBlock
 
   return (
     <div
-      className={`flex max-w-full flex-wrap items-start gap-2 rounded-[var(--radius-lg)] border border-border bg-inset px-4 py-3 text-sm text-foreground [overflow-wrap:anywhere] sm:flex-nowrap sm:items-center sm:gap-3.5 ${className}`}
+      className={`flex max-w-full flex-wrap items-start gap-2 rounded-[var(--radius)] border border-border bg-inset px-3 py-2 font-mono text-[12.5px] text-foreground [overflow-wrap:anywhere] sm:flex-nowrap sm:items-center sm:gap-3 ${className}`}
     >
       <span className="min-w-0 flex-1">
         {prompt && (
-          <span aria-hidden="true" className="text-accent">
+          <span aria-hidden="true" className="text-muted-dim">
             {"$ "}
           </span>
         )}
@@ -45,13 +45,13 @@ export function CodeBlock({ children, prompt = true, className = "" }: CodeBlock
         type="button"
         onClick={copy}
         aria-label={copied ? "Másolva" : "Másolás a vágólapra"}
-        className={`ml-auto shrink-0 rounded-md border bg-transparent px-2.5 py-1 text-xs transition-colors duration-150 ${
+        className={`ml-auto shrink-0 rounded-[var(--radius)] border bg-card px-2.5 py-1 font-sans text-[12.5px] font-medium transition-colors duration-150 ${
           copied
             ? "border-success text-success"
-            : "border-border text-muted hover:border-accent hover:text-foreground"
+            : "border-border text-muted hover:border-border-strong hover:text-heading"
         }`}
       >
-        {copied ? "Másolva!" : "Másolás"}
+        {copied ? "Másolva" : "Másolás"}
       </button>
     </div>
   );

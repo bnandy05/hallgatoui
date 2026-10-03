@@ -1,44 +1,25 @@
-import type { ComponentType, ReactNode } from "react";
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import type { ReactNode } from "react";
 
 export interface SectionHeadingProps {
-  eyebrow: string;
-  icon?: ComponentType<{ className?: string }>;
   title: ReactNode;
   as?: "h1" | "h2";
   sub?: ReactNode;
-  aside?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  id?: string;
 }
 
-export function SectionHeading({
-  eyebrow,
-  icon,
-  title,
-  as = "h2",
-  sub,
-  aside,
-  actions,
-  className = "",
-}: SectionHeadingProps) {
+/** A page or section heading: printed-notice title, one optional line under it, actions on the right. */
+export function SectionHeading({ title, as = "h2", sub, actions, className = "", id }: SectionHeadingProps) {
   const Heading = as;
-  const size =
-    as === "h1" ? "text-[clamp(26px,4vw,36px)]" : "text-[clamp(19px,2.7vw,26px)]";
+  const size = as === "h1" ? "text-[clamp(34px,5.2vw,52px)]" : "text-[clamp(24px,3vw,30px)]";
   return (
-    <div
-      className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${className}`}
-    >
+    <div className={`flex flex-wrap items-end justify-between gap-x-6 gap-y-4 ${className}`}>
       <div className="min-w-0">
-        <Eyebrow icon={icon}>{eyebrow}</Eyebrow>
-        <Heading
-          className={`mt-2 break-words font-bold leading-[1.12] tracking-[-0.01em] text-heading ${size}`}
-          style={as === "h1" ? { textShadow: "0 2px 20px rgba(0,0,0,.45)" } : undefined}
-        >
+        <Heading id={id} className={`font-display break-words text-heading [text-wrap:balance] ${size}`}>
           {title}
         </Heading>
-        {sub && <p className="mt-3 max-w-[620px] text-muted">{sub}</p>}
-        {aside && <p className="mt-2 text-[11.5px] text-muted-dim opacity-90">{aside}</p>}
+        {sub && <p className="mt-2 max-w-[62ch] text-[15px] text-muted">{sub}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>

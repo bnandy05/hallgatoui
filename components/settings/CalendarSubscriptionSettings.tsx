@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { hu } from "date-fns/locale";
-import { CalendarCheck, CalendarPlus, Download, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import { CalendarPlus, Download, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { parseView, viewParam } from "@/lib/ical/views";
 import {
@@ -73,17 +73,14 @@ export function CalendarSubscriptionSettings() {
   return (
     <section id="naptar-elofizetes" className="flex flex-col gap-4">
       <SectionHeading
-        eyebrow="Naptár-előfizetés"
-        icon={CalendarCheck}
-        title="Egy összefésült naptár"
-        sub="Az összes tárgyad, határidőd és forrásnaptárad egyetlen, letisztított naptárban, amire az Apple és a Google Naptárban is előfizethetsz."
+        title="Naptár-előfizetés"
+        sub="Minden tárgyad és határidőd egyetlen naptárban, amelyre az Apple vagy a Google Naptárban előfizethetsz."
       />
 
       <Card className="flex flex-col gap-4">
         <div>
-          <p className="mb-2 text-sm text-muted">
-            Egyszeri pillanatkép az összes határidőddel, amit a böngésződben állítunk elő. Nem frissül magától, és nem
-            kell hozzá bekapcsolni az előfizetést.
+          <p className="mb-3 text-[14px] text-muted">
+            Egyszeri letöltés a jelenlegi állapotról. Nem frissül magától, és nem kell hozzá előfizetés.
           </p>
           <Button type="button" variant="secondary" onClick={downloadCalendar}>
             <Download className="h-4 w-4" />
@@ -91,7 +88,8 @@ export function CalendarSubscriptionSettings() {
           </Button>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-foreground">
+        <div className="flex flex-col gap-2.5 border-t border-border pt-4 text-[14px] text-foreground">
+          <p className="text-[13px] font-semibold text-heading">A naptár tartalma</p>
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -99,7 +97,7 @@ export function CalendarSubscriptionSettings() {
               onChange={(e) => setExportOptions({ includeDone: e.target.checked })}
               className="h-4 w-4 accent-accent"
             />
-            Kész feladatok megjelenítése
+            Kész határidők
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -108,7 +106,7 @@ export function CalendarSubscriptionSettings() {
               onChange={(e) => setExportOptions({ alarms: e.target.checked })}
               className="h-4 w-4 accent-accent"
             />
-            Emlékeztetők a kritikus határidőkhöz
+            Emlékeztető a kritikus határidők előtt
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -126,7 +124,7 @@ export function CalendarSubscriptionSettings() {
               onChange={(e) => setExportOptions({ studyBlocks: e.target.checked })}
               className="h-4 w-4 accent-accent"
             />
-            Készülési sáv kritikus határidők előtt (2 nap)
+            Felkészülési idő a kritikus határidők előtt (2 nap)
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -135,7 +133,7 @@ export function CalendarSubscriptionSettings() {
               onChange={(e) => setExportOptions({ includeClasses: e.target.checked })}
               className="h-4 w-4 accent-accent"
             />
-            Órarend is az összes- és a tárgynézetben
+            Órarend a teljes és a tárgyankénti nézetben
           </label>
           <div>
             <label className="flex items-center gap-2">
@@ -148,8 +146,7 @@ export function CalendarSubscriptionSettings() {
               Duplikátumok összevonása
             </label>
             <p className="ml-6 mt-0.5 text-[12.5px] text-muted">
-              Ugyanaz a határidő több forrásból (például Canvas és kézzel felvett) egyszer jelenik meg, az
-              alkalmazásban és a naptárban is.
+              A több forrásból érkező azonos határidők egyszer jelennek meg, itt és a naptárban is.
             </p>
             {ignoredCount > 0 && (
               <Button
@@ -167,14 +164,13 @@ export function CalendarSubscriptionSettings() {
 
         {!subscription ? (
           <div className="flex flex-col gap-3 border-t border-border pt-4">
-            <div className="flex gap-2 rounded-md border border-border bg-inset p-3 text-[12.5px] text-muted">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" aria-hidden="true" />
+            <div className="flex gap-2.5 rounded-[var(--radius)] bg-canary/60 p-3 text-[13px] text-foreground">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <p>
-                A bekapcsoláskor a tárgyaid, a határidőid és a forrásnaptáraid címe feltöltődik a
-                szerverre. Ezek a címek tartalmazhatnak privát Canvas- vagy Moodle-tokent is. A
-                szerver a forrásnaptárakat magától is frissíti, így a naptárad az oldal
-                megnyitása nélkül is naprakész marad. Bármikor kikapcsolhatod, és ilyenkor
-                minden adatod törlődik a szerverről.
+                Bekapcsoláskor a tárgyaid, a határidőid és a naptárforrásaid linkje a szerverre kerül; a linkek
+                privát Canvas- vagy Moodle-tokent is tartalmazhatnak. A szerver a forrásokat magától frissíti, így a
+                naptárad akkor is naprakész, ha az oldal nincs nyitva. Kikapcsoláskor minden adatod törlődik a
+                szerverről.
               </p>
             </div>
             <div>
@@ -197,7 +193,7 @@ export function CalendarSubscriptionSettings() {
                 value={view.kind === "all" ? "osszes" : viewValue}
                 onChange={(e) => setViewValue(e.target.value)}
               >
-                <option value="osszes">Mindent</option>
+                <option value="osszes">Minden</option>
                 <option value="kritikus">Csak kritikus</option>
                 <option value="zh">ZH-k és vizsgák</option>
                 <option value="orarend">Órarend</option>
@@ -208,15 +204,15 @@ export function CalendarSubscriptionSettings() {
                 ))}
               </Select>
               <p className="mt-1 text-[12.5px] text-muted">
-                Minden nézetre külön is feliratkozhatsz, például tárgyanként más színnel.
+                Minden nézetre külön is előfizethetsz, így például tárgyanként más színt adhatsz nekik.
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium text-foreground">Előfizetési link</p>
+              <p className="mb-1.5 text-[13px] font-semibold text-heading">Előfizetési link</p>
               <CodeBlock prompt={false}>{httpsUrl}</CodeBlock>
               <p className="mt-2 text-[12.5px] text-muted">
-                Aki ismeri a linket, látja a naptárat. Ne oszd meg.
+                A linkkel bárki megnézheti a naptáradat, ezért ne oszd meg.
               </p>
             </div>
 
@@ -234,15 +230,11 @@ export function CalendarSubscriptionSettings() {
               </a>
             </div>
 
-            <ul className="list-disc space-y-1 pl-5 text-[12.5px] text-muted">
+            <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted">
               <li>
-                A Google Naptár a saját ütemében frissít (általában 8–24 óránként), ezt nem lehet
-                siettetni. Az előfizetett naptárak emlékeztetőit is figyelmen kívül hagyja.
+                A Google Naptár 8–24 óránként frissít, ezt nem lehet gyorsítani, és az emlékeztetőket sem veszi át.
               </li>
-              <li>
-                Az Apple Naptárban a naptár beállításainál megadhatod a frissítés gyakoriságát
-                (például 5 vagy 15 percenként).
-              </li>
+              <li>Az Apple Naptárban a naptár beállításainál állíthatod a frissítés gyakoriságát.</li>
             </ul>
 
             <p className="text-xs">

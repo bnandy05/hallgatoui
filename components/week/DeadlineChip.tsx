@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Flame } from "lucide-react";
@@ -14,73 +14,89 @@ import { DuplicateSources } from "@/components/DuplicateSources";
 export interface DeadlineChipProps {
   deadline: Deadline;
   now: Date;
-  /** Show the course dot and name (off on a course's own page). */
+  /** Show the course name (off on a course's own page). */
   showCourse?: boolean;
   /** Show the date instead of only the time (the overdue gutter spans several days). */
   showDate?: boolean;
 }
 
-/** One deadline on the week board: tick it off in place, open the title for every detail. */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * One deadline pinned to the board. The pin carries the state: course colour while open, red
+ * when overdue or critical, gone when done (the slip then hangs loose). A hairline along the
+ * bottom edge is as long as the time left in the coming week.
+ */
 export function DeadlineChip({ deadline, now, showCourse = true, showDate = false }: DeadlineChipProps) {
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const toggleDone = useStore((s) => s.toggleDone);
   const [open, setOpen] = useState(false);
 
   const urgency = urgencyOf(deadline, now);
-  const hot = urgency === "overdue" || urgency === "critical";
+  const overdue = urgency === "overdue";
+  const hot = overdue || urgency === "critical";
   const due = new Date(deadline.due);
   const changed = deadline.previousDue && isRecentlyChanged(deadline, now);
+  const pinColor = hot ? "var(--pin)" : (course?.color ?? "var(--border-strong)");
+  const left = due.getTime() - now.getTime();
+  const share = !deadline.done && left > 0 ? Math.min(1, left / WEEK_MS) : 0;
 
   return (
     <div
-      className={`group flex items-start gap-2 rounded-md border bg-inset px-2 py-1.5 transition-colors duration-150 ${
-        hot && !deadline.done
-          ? "border-danger/45 hover:border-danger"
-          : "border-border/70 hover:border-border-strong"
-      }`}
+      data-done={deadline.done}
+      className={`slip group px-2.5 pb-2.5 pt-3 ${overdue && !deadline.done ? "bg-salmon" : "bg-card"}`}
     >
-      <input
-        type="checkbox"
-        checked={deadline.done}
-        onChange={() => toggleDone(deadline.id)}
-        aria-label={`${deadline.title}: ${deadline.done ? "megjelölés nem késznek" : "megjelölés késznek"}`}
-        className="mt-[3px] h-3.5 w-3.5 shrink-0 cursor-pointer accent-accent"
+      <span
+        aria-hidden="true"
+        className="pin -top-[4px] left-[11px]"
+        style={{ "--pin-color": pinColor } as CSSProperties}
       />
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className={`line-clamp-2 w-full text-left text-[12.5px] font-medium leading-snug [overflow-wrap:anywhere] hover:text-accent-text hover:underline hover:underline-offset-2 ${
-            deadline.done ? "text-muted" : "text-foreground"
-          }`}
-        >
-          <span className="strike" data-done={deadline.done}>
-            {deadline.title}
-          </span>
-        </button>
-        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted">
-          <span className={`shrink-0 tabular-nums ${hot && !deadline.done ? "text-danger" : ""}`}>
-            {format(due, showDate ? "MMM d. HH:mm" : "HH:mm", { locale: hu })}
-          </span>
-          {deadline.critical && !deadline.done && (
-            <Flame className="h-3 w-3 shrink-0 text-danger" aria-label="Kritikus" />
-          )}
-          {changed && <span className="shrink-0 text-warning">módosult</span>}
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={deadline.done}
+          onChange={() => toggleDone(deadline.id)}
+          aria-label={`${deadline.title}: ${deadline.done ? "megjelölés nem késznek" : "megjelölés késznek"}`}
+          className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-accent"
+        />
+        <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className={`line-clamp-3 w-full text-left text-[13.5px] font-semibold leading-snug [overflow-wrap:anywhere] hover:underline ${
+              deadline.done ? "text-muted" : "text-heading"
+            }`}
+          >
+            <span className="strike" data-done={deadline.done}>
+              {deadline.title}
+            </span>
+          </button>
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+            <span className={`shrink-0 tabular-nums ${hot && !deadline.done ? "font-semibold text-danger" : ""}`}>
+              {format(due, showDate ? "MMM d. HH:mm" : "HH:mm", { locale: hu })}
+            </span>
+            {deadline.critical && !deadline.done && (
+              <Flame className="h-3.5 w-3.5 shrink-0 text-danger" aria-label="Kritikus" />
+            )}
+            {changed && <span className="shrink-0 font-semibold text-warning">módosult</span>}
+            {showCourse && course && (
+              <span className="min-w-0 basis-full truncate text-muted" title={course.name}>
+                {course.name}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center empty:hidden [&>*]:mt-1.5">
+            <DuplicateSources deadline={deadline} small />
+          </div>
         </div>
-        <div className="mt-0.5 flex flex-wrap items-center">
-          <DuplicateSources deadline={deadline} small />
-        </div>
-        {showCourse && course && (
-          <p className="mt-0.5 flex items-start gap-1 text-[11px] leading-snug text-muted">
-            <span
-              aria-hidden="true"
-              className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ backgroundColor: course.color }}
-            />
-            <span className="[overflow-wrap:anywhere]">{course.name}</span>
-          </p>
-        )}
       </div>
+      {share > 0 && (
+        <span
+          aria-hidden="true"
+          className={`absolute bottom-0 left-0 h-[2px] rounded-r-full ${hot ? "bg-danger/70" : "bg-heading/20"}`}
+          style={{ width: `${share * 100}%` }}
+        />
+      )}
       <Dialog open={open} onClose={() => setOpen(false)} title="Határidő" size="lg">
         <DeadlineItem deadline={deadline} />
       </Dialog>

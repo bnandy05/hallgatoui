@@ -11,8 +11,8 @@ export interface ClassChipProps {
 }
 
 /**
- * One class on the week board. Deliberately quieter than a deadline chip: no checkbox, no
- * fill, a dashed outline and muted text. Classes are not deadlines.
+ * One class on the week board, printed on sky-blue timetable paper and taped flat: no pin, no
+ * checkbox, no shadow. Classes are not deadlines.
  */
 export function ClassChip({ session, showCourse = true }: ClassChipProps) {
   const course = useStore((s) => s.courses.find((c) => c.id === session.courseId));
@@ -24,22 +24,22 @@ export function ClassChip({ session, showCourse = true }: ClassChipProps) {
 
   return (
     <div
-      className="flex items-start gap-1.5 rounded-md border border-dashed border-border/70 px-2 py-1 text-[11px] leading-snug text-muted"
+      className="flex items-start gap-1.5 rounded-[var(--radius-slip)] bg-sky/80 px-2 py-1.5 text-[12px] leading-snug text-muted"
       title={[session.subject, session.group && `csoport: ${session.group}`, session.location]
         .filter(Boolean)
         .join(" · ")}
     >
       <span
         aria-hidden="true"
-        className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${mapped ? "" : "bg-muted-dim"}`}
+        className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${mapped && showCourse ? "" : "bg-accent-2"}`}
         style={mapped && showCourse ? { backgroundColor: course.color } : undefined}
       />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-baseline gap-x-1.5">
-          <span className="tabular-nums text-foreground/80">{range}</span>
-          {session.kind === "vizsga" && <span className="text-warning">vizsga</span>}
+          <span className="font-semibold tabular-nums text-heading">{range}</span>
+          {session.kind === "vizsga" && <span className="font-semibold text-warning">vizsga</span>}
           {session.room && (
-            <span className="max-w-full truncate whitespace-nowrap text-muted-dim" title={session.location ?? session.room}>
+            <span className="max-w-full truncate whitespace-nowrap text-muted" title={session.location ?? session.room}>
               {session.room}
             </span>
           )}

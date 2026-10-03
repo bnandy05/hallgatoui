@@ -43,9 +43,8 @@ export function PlatformSettings() {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading
-        eyebrow="Platformok"
         title="Platformok"
-        sub="Ha a karodnak saját rendszere van (pl. TMS), add hozzá itt."
+        sub="Ha a karod más rendszert is használ, itt felveheted, és linkeket rendelhetsz hozzá."
       />
 
       <div>
@@ -54,7 +53,7 @@ export function PlatformSettings() {
           {BUILT_IN_PLATFORMS.map((platform) => (
             <div
               key={platform.id}
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2"
+              className="flex items-center gap-2 rounded-[var(--radius)] bg-card px-3 py-2 shadow-[var(--shadow-paper)]"
             >
               <PlatformIcon platform={platform} size="sm" />
               <span className="text-sm text-foreground">{platform.name}</span>
@@ -70,7 +69,7 @@ export function PlatformSettings() {
             {customPlatforms.map((platform) => (
               <li
                 key={platform.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
+                className="flex flex-wrap items-center gap-2 rounded-[var(--radius)] bg-card px-3 py-2 shadow-[var(--shadow-paper)]"
               >
                 <PlatformIcon platform={platform} size="sm" />
                 <Input
@@ -88,13 +87,13 @@ export function PlatformSettings() {
                     updateCustomPlatform(platform.id, { color: e.target.value })
                   }
                   aria-label="Platform színe"
-                  className="h-9 w-9 shrink-0 cursor-pointer rounded-md border border-border bg-card p-1"
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded-[var(--radius)] border border-border bg-card p-1"
                 />
                 <button
                   type="button"
                   aria-label="Törlés"
                   onClick={() => handleRemove(platform.id)}
-                  className="shrink-0 rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                  className="shrink-0 rounded-[var(--radius)] p-1.5 text-muted hover:bg-danger/10 hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -116,7 +115,7 @@ export function PlatformSettings() {
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
             aria-label="Új platform színe"
-            className="h-9 w-9 shrink-0 cursor-pointer rounded-md border border-border bg-card p-1"
+            className="h-9 w-9 shrink-0 cursor-pointer rounded-[var(--radius)] border border-border bg-card p-1"
           />
           <Button type="submit" size="sm" disabled={newName.trim().length === 0}>
             Hozzáadás

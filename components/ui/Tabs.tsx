@@ -58,8 +58,8 @@ export function Tabs({
       aria-label={label}
       aria-orientation={vertical ? "vertical" : "horizontal"}
       onKeyDown={handleKeyDown}
-      className={`flex gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] ${
-        vertical ? "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0" : ""
+      className={`flex gap-1 overflow-x-auto border-b border-felt-dark [scrollbar-width:none] ${
+        vertical ? "lg:flex-col lg:gap-1 lg:overflow-visible lg:border-b-0" : ""
       } ${className}`}
     >
       {items.map((item) => {
@@ -74,14 +74,14 @@ export function Tabs({
             aria-controls={panelId(item.id)}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(item.id)}
-            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-[14.5px] font-semibold transition-colors duration-150 ${
               active
-                ? "border-accent text-accent-text"
-                : "border-transparent text-muted hover:text-foreground"
+                ? "border-accent text-heading"
+                : "border-transparent text-muted hover:text-heading"
             } ${
               vertical
-                ? `lg:mb-0 lg:rounded-md lg:border-b-0 lg:px-3 lg:py-2 ${
-                    active ? "lg:bg-accent-soft" : "lg:hover:bg-inset"
+                ? `lg:mb-0 lg:rounded-[var(--radius)] lg:border-b-0 lg:px-3 lg:py-2 ${
+                    active ? "lg:bg-card lg:shadow-[var(--shadow-paper)]" : "lg:hover:bg-card/60"
                   }`
                 : ""
             }`}
@@ -89,8 +89,8 @@ export function Tabs({
             {item.label}
             {item.count !== undefined && (
               <span
-                className={`rounded-full px-1.5 text-[11px] tabular-nums ${
-                  active ? "bg-accent text-accent-ink" : "bg-inset text-muted"
+                className={`min-w-[1.4rem] rounded-full px-1.5 text-center text-[11.5px] tabular-nums ${
+                  active ? "bg-accent text-accent-ink" : "bg-black/[0.06] text-muted"
                 }`}
               >
                 {item.count}

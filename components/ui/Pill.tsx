@@ -12,9 +12,9 @@ export interface PillProps {
 }
 
 export function Pill({ active = false, onClick, children, className = "", title, expanded, controls }: PillProps) {
-  const base = `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] ${
+  const base = `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium ${
     active
-      ? "border-accent bg-accent-soft text-accent-text"
+      ? "border-accent bg-accent text-accent-ink"
       : "border-border bg-card text-muted"
   } ${className}`;
   if (onClick) {
@@ -24,8 +24,8 @@ export function Pill({ active = false, onClick, children, className = "", title,
         onClick={onClick}
         {...(expanded === undefined ? { "aria-pressed": active } : { "aria-expanded": expanded, "aria-controls": controls })}
         title={title}
-        className={`${base} cursor-pointer transition-colors duration-150 hover:border-border-strong ${
-          active ? "hover:border-accent" : ""
+        className={`${base} cursor-pointer transition-colors duration-150 ${
+          active ? "hover:bg-accent-hover" : "hover:border-border-strong hover:text-heading"
         }`}
       >
         {children}

@@ -32,7 +32,7 @@ One layer above all the university systems: every course's links, materials and 
 
 ## Voice
 
-Wry, warm, notebook-and-blueprint: dry school and engineering asides in parentheses ("(A határidő közelebb van, mint amilyennek a naptárban látszik.)", "(Üres lap. Egyelőre.)", "(Kihúzva a jegyzetből, vagy sosem volt benne.)"), always secondary to plain, functional copy. At most one aside per page; no sea, ship or Odyssey imagery.
+Concise, professional Hungarian. Plain functional copy: headings name the thing ("Határidők", "Tárgyak"), controls name their action, errors name the problem and the fix. No jokey asides, no metaphors in UI text, no exclamation marks. Address the student informally (tegező), as Hungarian student tools do.
 
 ## Accessibility
 

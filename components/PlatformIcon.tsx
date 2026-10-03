@@ -42,7 +42,7 @@ export function PlatformIcon({ platform, size = "sm" }: PlatformIconProps) {
   const Icon = ICONS[platform.id];
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-md font-semibold text-white ${SIZE_CLASSES[size]}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-[var(--radius)] font-semibold text-white ${SIZE_CLASSES[size]}`}
       style={{ backgroundColor: platform.color }}
       aria-hidden="true"
     >

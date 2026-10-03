@@ -62,9 +62,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-md border border-border bg-card transition-colors duration-150 hover:border-border-strong ${
-        compact ? "px-2 py-1.5" : "px-3 py-2"
-      }`}
+      className={`flex items-start gap-2.5 ${compact ? "px-2 py-1.5" : ""}`}
     >
       <input
         type="checkbox"
@@ -77,8 +75,8 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
         <div className="flex flex-wrap items-center gap-1.5">
           <span
             data-done={deadline.done}
-            className={`strike min-w-0 max-w-full truncate text-sm font-medium ${
-              deadline.done ? "text-muted" : "text-foreground"
+            className={`strike min-w-0 max-w-full text-[16px] font-semibold ${
+              deadline.done ? "text-muted" : "text-heading"
             }`}
           >
             {deadline.title}
@@ -95,8 +93,8 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
             </a>
           )}
           {deadline.source === "ical" && (
-            <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted">
-              iCal
+            <span className="rounded-[3px] border border-border px-1.5 py-px text-[11px] font-semibold text-muted">
+              Naptárból
             </span>
           )}
           {badgeLabel && badgeColor && <Badge color={badgeColor}>{badgeLabel}</Badge>}
@@ -108,7 +106,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
             </span>
           )}
         </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
           {course && (
             <span className="inline-flex items-center gap-1">
               <span
@@ -147,7 +145,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
         </div>
         {!compact && deadline.note && (
           <p
-            className={`mt-1 text-sm text-muted ${
+            className={`mt-3 text-[14px] text-foreground ${
               deadline.source === "ical" ? "line-clamp-3 whitespace-pre-line" : ""
             }`}
           >
@@ -164,7 +162,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 type="button"
                 aria-label="Szerkesztés"
                 onClick={() => setEditOpen(true)}
-                className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -172,7 +170,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 type="button"
                 aria-label="Törlés"
                 onClick={handleDelete}
-                className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -184,7 +182,7 @@ export function DeadlineItem({ deadline, compact = false }: DeadlineItemProps) {
                 deadline.critical ? "Kritikus jelölés eltávolítása" : "Megjelölés kritikusnak"
               }
               onClick={toggleCritical}
-              className={`rounded-md p-1 hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent ${
+              className={`rounded-[var(--radius)] p-1 hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent ${
                 deadline.critical ? "text-danger" : "text-muted"
               }`}
             >

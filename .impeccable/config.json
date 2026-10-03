@@ -2,16 +2,6 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [],
-    "ignoreValues": [
-      {
-        "rule": "gradient-text",
-        "value": "*",
-        "files": [
-          "app/globals.css"
-        ],
-        "createdAt": "2026-10-03T19:54:33.984Z",
-        "reason": "DESIGN.md pins .grad (yellow to mint) as the sanctioned display accent; pre-existing, out of animate scope"
-      }
-    ]
+    "ignoreValues": []
   }
 }

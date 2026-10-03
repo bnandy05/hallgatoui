@@ -14,19 +14,20 @@ export interface ButtonClassesOptions {
   className?: string;
 }
 
+// Primary is toner black on paper; secondary is a paper slip; danger is the red pin's ink.
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-[linear-gradient(135deg,var(--accent),var(--accent-deep))] border border-accent-text font-semibold text-accent-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_10px_rgba(255,194,61,0.18)] hover:brightness-[1.07] hover:shadow-[var(--glow-accent)] lift-sm",
+    "bg-accent border border-accent font-semibold text-accent-ink shadow-[0_1px_2px_rgba(20,24,28,0.25)] hover:bg-accent-hover active:translate-y-px",
   secondary:
-    "bg-inset border border-border text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-accent lift-sm",
-  ghost: "bg-transparent text-foreground hover:bg-inset",
+    "bg-card border border-border text-foreground shadow-[0_1px_1px_rgba(30,40,48,0.06)] hover:border-border-strong hover:shadow-[var(--shadow-paper)] active:translate-y-px",
+  ghost: "border border-transparent bg-transparent text-foreground hover:bg-black/[0.05]",
   danger:
-    "bg-danger border border-danger font-semibold text-accent-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-[1.07] lift-sm focus-visible:outline-danger",
+    "bg-danger border border-danger font-semibold text-accent-ink hover:bg-danger-hover active:translate-y-px focus-visible:outline-danger",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "text-sm px-2.5 py-1.5 gap-1.5",
-  md: "text-sm px-4 py-2 gap-2",
+  sm: "h-8 text-[13.5px] px-3 gap-1.5",
+  md: "h-10 text-[14.5px] px-4 gap-2",
 };
 
 export function buttonClasses({
@@ -34,7 +35,7 @@ export function buttonClasses({
   size = "md",
   className = "",
 }: ButtonClassesOptions = {}): string {
-  return `inline-flex items-center justify-center rounded-[var(--radius-lg)] font-medium transition-[background-color,border-color,filter,box-shadow,transform] duration-150 ease-[var(--ease-out)] disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  return `inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[var(--radius)] font-medium transition-[background-color,border-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] disabled:pointer-events-none disabled:border-border disabled:bg-inset disabled:text-muted-dim disabled:shadow-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 }
 
 export function Button({

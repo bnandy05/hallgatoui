@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
-import { CodeBlock } from "@/components/ui/CodeBlock";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { groupContexts, pendingContexts } from "@/lib/ical/discover";
 import { DiscoveryDialog } from "@/components/DiscoveryDialog";
@@ -315,7 +314,7 @@ export function FeedSettings() {
   function courseOptions() {
     return (
       <>
-        <option value={AUTO_COURSE}>Automatikus (kulcsszavak alapján)</option>
+        <option value={AUTO_COURSE}>Automatikus (kulcsszó alapján)</option>
         {courses.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -328,9 +327,8 @@ export function FeedSettings() {
   return (
     <section id="naptarak" className="flex flex-col gap-4">
       <SectionHeading
-        eyebrow="Naptárak"
-        title="Naptár-források (iCal)"
-        sub="Canvas és Moodle határidők linkről, Neptun órarend linkről vagy fájlból. A rendszer felismeri, melyik melyik."
+        title="Naptárforrások"
+        sub="Canvas- és Moodle-határidők linkről, Neptun-órarend linkről vagy fájlból. A rendszer felismeri, melyik melyik."
         actions={
           feeds.length > 0 ? (
             <Button
@@ -345,7 +343,7 @@ export function FeedSettings() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Mind szinkronizálása
+              Összes frissítése
             </Button>
           ) : undefined
         }
@@ -362,7 +360,7 @@ export function FeedSettings() {
 
             if (isEditing) {
               return (
-                <li key={feed.id} className="rounded-md border border-border bg-card px-3 py-3">
+                <li key={feed.id} className="sheet-paper px-4 py-4">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div>
                       <Label htmlFor={`feed-edit-name-${feed.id}`}>Név</Label>
@@ -425,30 +423,32 @@ export function FeedSettings() {
             return (
               <li
                 key={feed.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-border-strong"
+                className="sheet-paper flex flex-wrap items-center gap-3 px-4 py-3"
               >
                 <PlatformIcon platform={platform} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm font-medium text-foreground">{feed.name}</span>
-                    <span className="text-xs text-muted">
-                      {course ? course.name : "Automatikus (kulcsszavak alapján)"}
+                    <span className="text-[15px] font-semibold text-heading">{feed.name}</span>
+                    <span className="text-[13px] text-muted">
+                      {course ? course.name : "Tárgy kulcsszó alapján"} · {deadlineCount(feed.id)} határidő
                     </span>
-                    <span className="text-xs text-muted">· {deadlineCount(feed.id)} határidő</span>
                   </div>
-                  <div className="text-xs">
+                  <p className="truncate font-mono text-[11.5px] text-muted-dim" title={feed.url}>
+                    {feed.url}
+                  </p>
+                  <div className="text-[12.5px]">
                     {feed.lastError ? (
                       <span className="text-danger">{feed.lastError}</span>
                     ) : feed.lastSyncedAt ? (
                       <span className="text-muted">
-                        Utoljára szinkronizálva{" "}
+                        Frissítve{" "}
                         {formatDistanceToNow(new Date(feed.lastSyncedAt), {
                           locale: hu,
                           addSuffix: true,
                         })}
                       </span>
                     ) : (
-                      <span className="text-muted">Még nem szinkronizált</span>
+                      <span className="text-muted">Még nem frissült</span>
                     )}
                   </div>
                 </div>
@@ -465,7 +465,7 @@ export function FeedSettings() {
                       size="sm"
                       onClick={() => handleMarkPastDone(feed.id, pastOpen)}
                     >
-                      Lejártak késznek jelölése ({pastOpen})
+                      {pastOpen} lejárt késznek jelölése
                     </Button>
                   )}
                   <Button
@@ -474,7 +474,7 @@ export function FeedSettings() {
                     size="sm"
                     onClick={() => handleSyncOne(feed.id)}
                     disabled={isSyncing}
-                    aria-label="Szinkronizálás"
+                    aria-label="Frissítés"
                   >
                     {isSyncing ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -486,7 +486,7 @@ export function FeedSettings() {
                     type="button"
                     aria-label="Szerkesztés"
                     onClick={() => startEdit(feed)}
-                    className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-[var(--radius)] p-1.5 text-muted hover:bg-black/[0.06] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -494,14 +494,11 @@ export function FeedSettings() {
                     type="button"
                     aria-label="Törlés"
                     onClick={() => handleDelete(feed.id)}
-                    className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-[var(--radius)] p-1.5 text-muted hover:bg-danger/10 hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <CodeBlock prompt={false} className="w-full text-xs">
-                  {feed.url}
-                </CodeBlock>
               </li>
             );
           })}
@@ -517,19 +514,20 @@ export function FeedSettings() {
         </ul>
       )}
 
-      <form onSubmit={(e) => void handleAdd(e)} className="rounded-md border border-dashed border-border bg-card p-3">
-        <div className="grid gap-2 sm:grid-cols-2">
+      <form onSubmit={(e) => void handleAdd(e)} className="sheet-paper p-4 sm:p-5">
+        <h3 className="mb-3 text-[15px] font-bold text-heading">Új forrás</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="feed-add-name">Név</Label>
             <Input
               id="feed-add-name"
               value={addForm.name}
               onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Elhagyható, pl. Canvas naptár"
+              placeholder="Nem kötelező, pl. Canvas"
             />
           </div>
           <div>
-            <Label htmlFor="feed-add-url">Naptár URL</Label>
+            <Label htmlFor="feed-add-url">Naptárlink</Label>
             <Input
               id="feed-add-url"
               value={addForm.url}
@@ -562,8 +560,8 @@ export function FeedSettings() {
             </Select>
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
-          <label className="flex items-start gap-2 text-sm text-foreground">
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+          <label className="flex items-start gap-2 text-[14px] text-foreground">
             <input
               type="checkbox"
               checked={addForm.markPastDone}
@@ -571,9 +569,9 @@ export function FeedSettings() {
               className="mt-0.5 h-4 w-4 accent-accent"
             />
             <span>
-              Lejárt határidők megjelölése késznek
-              <span className="block text-xs text-muted">
-                A hozzáadás előtt lejárt feladatok rögtön késznek számítanak.
+              A már lejárt határidők legyenek készek
+              <span className="block text-[12.5px] text-muted">
+                Így a régi feladatok nem jelennek meg lejártként.
               </span>
             </span>
           </label>
@@ -607,25 +605,20 @@ export function FeedSettings() {
         </div>
       </form>
 
-      <div className="rounded-md border border-border bg-card px-3 py-3 text-sm text-muted">
-        <p className="font-medium text-foreground">Hol találom a naptár URL-t?</p>
-        <ul className="mt-1 list-disc space-y-1 pl-4">
+      <div className="px-1 text-[13.5px] text-muted">
+        <p className="font-semibold text-heading">Hol találom a naptárlinket?</p>
+        <ul className="mt-1.5 space-y-1">
           <li>
-            <span className="font-medium text-foreground">Canvas:</span> Naptár → az oldal alján
-            a „Naptár feed” link.
+            <span className="font-semibold text-foreground">Canvas:</span> Naptár → az oldal alján „Naptár feed”.
           </li>
           <li>
-            <span className="font-medium text-foreground">Moodle:</span> Naptár → Exportálás →
-            „Naptár URL lekérése”.
+            <span className="font-semibold text-foreground">Moodle:</span> Naptár → Exportálás → „Naptár URL lekérése”.
           </li>
           <li>
-            <span className="font-medium text-foreground">Neptun:</span> Naptár → Exportálás, a
-            letöltött .ics fájlt töltsd fel. Csak az aktuális és a jövőbeli órák kerülnek be; a
-            fájl a böngésződben marad.
+            <span className="font-semibold text-foreground">Neptun:</span> Naptár → Exportálás, a letöltött .ics fájlt töltsd fel. Csak az aktuális és a jövőbeli órák kerülnek be; a fájl a böngésződben marad.
           </li>
           <li>
-            <span className="font-medium text-foreground">TMS / egyéb:</span> ha nincs iCal
-            feed, vedd fel kézzel a határidőket.
+            <span className="font-semibold text-foreground">Más rendszer:</span> ha nincs naptárlink, vedd fel kézzel a határidőket.
           </li>
         </ul>
       </div>

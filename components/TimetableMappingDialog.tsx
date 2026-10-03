@@ -86,7 +86,7 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
           const choice = choices[s.subjectKey];
           if (!choice) return null;
           return (
-            <li key={s.subjectKey} className="rounded-md border border-border bg-card p-3">
+            <li key={s.subjectKey} className="rounded-[var(--radius)] border border-border bg-card p-3">
               <p className="text-sm font-medium text-foreground">{s.subject}</p>
               <p className="mb-2 text-xs text-muted">
                 {s.count} óra

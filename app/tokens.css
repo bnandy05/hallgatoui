@@ -1,36 +1,41 @@
 /*
- * "Night blueprint" theme: an engineering notebook at night.
- * Ink-navy graph paper, highlighter-yellow accent, chalk-mint secondary,
- * monospace Fira Code. Panels are slightly lighter than the page, like paper sheets.
+ * "Hirdetőtábla" theme: the faculty corridor notice board, made calm.
+ * Cool grey-blue felt, white copy-paper sheets and slips, coloured copy paper as state
+ * washes, black toner ink, one red pushpin colour for "now" and critical.
  */
 :root {
-  --bg: #0e1422; /* ink navy */
-  --bg2: #0a0f1a; /* inset: inputs, code, terminal body */
-  --panel: #141c2e; /* cards, dialogs, header */
-  --fg: #d6e2f0; /* chalk white */
-  --heading: #f3efe3; /* paper white */
-  --muted: #a8b8ce; /* 8.4:1 on panel */
-  --muted-dim: #8496b0; /* 5.6:1 on panel (AA), footnotes */
-  --border: #42598a; /* 2.5:1 on panel, so card and button edges stay visible */
-  --border-strong: #5a78ad; /* hover state for neutral borders */
-  --accent: #ffc23d; /* highlighter / pencil yellow */
-  --accent-2: #5ee0b8; /* chalk mint */
-  --accent-deep: #f5a524; /* deeper yellow, gradient end on primary buttons */
-  --accent-text: #ffd46b;
-  --accent-soft: rgba(255, 194, 61, 0.14);
-  --accent-ink: #1a1305; /* text on accent fills, 11.4:1 on --accent */
-  --success: #4fd98a;
-  --warning: #ff9a4d; /* orange, distinct from the yellow accent */
-  --danger: #ff5f7a;
-  --nav-line: #253250; /* header bottom border */
-  --term-bar: #111829;
-  --close-hover: #c0392b;
-  --grid-minor: rgba(120, 160, 220, 0.06); /* graph paper lines */
-  --grid-major: rgba(120, 160, 220, 0.11);
-  --margin-line: rgba(255, 95, 122, 0.16); /* notebook red margin line */
-  --radius: 8px;
-  --radius-lg: 10px; /* buttons, code blocks */
+  --bg: #dde2e4; /* felt */
+  --bg2: #f1f2ee; /* inset well on paper: inputs, code, table header */
+  --panel: #fdfdfa; /* copy paper: sheets, slips, dialogs */
+  --fg: #1b1c1e; /* toner ink */
+  --heading: #111214;
+  --muted: #45484c; /* 9:1 on paper, 7:1 on felt */
+  --muted-dim: #585c61; /* 5.2:1 on felt, the floor for readable text */
+  --border: #c2c8cb; /* paper edges, hairline rules */
+  --border-strong: #9aa2a7;
+  --accent: #1b1c1e; /* toner: primary buttons, active controls, focus */
+  --accent-2: #2b5b84; /* blue ballpoint: classes, holidays */
+  --accent-hover: #33363a; /* toner button hover */
+  --accent-ink: #fdfdfa; /* text on toner or red fills */
+  --success: #1a6b3c;
+  --warning: #94470a;
+  --danger: #b3261e; /* red pin ink: late, critical, destructive */
+  --danger-hover: #9a1f18;
+  --pin: #d8352a; /* the red pushpin head */
+  --canary: #f7e27e;
+  --canary-soft: #f1e6ab; /* today's day strip: canary laid over felt, opaque */
+  --salmon: #f8cfc2;
+  --sky: #d4e6f3;
+  --felt-dark: #c9cfd2;
+  --strip: #e9ecee; /* a day column: a lighter band of felt */
+  --strip-past: #d6dbde;
+  --pin-neutral: #9aa2a7; /* pin for items without a course */
+  --radius: 4px;
+  --radius-lg: 6px;
+  --radius-slip: 2px;
+  --shadow-paper: 0 1px 1px rgba(30, 40, 48, 0.08), 0 3px 8px -3px rgba(30, 40, 48, 0.22);
+  --shadow-sheet: 0 1px 2px rgba(30, 40, 48, 0.08), 0 10px 24px -12px rgba(30, 40, 48, 0.3);
+  --shadow-lift: 0 2px 3px rgba(30, 40, 48, 0.1), 0 12px 22px -10px rgba(30, 40, 48, 0.35);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* confident arrivals: board, dialogs, strikes */
-  --glow-accent: 0 6px 24px rgba(255, 194, 61, 0.25);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }

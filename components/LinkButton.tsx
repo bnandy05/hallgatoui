@@ -25,7 +25,7 @@ export function LinkButton({ link, size = "sm" }: LinkButtonProps) {
       target="_blank"
       rel="noopener noreferrer"
       title={link.url}
-      className={`inline-flex max-w-full items-center rounded-md border border-border bg-card font-medium text-foreground hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent ${SIZE_CLASSES[size]}`}
+      className={`inline-flex max-w-full items-center rounded-[var(--radius)] border border-border bg-card font-medium text-foreground hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent ${SIZE_CLASSES[size]}`}
     >
       <PlatformIcon platform={platform} size={size} />
       <span className="truncate">{link.label || platform.name}</span>

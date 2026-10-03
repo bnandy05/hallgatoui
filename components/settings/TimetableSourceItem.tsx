@@ -37,14 +37,14 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-border-strong">
+    <li className="sheet-paper flex flex-wrap items-center gap-3 px-4 py-3">
       <PlatformIcon platform={getPlatform("neptun", customPlatforms)} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">{source.name}</span>
+          <span className="text-[15px] font-semibold text-heading">{source.name}</span>
           <Pill>Órarend</Pill>
         </div>
-        <p className="text-xs text-muted">
+        <p className="text-[12.5px] text-muted">
           {classes} óra
           {from && to && ` · ${day(from)} – ${day(to)}`}
           {` · importálva: ${day(source.importedAt)}`}

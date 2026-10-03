@@ -100,7 +100,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
         {groups.map((group) => {
           const choice = choiceOf(group);
           return (
-            <li key={group.id} className="rounded-md border border-border bg-card p-3">
+            <li key={group.id} className="rounded-[var(--radius)] border border-border bg-card p-3">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Input

@@ -24,17 +24,18 @@ export function DiscoveryBanner() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-accent/30 bg-accent-soft px-4 py-3">
-        <Sparkles className="h-5 w-5 shrink-0 text-accent" />
-        <p className="min-w-0 flex-1 text-sm font-medium text-foreground">
-          {groupCount} új tárgyat találtunk a naptáradban
+      <div className="slip flex flex-wrap items-center gap-3 bg-canary py-3 pl-9 pr-4">
+        <span aria-hidden="true" className="pin left-3.5 top-1/2 -mt-[5.5px]" />
+        <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <p className="min-w-0 flex-1 text-[14.5px] font-semibold text-heading">
+          {groupCount} új tárgy található a naptáradban
         </p>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => setOpen(true)}>
             Áttekintés
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>
-            <span className="text-muted">Később</span>
+            Később
           </Button>
         </div>
       </div>

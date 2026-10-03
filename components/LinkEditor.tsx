@@ -120,7 +120,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
 
             if (isEditing) {
               return (
-                <li key={link.id} className="rounded-md border border-border p-3">
+                <li key={link.id} className="sheet-paper p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                     <Select
                       value={editForm.platformId}
@@ -134,7 +134,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     <Input
                       value={editForm.label}
                       onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
-                      placeholder="Címke (opcionális)"
+                      placeholder="Felirat (nem kötelező)"
                       className="sm:w-40"
                     />
                     <Input
@@ -161,7 +161,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
             return (
               <li
                 key={link.id}
-                className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                className="flex items-center gap-2.5 rounded-[var(--radius-slip)] bg-card px-3.5 py-2.5 shadow-[var(--shadow-paper)]"
               >
                 <PlatformIcon platform={platform} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -178,7 +178,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     aria-label="Feljebb"
                     disabled={index === 0}
                     onClick={() => moveLink(courseId, link.id, -1)}
-                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronUp className="h-4 w-4" />
                   </button>
@@ -187,7 +187,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     aria-label="Lejjebb"
                     disabled={index === course.links.length - 1}
                     onClick={() => moveLink(courseId, link.id, 1)}
-                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </button>
@@ -195,7 +195,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     type="button"
                     aria-label="Szerkesztés"
                     onClick={() => startEdit(link)}
-                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -203,7 +203,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                     type="button"
                     aria-label="Törlés"
                     onClick={() => handleRemove(link.id)}
-                    className="rounded-md p-1 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -214,7 +214,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
         </ul>
       )}
 
-      <div className="rounded-md border border-dashed border-border p-3">
+      <div className="sheet-paper p-4">
+        <p className="mb-2.5 text-[14px] font-bold text-heading">Új link</p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
           <Select
             value={addForm.platformId}
@@ -226,7 +227,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           <Input
             value={addForm.label}
             onChange={(e) => setAddForm((f) => ({ ...f, label: e.target.value }))}
-            placeholder="Címke (opcionális)"
+            placeholder="Felirat (nem kötelező)"
             className="sm:w-40"
           />
           <Input
