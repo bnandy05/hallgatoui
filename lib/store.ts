@@ -6,14 +6,17 @@ import type {
   Course,
   CourseLink,
   Deadline,
+  ExportOptions,
   IcalFeed,
   NotificationPrefs,
   Platform,
   Resource,
+  Subscription,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { matchCourseInText } from "@/lib/ical/match";
 import { cleanCanvasTitle, formatKindLabel } from "@/lib/ical/canvas";
+import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync } from "@/lib/ical/sync";
 import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
@@ -50,6 +53,12 @@ export interface AppStore extends AppData {
   notifiedKeys: string[];
   setNotificationPrefs: (patch: Partial<NotificationPrefs>) => void;
   markNotified: (keys: string[]) => void;
+  // calendar subscription (persisted, but not part of AppData: never exported/imported)
+  subscription: Subscription | null;
+  exportOptions: ExportOptions;
+  setSubscription: (subscription: Subscription | null) => void;
+  patchSubscription: (patch: Partial<Subscription>) => void;
+  setExportOptions: (patch: Partial<ExportOptions>) => void;
 
   // courses
   addCourse: (
@@ -114,6 +123,19 @@ export const useStore = create<AppStore>()(
       ...emptyAppData(),
       notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
       notifiedKeys: [],
+      subscription: null,
+      exportOptions: DEFAULT_EXPORT_OPTIONS,
+
+      // ---- calendar subscription ----
+      setSubscription: (subscription) => {
+        set({ subscription });
+      },
+      patchSubscription: (patch) => {
+        set((state) => (state.subscription ? { subscription: { ...state.subscription, ...patch } } : state));
+      },
+      setExportOptions: (patch) => {
+        set((state) => ({ exportOptions: { ...state.exportOptions, ...patch } }));
+      },
 
       // ---- notifications ----
       setNotificationPrefs: (patch) => {
@@ -455,6 +477,8 @@ export const useStore = create<AppStore>()(
         feeds: state.feeds,
         notificationPrefs: state.notificationPrefs,
         notifiedKeys: state.notifiedKeys,
+        subscription: state.subscription,
+        exportOptions: state.exportOptions,
       }),
     }
   )

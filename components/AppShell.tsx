@@ -8,6 +8,7 @@ import { useHydrated } from "@/lib/useHydrated";
 import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
+import { SubscriptionSync } from "@/components/SubscriptionSync";
 import { CommandPalette } from "@/components/CommandPalette";
 import { FlowField } from "@/components/ui/FlowField";
 import { syncAllFeeds } from "@/lib/ical/client";
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Site-wide ambient background, behind everything (isolate keeps -z-10 above the body). */}
       <FlowField fixed className="-z-10" />
       {hydrated && <NotificationScheduler />}
+      {hydrated && <SubscriptionSync />}
       <header className="sticky top-0 z-10 border-b border-[var(--nav-line)] bg-[rgba(17,17,17,0.88)] backdrop-blur-[10px]">
         <div className="mx-auto flex h-[60px] w-full max-w-[1080px] items-center gap-2 px-4 sm:gap-5 sm:px-[22px]">
           <Link
@@ -98,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="border-t border-border py-[30px] text-[13px] text-muted">
         <div className="mx-auto flex w-full max-w-[1080px] flex-wrap items-center justify-between gap-3 px-4 sm:px-[22px]">
-          <span>Hallgatói réteg · minden adatod a böngésződben marad.</span>
+          <span>Hallgatói réteg · az adataid a böngésződben maradnak (kivéve, ha bekapcsolod a naptár-előfizetést).</span>
           <span>Nem állunk kapcsolatban a Neptunnal. Sem a rendszerrel, sem az istennel.</span>
         </div>
       </footer>

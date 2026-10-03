@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
+import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
 import { Reveal } from "@/components/ui/Reveal";
@@ -28,7 +29,7 @@ export default function SettingsPage() {
         eyebrow="Beállítások"
         icon={Settings}
         title="A te hajód, a te szabályaid."
-        sub="Platformok, naptárak, értesítések és az adataid. Az adataid a böngésződben maradnak."
+        sub="Platformok, naptárak, értesítések és az adataid. Az adataid a böngésződben maradnak, amíg be nem kapcsolod a naptár-előfizetést."
       />
 
       {!hydrated ? (
@@ -40,6 +41,9 @@ export default function SettingsPage() {
           </Reveal>
           <Reveal>
             <FeedSettings />
+          </Reveal>
+          <Reveal>
+            <CalendarSubscriptionSettings />
           </Reveal>
           <Reveal>
             <NotificationSettings />
