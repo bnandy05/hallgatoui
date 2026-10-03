@@ -69,6 +69,18 @@ body {
   background: var(--accent-soft);
 }
 
+/* Behind the content column: a soft band of page colour over the grid and traces, fading out
+   towards the edges, so text without a card behind it stays readable. */
+.content-scrim {
+  background: linear-gradient(
+    90deg,
+    transparent calc(50% - 620px),
+    color-mix(in srgb, var(--bg) 78%, transparent) calc(50% - 540px),
+    color-mix(in srgb, var(--bg) 78%, transparent) calc(50% + 540px),
+    transparent calc(50% + 620px)
+  );
+}
+
 /* Highlighter-yellow to chalk-mint gradient text. */
 .grad {
   background: linear-gradient(120deg, var(--accent), var(--accent-2));

@@ -9,8 +9,8 @@
   --panel: #141c2e; /* cards, dialogs, header */
   --fg: #d6e2f0; /* chalk white */
   --heading: #f3efe3; /* paper white */
-  --muted: #91a3bd; /* 6.6:1 on panel */
-  --muted-dim: #6a7c96; /* 4.0:1 on panel, footnotes only */
+  --muted: #a8b8ce; /* 8.4:1 on panel */
+  --muted-dim: #8496b0; /* 5.6:1 on panel (AA), footnotes */
   --border: #253250;
   --border-strong: #3a4d70;
   --accent: #ffc23d; /* highlighter / pencil yellow */
