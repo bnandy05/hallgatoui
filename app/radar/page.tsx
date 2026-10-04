@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
@@ -20,9 +20,9 @@ const NO_COURSE = "__none__";
 function RadarSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="h-14 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
-      <div className="h-56 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
-      <div className="h-56 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
+      <div className="h-14 rounded-[var(--radius-slip)] bg-strip/80" />
+      <div className="h-56 rounded-[var(--radius-slip)] bg-strip/80" />
+      <div className="h-56 rounded-[var(--radius-slip)] bg-strip/80" />
     </div>
   );
 }
@@ -258,15 +258,20 @@ export default function WeekRadarPage() {
                       <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
-                      {overdue.map((d) => (
-                        <DeadlineChip key={d.id} deadline={d} now={now} showDate />
+                      {overdue.map((d, i) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showDate index={i} />
                       ))}
                     </div>
                   </section>
                 )}
 
-                {weeks.map((week) => (
-                  <section key={week.weekStart.toISOString()} className="flex flex-col gap-3" aria-label={week.label}>
+                {weeks.map((week, wi) => (
+                  <section
+                    key={week.weekStart.toISOString()}
+                    className="flex flex-col gap-3"
+                    aria-label={week.label}
+                    style={{ "--seq": wi + 1 } as CSSProperties}
+                  >
                     <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="font-display text-[clamp(22px,2.6vw,28px)] text-heading">
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}

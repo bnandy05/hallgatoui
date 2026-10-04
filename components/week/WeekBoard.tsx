@@ -92,6 +92,7 @@ export function WeekBoard({
       role="group"
       aria-label={label}
       data-board-motion={shown.motion}
+      style={intro ? ({ "--seq": 1 } as CSSProperties) : undefined}
       className={`flex flex-col gap-1 lg:grid lg:gap-2 ${
         showGutter
           ? "lg:grid-cols-[minmax(0,1.05fr)_repeat(7,minmax(0,1fr))]"
