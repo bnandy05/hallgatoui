@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   FolderOpen,
   GraduationCap,
   Landmark,
@@ -16,7 +17,7 @@ const ICONS: Record<string, LucideIcon> = {
   discord: MessagesSquare,
   drive: FolderOpen,
   canvas: GraduationCap,
-  moodle: GraduationCap,
+  moodle: BookOpen,
   neptun: Landmark,
   tms: Upload,
   messenger: MessageCircle,
@@ -24,8 +25,8 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 const SIZE_CLASSES: Record<"sm" | "md", string> = {
-  sm: "h-5 w-5",
-  md: "h-7 w-7",
+  sm: "h-5 w-5 rounded-[3px] border",
+  md: "h-7 w-7 rounded-[4px] border-[1.5px]",
 };
 
 const ICON_SIZE: Record<"sm" | "md", string> = {
@@ -38,18 +39,25 @@ export interface PlatformIconProps {
   size?: "sm" | "md";
 }
 
+/**
+ * A platform's mark as a rubber stamp on the paper, like `Badge`: an ink outline and an ink
+ * glyph in the platform colour, no fill, so it sits on copy paper, sky or salmon alike.
+ */
 export function PlatformIcon({ platform, size = "sm" }: PlatformIconProps) {
   const Icon = ICONS[platform.id];
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-[var(--radius)] font-semibold text-white ${SIZE_CLASSES[size]}`}
-      style={{ backgroundColor: platform.color }}
+      className={`inline-flex shrink-0 items-center justify-center font-bold leading-none ${SIZE_CLASSES[size]}`}
+      style={{
+        borderColor: `color-mix(in srgb, ${platform.color} 55%, transparent)`,
+        color: `color-mix(in srgb, ${platform.color} 80%, #000)`,
+      }}
       aria-hidden="true"
     >
       {Icon ? (
-        <Icon className={ICON_SIZE[size]} />
+        <Icon className={ICON_SIZE[size]} strokeWidth={size === "sm" ? 2.25 : 2} />
       ) : (
-        <span className={size === "sm" ? "text-[10px]" : "text-xs"}>
+        <span className={size === "sm" ? "text-[11px]" : "text-[14px]"}>
           {platform.name.charAt(0).toUpperCase()}
         </span>
       )}
