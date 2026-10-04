@@ -164,7 +164,7 @@ export default function WeekHome() {
               deadlines={deadlines}
               sessions={showClasses ? classSessions : undefined}
               now={now}
-              gutter={isCurrent}
+              gutter
               intro
               emptyDay="Nincs határidő"
               label={`Heti nézet, ${range}`}

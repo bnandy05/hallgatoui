@@ -82,16 +82,18 @@ async function loadSource(
   return next;
 }
 
-/** Renders the subscription's .ics: the snapshot, refreshed with the server-side source caches. */
-export async function renderSubscription(
+/**
+ * The snapshot's deadlines refreshed with the server-side source caches, plus warnings for feeds
+ * failing for more than a day. Also advances the due-change record. Used by the calendar and the
+ * email digest.
+ */
+export async function loadLiveDeadlines(
   kv: Kv,
   token: string,
   sub: StoredSubscription,
-  now: Date,
-  appUrl: string,
-  viewParam?: string | null
-): Promise<string> {
-  const { courses, feeds, options, customPlatforms } = sub.snapshot;
+  now: Date
+): Promise<{ deadlines: Deadline[]; warnings: HealthWarning[] }> {
+  const { courses, feeds } = sub.snapshot;
 
   const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, token, feed, now)));
 
@@ -131,6 +133,20 @@ export async function renderSubscription(
       // Rendering still works; the next request will try again.
     }
   }
+  return { deadlines, warnings };
+}
+
+/** Renders the subscription's .ics: the snapshot, refreshed with the server-side source caches. */
+export async function renderSubscription(
+  kv: Kv,
+  token: string,
+  sub: StoredSubscription,
+  now: Date,
+  appUrl: string,
+  viewParam?: string | null
+): Promise<string> {
+  const { courses, feeds, options, customPlatforms } = sub.snapshot;
+  const { deadlines, warnings } = await loadLiveDeadlines(kv, token, sub, now);
 
   return buildCalendar({
     courses,

@@ -2,8 +2,13 @@
  * "Hirdetőtábla" theme: the faculty corridor notice board, made calm.
  * Cool grey-blue felt, white copy-paper sheets and slips, coloured copy paper as state
  * washes, black toner ink, one red pushpin colour for "now" and critical.
+ *
+ * Two lightings of the same board. `data-theme` on <html> picks one (set before paint from the
+ * stored preference or the system, see lib/theme.ts); any element can carry it to preview the other.
  */
-:root {
+:root,
+[data-theme="light"] {
+  color-scheme: light;
   --bg: #dde2e4; /* felt */
   --bg2: #f1f2ee; /* inset well on paper: inputs, code, table header */
   --panel: #fdfdfa; /* copy paper: sheets, slips, dialogs */
@@ -30,12 +35,91 @@
   --strip: #e9ecee; /* a day column: a lighter band of felt */
   --strip-past: #d6dbde;
   --pin-neutral: #9aa2a7; /* pin for items without a course */
-  --radius: 4px;
-  --radius-lg: 6px;
-  --radius-slip: 2px;
+  --wash: #000; /* hover and well tints, used at a few percent */
+  --stamp-mix: #000; /* stamped ink: a data colour pushed towards this, by --stamp-ink */
+  --stamp-ink: 80%;
   --shadow-paper: 0 1px 1px rgba(30, 40, 48, 0.08), 0 3px 8px -3px rgba(30, 40, 48, 0.22);
   --shadow-sheet: 0 1px 2px rgba(30, 40, 48, 0.08), 0 10px 24px -12px rgba(30, 40, 48, 0.3);
   --shadow-lift: 0 2px 3px rgba(30, 40, 48, 0.1), 0 12px 22px -10px rgba(30, 40, 48, 0.35);
+  --shadow-done: 0 1px 2px rgba(30, 40, 48, 0.12);
+  --shadow-held: 0 14px 22px -6px rgba(30, 40, 48, 0.28); /* a slip held above the felt */
+  --shadow-held-sheet: 0 18px 30px -10px rgba(30, 40, 48, 0.26);
+  --shadow-dialog: 0 24px 60px -20px rgba(20, 28, 34, 0.5);
+  --shadow-press: 0 1px 2px rgba(20, 24, 28, 0.25); /* primary button */
+  --shadow-hairline: 0 1px 1px rgba(30, 40, 48, 0.06); /* secondary button */
+  --shadow-inset: inset 0 1px 2px rgba(30, 40, 48, 0.06); /* fields */
+  --shadow-knob: 0 1px 2px rgba(20, 24, 28, 0.3);
+  --pin-cast: 1px 2px 2px rgba(20, 24, 28, 0.35);
+  --pin-cast-held: 4px 9px 6px rgba(20, 24, 28, 0.18);
+  --backdrop: rgba(40, 48, 54, 0.45);
+  /* PinboardField canvas */
+  --field-paper: rgba(253, 253, 250, 0.55);
+  --field-edge: rgba(30, 40, 48, 0.07);
+  --field-rule: rgba(30, 40, 48, 0.07);
+  --field-hole: rgba(30, 40, 48, 0.16);
+  --field-shadow: 30, 40, 48; /* rgb, alpha set per frame */
+  --field-shadow-alpha: 0.1;
+  --radius: 4px;
+  --radius-lg: 6px;
+  --radius-slip: 2px;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/*
+ * After hours: the same board under the corridor's night lighting. Charcoal felt, grey card-stock
+ * slips, chalk-white ink; the coloured papers are their darker card versions, so they keep their
+ * meaning without glaring. The pushpin stays red. Primary controls invert to chalk on dark.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171b1e;
+  --bg2: #1d2225;
+  --panel: #282d31;
+  --fg: #e4e5e0;
+  --heading: #f2f2ed;
+  --muted: #b2b7ba; /* 6.9:1 on card, 8.6:1 on felt */
+  --muted-dim: #9ba1a6; /* 5.3:1 on card, 6.6:1 on felt */
+  --border: #3c4348;
+  --border-strong: #59626a;
+  --accent: #e8e8e2; /* chalk */
+  --accent-2: #86b4dc;
+  --accent-hover: #cfd0ca;
+  --accent-ink: #15181a;
+  --success: #6fc894;
+  --warning: #e9a862;
+  --danger: #f2776b;
+  --danger-hover: #f6978d;
+  --pin: #e5473a;
+  --canary: #4a4018;
+  --canary-soft: #322f1e;
+  --salmon: #4b2a25;
+  --sky: #213547;
+  --felt-dark: #0e1113;
+  --strip: #1f2427;
+  --strip-past: #13171a;
+  --pin-neutral: #6d767d;
+  --wash: #fff;
+  --stamp-mix: #fff;
+  --stamp-ink: 58%;
+  --shadow-paper: 0 1px 1px rgba(0, 0, 0, 0.35), 0 3px 8px -3px rgba(0, 0, 0, 0.55);
+  --shadow-sheet: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 24px -12px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 3px rgba(0, 0, 0, 0.4), 0 12px 22px -10px rgba(0, 0, 0, 0.75);
+  --shadow-done: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-held: 0 14px 22px -6px rgba(0, 0, 0, 0.6);
+  --shadow-held-sheet: 0 18px 30px -10px rgba(0, 0, 0, 0.6);
+  --shadow-dialog: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+  --shadow-press: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-hairline: 0 1px 1px rgba(0, 0, 0, 0.3);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-knob: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --pin-cast: 1px 2px 2px rgba(0, 0, 0, 0.6);
+  --pin-cast-held: 4px 9px 6px rgba(0, 0, 0, 0.35);
+  --backdrop: rgba(5, 7, 9, 0.6);
+  --field-paper: rgba(56, 62, 67, 0.5);
+  --field-edge: rgba(0, 0, 0, 0.3);
+  --field-rule: rgba(255, 255, 255, 0.06);
+  --field-hole: rgba(0, 0, 0, 0.55);
+  --field-shadow: 0, 0, 0;
+  --field-shadow-alpha: 0.35;
 }

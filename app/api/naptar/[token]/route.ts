@@ -1,7 +1,8 @@
-import type { Kv } from "@/lib/server/kv";
 import { renderSubscription } from "@/lib/server/calendar";
 import {
-  bearerSecret,
+  authorize,
+  DIGEST_INDEX_KEY,
+  digKey,
   errorResponse,
   parseToken,
   readSnapshotBody,
@@ -11,7 +12,6 @@ import {
   storageErrorResponse,
   subKey,
   TTL_SECONDS,
-  verifySecret,
   type StoredSubscription,
 } from "@/lib/server/subscription";
 
@@ -51,32 +51,6 @@ export async function GET(req: Request, ctx: RouteContext<"/api/naptar/[token]">
   });
 }
 
-/** Loads the subscription and checks the Bearer secret; returns an error response otherwise. */
-async function authorize(
-  req: Request,
-  rawToken: string
-): Promise<{ kv: Kv; token: string; sub: StoredSubscription } | Response> {
-  const kv = requireKv();
-  if (kv instanceof Response) return kv;
-
-  const token = parseToken(rawToken);
-  if (!token) return errorResponse(NOT_FOUND, 404);
-
-  let sub: StoredSubscription | null;
-  try {
-    sub = await kv.get<StoredSubscription>(subKey(token));
-  } catch {
-    return storageErrorResponse();
-  }
-  if (!sub) return errorResponse(NOT_FOUND, 404);
-
-  const secret = bearerSecret(req);
-  if (!secret || !verifySecret(secret, sub.secretHash)) {
-    return errorResponse("Hibás vagy hiányzó jogosultság", 401);
-  }
-  return { kv, token, sub };
-}
-
 /** Replaces the snapshot. Requires the secret. */
 export async function PUT(req: Request, ctx: RouteContext<"/api/naptar/[token]">): Promise<Response> {
   const auth = await authorize(req, (await ctx.params).token);
@@ -106,7 +80,7 @@ export async function PUT(req: Request, ctx: RouteContext<"/api/naptar/[token]">
   return Response.json({ ok: true, updatedAt: stored.updatedAt });
 }
 
-/** Deletes the subscription, its source caches and due-change record. Requires the secret. */
+/** Deletes the subscription, its source caches, due-change record and digest. Requires the secret. */
 export async function DELETE(req: Request, ctx: RouteContext<"/api/naptar/[token]">): Promise<Response> {
   const auth = await authorize(req, (await ctx.params).token);
   if (auth instanceof Response) return auth;
@@ -116,8 +90,10 @@ export async function DELETE(req: Request, ctx: RouteContext<"/api/naptar/[token
     await kv.del(
       subKey(token),
       chgKey(token),
+      digKey(token),
       ...sub.snapshot.feeds.map((f) => srcKey(token, f.id))
     );
+    await kv.srem(DIGEST_INDEX_KEY, token);
   } catch {
     return storageErrorResponse();
   }

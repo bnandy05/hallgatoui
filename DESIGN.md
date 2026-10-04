@@ -165,7 +165,7 @@ The app is the faculty corridor notice board with the noise taken out. A cool gr
 
 Time is the spine. The week board runs Monday to Sunday as seven lighter felt strips, with an overdue gutter on salmon paper at the left when something is late. Density is moderate: one board, one "Következő" notice that owns focus, one sheet for the course list. Behind every page a canvas draws faint ghost slips in the colours of the student's real open deadlines, swaying in a corridor draught; one falls off every few seconds and another is pinned up elsewhere.
 
-The world is light only and flat in colour. It rejects the dark dashboard with neon accents it replaced, and the generic white SaaS calendar. Depth comes from paper physically sitting on felt (soft, short, cool-tinted shadows), never from gradients, glows or glass.
+The world is flat in colour and comes in two lightings of the same board: daylight (the default look) and after hours (dark), chosen by the system unless the student picks one. It rejects the dark dashboard with neon accents it replaced, and the generic white SaaS calendar. Depth comes from paper physically sitting on felt (soft, short, cool-tinted shadows), never from gradients, glows or glass.
 
 **Key Characteristics:**
 - Felt ground, copy-paper surfaces, toner ink, one red pushpin colour.
@@ -211,6 +211,16 @@ A cool felt-and-paper neutral base with black toner as the primary, a red pushpi
 **The One Red Pin Rule.** Red is reserved for now, late, critical and destructive. A slip that is merely open carries its course colour, not red.
 
 **The Data-Only Hex Rule.** Raw hex appears only for user, course and platform data and inside the `PinboardField` canvas. Everything else uses the tokens in `app/tokens.css` through the Tailwind colours in `globals.css`.
+
+### After hours (dark theme)
+The same board under the corridor's night lighting, not a different product. `data-theme="dark"` on `<html>` swaps the tokens in `app/tokens.css`; components never branch on the theme.
+- **Felt** goes charcoal (#171b1e), **day strips** a step lighter, past days a step darker, the header rule darker still.
+- **Copy Paper** becomes grey card stock (#282d31); **ink** is chalk white (#e4e5e0), with Muted Ink and Muted Dim kept at 6.9:1 and 5.3:1 on card.
+- **Primary** inverts: Toner Ink becomes Chalk (#e8e8e2) with dark ink on it; Danger Red is a lighter red that reads as text on card and carries dark ink as a fill.
+- **State washes** are the darker card versions of the same papers (canary, salmon, sky), so the copy-paper code keeps its meaning without glaring. The **pushpin stays red**.
+- **Shadows** are black and denser; the **felt canvas** reads its inks from `--field-*` tokens and re-inks in place when the theme changes.
+- Hover and well tints use `--wash` (black in daylight, white after hours); stamped ink mixes data colours towards `--stamp-mix` by `--stamp-ink`.
+- **Choosing:** `theme` in the store (`system` default, `light`, `dark`), a device preference, not `AppData`. A head script (`THEME_SCRIPT`, `lib/theme.ts`) applies it before the first paint; `ThemeSync` follows the system while on `system`. The header carries a sun/moon toggle (choosing the system's own theme returns to `system`); Beállítások → Megjelenés offers the three options as cards with a sample of the board in each lighting (scoped with `data-theme` on the sample). Switching cross-fades through a view transition, instant under reduced motion.
 
 ## Typography
 
@@ -278,7 +288,7 @@ Toner-black, firm, small-radius.
 - **Shape:** gently cut corners (4px), 40px tall (32px small), 16px / 12px horizontal padding, 14.5px / 13.5px text.
 - **Primary:** Toner Ink fill and border, Copy Paper text, semibold, a 1px toner shadow. Hover a slightly lighter toner grey; active presses down 1px.
 - **Secondary:** Copy Paper with a Paper Edge border; hover strengthens the border and adds the paper shadow.
-- **Ghost:** transparent; hover a 5% black wash.
+- **Ghost:** transparent; hover a 5% `--wash` tint.
 - **Danger:** Danger Red fill, Copy Paper text, hover darker red, red focus outline.
 - **Disabled:** Paper Inset fill, Muted Dim text, no shadow.
 
@@ -341,4 +351,4 @@ Loading a page is someone pinning up the morning's notices. The felt, the day st
 - **Don't** use raw hex outside user, course and platform data and `PinboardField`.
 - **Don't** pin a class chip or give it a shadow; classes are taped flat.
 - **Don't** use red for anything that is not now, late, critical or destructive.
-- **Don't** introduce a dark theme; the world is light only.
+- **Don't** branch components on the theme or hard-code a colour for one lighting; add or adjust a token in both blocks of `app/tokens.css`.

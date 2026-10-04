@@ -17,10 +17,10 @@ export interface ButtonClassesOptions {
 // Primary is toner black on paper; secondary is a paper slip; danger is the red pin's ink.
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-accent border border-accent font-semibold text-accent-ink shadow-[0_1px_2px_rgba(20,24,28,0.25)] hover:bg-accent-hover active:translate-y-px",
+    "bg-accent border border-accent font-semibold text-accent-ink shadow-[var(--shadow-press)] hover:bg-accent-hover active:translate-y-px",
   secondary:
-    "bg-card border border-border text-foreground shadow-[0_1px_1px_rgba(30,40,48,0.06)] hover:border-border-strong hover:shadow-[var(--shadow-paper)] active:translate-y-px",
-  ghost: "border border-transparent bg-transparent text-foreground hover:bg-black/[0.05]",
+    "bg-card border border-border text-foreground shadow-[var(--shadow-hairline)] hover:border-border-strong hover:shadow-[var(--shadow-paper)] active:translate-y-px",
+  ghost: "border border-transparent bg-transparent text-foreground hover:bg-wash/[0.05]",
   danger:
     "bg-danger border border-danger font-semibold text-accent-ink hover:bg-danger-hover active:translate-y-px focus-visible:outline-danger",
 };

@@ -45,7 +45,7 @@ export function CalendarSubscriptionSettings() {
   function handleRotate() {
     if (
       !confirm(
-        "Új linket kapsz, a régi előfizetések (Apple, Google Naptár) nem frissülnek tovább, és újra fel kell iratkoznod. Folytatod?"
+        "Új linket kapsz, a régi előfizetések (Apple, Google Naptár) nem frissülnek tovább, és újra fel kell iratkoznod, az e-mail-összefoglalóra is. Folytatod?"
       )
     ) {
       return;
@@ -54,7 +54,7 @@ export function CalendarSubscriptionSettings() {
   }
 
   function handleDisable() {
-    if (!confirm("Kikapcsolod? A szerveren tárolt adataid törlődnek, a naptár-link megszűnik.")) {
+    if (!confirm("Kikapcsolod? A szerveren tárolt adataid törlődnek, a naptár-link és az e-mail-összefoglaló megszűnik.")) {
       return;
     }
     void run("delete", deleteSubscription);

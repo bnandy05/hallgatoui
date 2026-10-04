@@ -164,7 +164,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                 aria-label={`${resource.title} szerkesztése`}
                 title="Szerkesztés"
                 onClick={() => setEditing(resource.id)}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-black/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -173,7 +173,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
                 aria-label={`${resource.title} törlése`}
                 title="Törlés"
                 onClick={() => handleRemove(resource)}
-                className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-black/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
+                className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

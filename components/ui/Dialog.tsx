@@ -20,7 +20,8 @@ export interface DialogProps {
 /**
  * A copy-paper sheet over the page. Centred from sm up; on narrow screens a bottom sheet that
  * fills the width. The dialog itself scrolls: the title bar sticks to the top and a
- * `DialogActions` footer to the bottom, so Save is always reachable.
+ * `DialogActions` footer to the bottom, so Save is always reachable. The sheet is laid out in
+ * the visible part of the screen (`KeyboardInset`), so the on-screen keyboard never covers it.
  */
 export function Dialog({
   open,
@@ -79,7 +80,7 @@ export function Dialog({
     <dialog
       ref={dialogRef}
       style={{ "--sheet": tone === "salmon" ? "var(--salmon)" : "var(--panel)" } as CSSProperties}
-      className={`sheet m-auto w-full overflow-y-auto overscroll-contain rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[0_24px_60px_-20px_rgba(20,28,34,0.5)] backdrop:bg-[rgba(40,48,54,0.45)] max-sm:mb-0 max-sm:max-h-[calc(100dvh-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(100dvh-3rem)] ${
+      className={`sheet top-[var(--visual-top,0px)] bottom-[var(--keyboard-inset,0px)] m-auto w-full scroll-pt-16 overflow-y-auto overscroll-contain has-[[data-dialog-actions]]:scroll-pb-20 rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[var(--shadow-dialog)] backdrop:bg-[var(--backdrop,rgba(40,48,54,0.45))] max-sm:mb-0 max-sm:max-h-[calc(var(--visual-height,100dvh)-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(var(--visual-height,100dvh)-3rem)] ${
         size === "lg" ? "sm:max-w-[min(42rem,calc(100vw-3rem))]" : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
       }`}
     >
@@ -100,7 +101,7 @@ export function Dialog({
           type="button"
           aria-label="Bezárás"
           onClick={onClose}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors hover:bg-black/[0.06] hover:text-heading"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors hover:bg-wash/[0.06] hover:text-heading"
         >
           <X className="h-5 w-5" />
         </button>

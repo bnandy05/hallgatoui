@@ -48,7 +48,7 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
         {classes} óra
         {from && to && ` · ${day(from)} – ${day(to)}`}
       </p>
-      <div className="-mx-1.5 mt-auto flex flex-wrap items-center gap-1 border-t border-black/[0.08] pt-2">
+      <div className="-mx-1.5 mt-auto flex flex-wrap items-center gap-1 border-t border-wash/[0.08] pt-2">
         <Button type="button" variant="ghost" size="sm" onClick={() => onReimport(source)} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Újraimportálás

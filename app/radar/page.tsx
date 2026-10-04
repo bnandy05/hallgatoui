@@ -202,12 +202,12 @@ export default function WeekRadarPage() {
                     className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-[13.5px] font-medium transition-colors duration-150 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-[14px] ${
                       active
                         ? "border-accent bg-accent text-accent-ink hover:bg-accent-hover"
-                        : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-black/[0.05]"
+                        : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-wash/[0.05]"
                     }`}
                   >
                     <span
                       aria-hidden="true"
-                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60"
+                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-card/60"
                       style={{ backgroundColor: chip.color }}
                     />
                     <span className="lg:truncate">{chip.name}</span>

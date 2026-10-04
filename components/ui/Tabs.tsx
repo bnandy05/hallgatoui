@@ -90,7 +90,7 @@ export function Tabs({
             {item.count !== undefined && (
               <span
                 className={`min-w-[1.4rem] rounded-full px-1.5 text-center text-[11.5px] tabular-nums ${
-                  active ? "bg-accent text-accent-ink" : "bg-black/[0.06] text-muted"
+                  active ? "bg-accent text-accent-ink" : "bg-wash/[0.06] text-muted"
                 }`}
               >
                 {item.count}

@@ -30,7 +30,7 @@ export function Switch({ checked, onChange, label, description, disabled = false
       >
         <span
           aria-hidden="true"
-          className={`absolute h-[18px] w-[18px] rounded-full bg-card shadow-[0_1px_2px_rgba(20,24,28,0.3)] transition-transform duration-200 ease-[var(--ease-out-expo)] ${
+          className={`absolute h-[18px] w-[18px] rounded-full bg-card shadow-[var(--shadow-knob)] transition-transform duration-200 ease-[var(--ease-out-expo)] ${
             checked ? "translate-x-[18px]" : "translate-x-[2px]"
           }`}
         />
