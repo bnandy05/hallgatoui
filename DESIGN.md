@@ -285,6 +285,7 @@ Toner-black, firm, small-radius.
 ### Chips
 - **Pill:** round, 32px tall, Copy Paper with a Paper Edge border and Muted Ink text; active is Toner Ink with Copy Paper text. Toggle pills expose aria-pressed.
 - **Badge:** a small rubber stamp, 3px corners, 11.5px semibold: a 1px outline in the colour at 55% and text mixed 80% towards black, no fill. No pastel tag fills anywhere.
+- **Platform mark** (`PlatformIcon`): stamped like a Badge, never a filled app tile: a square outline in the platform colour at 55% (1px at 20px, 1.5px at 28px) around a lucide glyph or initial in the colour mixed 80% towards black, no fill, so it reads on Copy Paper, Sky and Salmon alike.
 - **Class chip:** Sky at 80%, 2px corners, 12px text, a course-colour dot (Ballpoint Blue when unmapped), the time range in tabular semibold.
 
 ### Cards / Containers
