@@ -1,4 +1,4 @@
-import type { RenderedEmail } from "@/lib/digest";
+import type { RenderedEmail } from "@/lib/digestEmail";
 
 // Sends email through Resend's REST API (plain fetch, no SDK). Env: RESEND_API_KEY and
 // DIGEST_FROM ("Hallgatói réteg <hirlevel@example.hu>", a verified Resend sender). Without them
