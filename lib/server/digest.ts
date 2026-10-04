@@ -2,11 +2,10 @@ import { randomBytes } from "node:crypto";
 import {
   collectDigest,
   digestPeriodKey,
-  renderConfirmEmail,
-  renderDigestEmail,
   type DigestFrequency,
   type DigestStatus,
 } from "@/lib/digest";
+import { renderConfirmEmail, renderDigestEmail } from "@/lib/digestEmail";
 import { loadLiveDeadlines } from "@/lib/server/calendar";
 import { sendEmail } from "@/lib/server/email";
 import type { Kv } from "@/lib/server/kv";

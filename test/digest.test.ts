@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import {
   collectDigest,
   digestPeriodKey,
-  formatDigestDue,
+  digestRange,
   normalizeEmail,
-  renderDigestEmail,
   type DigestInput,
 } from "@/lib/digest";
+import { formatDigestDue, renderDigestEmail } from "@/lib/digestEmail";
 import { makeCourse, makeDeadline, makeFeed } from "./helpers";
 
 // Monday 2026-10-05, 06:00 Budapest (CEST, UTC+2).
@@ -44,7 +44,7 @@ test("normalizeEmail trims, lowercases and rejects junk", () => {
   assert.equal(normalizeEmail(42), null);
 });
 
-test("collectDigest splits overdue and upcoming within the horizon and skips done ones", () => {
+test("collectDigest splits overdue and upcoming within the week or month and skips done ones", () => {
   const deadlines = [
     makeDeadline({ id: "old", due: "2026-09-01T10:00:00.000Z" }), // > 14 days ago
     makeDeadline({ id: "late", due: "2026-10-03T10:00:00.000Z", courseId: "c1" }),
@@ -96,10 +96,21 @@ test("renderDigestEmail escapes titles, drops non-http links and shows changes",
   assert.ok(!mail.html.includes("<script>"));
   assert.ok(mail.html.includes("&lt;script&gt;"));
   assert.ok(!mail.html.includes("javascript:"));
-  assert.ok(mail.html.includes("módosult"));
+  assert.ok(mail.html.includes("Módosult"));
   assert.ok(mail.html.includes("&amp;k=k"));
-  assert.match(mail.subject, /Heti összefoglaló: 1 közelgő határidő/);
+  assert.equal(mail.subject, "Heti összefoglaló: 1 határidő");
   assert.ok(mail.text.includes("korábban: okt. 6. (K) 23:59"));
+});
+
+test("digestRange covers this Monday–Sunday or the rest of the calendar month", () => {
+  assert.deepEqual(digestRange("heti", NOW), { from: [2026, 10, 5], to: [2026, 10, 11] });
+  assert.deepEqual(digestRange("havi", new Date("2026-12-01T05:00:00.000Z")), { from: [2026, 12, 1], to: [2026, 12, 31] });
+  // A deadline on Sunday 23:59 is in the week, one on Monday 00:30 is not.
+  const deadlines = [
+    makeDeadline({ id: "sun", due: "2026-10-11T21:59:00.000Z" }),
+    makeDeadline({ id: "mon", due: "2026-10-11T22:30:00.000Z" }),
+  ];
+  assert.deepEqual(collectDigest(input({ deadlines })).upcoming.map((i) => i.deadline.id), ["sun"]);
 });
 
 test("formatDigestDue prints Budapest wall-clock time", () => {

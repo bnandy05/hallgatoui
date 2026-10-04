@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Napi összefoglaló</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin:0; padding:0; -webkit-text-size-adjust:100%; }
+  a { text-underline-offset:2px; }
+  ::selection { background:#f7e27e; }
+  @media (max-width:480px) {
+    .day-col { width:68px !important; padding-left:10px !important; padding-right:6px !important; }
+    .day-name { font-size:16px !important; }
+    .h1 { font-size:36px !important; }
+    .outer { padding:20px 12px 28px !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .felt, body { background:#171b1e !important; }
+    .strip { background:#1f2427 !important; }
+    .today { background:#322f1e !important; }
+    .paper { background:#282d31 !important; border-color:#3c4348 !important; }
+    .salmon { background:#4b2a25 !important; }
+    .canary { background:#4a4018 !important; }
+    .heading, .heading a { color:#f2f2ed !important; }
+    .rule { border-color:#0e1113 !important; }
+    .ink, .ink a { color:#e4e5e0 !important; }
+    .muted, .muted a { color:#b2b7ba !important; }
+    .dim, .dim a { color:#9ba1a6 !important; }
+    .danger { color:#f2776b !important; }
+    .stamp-danger { color:#f2776b !important; border-color:#975651 !important; }
+    .stamp-warning { color:#e9a862 !important; border-color:#92714c !important; }
+    .btn { background:#e8e8e2 !important; border-color:#e8e8e2 !important; color:#15181a !important; }
+    .dashed { border-color:#3c4348 !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .sky { background:#213547 !important; }
+    .bar-track { background:#3c4348 !important; }
+    .bar-hot { background:#f2776b !important; }
+    .bar { background:#e4e5e0 !important; }
+    .ruled { border-color:#3c4348 !important; }
+  }
+  @media (max-width:480px) {
+    .class-chip { display:block !important; margin:0 0 6px !important; }
+    .rest-day { width:44px !important; }
+  }
+</style>
+</head>
+<body class="felt" style="margin:0;padding:0;background:#dde2e4">
+<!-- Design view only: the daily digest is not implemented (see docs/PLAN.md). -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">Ma 2 határidő, mindkettő kritikus: ZH 1 10:00-kor, Beadandó 1 éjfélig.&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="felt" style="width:100%;background:#dde2e4">
+<tr><td align="center" class="outer" style="padding:28px 16px 36px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;font-family:Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1b1c1e">
+<tr><td style="padding:0 0 28px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="width:11px;padding-right:9px;vertical-align:middle"><div style="width:11px;height:11px;border-radius:6px;background:#d8352a;box-shadow:1px 2px 2px rgba(20,24,28,0.35)"></div></td>
+<td class="heading" style="vertical-align:middle;font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:19px;color:#111214">Hallgatói réteg</td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:0 2px 22px">
+<h1 class="heading h1" style="margin:0;font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:44px;color:#111214">Kedd, okt. 6.</h1>
+<p class="muted" style="margin:10px 0 0;font-size:15px;line-height:1.55;color:#45484c">Napi összefoglaló. Ma 2 határidő, mindkettő kritikus, holnap még egy. Egy lejárt határidő nincs kipipálva.</p>
+</td></tr>
+<tr><td style="padding:0 0 8px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="today" style="width:100%;background:#f1e6ab;border-radius:2px">
+<tr><td style="padding:14px 14px 4px">
+<span class="heading" style="font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:22px;color:#111214">Ma</span>
+<span class="muted" style="padding-left:8px;font-size:13px;font-variant-numeric:tabular-nums;color:#45484c">2 határidő, 3 óra</span>
+</td></tr>
+<tr><td style="padding:8px 14px 4px">
+<span class="sky class-chip" style="display:inline-block;margin:0 6px 6px 0;padding:6px 9px;background:#d4e6f3;border-radius:2px;font-size:12.5px;line-height:1.3;white-space:nowrap">
+<span style="display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:4px;background:#2b5b84;vertical-align:1px"></span><span class="ink" style="font-weight:600;font-variant-numeric:tabular-nums;color:#1b1c1e">08:15–09:45</span> <span class="muted" style="color:#45484c">Analízis I Ea · LD-0-821</span></span><span class="sky class-chip" style="display:inline-block;margin:0 6px 6px 0;padding:6px 9px;background:#d4e6f3;border-radius:2px;font-size:12.5px;line-height:1.3;white-space:nowrap">
+<span style="display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:4px;background:#8a4fb0;vertical-align:1px"></span><span class="ink" style="font-weight:600;font-variant-numeric:tabular-nums;color:#1b1c1e">12:15–13:45</span> <span class="muted" style="color:#45484c">Programozás Gy · D-2-219</span></span><span class="sky class-chip" style="display:inline-block;margin:0 6px 6px 0;padding:6px 9px;background:#d4e6f3;border-radius:2px;font-size:12.5px;line-height:1.3;white-space:nowrap">
+<span style="display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:4px;background:#1a6b3c;vertical-align:1px"></span><span class="ink" style="font-weight:600;font-variant-numeric:tabular-nums;color:#1b1c1e">14:00–15:30</span> <span class="muted" style="color:#45484c">Diszkrét mat. I Gy · D-0-311</span></span>
+</td></tr>
+<tr><td style="padding:4px 10px 10px">
+<div style=""><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:#fdfdfa;border:1px solid #e3e6e5;border-radius:2px;box-shadow:0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)">
+<tr>
+<td style="width:10px;padding:13px 0 0 12px;vertical-align:top"><div style="width:10px;height:10px;border-radius:5px;background:#d8352a;box-shadow:1px 2px 2px rgba(20,24,28,0.3)"></div></td>
+<td style="padding:10px 12px 10px 10px;vertical-align:top">
+<div class="heading" style="font-size:15px;font-weight:600;line-height:1.4;color:#111214"><a href="#" style="color:#111214;text-decoration:underline;text-decoration-color:#9aa2a7">ZH 1</a></div>
+<div style="margin-top:4px;font-size:13px;line-height:1.5"><span class="muted" style="color:#45484c">Diszkrét matematika I · <span style="white-space:nowrap">IP-18DM1E</span></span><span style="display:inline-block;width:8px"></span><span class="stamp-danger" style="display:inline-block;padding:0 5px;border:1px solid #d48781;border-radius:3px;font-size:11.5px;font-weight:600;line-height:17px;color:#8f1e18;white-space:nowrap">Kritikus</span></div>
+</td>
+<td style="padding:11px 12px 0 0;vertical-align:top;text-align:right;white-space:nowrap"><div class="danger" style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#b3261e">10:00</div><div class="danger" style="margin-top:2px;font-size:12px;font-variant-numeric:tabular-nums;color:#b3261e">még 4 óra</div></td>
+</tr>
+<tr><td colspan="3" style="padding:0 12px 10px 32px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bar-track" style="width:100%;background:#e9ecee;border-radius:1px"><tr>
+<td class="bar-hot" style="width:17%;height:2px;line-height:2px;font-size:0;background:#b3261e;border-radius:1px">&nbsp;</td><td style="font-size:0;line-height:2px">&nbsp;</td></tr></table>
+</td></tr>
+</table></div>
+<div style="margin-top:8px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:#fdfdfa;border:1px solid #e3e6e5;border-radius:2px;box-shadow:0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)">
+<tr>
+<td style="width:10px;padding:13px 0 0 12px;vertical-align:top"><div style="width:10px;height:10px;border-radius:5px;background:#d8352a;box-shadow:1px 2px 2px rgba(20,24,28,0.3)"></div></td>
+<td style="padding:10px 12px 10px 10px;vertical-align:top">
+<div class="heading" style="font-size:15px;font-weight:600;line-height:1.4;color:#111214">Beadandó 1: Verem implementáció</div>
+<div style="margin-top:4px;font-size:13px;line-height:1.5"><span class="muted" style="color:#45484c">Programozás · <span style="white-space:nowrap">IP-18PROG</span></span><span style="display:inline-block;width:8px"></span><span class="stamp-danger" style="display:inline-block;padding:0 5px;border:1px solid #d48781;border-radius:3px;font-size:11.5px;font-weight:600;line-height:17px;color:#8f1e18;white-space:nowrap">Kritikus</span></div>
+</td>
+<td style="padding:11px 12px 0 0;vertical-align:top;text-align:right;white-space:nowrap"><div class="danger" style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#b3261e">23:59</div><div class="danger" style="margin-top:2px;font-size:12px;font-variant-numeric:tabular-nums;color:#b3261e">még 18 óra</div></td>
+</tr>
+<tr><td colspan="3" style="padding:0 12px 10px 32px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bar-track" style="width:100%;background:#e9ecee;border-radius:1px"><tr>
+<td class="bar-hot" style="width:75%;height:2px;line-height:2px;font-size:0;background:#b3261e;border-radius:1px">&nbsp;</td><td style="font-size:0;line-height:2px">&nbsp;</td></tr></table>
+</td></tr>
+</table></div>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:0 0 22px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="strip" style="width:100%;background:#e9ecee;border-radius:2px">
+<tr><td style="padding:14px 14px 4px">
+<span class="heading" style="font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:22px;color:#111214">Holnap</span>
+<span class="muted" style="padding-left:8px;font-size:13px;font-variant-numeric:tabular-nums;color:#45484c">szerda, okt. 7.</span>
+</td></tr>
+<tr><td style="padding:8px 10px 10px">
+<div style=""><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:#fdfdfa;border:1px solid #e3e6e5;border-radius:2px;box-shadow:0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)">
+<tr>
+<td style="width:10px;padding:13px 0 0 12px;vertical-align:top"><div style="width:10px;height:10px;border-radius:5px;background:#2b5b84;box-shadow:1px 2px 2px rgba(20,24,28,0.3)"></div></td>
+<td style="padding:10px 12px 10px 10px;vertical-align:top">
+<div class="heading" style="font-size:15px;font-weight:600;line-height:1.4;color:#111214">Kvíz 3: Határérték</div>
+<div style="margin-top:4px;font-size:13px;line-height:1.5"><span class="muted" style="color:#45484c">Analízis I · <span style="white-space:nowrap">IP-18AN1E</span></span></div>
+</td>
+<td style="padding:11px 12px 0 0;vertical-align:top;text-align:right;white-space:nowrap"><div class="ink" style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#1b1c1e">23:59</div></td>
+</tr>
+
+</table></div>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:0 0 22px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="salmon" style="width:100%;background:#f8cfc2;border-radius:2px">
+<tr><td style="padding:14px 14px 4px">
+<span class="danger" style="font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:19px;color:#b3261e">Lejárt</span>
+<span class="ink" style="padding-left:8px;font-size:13px;color:#1b1c1e">még nincs kipipálva</span>
+</td></tr>
+<tr><td style="padding:8px 10px 10px">
+<div style=""><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:#fdfdfa;border:1px solid #e3e6e5;border-radius:2px;box-shadow:0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)">
+<tr>
+<td style="width:10px;padding:13px 0 0 12px;vertical-align:top"><div style="width:10px;height:10px;border-radius:5px;background:#d8352a;box-shadow:1px 2px 2px rgba(20,24,28,0.3)"></div></td>
+<td style="padding:10px 12px 10px 10px;vertical-align:top">
+<div class="heading" style="font-size:15px;font-weight:600;line-height:1.4;color:#111214">Gyakorló feladatsor 2</div>
+<div style="margin-top:4px;font-size:13px;line-height:1.5"><span class="muted" style="color:#45484c">Analízis I · <span style="white-space:nowrap">IP-18AN1E</span></span></div>
+</td>
+<td style="padding:11px 12px 0 0;vertical-align:top;text-align:right;white-space:nowrap"><div class="danger" style="font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#b3261e">okt. 3. (Szo) 23:59</div></td>
+</tr>
+
+</table></div>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:0 2px 8px">
+<span class="heading" style="font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:19px;color:#111214">A hét hátralévő része</span>
+</td></tr>
+<tr><td style="padding:0 0 4px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:#fdfdfa;border:1px solid #e3e6e5;border-radius:2px;box-shadow:0 1px 2px rgba(30,40,48,0.08),0 10px 24px -12px rgba(30,40,48,0.3)">
+<tr><td style="padding:4px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td class="rest-day heading ruled" style="width:56px;padding:10px 8px 10px 0;vertical-align:top;font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:16px;color:#111214">P</td>
+<td class="ruled" style="padding:10px 0;vertical-align:top">
+<div class="ink" style="font-size:14px;font-weight:600;line-height:1.4;color:#1b1c1e"><span style="display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:4px;background:#2b5b84;vertical-align:1px"></span>Beadandó 03</div>
+<div style="margin-top:2px;padding-left:15px;font-size:12.5px;line-height:1.5"><span class="muted" style="color:#45484c">Analízis I · <span style="white-space:nowrap">IP-18AN1E</span></span><span style="display:inline-block;width:8px"></span><span class="stamp-warning" style="display:inline-block;padding:0 5px;border:1px solid #c39976;border-radius:3px;font-size:11.5px;font-weight:600;line-height:17px;color:#763908;white-space:nowrap">Módosult</span></div>
+</td>
+<td class="ruled muted" style="padding:10px 0 10px 8px;vertical-align:top;text-align:right;white-space:nowrap;font-size:13px;font-variant-numeric:tabular-nums;color:#45484c">okt. 9. 23:59</td>
+</tr>
+<tr>
+<td class="rest-day heading ruled" style="width:56px;padding:10px 8px 10px 0;border-top:1px solid #c2c8cb;vertical-align:top;font-family:Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em;font-size:16px;color:#111214">V</td>
+<td class="ruled" style="padding:10px 0;border-top:1px solid #c2c8cb;vertical-align:top">
+<div class="ink" style="font-size:14px;font-weight:600;line-height:1.4;color:#1b1c1e"><span style="display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:4px;background:#d8352a;vertical-align:1px"></span>Tanulmányi ösztöndíj kérvény</div>
+<div style="margin-top:2px;padding-left:15px;font-size:12.5px;line-height:1.5"><span class="stamp-danger" style="display:inline-block;padding:0 5px;border:1px solid #d48781;border-radius:3px;font-size:11.5px;font-weight:600;line-height:17px;color:#8f1e18;white-space:nowrap">Kritikus</span></div>
+</td>
+<td class="ruled muted" style="padding:10px 0 10px 8px;border-top:1px solid #c2c8cb;vertical-align:top;text-align:right;white-space:nowrap;font-size:13px;font-variant-numeric:tabular-nums;color:#45484c">okt. 11. 23:59</td>
+</tr>
+</table>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:24px 0 30px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td class="btn" style="background:#1b1c1e;border:1px solid #1b1c1e;border-radius:4px;box-shadow:0 1px 2px rgba(20,24,28,0.25)">
+<a href="#" class="btn" style="display:inline-block;padding:11px 18px;font-family:Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;line-height:1.2;color:#fdfdfa;text-decoration:none">A hét megnyitása</a>
+</td></tr></table>
+</td></tr>
+<tr><td class="dim rule" style="padding:28px 2px 0;border-top:1px solid #c9cfd2;font-size:12.5px;line-height:1.55;color:#585c61">
+<p style="margin:0 0 4px">Ezt a levelet azért kapod, mert feliratkoztál a Hallgatói réteg napi összefoglalójára. Csak akkor érkezik, ha ma vagy holnap van határidőd.</p>
+<p style="margin:0 0 4px"><a href="#" class="dim" style="color:#585c61;text-decoration:underline">Leiratkozás</a> · <a href="#" class="dim" style="color:#585c61;text-decoration:underline">Beállítások</a></p>
+<p style="margin:0 0 4px">Független projekt, nem kapcsolódik a Neptunhoz.</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
