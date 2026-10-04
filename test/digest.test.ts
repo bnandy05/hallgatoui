@@ -4,7 +4,6 @@ import {
   collectDigest,
   digestPeriodKey,
   formatDigestDue,
-  isDigestEmpty,
   normalizeEmail,
   renderDigestEmail,
   type DigestInput,
@@ -27,8 +26,7 @@ function input(overrides: Partial<DigestInput> = {}): DigestInput {
   };
 }
 
-test("digestPeriodKey uses Budapest days, Monday weeks and calendar months", () => {
-  assert.equal(digestPeriodKey("napi", NOW), "d:20261005");
+test("digestPeriodKey uses Budapest Monday weeks and calendar months", () => {
   // Sunday 23:30 Budapest is still the previous week, although UTC says the same Sunday.
   const sundayNight = new Date("2026-10-04T21:30:00.000Z");
   assert.equal(digestPeriodKey("heti", sundayNight), "w:20260928");
@@ -62,8 +60,6 @@ test("collectDigest splits overdue and upcoming within the horizon and skips don
   assert.equal(weekly.upcoming[0].critical, true);
   assert.equal(weekly.upcoming[1].critical, false);
 
-  const daily = collectDigest(input({ frequency: "napi", deadlines }));
-  assert.deepEqual(daily.upcoming.map((i) => i.deadline.id), ["soon"]);
   const monthly = collectDigest(input({ frequency: "havi", deadlines }));
   assert.deepEqual(monthly.upcoming.map((i) => i.deadline.id), ["soon", "week", "far"]);
 });
@@ -76,11 +72,6 @@ test("collectDigest dedupes copies of the same deadline from two feeds", () => {
   ];
   assert.equal(collectDigest(input({ deadlines, feeds })).upcoming.length, 1);
   assert.equal(collectDigest(input({ deadlines, feeds, dedupe: false })).upcoming.length, 2);
-});
-
-test("isDigestEmpty counts failing feeds as content", () => {
-  assert.equal(isDigestEmpty(collectDigest(input())), true);
-  assert.equal(isDigestEmpty(collectDigest(input({ failingFeeds: ["Canvas"] }))), false);
 });
 
 test("renderDigestEmail escapes titles, drops non-http links and shows changes", () => {

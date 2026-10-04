@@ -28,7 +28,7 @@ export async function GET(req: Request): Promise<Response> {
 
   const now = new Date();
   const appUrl = publicAppUrl(req);
-  const counts: Record<SendOutcome, number> = { sent: 0, skipped: 0, empty: 0, removed: 0, failed: 0 };
+  const counts: Record<SendOutcome, number> = { sent: 0, skipped: 0, removed: 0, failed: 0 };
   for (let i = 0; i < tokens.length; i += CONCURRENCY) {
     const results = await Promise.allSettled(
       tokens.slice(i, i + CONCURRENCY).map((token) => runDigest(kv, token, now, appUrl))

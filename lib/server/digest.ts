@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto";
 import {
   collectDigest,
   digestPeriodKey,
-  isDigestEmpty,
   renderConfirmEmail,
   renderDigestEmail,
   type DigestFrequency,
@@ -140,7 +139,7 @@ export async function unsubscribeDigest(kv: Kv, token: string, key: string): Pro
   return "ok";
 }
 
-export type SendOutcome = "sent" | "skipped" | "empty" | "removed" | "failed";
+export type SendOutcome = "sent" | "skipped" | "removed" | "failed";
 
 /** Sends one subscription's digest if its period hasn't had one yet. */
 export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string): Promise<SendOutcome> {
@@ -173,13 +172,6 @@ export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string
     now,
   });
 
-  const done: StoredDigest = { ...digest, lastPeriod: period };
-  // An empty daily mail is noise; weekly and monthly ones still confirm that nothing is due.
-  if (digest.frequency === "napi" && isDigestEmpty(content)) {
-    await kv.set(digKey(token), done, TTL_SECONDS);
-    return "empty";
-  }
-
   const unsubscribe = unsubscribeUrl(appUrl, token, digest.unsubscribeKey);
   const sent = await sendEmail({
     to: digest.email,
@@ -190,6 +182,6 @@ export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string
     },
   });
   if (!sent) return "failed"; // retried by the next run
-  await kv.set(digKey(token), { ...done, lastSentAt: now.toISOString() }, TTL_SECONDS);
+  await kv.set(digKey(token), { ...digest, lastPeriod: period, lastSentAt: now.toISOString() }, TTL_SECONDS);
   return "sent";
 }

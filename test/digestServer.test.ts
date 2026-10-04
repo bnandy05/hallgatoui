@@ -17,6 +17,7 @@ import { makeCourse, makeDeadline } from "./helpers";
 const APP = "https://app.example.hu";
 const MONDAY = new Date("2026-10-05T04:00:00.000Z");
 const TUESDAY = new Date("2026-10-06T04:00:00.000Z");
+const NEXT_MONDAY = new Date("2026-10-12T04:00:00.000Z");
 
 function subscription(): StoredSubscription {
   return {
@@ -40,7 +41,7 @@ test("request → confirm → one digest per period → unsubscribe", async (t) 
   const token = "tok_digest_flow_000000000";
   await kv.set(subKey(token), subscription(), 600);
 
-  const requested = await requestDigest(kv, token, null, "a@example.hu", "napi", APP, MONDAY);
+  const requested = await requestDigest(kv, token, null, "a@example.hu", "heti", APP, MONDAY);
   assert.equal(requested?.confirmed, false);
   assert.ok((await kv.smembers(DIGEST_INDEX_KEY)).includes(token));
   assert.equal(await runDigest(kv, token, MONDAY, APP), "skipped"); // not confirmed yet
@@ -52,10 +53,10 @@ test("request → confirm → one digest per period → unsubscribe", async (t) 
   await kv.set(digKey(token), { ...stored, confirmHash: hashSecret("k") }, 600);
   assert.equal(await confirmDigest(kv, token, "k", MONDAY), "ok");
 
-  // Confirmed on Monday: the first daily digest goes out on Tuesday, once.
-  assert.equal(await runDigest(kv, token, MONDAY, APP), "skipped");
-  assert.equal(await runDigest(kv, token, TUESDAY, APP), "sent");
+  // Confirmed in the week of Oct 5: the first weekly digest goes out next Monday, once.
   assert.equal(await runDigest(kv, token, TUESDAY, APP), "skipped");
+  assert.equal(await runDigest(kv, token, NEXT_MONDAY, APP), "sent");
+  assert.equal(await runDigest(kv, token, NEXT_MONDAY, APP), "skipped");
   assert.ok((await kv.get<StoredDigest>(digKey(token)))?.lastSentAt);
 
   const { unsubscribeKey } = (await kv.get<StoredDigest>(digKey(token)))!;
@@ -86,11 +87,11 @@ test("changing only the frequency keeps a confirmed address confirmed", async (t
   const token = "tok_digest_freq_000000000";
   const confirmed: StoredDigest = {
     email: "c@example.hu",
-    frequency: "napi",
+    frequency: "heti",
     confirmed: true,
     requestedAt: MONDAY.toISOString(),
     unsubscribeKey: "u",
-    lastPeriod: "d:20261005",
+    lastPeriod: "w:20261005",
   };
   const next = await requestDigest(kv, token, confirmed, "c@example.hu", "havi", APP, MONDAY);
   assert.equal(next?.confirmed, true);

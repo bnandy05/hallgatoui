@@ -10,13 +10,12 @@ import {
   type YMD,
 } from "@/lib/ical/budapest";
 
-// Pure content of the email digest (napi / heti / havi). Server-side scheduling and sending
+// Pure content of the email digest (heti / havi). Server-side scheduling and sending
 // live in lib/server/digest.ts; this file is free of I/O so it can be tested.
 
-export type DigestFrequency = "napi" | "heti" | "havi";
+export type DigestFrequency = "heti" | "havi";
 
 export const DIGEST_FREQUENCIES: { id: DigestFrequency; label: string }[] = [
-  { id: "napi", label: "Napi" },
   { id: "heti", label: "Heti (hétfő)" },
   { id: "havi", label: "Havi (1-jén)" },
 ];
@@ -30,13 +29,13 @@ export interface DigestStatus {
 }
 
 export function isDigestFrequency(value: unknown): value is DigestFrequency {
-  return value === "napi" || value === "heti" || value === "havi";
+  return value === "heti" || value === "havi";
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const OVERDUE_LOOKBACK_MS = 14 * DAY_MS;
 /** How far ahead each digest looks. */
-const HORIZON_DAYS: Record<DigestFrequency, number> = { napi: 2, heti: 7, havi: 31 };
+const HORIZON_DAYS: Record<DigestFrequency, number> = { heti: 7, havi: 31 };
 const MONTHS = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
 
 /**
@@ -45,7 +44,6 @@ const MONTHS = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "
  */
 export function digestPeriodKey(frequency: DigestFrequency, now: Date): string {
   const today = budapestDate(now);
-  if (frequency === "napi") return `d:${dateKey(today)}`;
   if (frequency === "heti") return `w:${dateKey(mondayOf(today))}`;
   return `m:${dateKey(today).slice(0, 6)}`;
 }
@@ -134,10 +132,6 @@ export function collectDigest(input: DigestInput): DigestContent {
   return { overdue, upcoming, failingFeeds: input.failingFeeds ?? [], horizonDays };
 }
 
-export function isDigestEmpty(content: DigestContent): boolean {
-  return content.overdue.length === 0 && content.upcoming.length === 0 && content.failingFeeds.length === 0;
-}
-
 export interface RenderedEmail {
   subject: string;
   html: string;
@@ -145,13 +139,11 @@ export interface RenderedEmail {
 }
 
 const TITLES: Record<DigestFrequency, string> = {
-  napi: "Napi összefoglaló",
   heti: "Heti összefoglaló",
   havi: "Havi összefoglaló",
 };
 
 function horizonLabel(frequency: DigestFrequency): string {
-  if (frequency === "napi") return "Ma és holnap";
   if (frequency === "heti") return "A következő 7 nap";
   return "A következő 31 nap";
 }

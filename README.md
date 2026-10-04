@@ -58,7 +58,7 @@ Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló mű
 
 ### E-mail-összefoglaló
 
-A naptár-előfizetésre épül (Beállítások → Értesítések): napi, heti (hétfő) vagy havi (1-je) levél a közelgő és lejárt határidőkről, dupla megerősítéssel és leiratkozó linkkel. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
+A naptár-előfizetésre épül (Beállítások → Értesítések): heti (hétfő) vagy havi (1-je) levél a közelgő és lejárt határidőkről, dupla megerősítéssel és leiratkozó linkkel. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
 
 - `RESEND_API_KEY`: [Resend](https://resend.com) API-kulcs;
 - `DIGEST_FROM`: feladó egy Resendben ellenőrzött domainről, pl. `Hallgatói réteg <hirlevel@example.hu>`;
