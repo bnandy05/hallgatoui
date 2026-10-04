@@ -45,7 +45,7 @@ function Launcher({ link }: { link: CourseLink }) {
 }
 
 /** One course as an index card pinned to the board: what's next, and its platforms one tap away. */
-function CourseCard({ course, now }: { course: Course; now: Date }) {
+function CourseCard({ course, now, index }: { course: Course; now: Date; index: number }) {
   const { visible: deadlines } = useDedupedDeadlines();
   const classSessions = useStore((s) => s.classSessions);
   const [editOpen, setEditOpen] = useState(false);
@@ -58,7 +58,7 @@ function CourseCard({ course, now }: { course: Course; now: Date }) {
   const extra = course.links.length - MAX_LAUNCHERS;
 
   return (
-    <li className="slip flex min-w-0 flex-col bg-card px-4 pb-3.5 pt-4">
+    <li className="slip flex min-w-0 flex-col bg-card px-4 pb-3.5 pt-4" style={{ "--i": index } as CSSProperties}>
       <span aria-hidden="true" className="pin -top-[4px] left-4" style={{ "--pin-color": course.color } as CSSProperties} />
 
       <div className="flex items-start gap-2">
@@ -148,8 +148,8 @@ function CourseCard({ course, now }: { course: Course; now: Date }) {
 export function CourseTable({ courses, now }: { courses: Course[]; now: Date }) {
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(16.5rem,1fr))] gap-x-4 gap-y-5">
-      {courses.map((course) => (
-        <CourseCard key={course.id} course={course} now={now} />
+      {courses.map((course, i) => (
+        <CourseCard key={course.id} course={course} now={now} index={i} />
       ))}
     </ul>
   );
