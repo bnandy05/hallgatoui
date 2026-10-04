@@ -11,7 +11,7 @@ import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Select } from "@/components/ui/Select";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
-import { WeekBoard } from "@/components/week/WeekBoard";
+import { DayAgenda } from "@/components/week/DayAgenda";
 
 const NO_COURSE = "__none__";
 
@@ -129,36 +129,14 @@ export default function WeekRadarPage() {
       {!hydrated ? (
         <RadarSkeleton />
       ) : (
-        <>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10">
           <div
             role="search"
             aria-label="Szűrők"
-            className="sheet-paper sticky top-[72px] z-[5] flex flex-col gap-3 px-4 py-3"
+            className="sheet-paper flex min-w-0 flex-col gap-3 px-4 py-3 lg:sticky lg:top-[88px] lg:gap-4 lg:self-start lg:py-4"
           >
-            {courseChips.length > 0 && (
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
-                {courseChips.map((chip) => {
-                  const active = selectedCourses.has(chip.id);
-                  return (
-                    <Pill
-                      key={chip.id}
-                      active={active}
-                      onClick={() => toggleCourse(chip.id)}
-                      className="shrink-0"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-2 w-2 shrink-0 rounded-full ring-1 ring-white/60"
-                        style={{ backgroundColor: chip.color }}
-                      />
-                      {chip.name}
-                    </Pill>
-                  );
-                })}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3">
-              <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-col lg:items-stretch lg:gap-3">
+              <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} className="lg:self-start">
                 <Flame className="h-3.5 w-3.5" />
                 Csak kritikus
               </Pill>
@@ -174,7 +152,7 @@ export default function WeekRadarPage() {
               <Select
                 value={platformFilter}
                 onChange={(e) => setPlatformFilter(e.target.value)}
-                className="!w-auto max-w-[14rem] !py-1.5"
+                className="!w-auto max-w-[14rem] !py-1.5 lg:!w-full lg:max-w-none"
                 aria-label="Platform"
               >
                 <option value="">Minden platform</option>
@@ -184,57 +162,83 @@ export default function WeekRadarPage() {
                   </option>
                 ))}
               </Select>
-              <span className="ml-auto text-[13px] tabular-nums text-muted">
-                {filtered.length} találat
-                {filtersActive && (
-                  <>
-                    {" · "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCourses(new Set());
-                        setShowDone(false);
-                        setCriticalOnly(false);
-                        setPlatformFilter("");
-                      }}
-                      className="font-semibold text-heading underline"
-                    >
-                      Szűrők törlése
-                    </button>
-                  </>
-                )}
-              </span>
             </div>
+            {courseChips.length > 0 && (
+              <div
+                role="group"
+                aria-label="Tárgyak"
+                className="-mx-4 flex gap-2 overflow-x-auto border-t border-border px-4 pt-3 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0"
+              >
+                {courseChips.map((chip) => {
+                  const active = selectedCourses.has(chip.id);
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleCourse(chip.id)}
+                      className={`inline-flex h-8 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 lg:h-9 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-[14px] ${
+                        active
+                          ? "border-accent bg-accent text-accent-ink hover:bg-accent-hover"
+                          : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-black/[0.05]"
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60"
+                        style={{ backgroundColor: chip.color }}
+                      />
+                      <span className="lg:truncate">{chip.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <p className="flex flex-wrap items-center gap-x-2 border-t border-border pt-3 text-[13px] tabular-nums text-muted">
+              {filtered.length} találat
+              {filtersActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCourses(new Set());
+                    setShowDone(false);
+                    setCriticalOnly(false);
+                    setPlatformFilter("");
+                  }}
+                  className="ml-auto font-semibold text-heading underline"
+                >
+                  Szűrők törlése
+                </button>
+              )}
+            </p>
           </div>
 
-          {overdue.length === 0 && weeks.length === 0 ? (
-            <p className="text-[15px] text-muted">
-              {filtersActive ? "A szűrőknek egy határidő sem felel meg." : "Nincs megjeleníthető határidő."}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-10">
-              {overdue.length > 0 && (
-                <div>
+          <div className="min-w-0">
+            {overdue.length === 0 && weeks.length === 0 ? (
+              <p className="text-[15px] text-muted">
+                {filtersActive ? "A szűrőknek egy határidő sem felel meg." : "Nincs megjeleníthető határidő."}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-10">
+                {overdue.length > 0 && (
                   <section
                     aria-labelledby="overdue-heading"
-                    className="relative flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-4 pb-5 pt-4"
+                    className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 sm:px-4"
                   >
                     <h2 id="overdue-heading" className="flex items-baseline gap-2">
                       <span className="font-display text-[24px] text-danger">Lejárt</span>
                       <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
                       {overdue.map((d) => (
                         <DeadlineChip key={d.id} deadline={d} now={now} showDate />
                       ))}
                     </div>
                   </section>
-                </div>
-              )}
+                )}
 
-              {weeks.map((week) => (
-                <div key={week.weekStart.toISOString()}>
-                  <section className="flex flex-col gap-4" aria-label={week.label}>
+                {weeks.map((week) => (
+                  <section key={week.weekStart.toISOString()} className="flex flex-col gap-3" aria-label={week.label}>
                     <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="font-display text-[clamp(22px,2.6vw,28px)] text-heading">
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
@@ -242,24 +246,15 @@ export default function WeekRadarPage() {
                       {!/\d/.test(week.label) && (
                         <span className="text-[14px] text-muted">{weekRangeLabel(week.weekStart)}</span>
                       )}
-                      <span className="text-[13px] tabular-nums text-muted-dim">
-                        {week.items.length} határidő
-                      </span>
+                      <span className="text-[13px] tabular-nums text-muted-dim">{week.items.length} határidő</span>
                     </h2>
-                    <WeekBoard
-                      weekStart={week.weekStart}
-                      deadlines={week.items}
-                      now={now}
-                      label={week.label}
-                      hideEmptyDays
-                      dense
-                    />
+                    <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} />
                   </section>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

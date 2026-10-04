@@ -10,6 +10,7 @@ import { BUILT_IN_PLATFORMS } from "@/lib/platforms";
 import { parseQuickDeadline } from "@/lib/quickAdd";
 import type { Deadline } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
@@ -281,12 +282,12 @@ export function DeadlineForm({
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
+      <DialogActions>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Mégse
         </Button>
         <Button type="submit">Mentés</Button>
-      </div>
+      </DialogActions>
     </form>
   );
 }

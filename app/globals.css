@@ -69,6 +69,26 @@ textarea {
   caret-color: var(--pin);
 }
 
+/* Touch screens: iOS zooms into any focused field under 16px and keeps the zoom after the
+   field (or its dialog) is gone. Unlayered, so it wins over the utility classes. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  /* Bigger tick boxes for thumbs. */
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* While a dialog is open the page behind it stays put. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 a {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
@@ -224,6 +244,18 @@ dialog.sheet[open]::backdrop {
     opacity: 0;
   }
 }
+/* Narrow screens: dialogs are sheets drawn up from the bottom edge, within thumb reach. */
+@media (max-width: 639px) {
+  dialog.sheet[open] {
+    animation: sheet-up 0.34s var(--ease-out-expo);
+  }
+}
+@keyframes sheet-up {
+  from {
+    opacity: 0.6;
+    transform: translateY(48px);
+  }
+}
 
 .panel-in {
   animation: panel-in 0.24s var(--ease-out-expo);
@@ -259,7 +291,7 @@ dialog.sheet[open]::backdrop {
   }
   dialog.sheet[open],
   .panel-in {
-    animation-name: backdrop-in;
+    animation-name: backdrop-in !important;
   }
 }
 @keyframes board-fade {

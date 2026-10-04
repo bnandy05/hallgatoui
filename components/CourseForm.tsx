@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { COURSE_COLORS } from "@/lib/colors";
@@ -112,12 +113,12 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
         </p>
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
+      <DialogActions>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Mégse
         </Button>
         <Button type="submit">Mentés</Button>
-      </div>
+      </DialogActions>
     </form>
   );
 }

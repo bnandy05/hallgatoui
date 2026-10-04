@@ -3,7 +3,8 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, CalendarPlus, Plus, Sparkles } from "lucide-react";
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
+import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { visibleSessions } from "@/lib/ical/neptun";
@@ -35,30 +36,35 @@ function HomeSkeleton() {
   );
 }
 
-/** The one notice that owns the top of the page: the next open deadline, under a red pin. */
+/** The one notice that owns the top of the page: the next open deadline, pinned beside the week. */
 function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const [open, setOpen] = useState(false);
   const critical = isCritical(deadline, now);
+  const due = new Date(deadline.due);
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="slip group flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 bg-card py-3.5 pl-9 pr-4 text-left"
+        className="slip group flex w-full shrink-0 flex-col gap-1 bg-card px-4 pb-3.5 pt-4 text-left lg:w-[24rem]"
       >
         <span
           aria-hidden="true"
-          className="pin left-3.5 top-[21px]"
+          className="pin -top-[4px] left-4"
           style={{ "--pin-color": critical ? "var(--pin)" : (course?.color ?? "var(--border-strong)") } as CSSProperties}
         />
-        <span className="shrink-0 text-[13px] font-semibold text-muted-dim">Következő</span>
-        <span className="line-clamp-2 min-w-0 flex-1 basis-[12rem] text-[16px] font-semibold text-heading group-hover:underline">
-          {deadline.title.replace(/(\d+\.) /g, "$1\u00a0")}
-          {course && <span className="ml-2 text-[13.5px] font-normal text-muted">{course.name}</span>}
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="text-[13px] font-semibold text-muted-dim">Következő</span>
+          <span className={`font-display text-[22px] tabular-nums ${critical ? "text-danger" : "text-heading"}`}>
+            {formatRelative(due, now)}
+          </span>
         </span>
-        <span className={`font-display ml-auto shrink-0 text-[22px] tabular-nums ${critical ? "text-danger" : "text-heading"}`}>
-          {formatRelative(new Date(deadline.due), now)}
+        <span className="line-clamp-2 text-[16px] font-semibold leading-snug text-heading [overflow-wrap:anywhere] group-hover:underline">
+          {deadline.title.replace(/(\d+\.) /g, "$1\u00a0")}
+        </span>
+        <span className="truncate text-[13px] text-muted">
+          {[course?.name, format(due, "EEEE HH:mm", { locale: hu })].filter(Boolean).join(" · ")}
         </span>
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Határidő" size="lg">
@@ -129,36 +135,33 @@ export default function WeekHome() {
 
   return (
     <div className="flex flex-col gap-14 sm:gap-20">
-      <section className="flex flex-col gap-6" aria-labelledby="week-heading">
-        <SectionHeading
-          as="h1"
-          id="week-heading"
-          title={range}
-          sub={sub}
-          actions={
-            <>
-              {hydrated && classSessions.length > 0 && (
-                <Pill
-                  active={showClasses}
-                  onClick={() => setShowClasses(!showClasses)}
-                  title="Órarendi órák a heti nézetben"
-                >
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  Órák
-                </Pill>
-              )}
-              <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
-            </>
-          }
-        />
+      <section className="flex flex-col gap-5" aria-labelledby="week-heading">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+          <SectionHeading as="h1" id="week-heading" title={range} sub={sub} />
+          {hydrated && isCurrent && next && <NextNotice deadline={next} now={now} />}
+        </div>
+
+        {hydrated && (
+          <>
+            <DiscoveryBanner />
+            <TimetableBanner />
+          </>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
+          {hydrated && classSessions.length > 0 && (
+            <Pill active={showClasses} onClick={() => setShowClasses(!showClasses)} title="Órarendi órák a heti nézetben">
+              <CalendarClock className="h-3.5 w-3.5" />
+              Órák
+            </Pill>
+          )}
+        </div>
 
         {!hydrated ? (
           <HomeSkeleton />
         ) : (
           <>
-            {isCurrent && next && <NextNotice deadline={next} now={now} />}
-            <DiscoveryBanner />
-            <TimetableBanner />
             <WeekBoard
               weekStart={weekStart}
               deadlines={deadlines}
