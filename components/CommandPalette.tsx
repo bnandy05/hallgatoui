@@ -78,7 +78,7 @@ export function CommandPalette() {
         aria-label="Keresés"
         onClick={() => setOpen(true)}
         disabled={!hydrated}
-        className="inline-flex h-8 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2 text-[13.5px] font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
+        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[13.5px] md:h-8 font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
       >
         <Search className="h-4 w-4" />
         <span className="hidden lg:inline">Keresés</span>
@@ -87,7 +87,7 @@ export function CommandPalette() {
         </kbd>
       </button>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title="Keresés" size="lg">
+      <Dialog open={open} onClose={() => setOpen(false)} title="Keresés" size="lg" focusFieldOnTouch>
         <PaletteContent
           onClose={() => setOpen(false)}
           onNewDeadline={(text) => {

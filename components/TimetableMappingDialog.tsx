@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useStore, type SubjectDecision } from "@/lib/store";
 import { suggestCourseForSubject, type SubjectInfo } from "@/lib/ical/neptun";
 import { Button } from "@/components/ui/Button";
-import { Dialog } from "@/components/ui/Dialog";
+import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 
@@ -119,14 +119,14 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
         })}
       </ul>
 
-      <div className="flex justify-end gap-2">
+      <DialogActions>
         <Button type="button" variant="secondary" onClick={onClose}>
           Mégse
         </Button>
         <Button type="button" onClick={handleSave}>
           {newCount > 0 ? `Mentés (${newCount} új tárgy)` : "Mentés"}
         </Button>
-      </div>
+      </DialogActions>
     </div>
   );
 }

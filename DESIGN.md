@@ -220,7 +220,11 @@ A cool felt-and-paper neutral base with black toner as the primary, a red pushpi
 
 ## Layout
 
-A single centred column, max 1240px, 16px side padding (24px from sm), 32px top padding (40px from sm). The top bar is sticky, 64px tall, on felt with a felt-dark rule: wordmark with pin, nav (Hét / Határidők / Beállítások; icons below md, labels from md), search, and the primary "Új határidő".
+A single centred column, max 1240px, 16px side padding (24px from sm), 32px top padding (40px from sm). The top bar is sticky on felt with a felt-dark rule, 64px tall from md (56px below): wordmark with pin, nav (Hét / Határidők / Beállítások, from md only), search, and the primary "Új határidő". Below md the nav moves to a fixed bottom tab bar (64px, icon over a 12px label, the active tab a Copy Paper tab with the paper shadow), and the footer pads itself clear of it.
+
+**Hét (home):** the heading row pairs the condensed week range (with its one summary line) and the "Következő" notice, a 24rem pinned slip on the right from lg, stacked under the heading on narrow screens. Setup banners follow, then the week controls (‹ Ez a hét ›, Órák toggle) directly above the board they drive. Below the board, "Tárgyak" is a grid of pinned index cards (auto-fill, min 16.5rem): course pin, name and code, open-count badge and edit; the next deadline and class under a hairline; platform launchers along the bottom.
+
+**Határidők:** from lg a 15rem filter sheet sticks on the left (toggles, platform select, the course filter as a vertical list, result count); below lg it sits on top, with the courses as a sideways-scrolling row of pills. The list is an agenda, not a board: an overdue block on Salmon, then each week as a heading over day strips that only exist for days with slips (day name and date in an 8rem column, 5.5rem below sm, slips in an auto-fill grid).
 
 The week board is a stack of day strips on narrow screens (each strip a two-column grid: a 5.5rem day header beside its slips) and a 7-column grid from lg, with an optional wider overdue gutter in front. Strips have 12px internal gaps between slips; empty days are hidden on narrow screens. Settings use tabs that scroll sideways on narrow screens and stack vertically from lg. Cards pad 20px, 24px from sm.
 
@@ -269,6 +273,7 @@ Toner-black, firm, small-radius.
 
 ### Inputs / Fields
 - **Style:** Copy Paper, 1px Paper Edge border, 4px corners, 8px 12px padding, 14.5px text, a faint inset shadow; Muted Dim placeholders; the caret is Pushpin Red.
+- **Touch:** on coarse pointers every text field, select and textarea is 16px (iOS zooms into anything smaller and stays zoomed), and checkboxes are 18px.
 - **Focus:** border and a 2px outline in Toner Ink.
 - **Disabled:** Paper Inset fill, Muted Ink text.
 
@@ -282,7 +287,7 @@ A Copy Paper slip with 2px corners and the paper shadow, hung from a pin near it
 Day strips of lighter felt; today is Canary Soft with a red pin at the top, holidays are Sky, past days are a step darker. On first load the slips are pinned up column by column, left to right (55ms stagger per column, pins pressing in after their slip); changing week slides the days in 24px from the side you moved to.
 
 ### Dialogs
-Copy Paper sheets with 2px corners and the Dialog shadow; a condensed 24px title over a hairline rule. Opening drops the sheet 10px into place with a slight rotation while the backdrop fades.
+Copy Paper sheets with 2px corners and the Dialog shadow; a condensed 24px title over a hairline rule, sticky at the top while the sheet scrolls, with a 40px close button. Form dialogs end in `DialogActions`, a Cancel / Save row stuck to the bottom edge. From sm the sheet is centred (max 32rem or 42rem, 3rem clear of the viewport); below sm it is a bottom sheet the full width of the screen, at most 100dvh minus 2.5rem, with equal-width actions. The page behind does not scroll. With a mouse the first text field takes focus on open; on touch the close button does (search opts back in), so the keyboard never covers the sheet unasked. Opening drops the sheet 10px into place with a slight rotation (below sm it rises 48px from the bottom) while the backdrop fades.
 
 ### Pinboard Field (signature)
 A fixed full-viewport canvas behind every page: pinholes and faint ghost slips seeded from the user's open deadlines, pins in their course colours. Ghosts sway; roughly every 5.2s one falls off and another is pinned up elsewhere. Behind the 1240px content column the ghosts are drawn at 30% and without pins, so nothing competes with text. Under reduced motion it renders one static frame.

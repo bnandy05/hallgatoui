@@ -14,7 +14,7 @@ import {
 } from "@/lib/ical/discover";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Dialog } from "@/components/ui/Dialog";
+import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 
@@ -164,14 +164,14 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
         })}
       </ul>
 
-      <div className="flex justify-end gap-2">
+      <DialogActions>
         <Button type="button" variant="secondary" onClick={onClose}>
           Mégse
         </Button>
         <Button type="button" onClick={handleSave} disabled={groups.length === 0}>
           {newCount > 0 ? `Mentés (${newCount} új tárgy)` : "Mentés"}
         </Button>
-      </div>
+      </DialogActions>
     </div>
   );
 }
