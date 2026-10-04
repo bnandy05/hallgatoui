@@ -60,8 +60,8 @@ function backToIndex() {
 function SettingsSkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
-      <div className="h-40 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
-      <div className="h-72 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
+      <div className="h-40 rounded-[var(--radius-slip)] bg-strip/80" />
+      <div className="h-72 rounded-[var(--radius-slip)] bg-strip/80" />
     </div>
   );
 }

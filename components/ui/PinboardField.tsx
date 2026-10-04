@@ -18,6 +18,11 @@ const FALL_MS = 1150;
 const STAGGER_MS = 140; // several done at once go up one after another
 const MAX_ANIMATED = 12; // a bulk change (a feed sync) pins the rest up instantly
 const MAX_SLOTS = 600;
+// First open in a session: the felt fills up behind the page, after the notices have gone up.
+const INTRO_KEY = "hallgatoireteg-felt-intro";
+const INTRO_DELAY_MS = 520;
+const INTRO_SPAN_MS = 1500; // the whole cascade, however many slips
+const INTRO_MAX = 36; // older slips beyond this are simply there
 
 /** One finished task on the felt. Its slot index alone decides where it hangs. */
 interface Slip {
@@ -25,6 +30,8 @@ interface Slip {
   pin: string;
   /** Pinning start (may be in the future while queued); 0 once settled. */
   pinAt: number;
+  /** Part of the load-in cascade: no lingering highlight behind the column. */
+  quiet?: boolean;
 }
 
 interface Falling {
@@ -129,6 +136,7 @@ export function PinboardField() {
     let slips: Slip[] = [];
     let falling: Falling[] = [];
     let known: string[] | null = null; // done ids seen so far, in pinning order
+    let introAt = 0; // when the load-in cascade was scheduled
 
     const place = (slot: number) => (places[slot] ??= placeOf(slot, W, H));
 
@@ -239,7 +247,7 @@ export function PinboardField() {
         lift: 1 - lay,
         pinScale,
         pinAlpha: easeOutCubic(clamp01(k / 0.3)),
-        glow: 1 - easeOutCubic(clamp01((t - PIN_MS) / (GLOW_MS - PIN_MS))),
+        glow: s.quiet ? 0 : 1 - easeOutCubic(clamp01((t - PIN_MS) / (GLOW_MS - PIN_MS))),
       });
     }
 
@@ -265,7 +273,7 @@ export function PinboardField() {
       let busy = false;
       let settled = false;
       for (const s of slips) {
-        if (s.pinAt !== 0 && now - s.pinAt >= GLOW_MS) {
+        if (s.pinAt !== 0 && now - s.pinAt >= (s.quiet ? PIN_MS : GLOW_MS)) {
           s.pinAt = 0;
           settled = true;
         }
@@ -297,9 +305,26 @@ export function PinboardField() {
       const now = performance.now();
       const done = new Set(doneIds);
       if (known === null) {
-        // First look after hydration: what was already done is already up, no animation.
+        // First look after hydration. On the session's first open the slips are pinned up one
+        // after another (the most recent last); after that they are simply there.
         known = doneIds.slice(0, MAX_SLOTS);
-        slips = known.map((id, slot) => ({ slot, pin: colorOf(id), pinAt: 0 }));
+        let intro = !reduced && known.length > 0;
+        try {
+          if (sessionStorage.getItem(INTRO_KEY)) intro = false;
+          sessionStorage.setItem(INTRO_KEY, "1");
+          if (intro) introAt = now;
+        } catch {
+          // Storage blocked: play it, once per mount.
+        }
+        const firstAnimated = intro ? Math.max(0, known.length - INTRO_MAX) : known.length;
+        const animated = known.length - firstAnimated;
+        const step = animated > 0 ? Math.min(90, INTRO_SPAN_MS / animated) : 0;
+        slips = known.map((id, slot) => ({
+          slot,
+          pin: colorOf(id),
+          pinAt: slot < firstAnimated ? 0 : now + INTRO_DELAY_MS + (slot - firstAnimated) * step,
+          quiet: true,
+        }));
         bake();
         kick();
         return;
@@ -366,6 +391,12 @@ export function PinboardField() {
     window.addEventListener("resize", onResize);
     return () => {
       engine.current = null;
+      // Unmounted before the cascade began (a dev double mount): let the next mount play it.
+      if (introAt && performance.now() < introAt + INTRO_DELAY_MS) {
+        try {
+          sessionStorage.removeItem(INTRO_KEY);
+        } catch {}
+      }
       cancelAnimationFrame(raf);
       window.clearTimeout(resizeTimer);
       window.removeEventListener("resize", onResize);

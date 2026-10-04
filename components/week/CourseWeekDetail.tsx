@@ -39,10 +39,10 @@ function BackLink() {
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-4 w-28 animate-pulse rounded-[var(--radius)] bg-white/40" />
+      <div className="h-4 w-28 rounded-[var(--radius)] bg-strip/80" />
       <div className="grid gap-8 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <div className="h-72 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
-        <div className="h-72 animate-pulse rounded-[var(--radius-slip)] bg-white/40" />
+        <div className="h-72 rounded-[var(--radius-slip)] bg-strip/80" />
+        <div className="h-72 rounded-[var(--radius-slip)] bg-strip/80" />
       </div>
     </div>
   );
@@ -299,14 +299,19 @@ export function CourseWeekDetail({ id }: { id: string }) {
                       <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h3>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
-                      {overdue.map((d) => (
-                        <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate />
+                      {overdue.map((d, i) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate index={i} />
                       ))}
                     </div>
                   </section>
                 )}
-                {weeks.map((week) => (
-                  <section key={week.weekStart.toISOString()} aria-label={week.label} className="flex flex-col gap-3">
+                {weeks.map((week, wi) => (
+                  <section
+                    key={week.weekStart.toISOString()}
+                    aria-label={week.label}
+                    className="flex flex-col gap-3"
+                    style={{ "--seq": wi + 1 } as CSSProperties}
+                  >
                     <h3 className="flex flex-wrap items-baseline gap-x-3">
                       <span className="font-display text-[22px] text-heading">
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
