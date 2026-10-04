@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { BUILT_IN_PLATFORMS, getPlatform } from "@/lib/platforms";
-import { normalizeLinkUrl } from "@/lib/url";
+import { linkHost, normalizeLinkUrl } from "@/lib/url";
 import type { CourseLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -38,6 +38,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
   const [addForm, setAddForm] = useState<LinkFormState>(emptyForm(defaultPlatformId));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<LinkFormState>(emptyForm(defaultPlatformId));
+  // A course without links starts on the form; otherwise it hides behind a dashed slot.
+  const [adding, setAdding] = useState(() => (course?.links.length ?? 0) === 0);
 
   if (!course) return null;
 
@@ -53,6 +55,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
       url: normalized,
     });
     setAddForm(emptyForm(defaultPlatformId));
+    setAdding(false);
   }
 
   function startEdit(link: CourseLink) {
@@ -110,43 +113,50 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
     </>
   );
 
+  const linkFields = (form: LinkFormState, setForm: (u: (f: LinkFormState) => LinkFormState) => void) => (
+    <>
+      <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+        <Select
+          aria-label="Platform"
+          value={form.platformId}
+          onChange={(e) => setForm((f) => ({ ...f, platformId: e.target.value }))}
+        >
+          {platformOptions}
+        </Select>
+        <Input
+          aria-label="Felirat"
+          value={form.label}
+          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+          placeholder="Felirat (nem kötelező)"
+        />
+      </div>
+      <Input
+        aria-label="Link"
+        value={form.url}
+        onChange={(e) => setForm((f) => ({ ...f, url: e.target.value, error: null }))}
+        placeholder="https://…"
+        inputMode="url"
+      />
+      {form.error && <p className="text-[13px] font-semibold text-danger">{form.error}</p>}
+    </>
+  );
+
+  const iconButton =
+    "inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-black/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-30";
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {course.links.length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="-mx-1 divide-y divide-border/70">
           {course.links.map((link, index) => {
             const platform = getPlatform(link.platformId, customPlatforms);
-            const isEditing = editingId === link.id;
+            const name = link.label || platform.name;
 
-            if (isEditing) {
+            if (editingId === link.id) {
               return (
-                <li key={link.id} className="sheet-paper p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                    <Select
-                      value={editForm.platformId}
-                      onChange={(e) =>
-                        setEditForm((f) => ({ ...f, platformId: e.target.value }))
-                      }
-                      className="sm:w-40"
-                    >
-                      {platformOptions}
-                    </Select>
-                    <Input
-                      value={editForm.label}
-                      onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
-                      placeholder="Felirat (nem kötelező)"
-                      className="sm:w-40"
-                    />
-                    <Input
-                      value={editForm.url}
-                      onChange={(e) => setEditForm((f) => ({ ...f, url: e.target.value }))}
-                      placeholder="https://…"
-                    />
-                  </div>
-                  {editForm.error && (
-                    <p className="mt-1 text-xs text-danger">{editForm.error}</p>
-                  )}
-                  <div className="mt-2 flex justify-end gap-2">
+                <li key={link.id} className="flex flex-col gap-2 rounded-[var(--radius)] bg-inset p-3">
+                  {linkFields(editForm, setEditForm)}
+                  <div className="flex justify-end gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={cancelEdit}>
                       Mégse
                     </Button>
@@ -159,51 +169,54 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
             }
 
             return (
-              <li
-                key={link.id}
-                className="flex items-center gap-2.5 rounded-[var(--radius-slip)] bg-card px-3.5 py-2.5 shadow-[var(--shadow-paper)]"
-              >
-                <PlatformIcon platform={platform} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {link.label || platform.name}
-                  </p>
-                  <p className="truncate text-xs text-muted" title={link.url}>
-                    {link.url}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
+              <li key={link.id} className="flex items-center gap-3 px-1 py-2">
+                <PlatformIcon platform={platform} size="md" />
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={link.url}
+                  className="min-w-0 flex-1 hover:underline"
+                >
+                  <span className="block truncate text-[14.5px] font-semibold text-heading">{name}</span>
+                  <span className="block truncate text-[12.5px] text-muted-dim">{linkHost(link.url)}</span>
+                </a>
+                <div className="flex shrink-0 items-center">
                   <button
                     type="button"
-                    aria-label="Feljebb"
+                    aria-label={`${name} feljebb`}
+                    title="Feljebb"
                     disabled={index === 0}
                     onClick={() => moveLink(courseId, link.id, -1)}
-                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className={iconButton}
                   >
                     <ChevronUp className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    aria-label="Lejjebb"
+                    aria-label={`${name} lejjebb`}
+                    title="Lejjebb"
                     disabled={index === course.links.length - 1}
                     onClick={() => moveLink(courseId, link.id, 1)}
-                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30 disabled:pointer-events-none"
+                    className={iconButton}
                   >
                     <ChevronDown className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    aria-label="Szerkesztés"
+                    aria-label={`${name} szerkesztése`}
+                    title="Szerkesztés"
                     onClick={() => startEdit(link)}
-                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
+                    className={iconButton}
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    aria-label="Törlés"
+                    aria-label={`${name} törlése`}
+                    title="Törlés"
                     onClick={() => handleRemove(link.id)}
-                    className="rounded-[var(--radius)] p-1 text-muted hover:bg-black/[0.05] focus-visible:outline-2 focus-visible:outline-accent"
+                    className={`${iconButton} hover:!text-danger`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -214,35 +227,37 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
         </ul>
       )}
 
-      <div className="sheet-paper p-4">
-        <p className="mb-2.5 text-[14px] font-bold text-heading">Új link</p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-          <Select
-            value={addForm.platformId}
-            onChange={(e) => setAddForm((f) => ({ ...f, platformId: e.target.value }))}
-            className="sm:w-40"
-          >
-            {platformOptions}
-          </Select>
-          <Input
-            value={addForm.label}
-            onChange={(e) => setAddForm((f) => ({ ...f, label: e.target.value }))}
-            placeholder="Felirat (nem kötelező)"
-            className="sm:w-40"
-          />
-          <Input
-            value={addForm.url}
-            onChange={(e) => setAddForm((f) => ({ ...f, url: e.target.value }))}
-            placeholder="https://…"
-          />
-        </div>
-        {addForm.error && <p className="mt-1 text-xs text-danger">{addForm.error}</p>}
-        <div className="mt-2 flex justify-end">
-          <Button type="button" size="sm" onClick={handleAdd}>
-            Hozzáadás
-          </Button>
-        </div>
-      </div>
+      {adding ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAdd();
+          }}
+          className="flex flex-col gap-2 rounded-[var(--radius)] bg-inset p-3"
+        >
+          <p className="text-[14px] font-bold text-heading">Új link</p>
+          {linkFields(addForm, setAddForm)}
+          <div className="flex justify-end gap-2">
+            {course.links.length > 0 && (
+              <Button type="button" variant="secondary" size="sm" onClick={() => setAdding(false)}>
+                Mégse
+              </Button>
+            )}
+            <Button type="submit" size="sm">
+              Hozzáadás
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-[14px] font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
+        >
+          <Plus className="h-4 w-4" />
+          Új link
+        </button>
+      )}
     </div>
   );
 }

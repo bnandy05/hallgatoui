@@ -6,14 +6,14 @@ export interface BadgeProps {
   className?: string;
 }
 
-/** A small stamped label: tinted fill, text in the colour mixed towards ink for contrast. */
+/** A small rubber-stamped label: an ink outline and ink text in the colour, no fill. */
 export function Badge({ color, children, className = "" }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-[3px] px-1.5 py-px text-[11.5px] font-semibold ${className}`}
+      className={`inline-flex items-center rounded-[3px] border px-1.5 py-px text-[11.5px] font-semibold ${className}`}
       style={{
-        backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
-        color: `color-mix(in srgb, ${color} 72%, #000)`,
+        borderColor: `color-mix(in srgb, ${color} 55%, transparent)`,
+        color: `color-mix(in srgb, ${color} 80%, #000)`,
       }}
     >
       {children}

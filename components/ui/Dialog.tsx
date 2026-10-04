@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 export interface DialogProps {
@@ -11,6 +11,10 @@ export interface DialogProps {
   size?: "md" | "lg";
   /** Focus the first text field on touch screens too (search, where typing is the whole task). */
   focusFieldOnTouch?: boolean;
+  /** Pin the sheet up: a pushpin head in this colour beside the title (a deadline's state). */
+  pinColor?: string;
+  /** The paper the sheet is printed on: salmon for an overdue deadline. */
+  tone?: "paper" | "salmon";
 }
 
 /**
@@ -18,7 +22,16 @@ export interface DialogProps {
  * fills the width. The dialog itself scrolls: the title bar sticks to the top and a
  * `DialogActions` footer to the bottom, so Save is always reachable.
  */
-export function Dialog({ open, onClose, title, children, size = "md", focusFieldOnTouch = false }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  size = "md",
+  focusFieldOnTouch = false,
+  pinColor,
+  tone = "paper",
+}: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -65,12 +78,24 @@ export function Dialog({ open, onClose, title, children, size = "md", focusField
   return (
     <dialog
       ref={dialogRef}
-      className={`sheet m-auto w-full overflow-y-auto overscroll-contain rounded-[var(--radius-slip)] bg-card p-0 text-foreground shadow-[0_24px_60px_-20px_rgba(20,28,34,0.5)] backdrop:bg-[rgba(40,48,54,0.45)] max-sm:mb-0 max-sm:max-h-[calc(100dvh-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(100dvh-3rem)] ${
+      style={{ "--sheet": tone === "salmon" ? "var(--salmon)" : "var(--panel)" } as CSSProperties}
+      className={`sheet m-auto w-full overflow-y-auto overscroll-contain rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[0_24px_60px_-20px_rgba(20,28,34,0.5)] backdrop:bg-[rgba(40,48,54,0.45)] max-sm:mb-0 max-sm:max-h-[calc(100dvh-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(100dvh-3rem)] ${
         size === "lg" ? "sm:max-w-[min(42rem,calc(100vw-3rem))]" : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
       }`}
     >
-      <div className="sticky top-0 z-[1] flex items-center justify-between gap-3 border-b border-border bg-card py-2 pl-5 pr-3 sm:py-3">
-        <h2 className="font-display min-w-0 text-[24px] text-heading [overflow-wrap:anywhere]">{title}</h2>
+      <div
+        className={`sticky top-0 z-[1] flex items-start justify-between gap-3 border-b border-border bg-[var(--sheet)] py-2 pr-3 sm:py-3 ${
+          pinColor ? "pl-11" : "pl-5"
+        }`}
+      >
+        {pinColor && (
+          <span
+            aria-hidden="true"
+            className="pin left-5 top-[20px] !h-[13px] !w-[13px] sm:top-[24px]"
+            style={{ "--pin-color": pinColor } as CSSProperties}
+          />
+        )}
+        <h2 className="font-display min-w-0 self-center py-1.5 text-[24px] text-heading [overflow-wrap:anywhere]">{title}</h2>
         <button
           type="button"
           aria-label="Bezárás"
@@ -93,7 +118,7 @@ export function DialogActions({ children }: { children: ReactNode }) {
   return (
     <div
       data-dialog-actions
-      className="sticky bottom-0 z-[1] -mx-5 mt-2 flex justify-end gap-2 border-t border-border bg-card px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 max-sm:[&>*]:flex-1"
+      className="sticky bottom-0 z-[1] -mx-5 mt-2 flex flex-wrap justify-end gap-2 border-t border-border bg-[var(--sheet)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 max-sm:[&>*]:flex-1"
     >
       {children}
     </div>

@@ -38,6 +38,17 @@ typography:
     lineHeight: 1.02
     letterSpacing: "-0.005em"
     fontVariation: "\"wdth\" 72"
+  subhead:
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "22px"
+    fontWeight: 800
+    lineHeight: 1.02
+    fontVariation: "\"wdth\" 72"
+  card-title:
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 700
+    lineHeight: 1.375
   title:
     fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "19px"
@@ -132,12 +143,16 @@ components:
   day-strip-today:
     backgroundColor: "{colors.canary-soft}"
     rounded: "{rounded.slip}"
-  code-block:
+  copy-field:
     backgroundColor: "{colors.paper-inset}"
-    textColor: "{colors.toner-ink}"
-    typography: "{typography.mono}"
+    textColor: "{colors.muted-ink}"
     rounded: "{rounded.control}"
     padding: "8px 12px"
+  switch-on:
+    backgroundColor: "{colors.toner-ink}"
+    rounded: "{rounded.pill}"
+    height: "24px"
+    width: "40px"
 ---
 
 # Design System: Hallgatói réteg
@@ -208,6 +223,8 @@ A cool felt-and-paper neutral base with black toner as the primary, a red pushpi
 ### Hierarchy
 - **Display** (800, clamp(34px, 5.2vw, 52px), 1.02): the page h1, such as the week range.
 - **Headline** (800, clamp(24px, 3vw, 30px), 1.02): section h2s ("Tárgyak"), dialog titles and empty-state titles at 24px.
+- **Subhead** (800 condensed, 22px): headings inside a page section ("Mi kerüljön bele", "Lejárt" on the course page, week names in agendas) and notice titles on sheets.
+- **Card title** (700, 16px): the name on a course card, feed card or deadline-sheet field; 16px is also every text field on touch screens.
 - **Title** (800 condensed, 19px): day-strip headings and the "Lejárt" gutter heading; the "Következő" relative time at 22px.
 - **Body** (400, 14.5px, 1.55): UI text, fields, buttons; subtitles under headings at 15px, capped at 62ch.
 - **Slip title** (600, 13.5px, snug): a deadline's title on its slip; metadata under it at 12px.
@@ -225,6 +242,12 @@ A single centred column, max 1240px, 16px side padding (24px from sm), 32px top 
 **Hét (home):** the heading row pairs the condensed week range (with its one summary line) and the "Következő" notice, a 24rem pinned slip on the right from lg, stacked under the heading on narrow screens. Setup banners follow, then the week controls (‹ Ez a hét ›, Órák toggle) directly above the board they drive. Below the board, "Tárgyak" is a grid of pinned index cards (auto-fill, min 16.5rem): course pin, name and code, open-count badge and edit; the next deadline and class under a hairline; platform launchers along the bottom.
 
 **Határidők:** from lg a 15rem filter sheet sticks on the left (toggles, platform select, the course filter as a vertical list, result count); below lg it sits on top, with the courses as a sideways-scrolling row of pills. The list is an agenda, not a board: an overdue block on Salmon, then each week as a heading over day strips that only exist for days with slips (day name and date in an 8rem column, 5.5rem below sm, slips in an auto-fill grid).
+
+**Tárgy page:** from lg a 19rem course index card sticks on the left (pin in the course colour, condensed name, open count, next deadline and class, launch tiles with the link's host, "Linkek szerkesztése", edit and delete); stacked on top below lg. The main column has sections, not tabs: Határidők (overdue block, then the day-strip agenda per week, a "Kész" drawer), Órák (the coming seven days, when the course has classes) and Anyagok (pinned notes in an auto-fill grid with a dashed add slot; type filters only for types in use).
+
+**Beállítások:** below lg the page is an index of sections with their status ("2 forrás", "Bekapcsolva"); a section opens with a "← Beállítások" back link (a history entry, so Back works). From lg, vertical tabs as before. Calendar feeds are pinned cards (pin red when the last sync failed) with a sync status line and labelled Frissítés / Szerkesztés / Törlés; Neptun timetables are cards on Sky paper, taped flat. Adding and editing a feed happen in sheets. The subscription leads with the link (copy field, view, Apple / Google buttons), then "Mi kerüljön bele" and "Extrák" as switch groups.
+
+**Határidők filters below lg:** one sideways-scrolling row: a "Szűrők" pill (toner when any non-course filter is on) that opens a sheet with the toggles, then the course pills.
 
 The week board is a stack of day strips on narrow screens (each strip a two-column grid: a 5.5rem day header beside its slips) and a 7-column grid from lg, with an optional wider overdue gutter in front. Strips have 12px internal gaps between slips; empty days are hidden on narrow screens. Settings use tabs that scroll sideways on narrow screens and stack vertically from lg. Cards pad 20px, 24px from sm.
 
@@ -261,7 +284,7 @@ Toner-black, firm, small-radius.
 
 ### Chips
 - **Pill:** round, 32px tall, Copy Paper with a Paper Edge border and Muted Ink text; active is Toner Ink with Copy Paper text. Toggle pills expose aria-pressed.
-- **Badge:** a small stamped label, 3px corners, 11.5px semibold: the given colour at 14% as the fill and mixed 72% towards black as the text.
+- **Badge:** a small rubber stamp, 3px corners, 11.5px semibold: a 1px outline in the colour at 55% and text mixed 80% towards black, no fill. No pastel tag fills anywhere.
 - **Class chip:** Sky at 80%, 2px corners, 12px text, a course-colour dot (Ballpoint Blue when unmapped), the time range in tabular semibold.
 
 ### Cards / Containers
@@ -286,8 +309,13 @@ A Copy Paper slip with 2px corners and the paper shadow, hung from a pin near it
 ### Week Board (signature)
 Day strips of lighter felt; today is Canary Soft with a red pin at the top, holidays are Sky, past days are a step darker. On first load the slips are pinned up column by column, left to right (55ms stagger per column, pins pressing in after their slip); changing week slides the days in 24px from the side you moved to.
 
+### Switches, copy fields, ruled lists
+- **Switch** (`components/ui/Switch.tsx`): settings toggles are a label with a one-line description and a 40x24 switch, Toner Ink track when on, Paper Inset with a Paper Edge Strong outline when off. Groups of switches sit on one sheet, ruled by hairlines.
+- **Copy field** (`components/ui/CopyField.tsx`): a read-only link in a Paper Inset field (selects all on focus) beside one primary "Link másolása" button that confirms with "Másolva" in Success Green. No monospace, no prompt glyphs.
+- **Lists inside a sheet** (link editor, discovery, timetable mapping, settings rows) are ruled with hairlines, never cards on paper. Adding is a dashed slot ("+ Új link", "+ Anyag hozzáadása", "+ Új naptár") that opens the form.
+
 ### Dialogs
-Copy Paper sheets with 2px corners and the Dialog shadow; a condensed 24px title over a hairline rule, sticky at the top while the sheet scrolls, with a 40px close button. Form dialogs end in `DialogActions`, a Cancel / Save row stuck to the bottom edge. From sm the sheet is centred (max 32rem or 42rem, 3rem clear of the viewport); below sm it is a bottom sheet the full width of the screen, at most 100dvh minus 2.5rem, with equal-width actions. The page behind does not scroll. With a mouse the first text field takes focus on open; on touch the close button does (search opts back in), so the keyboard never covers the sheet unasked. Opening drops the sheet 10px into place with a slight rotation (below sm it rises 48px from the bottom) while the backdrop fades.
+Copy Paper sheets with 2px corners and the Dialog shadow; a condensed 24px title over a hairline rule, sticky at the top while the sheet scrolls, with a 40px close button. Form dialogs end in `DialogActions`, a Cancel / Save row stuck to the bottom edge. From sm the sheet is centred (max 32rem or 42rem, 3rem clear of the viewport); below sm it is a bottom sheet the full width of the screen, at most 100dvh minus 2.5rem, with equal-width actions. The page behind does not scroll. With a mouse the first text field takes focus on open; on touch the close button does (search opts back in), so the keyboard never covers the sheet unasked. A deadline's detail is the slip itself: the dialog takes a `pinColor` (the slip's state) beside a title set in the display face, and `tone="salmon"` when it is overdue; the due date leads, then ruled Tárgy / Platform / Források / Megjegyzés rows, and the actions are spelled out (Kész, Kritikus, Szerkesztés, Törlés). Opening drops the sheet 10px into place with a slight rotation (below sm it rises 48px from the bottom) while the backdrop fades.
 
 ### Pinboard Field (signature)
 A fixed full-viewport canvas behind every page: pinholes and faint ghost slips seeded from the user's open deadlines, pins in their course colours. Ghosts sway; roughly every 5.2s one falls off and another is pinned up elsewhere. Behind the 1240px content column the ghosts are drawn at 30% and without pins, so nothing competes with text. Under reduced motion it renders one static frame.

@@ -7,8 +7,7 @@ import { Flame } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
-import { Dialog } from "@/components/ui/Dialog";
-import { DeadlineItem } from "@/components/DeadlineItem";
+import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DuplicateSources } from "@/components/DuplicateSources";
 
 export interface DeadlineChipProps {
@@ -97,9 +96,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
           style={{ width: `${share * 100}%` }}
         />
       )}
-      <Dialog open={open} onClose={() => setOpen(false)} title="Határidő" size="lg">
-        <DeadlineItem deadline={deadline} />
-      </Dialog>
+      <DeadlineDetailDialog deadline={deadline} open={open} onClose={() => setOpen(false)} />
     </div>
   );
 }

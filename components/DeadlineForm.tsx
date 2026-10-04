@@ -258,11 +258,11 @@ export function DeadlineForm({
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://…"
           />
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-1 text-[12.5px] text-danger">{error}</p>}
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+      <label className="flex items-center gap-2 text-[14px] font-medium text-foreground">
         <input
           type="checkbox"
           checked={critical}

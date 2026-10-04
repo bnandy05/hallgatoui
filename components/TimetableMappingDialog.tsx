@@ -74,21 +74,21 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">
+      <p className="text-[14px] text-muted">
         A Neptun gyakran angol tárgynevet ír, kóddal együtt sem, ezért egyszer meg kell mondanod, melyik
         tárgyadhoz tartoznak az órák. A választást a következő importnál is megjegyezzük.
       </p>
 
-      {subjects.length === 0 && <p className="text-sm text-muted">Nincs hozzárendelendő tárgy.</p>}
+      {subjects.length === 0 && <p className="text-[14px] text-muted">Nincs hozzárendelendő tárgy.</p>}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {subjects.map((s) => {
           const choice = choices[s.subjectKey];
           if (!choice) return null;
           return (
-            <li key={s.subjectKey} className="rounded-[var(--radius)] border border-border bg-card p-3">
-              <p className="text-sm font-medium text-foreground">{s.subject}</p>
-              <p className="mb-2 text-xs text-muted">
+            <li key={s.subjectKey} className="px-5 py-4">
+              <p className="text-[14px] font-medium text-foreground">{s.subject}</p>
+              <p className="mb-2 text-[12.5px] text-muted">
                 {s.count} óra
                 {s.groups.length > 0 && ` · csoport: ${s.groups.join(", ")}`}
               </p>

@@ -89,18 +89,18 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">
+      <p className="text-[14px] text-muted">
         A naptáradban ezeket a tárgyakat találtuk. Az előadás és a gyakorlat alapból egy tárgy
         lesz – ha külön szeretnéd, bontsd szét.
       </p>
 
-      {groups.length === 0 && <p className="text-sm text-muted">Nincs új tárgy.</p>}
+      {groups.length === 0 && <p className="text-[14px] text-muted">Nincs új tárgy.</p>}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {groups.map((group) => {
           const choice = choiceOf(group);
           return (
-            <li key={group.id} className="rounded-[var(--radius)] border border-border bg-card p-3">
+            <li key={group.id} className="px-5 py-4">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Input
@@ -110,7 +110,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                     onChange={(e) => setChoice(group, { name: e.target.value })}
                   />
                   {group.semester && (
-                    <p className="mt-1 text-xs text-muted">{group.semester}</p>
+                    <p className="mt-1 text-[12.5px] text-muted">{group.semester}</p>
                   )}
                 </div>
                 <Select
@@ -130,7 +130,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
 
               <ul className="mt-2 flex flex-col gap-1">
                 {group.items.map(({ context }) => (
-                  <li key={context.key} className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                  <li key={context.key} className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
                     {context.kind && (
                       <Badge color="var(--accent-2)">{formatKindLabel(context.kind)}</Badge>
                     )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { BellRing } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { LEAD_OPTIONS } from "@/lib/notifications";
 import {
@@ -7,9 +8,9 @@ import {
   useNotificationPermission,
 } from "@/lib/useNotificationPermission";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Switch } from "@/components/ui/Switch";
 
 export function NotificationSettings() {
   const prefs = useStore((s) => s.notificationPrefs);
@@ -49,26 +50,29 @@ export function NotificationSettings() {
   const active = prefs.enabled && permission === "granted";
 
   return (
-    <section id="ertesitesek" className="flex flex-col gap-4">
+    <section id="ertesitesek" className="flex flex-col gap-6">
       <SectionHeading title="Értesítések" sub="A böngésző szól, mielőtt egy határidő lejár." />
 
-      <Card className="flex flex-col gap-4">
+      <div className="sheet-paper flex flex-col px-5 py-1">
         {permission === "unsupported" ? (
-          <p className="text-[14px] text-muted">Ez a böngésző nem támogatja az értesítéseket.</p>
+          <p className="py-4 text-[14px] text-muted">Ez a böngésző nem támogatja az értesítéseket.</p>
         ) : permission === "denied" ? (
-          <p className="text-[14px] text-muted">
+          <p className="py-4 text-[14px] text-muted">
             Az értesítések le vannak tiltva a böngészőben. A címsor melletti lakat ikonnál engedélyezheted őket.
           </p>
-        ) : !active ? (
-          <div>
-            <Button type="button" onClick={enable}>
-              Értesítések bekapcsolása
-            </Button>
-          </div>
         ) : (
+          <Switch
+            checked={active}
+            onChange={(on) => (on ? void enable() : setNotificationPrefs({ enabled: false }))}
+            label="Böngészőértesítések"
+            description="Csak akkor érkezik értesítés, ha az oldal nyitva van egy böngészőlapon."
+          />
+        )}
+
+        {active && (
           <>
-            <div>
-              <p className="mb-2 text-[13px] font-semibold text-heading">Mikor szóljon?</p>
+            <div className="border-t border-border/70 py-4">
+              <p className="mb-2.5 text-[14.5px] font-medium text-heading">Mikor szóljon?</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label="Emlékeztető időpontok">
                 {LEAD_OPTIONS.map((opt) => (
                   <Pill
@@ -81,34 +85,22 @@ export function NotificationSettings() {
                 ))}
               </div>
             </div>
-
-            <label className="flex items-center gap-2 text-[14px] text-foreground">
-              <input
-                type="checkbox"
+            <div className="border-t border-border/70">
+              <Switch
                 checked={prefs.criticalOnly}
-                onChange={(e) => setNotificationPrefs({ criticalOnly: e.target.checked })}
-                className="h-4 w-4 accent-accent"
+                onChange={(v) => setNotificationPrefs({ criticalOnly: v })}
+                label="Csak a kritikus határidőknél"
               />
-              Csak a kritikus határidőknél
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setNotificationPrefs({ enabled: false })}
-              >
-                Kikapcsolás
-              </Button>
-              <Button type="button" variant="ghost" onClick={sendTest}>
-                Próbaértesítés
+            </div>
+            <div className="border-t border-border/70 py-3">
+              <Button type="button" variant="secondary" size="sm" onClick={sendTest}>
+                <BellRing className="h-4 w-4" />
+                Próbaértesítés küldése
               </Button>
             </div>
           </>
         )}
-
-        <p className="text-[13px] text-muted">Értesítés csak akkor érkezik, ha az oldal nyitva van egy böngészőlapon.</p>
-      </Card>
+      </div>
     </section>
   );
 }
