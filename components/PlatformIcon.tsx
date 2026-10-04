@@ -50,7 +50,7 @@ export function PlatformIcon({ platform, size = "sm" }: PlatformIconProps) {
       className={`inline-flex shrink-0 items-center justify-center font-bold leading-none ${SIZE_CLASSES[size]}`}
       style={{
         borderColor: `color-mix(in srgb, ${platform.color} 55%, transparent)`,
-        color: `color-mix(in srgb, ${platform.color} 80%, #000)`,
+        color: `color-mix(in srgb, ${platform.color} var(--stamp-ink), var(--stamp-mix))`,
       }}
       aria-hidden="true"
     >

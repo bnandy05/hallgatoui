@@ -15,7 +15,7 @@ Job: daily triage (what is due, tick it off, open the right platform) and setup 
 
 THESIS: The app is the faculty corridor notice board, made calm. Time stays the spine (the week board), but every deadline is a paper slip pinned to it, and the pin carries meaning: course colour while open, red for now, removed when done. It refuses both the dark-dashboard-with-neon look it replaces and the generic white SaaS calendar.
 
-OWN-WORLD: Cool grey-blue felt ground (light, flat), white copy-paper sheets and slips with soft paper shadows, coloured copy paper as state washes (canary = today, salmon = overdue, sky = classes), black toner ink for type and primary buttons, one red pushpin colour for now/critical. Archivo grotesk, condensed heavy for headings like a printed notice, normal width for UI, tabular figures. Small radii (cut paper). Pins are round heads in course colours.
+OWN-WORLD: Cool grey-blue felt ground (flat; a dark "after hours" lighting of the same tokens follows the system), white copy-paper sheets and slips with soft paper shadows, coloured copy paper as state washes (canary = today, salmon = overdue, sky = classes), black toner ink for type and primary buttons, one red pushpin colour for now/critical. Archivo grotesk, condensed heavy for headings like a printed notice, normal width for UI, tabular figures. Small radii (cut paper). Pins are round heads in course colours.
 
 STORY: The student opens the app, sees the week pinned up Monday to Sunday with overdue slips on salmon paper at the left and today on a canary sheet under a red pin, reads the single "next" notice, ticks slips off (the pin pops and the slip hangs loose), and launches Canvas/Neptun/Teams from the course list without opening a course.
 

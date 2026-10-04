@@ -14,6 +14,10 @@ export interface Kv {
   expire(key: string, ttlSeconds: number): Promise<void>;
   /** Increments a counter; a new counter expires after ttlSeconds. Returns the new value. */
   incr(key: string, ttlSeconds: number): Promise<number>;
+  /** Set membership (no expiry), used as an index of keys to visit. */
+  sadd(key: string, member: string): Promise<void>;
+  srem(key: string, member: string): Promise<void>;
+  smembers(key: string): Promise<string[]>;
 }
 
 interface MemoryEntry {
@@ -23,8 +27,12 @@ interface MemoryEntry {
 
 function createMemoryKv(): Kv {
   // Survive dev-server module reloads.
-  const g = globalThis as { __hallgatoiMemoryKv?: Map<string, MemoryEntry> };
+  const g = globalThis as {
+    __hallgatoiMemoryKv?: Map<string, MemoryEntry>;
+    __hallgatoiMemorySets?: Map<string, Set<string>>;
+  };
   const store = (g.__hallgatoiMemoryKv ??= new Map<string, MemoryEntry>());
+  const sets = (g.__hallgatoiMemorySets ??= new Map<string, Set<string>>());
 
   function live(key: string): MemoryEntry | undefined {
     const entry = store.get(key);
@@ -60,6 +68,17 @@ function createMemoryKv(): Kv {
       });
       return value;
     },
+    async sadd(key, member) {
+      const set = sets.get(key) ?? new Set<string>();
+      set.add(member);
+      sets.set(key, set);
+    },
+    async srem(key, member) {
+      sets.get(key)?.delete(member);
+    },
+    async smembers(key) {
+      return [...(sets.get(key) ?? [])];
+    },
   };
 }
 
@@ -82,6 +101,15 @@ function createRedisKv(url: string, token: string): Kv {
       const value = await redis.incr(key);
       if (value === 1) await redis.expire(key, ttlSeconds);
       return value;
+    },
+    async sadd(key, member) {
+      await redis.sadd(key, member);
+    },
+    async srem(key, member) {
+      await redis.srem(key, member);
+    },
+    async smembers(key) {
+      return (await redis.smembers(key)).map(String);
     },
   };
 }

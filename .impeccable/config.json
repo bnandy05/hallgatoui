@@ -2,6 +2,13 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [],
-    "ignoreValues": []
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "arial",
+        "createdAt": "2026-10-04T16:40:19.907Z",
+        "reason": "Claude: email HTML fallback in lib/digest.ts, mail clients don't load the Archivo webfont"
+      }
+    ]
   }
 }

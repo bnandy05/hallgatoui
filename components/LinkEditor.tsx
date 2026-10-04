@@ -142,7 +142,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
   );
 
   const iconButton =
-    "inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-black/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-30";
+    "inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-30";
 
   return (
     <div className="flex flex-col gap-4">

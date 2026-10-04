@@ -7,9 +7,12 @@ import { CalendarDays, ListTodo, Plus, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { SubscriptionSync } from "@/components/SubscriptionSync";
+import { KeyboardInset } from "@/components/KeyboardInset";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { PinboardField } from "@/components/ui/PinboardField";
+import { ThemeSync } from "@/components/ThemeSync";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonClasses } from "@/components/ui/Button";
 import { syncAllFeeds } from "@/lib/ical/client";
 
@@ -28,6 +31,7 @@ function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Fő navigáció"
+      data-tabbar
       className="fixed inset-x-0 bottom-0 z-10 border-t border-felt-dark bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-3 gap-1 px-2 py-1.5">
@@ -102,6 +106,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="isolate flex min-h-full flex-1 flex-col">
       <PinboardField />
+      <KeyboardInset />
+      {hydrated && <ThemeSync />}
       {hydrated && <NotificationScheduler />}
       {hydrated && <SubscriptionSync />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
@@ -127,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <CommandPalette />
             <NewDeadlineButton />
           </div>

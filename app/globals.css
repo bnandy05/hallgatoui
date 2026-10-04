@@ -27,13 +27,10 @@
   --color-felt-dark: var(--felt-dark);
   --color-strip: var(--strip);
   --color-strip-past: var(--strip-past);
+  --color-wash: var(--wash);
   --radius-lg: var(--radius-lg);
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-:root {
-  color-scheme: light;
 }
 
 html {
@@ -89,6 +86,15 @@ html:has(dialog[open]) {
   overflow: hidden;
 }
 
+/* While the on-screen keyboard is up: the tab bar steps aside, and a sheet's action row sits on
+   the keyboard rather than above the home-indicator inset it covers. */
+:root[data-keyboard] [data-tabbar] {
+  display: none;
+}
+:root[data-keyboard] [data-dialog-actions] {
+  padding-bottom: 0.75rem;
+}
+
 a {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
@@ -114,7 +120,7 @@ a {
   height: 11px;
   border-radius: 9999px;
   background: var(--pin-color);
-  box-shadow: 1px 2px 2px rgba(20, 24, 28, 0.35);
+  box-shadow: var(--pin-cast);
   pointer-events: none;
   transition:
     transform 0.28s var(--ease-out-expo),
@@ -141,7 +147,7 @@ a {
 .slip[data-done="true"] {
   transform: rotate(-2.2deg) translateY(2px);
   opacity: 0.72;
-  box-shadow: 0 1px 2px rgba(30, 40, 48, 0.12);
+  box-shadow: var(--shadow-done);
 }
 .slip[data-done="true"] > .pin {
   transform: translateY(-6px) scale(0);
@@ -200,7 +206,7 @@ a {
   0% {
     opacity: 0;
     transform: translate(2px, -12px) rotate(-3.4deg) scale(1.03);
-    box-shadow: 0 12px 20px -6px rgba(30, 40, 48, 0.24);
+    box-shadow: var(--shadow-held);
   }
   45% {
     opacity: 0.72;
@@ -222,7 +228,7 @@ dialog .sheet-paper {
   0% {
     opacity: 0;
     transform: translateY(-12px) rotate(-0.9deg) scale(1.012);
-    box-shadow: 0 18px 30px -10px rgba(30, 40, 48, 0.26);
+    box-shadow: var(--shadow-held-sheet);
   }
   40% {
     opacity: 1;
@@ -235,7 +241,7 @@ dialog .sheet-paper {
   0% {
     opacity: 0;
     transform: translate(2px, -16px) rotate(-3.2deg) scale(1.035);
-    box-shadow: 0 14px 22px -6px rgba(30, 40, 48, 0.28);
+    box-shadow: var(--shadow-held);
   }
   45% {
     opacity: 1;
@@ -248,7 +254,7 @@ dialog .sheet-paper {
   0% {
     opacity: 0;
     transform: translate(-3px, -12px) scale(1.8);
-    box-shadow: 4px 9px 6px rgba(20, 24, 28, 0.18);
+    box-shadow: var(--pin-cast-held);
   }
   60% {
     opacity: 1;

@@ -13,7 +13,7 @@ export function Badge({ color, children, className = "" }: BadgeProps) {
       className={`inline-flex items-center rounded-[3px] border px-1.5 py-px text-[11.5px] font-semibold ${className}`}
       style={{
         borderColor: `color-mix(in srgb, ${color} 55%, transparent)`,
-        color: `color-mix(in srgb, ${color} 80%, #000)`,
+        color: `color-mix(in srgb, ${color} var(--stamp-ink), var(--stamp-mix))`,
       }}
     >
       {children}

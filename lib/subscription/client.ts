@@ -2,6 +2,7 @@ import { visibleSessions } from "@/lib/ical/neptun";
 import { buildCalendar, DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { useStore, type AppStore } from "@/lib/store";
 import type { CalendarSnapshot, Subscription } from "@/lib/types";
+import type { DigestFrequency, DigestStatus } from "@/lib/digest";
 
 const API = "/api/naptar";
 const GENERIC_ERROR = "A naptár-előfizetés nem érhető el";
@@ -188,4 +189,45 @@ export function downloadCalendar(): void {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+/** `error` is set on failure; otherwise `digest` (null when there is none). */
+interface DigestResult {
+  digest?: DigestStatus | null;
+  available?: boolean;
+  error?: string;
+}
+
+async function digestRequest(method: "GET" | "PUT" | "DELETE", body?: unknown): Promise<DigestResult> {
+  const sub = useStore.getState().subscription;
+  if (!sub) return { error: "Előbb kapcsold be a naptár-előfizetést" };
+  try {
+    const res = await fetch(`${API}/${sub.token}/hirlevel`, {
+      method,
+      headers: {
+        authorization: `Bearer ${sub.secret}`,
+        ...(body ? { "content-type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) return { error: await errorFrom(res) };
+    if (method === "DELETE") return { digest: null };
+    const json = (await res.json()) as { digest?: DigestStatus | null; available?: boolean };
+    return { digest: json.digest ?? null, available: json.available };
+  } catch {
+    return { error: networkError() };
+  }
+}
+
+export function fetchDigest(): Promise<DigestResult> {
+  return digestRequest("GET");
+}
+
+/** Saves the address and frequency; a new address gets a confirmation mail. */
+export function saveDigest(email: string, frequency: DigestFrequency): Promise<DigestResult> {
+  return digestRequest("PUT", { email, frequency });
+}
+
+export function deleteDigest(): Promise<DigestResult> {
+  return digestRequest("DELETE");
 }

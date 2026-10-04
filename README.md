@@ -55,3 +55,14 @@ Az összefésült naptár (`/api/naptar/<token>.ics`) szerveroldali tárolást i
 - `KV_REST_API_URL` és `KV_REST_API_TOKEN`.
 
 Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló működik. Éles környezetben, ha hiányoznak, a végpontok 503-at adnak.
+
+### E-mail-összefoglaló
+
+A naptár-előfizetésre épül (Beállítások → Értesítések): napi, heti (hétfő) vagy havi (1-je) levél a közelgő és lejárt határidőkről, dupla megerősítéssel és leiratkozó linkkel. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
+
+- `RESEND_API_KEY`: [Resend](https://resend.com) API-kulcs;
+- `DIGEST_FROM`: feladó egy Resendben ellenőrzött domainről, pl. `Hallgatói réteg <hirlevel@example.hu>`;
+- `CRON_SECRET`: a Vercel ezt küldi a cronnal (`Authorization: Bearer …`), élesben kötelező;
+- `APP_URL` (nem kötelező): a levelek linkjeinek címe; alapból `VERCEL_PROJECT_PRODUCTION_URL`.
+
+Fejlesztésben kulcs nélkül a levelek a szerver naplójába kerülnek, a cron pedig kézzel hívható: `curl localhost:3000/api/cron/hirlevel`.

@@ -5,11 +5,7 @@ import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 
-const NEUTRAL_PIN = "#9aa2a7";
-const PAPER = "rgba(253, 253, 250, 0.55)";
-const PAPER_EDGE = "rgba(30, 40, 48, 0.07)";
-const RULE = "rgba(30, 40, 48, 0.07)";
-const HOLE = "rgba(30, 40, 48, 0.16)";
+const NEUTRAL_PIN = "var(--pin-neutral)"; // resolved to a colour by the engine
 const CONTENT_MAX = 1240; // the page column; slips behind it are drawn much fainter
 const IN_COLUMN_ALPHA = 0.3;
 const PIN_MS = 1000; // held up, laid on the felt, pinned
@@ -38,6 +34,31 @@ interface Falling {
   slot: number;
   pin: string;
   at: number;
+}
+
+/** The felt's inks, read from the theme tokens (tokens.css) whenever the theme changes. */
+interface Inks {
+  paper: string;
+  edge: string;
+  rule: string;
+  hole: string;
+  shadow: string; // "r, g, b"
+  shadowAlpha: number;
+  neutralPin: string;
+}
+
+function readInks(): Inks {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string) => css.getPropertyValue(name).trim();
+  return {
+    paper: v("--field-paper"),
+    edge: v("--field-edge"),
+    rule: v("--field-rule"),
+    hole: v("--field-hole"),
+    shadow: v("--field-shadow") || "30, 40, 48",
+    shadowAlpha: Number(v("--field-shadow-alpha")) || 0.1,
+    neutralPin: v("--pin-neutral"),
+  };
 }
 
 interface Place {
@@ -137,6 +158,8 @@ export function PinboardField() {
     let falling: Falling[] = [];
     let known: string[] | null = null; // open ids seen so far, in pinning order
     let introAt = 0; // when the load-in cascade was scheduled
+    let inks = readInks();
+    const pinInk = (pin: string) => (pin === NEUTRAL_PIN ? inks.neutralPin : pin);
 
     const place = (slot: number) => (places[slot] ??= placeOf(slot, W, H));
 
@@ -176,17 +199,17 @@ export function PinboardField() {
       c.translate(p.x + dx, p.y + dy);
       c.rotate(angle);
       c.scale(scale, scale);
-      c.shadowColor = `rgba(30, 40, 48, ${0.1 + lift * 0.1})`;
+      c.shadowColor = `rgba(${inks.shadow}, ${inks.shadowAlpha * (1 + lift)})`;
       c.shadowBlur = 8 + lift * 16;
       c.shadowOffsetY = 3 + lift * 12;
-      c.fillStyle = PAPER;
+      c.fillStyle = inks.paper;
       c.fillRect(-p.w / 2, -6, p.w, p.h);
       c.shadowColor = "transparent";
-      c.strokeStyle = PAPER_EDGE;
+      c.strokeStyle = inks.edge;
       c.lineWidth = 1;
       c.strokeRect(-p.w / 2 + 0.5, -5.5, p.w - 1, p.h - 1);
       // Two faint ruled "text" lines.
-      c.fillStyle = RULE;
+      c.fillStyle = inks.rule;
       c.fillRect(-p.w / 2 + 10, 12, p.w * 0.55, 3);
       c.fillRect(-p.w / 2 + 10, 21, p.w * 0.32, 3);
       c.restore();
@@ -197,11 +220,11 @@ export function PinboardField() {
         c.globalAlpha = alpha * pinAlpha * 0.85;
         c.translate(p.x + dx, p.y + dy);
         c.scale(pinScale, pinScale);
-        c.shadowColor = "rgba(20, 24, 28, 0.3)";
+        c.shadowColor = `rgba(${inks.shadow}, ${Math.min(0.6, inks.shadowAlpha * 3)})`;
         c.shadowBlur = 2;
         c.shadowOffsetX = 1;
         c.shadowOffsetY = 1.5;
-        c.fillStyle = pin;
+        c.fillStyle = pinInk(pin);
         c.beginPath();
         c.arc(0, 0, 4.5, 0, Math.PI * 2);
         c.fill();
@@ -212,7 +235,7 @@ export function PinboardField() {
     /** Felt holes plus every settled slip, drawn once into the cached bitmap. */
     function bake() {
       bctx.clearRect(0, 0, W, H);
-      bctx.fillStyle = HOLE;
+      bctx.fillStyle = inks.hole;
       for (const h of holes) {
         bctx.beginPath();
         bctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
@@ -283,7 +306,7 @@ export function PinboardField() {
       if (settled || before !== falling.length) bake();
 
       ctx!.clearRect(0, 0, W, H);
-      ctx!.drawImage(baked, 0, 0, W, H);
+      if (baked.width > 0 && baked.height > 0) ctx!.drawImage(baked, 0, 0, W, H);
       for (const s of slips) {
         if (s.pinAt !== 0) {
           drawPinning(s, now);
@@ -384,12 +407,21 @@ export function PinboardField() {
       }, 120);
     }
 
+    // Light ↔ dark: the felt is re-inked in place, slips keep their slots.
+    const themeObserver = new MutationObserver(() => {
+      inks = readInks();
+      bake();
+      kick();
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
     layout();
     bake();
     kick();
     engine.current = { sync };
     window.addEventListener("resize", onResize);
     return () => {
+      themeObserver.disconnect();
       engine.current = null;
       // Unmounted before the cascade began (a dev double mount): let the next mount play it.
       if (introAt && performance.now() < introAt + INTRO_DELAY_MS) {

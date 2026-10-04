@@ -9,15 +9,17 @@ import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
 import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { DigestSettings } from "@/components/settings/DigestSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
+import { AppearanceSettings, THEME_LABELS } from "@/components/settings/AppearanceSettings";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 
-const SECTIONS = ["naptarak", "elofizetes", "ertesitesek", "platformok", "adatok"] as const;
+const SECTIONS = ["naptarak", "elofizetes", "ertesitesek", "megjelenes", "platformok", "adatok"] as const;
 type SectionKey = (typeof SECTIONS)[number];
 
 // Anchors used by links elsewhere in the app, mapped onto their tab.
-const HASH_ALIASES: Record<string, SectionKey> = { "naptar-elofizetes": "elofizetes" };
+const HASH_ALIASES: Record<string, SectionKey> = { "naptar-elofizetes": "elofizetes", hirlevel: "ertesitesek" };
 const HASH_EVENT = "settings-hash";
 
 function sectionFromHash(hash: string): SectionKey {
@@ -82,6 +84,7 @@ export default function WeekSettingsPage() {
   const customCount = useStore((s) => s.customPlatforms.length);
   const subscribed = useStore((s) => s.subscription !== null);
   const notificationsOn = useStore((s) => s.notificationPrefs.enabled);
+  const themePref = useStore((s) => s.theme);
   const permission = useNotificationPermission();
 
   const status = (on: boolean) => (
@@ -101,6 +104,7 @@ export default function WeekSettingsPage() {
       summary: notificationsActive ? "Bekapcsolva" : "Kikapcsolva",
       on: notificationsActive,
     },
+    { id: "megjelenes", label: "Megjelenés", summary: THEME_LABELS[themePref] },
     { id: "platformok", label: "Platformok", summary: customCount > 0 ? `${customCount} saját platform` : "Beépített platformok" },
     { id: "adatok", label: "Adatok", summary: "Mentés, visszaállítás, törlés" },
   ];
@@ -182,6 +186,7 @@ export default function WeekSettingsPage() {
                       </span>
                     ),
                   },
+                  { id: "megjelenes", label: "Megjelenés" },
                   { id: "platformok", label: "Platformok" },
                   { id: "adatok", label: "Adatok" },
                 ]}
@@ -198,7 +203,13 @@ export default function WeekSettingsPage() {
                 <CalendarSubscriptionSettings />
               </TabPanel>
               <TabPanel id="ertesitesek" active={active === "ertesitesek"}>
-                <NotificationSettings />
+                <div className="flex flex-col gap-10">
+                  <NotificationSettings />
+                  <DigestSettings />
+                </div>
+              </TabPanel>
+              <TabPanel id="megjelenes" active={active === "megjelenes"}>
+                <AppearanceSettings />
               </TabPanel>
               <TabPanel id="platformok" active={active === "platformok"}>
                 <PlatformSettings />

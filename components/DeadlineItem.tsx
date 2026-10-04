@@ -34,7 +34,7 @@ const URGENCY_COLOR: Partial<Record<string, string>> = {
 /** One labelled line on the slip, ruled off from the next like a form on paper. */
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-black/[0.08] py-2.5 text-[14px]">
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-[14px]">
       <dt className="text-[13px] text-muted">{label}</dt>
       <dd className="flex min-w-0 flex-wrap items-center gap-2">{children}</dd>
     </div>
@@ -132,7 +132,7 @@ function DeadlineDetail({
           {deadline.done ? "Kész" : formatRelative(due, now)}
         </p>
         {share > 0 && (
-          <span aria-hidden="true" className="mt-2 block h-[3px] w-full rounded-full bg-black/[0.07]">
+          <span aria-hidden="true" className="mt-2 block h-[3px] w-full rounded-full bg-wash/[0.07]">
             <span
               className={`block h-full rounded-full ${hot ? "bg-danger/70" : "bg-heading/30"}`}
               style={{ width: `${share * 100}%` }}
@@ -256,7 +256,7 @@ function DeadlineDetail({
 /** "Források" row, only when other sources report the same deadline. */
 function DuplicateRow({ deadline }: { deadline: Deadline }) {
   return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-black/[0.08] py-2.5 text-[14px] [&:not(:has(button))]:hidden">
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-[14px] [&:not(:has(button))]:hidden">
       <dt className="text-[13px] text-muted">Források</dt>
       <dd className="flex min-w-0 flex-wrap items-center gap-2">
         <DuplicateSources deadline={deadline} />

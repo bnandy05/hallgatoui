@@ -208,7 +208,7 @@ function PaletteContent({
           id="palette-results"
           ref={listRef}
           role="listbox"
-          className="flex max-h-[50vh] flex-col overflow-y-auto"
+          className="flex max-h-[max(8rem,min(50vh,calc(var(--visual-height,100dvh)-12.5rem)))] flex-col overflow-y-auto"
         >
           {results.map((item, index) => (
             <li key={item.id} role="presentation">

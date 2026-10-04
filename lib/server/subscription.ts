@@ -36,6 +36,12 @@ export const subKey = (token: string) => `sub:${token}`;
 export const srcKey = (token: string, feedId: string) => `src:${token}:${feedId}`;
 /** Per-subscription record of seen due-date changes (see lib/server/dueChanges.ts). */
 export const chgKey = (token: string) => `chg:${token}`;
+/** Email digest settings of a subscription (see lib/server/digest.ts). */
+export const digKey = (token: string) => `dig:${token}`;
+/** Set of tokens with a digest, visited by the daily cron. */
+export const DIGEST_INDEX_KEY = "dig:index";
+
+const NOT_FOUND = "Ismeretlen naptár";
 
 export function errorResponse(error: string, status: number): Response {
   return Response.json({ error }, { status });
@@ -51,7 +57,7 @@ export function storageErrorResponse(): Response {
 }
 
 /** Best-effort client IP; Vercel sets x-forwarded-for. */
-function clientIp(req: Request): string {
+export function clientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || req.headers.get("x-real-ip") || "unknown";
 }
@@ -207,4 +213,30 @@ export async function readSnapshotBody(req: Request): Promise<CalendarSnapshot |
   }
   const snapshot = isObject(body) ? validateSnapshot(body.snapshot) : null;
   return snapshot ?? errorResponse("Hibás vagy hiányos adatok", 400);
+}
+
+/** Loads the subscription and checks the Bearer secret; returns an error response otherwise. */
+export async function authorize(
+  req: Request,
+  rawToken: string
+): Promise<{ kv: Kv; token: string; sub: StoredSubscription } | Response> {
+  const kv = requireKv();
+  if (kv instanceof Response) return kv;
+
+  const token = parseToken(rawToken);
+  if (!token) return errorResponse(NOT_FOUND, 404);
+
+  let sub: StoredSubscription | null;
+  try {
+    sub = await kv.get<StoredSubscription>(subKey(token));
+  } catch {
+    return storageErrorResponse();
+  }
+  if (!sub) return errorResponse(NOT_FOUND, 404);
+
+  const secret = bearerSecret(req);
+  if (!secret || !verifySecret(secret, sub.secretHash)) {
+    return errorResponse("Hibás vagy hiányzó jogosultság", 401);
+  }
+  return { kv, token, sub };
 }

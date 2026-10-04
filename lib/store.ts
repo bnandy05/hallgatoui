@@ -29,6 +29,7 @@ import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
+import type { ThemePref } from "@/lib/theme";
 
 /** Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles. */
 function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
@@ -78,6 +79,9 @@ export interface AppStore extends AppData {
   // home board: show the timetable (device preference, not part of AppData)
   showClasses: boolean;
   setShowClasses: (show: boolean) => void;
+  // light / dark / follow the system (device preference, not part of AppData)
+  theme: ThemePref;
+  setTheme: (theme: ThemePref) => void;
 
   // courses
   addCourse: (
@@ -220,6 +224,7 @@ export const useStore = create<AppStore>()(
       subscription: null,
       exportOptions: DEFAULT_EXPORT_OPTIONS,
       showClasses: true,
+      theme: "system",
 
       // ---- calendar subscription ----
       setSubscription: (subscription) => {
@@ -234,6 +239,9 @@ export const useStore = create<AppStore>()(
 
       setShowClasses: (showClasses) => {
         set({ showClasses });
+      },
+      setTheme: (theme) => {
+        set({ theme });
       },
 
       // ---- notifications ----
@@ -685,6 +693,7 @@ export const useStore = create<AppStore>()(
           classSessions: saved.classSessions ?? [],
           timetableSources: saved.timetableSources ?? [],
           showClasses: saved.showClasses ?? true,
+          theme: saved.theme ?? "system",
         };
       },
       partialize: (state) => ({
@@ -697,6 +706,7 @@ export const useStore = create<AppStore>()(
         classSessions: state.classSessions,
         timetableSources: state.timetableSources,
         showClasses: state.showClasses,
+        theme: state.theme,
         notificationPrefs: state.notificationPrefs,
         notifiedKeys: state.notifiedKeys,
         subscription: state.subscription,
