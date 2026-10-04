@@ -24,7 +24,7 @@ const INTRO_DELAY_MS = 520;
 const INTRO_SPAN_MS = 1500; // the whole cascade, however many slips
 const INTRO_MAX = 36; // older slips beyond this are simply there
 
-/** One finished task on the felt. Its slot index alone decides where it hangs. */
+/** One open task on the felt. Its slot index alone decides where it hangs. */
 interface Slip {
   slot: number;
   pin: string;
@@ -105,11 +105,11 @@ function placeOf(i: number, W: number, H: number): Place {
 }
 
 /**
- * The felt behind every page, and a record of the work done: one faint slip is pinned up for
- * every finished task. Ticking a task off pins a new slip on; unticking takes the most recent
- * one down, and its pin leaves a hole. Slips keep their places across visits (each slot has a
- * fixed position). Idle frames cost nothing: the settled slips are baked into a bitmap, and only
- * a slip in motion is drawn per frame. Under reduced motion changes appear without movement.
+ * The felt behind every page, and a picture of the work still open: one faint slip is pinned up
+ * for every open task. Ticking a task off takes a slip down (its pin leaves a hole), so the board
+ * clears as work gets done; unticking or adding a task pins a new one on. Slips keep their
+ * places across visits (each slot has a fixed position). Idle frames cost nothing: the settled
+ * slips are baked into a bitmap, and only a slip in motion is drawn per frame. Under reduced motion changes appear without movement.
  */
 export function PinboardField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,7 +135,7 @@ export function PinboardField() {
     let extraHoles: { slot: number }[] = []; // holes left by slips taken down, kept by slot
     let slips: Slip[] = [];
     let falling: Falling[] = [];
-    let known: string[] | null = null; // done ids seen so far, in pinning order
+    let known: string[] | null = null; // open ids seen so far, in pinning order
     let introAt = 0; // when the load-in cascade was scheduled
 
     const place = (slot: number) => (places[slot] ??= placeOf(slot, W, H));
@@ -336,7 +336,7 @@ export function PinboardField() {
       const added = doneIds.filter((id) => !keptSet.has(id));
       known = [...kept, ...added].slice(0, MAX_SLOTS);
 
-      // Unticked: the most recent slips come down, whichever task it was, so the board keeps its shape.
+      // Ticked off: the most recent slips come down, whichever task it was, so the board keeps its shape.
       let rebake = false;
       for (let r = 0; r < removed && slips.length > 0; r++) {
         const s = slips.pop()!;
@@ -352,7 +352,7 @@ export function PinboardField() {
       }
       if (extraHoles.length > 120) extraHoles = extraHoles.slice(-120);
 
-      // Ticked: new slips go up in the next free slots, one after another.
+      // New or unticked: new slips go up in the next free slots, one after another.
       const room = MAX_SLOTS - slips.length;
       const toAdd = added.slice(0, Math.max(0, room));
       const instant = reduced ? toAdd.length : Math.max(0, toAdd.length - MAX_ANIMATED);
@@ -407,7 +407,7 @@ export function PinboardField() {
     if (!hydrated || !engine.current) return;
     const colorOf = new Map(courses.map((c) => [c.id, c.color]));
     const done = visible
-      .filter((d) => d.done)
+      .filter((d) => !d.done)
       .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
     const pinOf = new Map(done.map((d) => [d.id, (d.courseId && colorOf.get(d.courseId)) || NEUTRAL_PIN]));
     engine.current.sync(
