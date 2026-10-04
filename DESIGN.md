@@ -318,7 +318,10 @@ Day strips of lighter felt; today is Canary Soft with a red pin at the top, holi
 Copy Paper sheets with 2px corners and the Dialog shadow; a condensed 24px title over a hairline rule, sticky at the top while the sheet scrolls, with a 40px close button. Form dialogs end in `DialogActions`, a Cancel / Save row stuck to the bottom edge. From sm the sheet is centred (max 32rem or 42rem, 3rem clear of the viewport); below sm it is a bottom sheet the full width of the screen, at most 100dvh minus 2.5rem, with equal-width actions. The page behind does not scroll. With a mouse the first text field takes focus on open; on touch the close button does (search opts back in), so the keyboard never covers the sheet unasked. A deadline's detail is the slip itself: the dialog takes a `pinColor` (the slip's state) beside a title set in the display face, and `tone="salmon"` when it is overdue; the due date leads, then ruled Tárgy / Platform / Források / Megjegyzés rows, and the actions are spelled out (Kész, Kritikus, Szerkesztés, Törlés). Opening drops the sheet 10px into place with a slight rotation (below sm it rises 48px from the bottom) while the backdrop fades.
 
 ### Pinboard Field (signature)
-A fixed full-viewport canvas behind every page: pinholes and faint ghost slips seeded from the user's open deadlines, pins in their course colours. Ghosts sway; roughly every 5.2s one falls off and another is pinned up elsewhere. Behind the 1240px content column the ghosts are drawn at 30% and without pins, so nothing competes with text. Under reduced motion it renders one static frame.
+A fixed full-viewport canvas behind every page: pinholes, and one faint slip for every finished task (deduplicated deadlines with `done`), pinned in its course colour. The felt is a record of work done. Each slip has a fixed slot (a Halton sequence: on wide screens the gutters fill first and every fifth slip goes behind the column), so slips keep their places across visits and resizes. Ticking a task off pins a new slip up in the next slot: held above the felt, laid flat, then the pin goes in and the slip rocks once (1s; several at once follow 140ms apart, and a bulk change animates 12 and places the rest). Unticking (or deleting a done task) takes down the most recent slip, whichever task it was: the pin pops, the slip swings free and drops, and a pinhole stays. Behind the 1240px column slips are drawn at 30% with no pins (a fresh one stays clearer for about 2.6s). Settled slips are baked into a cached bitmap, so the canvas only animates while something moves. Under reduced motion changes appear and disappear without movement.
+
+### Slip motion
+Every `.slip` is pinned up when it mounts: it drops 16px from slightly above the felt with a larger shadow, overshoots flat, and its pin presses in about 230ms later. Siblings set `--i` (grids, day strips, board columns) and follow 45ms apart, capped at 10. Ticking a deadline off (`DeadlineChip` sets `data-motion="unpin"` once, so slips that load done don't swing) pulls the pin and lets the slip swing about its far corner before settling crooked; unticking (`repin`) straightens it and presses the pin back. Dialog pins press in as the sheet lands. Week navigation slides the columns without re-pinning their slips.
 
 ## Do's and Don'ts
 
@@ -328,7 +331,7 @@ A fixed full-viewport canvas behind every page: pinholes and faint ghost slips s
 - **Do** make Toner Ink the primary button and active-control colour, with Copy Paper text on it.
 - **Do** head pages and sections with `SectionHeading`: a condensed heavy title and at most one line of subtext.
 - **Do** use tabular figures for times, dates and counts.
-- **Do** keep motion physical and short (0.24 to 0.55s, ease-out-expo) and give every animation a cross-fade under `prefers-reduced-motion`.
+- **Do** keep motion physical and short (0.24 to 0.65s on the page, up to about 1s for the felt; ease-out-expo) and give every animation a cross-fade under `prefers-reduced-motion`.
 - **Do** write concise, professional Hungarian UI copy.
 
 ### Don't:

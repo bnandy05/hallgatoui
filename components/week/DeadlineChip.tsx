@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Flame } from "lucide-react";
@@ -30,18 +30,34 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const toggleDone = useStore((s) => s.toggleDone);
   const [open, setOpen] = useState(false);
+  const slipRef = useRef<HTMLDivElement>(null);
+  const wasDone = useRef(deadline.done);
+
+  // Ticking off pulls the pin and lets the slip swing; unticking pins it back. Only on a change,
+  // so slips that load already done just hang there. Set on the node: no re-render, and it stays
+  // (the end frame is the resting state) so the entrance animation never replays.
+  useEffect(() => {
+    if (wasDone.current === deadline.done) return;
+    wasDone.current = deadline.done;
+    const node = slipRef.current;
+    if (!node || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    node.dataset.motion = deadline.done ? "unpin" : "repin";
+  }, [deadline.done]);
 
   const urgency = urgencyOf(deadline, now);
   const overdue = urgency === "overdue";
   const hot = overdue || urgency === "critical";
   const due = new Date(deadline.due);
   const changed = deadline.previousDue && isRecentlyChanged(deadline, now);
-  const pinColor = hot ? "var(--pin)" : (course?.color ?? "var(--border-strong)");
+  // A done slip's pin is on its way out: it keeps the colour it had, so it doesn't flash as it goes.
+  const wasHot = deadline.done && ["overdue", "critical"].includes(urgencyOf({ ...deadline, done: false }, now));
+  const pinColor = hot || wasHot ? "var(--pin)" : (course?.color ?? "var(--border-strong)");
   const left = due.getTime() - now.getTime();
   const share = !deadline.done && left > 0 ? Math.min(1, left / WEEK_MS) : 0;
 
   return (
     <div
+      ref={slipRef}
       data-done={deadline.done}
       className={`slip group px-2.5 pb-2.5 pt-3 ${overdue && !deadline.done ? "bg-salmon" : "bg-card"}`}
     >

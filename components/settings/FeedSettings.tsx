@@ -414,14 +414,18 @@ export function FeedSettings() {
       )}
 
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-x-4 gap-y-5">
-        {feeds.map((feed) => {
+        {feeds.map((feed, i) => {
           const platform = getPlatform(feed.platformId, customPlatforms);
           const course = feed.courseId ? courses.find((c) => c.id === feed.courseId) : null;
           const isSyncing = syncingIds.has(feed.id);
           const pastOpen = pastOpenCount(feed.id);
           const pending = pendingByFeed.get(feed.id) ?? 0;
           return (
-            <li key={feed.id} className="slip flex min-w-0 flex-col gap-3 bg-card px-4 pb-3 pt-4">
+            <li
+              key={feed.id}
+              className="slip flex min-w-0 flex-col gap-3 bg-card px-4 pb-3 pt-4"
+              style={{ "--i": i } as CSSProperties}
+            >
               <span
                 aria-hidden="true"
                 className="pin -top-[4px] left-4"
