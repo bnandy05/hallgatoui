@@ -118,7 +118,7 @@ export function WeekBoard({
       )}
 
       {narrowEmpty && (
-        <p className="rounded-[var(--radius-slip)] bg-strip px-3 py-3 text-[13.5px] text-muted lg:hidden">{emptyDay}</p>
+        <p className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-4 py-4 text-center text-[14px] text-muted lg:hidden">{emptyDay}</p>
       )}
 
       {days.map((day, i) => {

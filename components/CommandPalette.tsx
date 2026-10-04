@@ -231,7 +231,7 @@ function PaletteContent({
                 <ItemIcon item={item} customPlatforms={customPlatforms} />
                 <span className="min-w-0 truncate font-medium text-foreground">{item.title}</span>
                 {item.subtitle && (
-                  <span className="min-w-0 truncate text-xs text-muted">{item.subtitle}</span>
+                  <span className="min-w-0 truncate text-[12.5px] text-muted">{item.subtitle}</span>
                 )}
                 {item.external && (
                   <ExternalLink className="ml-auto h-3.5 w-3.5 shrink-0 text-muted" />

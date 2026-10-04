@@ -13,3 +13,13 @@ export function normalizeLinkUrl(input: string): string | null {
     return null;
   }
 }
+
+/** The part of a link a person recognises: "canvas.elte.hu", or the scheme for app links. */
+export function linkHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname ? parsed.hostname.replace(/^www\./, "") : parsed.protocol.replace(/:$/, "");
+  } catch {
+    return url;
+  }
+}

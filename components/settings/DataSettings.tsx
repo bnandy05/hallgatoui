@@ -87,51 +87,61 @@ export function DataSettings() {
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-6">
       <SectionHeading
         title="Adatok"
         sub="Az adataid csak ebben a böngészőben vannak. Érdemes rendszeresen mentést készíteni."
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4" />
-          Mentés letöltése
-        </Button>
-
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-4 w-4" />
-          Mentés visszaállítása
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          className="hidden"
-          onChange={handleImportFile}
-          aria-label="Mentésfájl kiválasztása"
-        />
-
-        <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
-          <Sparkles className="h-4 w-4" />
-          Mintaadatok betöltése
-        </Button>
-
-        <Button type="button" variant="danger" size="sm" onClick={handleReset}>
-          <Trash2 className="h-4 w-4" />
-          Minden adat törlése
-        </Button>
+      <div className="sheet-paper divide-y divide-border/70 px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="min-w-0">
+            <p className="text-[14.5px] font-medium text-heading">Mentés</p>
+            <p className="text-[13px] text-muted">Egy fájl mindennel: tárgyak, határidők, linkek, források.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Letöltés
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4" />
+              Visszaállítás
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={handleImportFile}
+              aria-label="Mentésfájl kiválasztása"
+            />
+          </div>
+          {importError && <p className="basis-full text-[13px] font-semibold text-danger">{importError}</p>}
+          {importSuccess && <p className="basis-full text-[13px] font-semibold text-success">{importSuccess}</p>}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="min-w-0">
+            <p className="text-[14.5px] font-medium text-heading">Mintaadatok</p>
+            <p className="text-[13px] text-muted">Kitalált tárgyak és határidők, hogy kipróbálhasd az oldalt.</p>
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
+            <Sparkles className="h-4 w-4" />
+            Betöltés
+          </Button>
+        </div>
       </div>
 
-      {importError && <p className="text-sm text-danger">{importError}</p>}
-      {importSuccess && (
-        <p className="text-sm text-success">{importSuccess}</p>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-dashed border-danger/40 px-5 py-4">
+        <div className="min-w-0">
+          <p className="text-[14.5px] font-medium text-danger">Minden adat törlése</p>
+          <p className="text-[13px] text-muted">Nem vonható vissza. Előtte érdemes mentést letölteni.</p>
+        </div>
+        <Button type="button" variant="danger" size="sm" onClick={handleReset}>
+          <Trash2 className="h-4 w-4" />
+          Törlés
+        </Button>
+      </div>
     </section>
   );
 }

@@ -15,8 +15,7 @@ import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CourseDialog } from "@/components/CourseDialog";
-import { DeadlineItem } from "@/components/DeadlineItem";
-import { Dialog } from "@/components/ui/Dialog";
+import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DiscoveryBanner } from "@/components/DiscoveryBanner";
 import { TimetableBanner } from "@/components/TimetableBanner";
 import { Pill } from "@/components/ui/Pill";
@@ -67,9 +66,7 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
           {[course?.name, format(due, "EEEE HH:mm", { locale: hu })].filter(Boolean).join(" · ")}
         </span>
       </button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="Határidő" size="lg">
-        <DeadlineItem deadline={deadline} />
-      </Dialog>
+      <DeadlineDetailDialog deadline={deadline} open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

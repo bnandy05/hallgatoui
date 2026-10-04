@@ -7,7 +7,6 @@ import { getPlatform } from "@/lib/platforms";
 import type { TimetableSource } from "@/lib/types";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { Button } from "@/components/ui/Button";
-import { Pill } from "@/components/ui/Pill";
 
 const day = (iso: string) => format(new Date(iso), "yyyy. MM. dd.");
 
@@ -18,7 +17,7 @@ export interface TimetableSourceItemProps {
   onEditMapping: (sourceId: string) => void;
 }
 
-/** One list row for an imported Neptun timetable, styled like the feed rows. */
+/** An imported Neptun timetable as a card on sky-blue timetable paper, taped flat like its classes. */
 export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }: TimetableSourceItemProps) {
   const sessions = useStore((s) => s.classSessions);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -37,46 +36,38 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
   }
 
   return (
-    <li className="sheet-paper flex flex-wrap items-center gap-3 px-4 py-3">
-      <PlatformIcon platform={getPlatform("neptun", customPlatforms)} size="sm" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[15px] font-semibold text-heading">{source.name}</span>
-          <Pill>Órarend</Pill>
+    <li className="flex min-w-0 flex-col gap-3 rounded-[var(--radius-slip)] bg-sky px-4 pb-3 pt-4">
+      <div className="flex items-start gap-3">
+        <PlatformIcon platform={getPlatform("neptun", customPlatforms)} size="md" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[16px] font-bold text-heading">{source.name}</p>
+          <p className="text-[12.5px] text-muted">Órarend · importálva: {day(source.importedAt)}</p>
         </div>
-        <p className="text-[12.5px] text-muted">
-          {classes} óra
-          {from && to && ` · ${day(from)} – ${day(to)}`}
-          {` · importálva: ${day(source.importedAt)}`}
-        </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <p className="text-[13.5px] text-muted">
+        {classes} óra
+        {from && to && ` · ${day(from)} – ${day(to)}`}
+      </p>
+      <div className="-mx-1.5 mt-auto flex flex-wrap items-center gap-1 border-t border-black/[0.08] pt-2">
+        <Button type="button" variant="ghost" size="sm" onClick={() => onReimport(source)} disabled={busy}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Újraimportálás
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => onEditMapping(source.id)}>
+          <Pencil className="h-4 w-4" />
+          Tárgyak
+        </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="sm"
-          onClick={() => onReimport(source)}
-          disabled={busy}
-          aria-label="Újraimportálás"
-        >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-        </Button>
-        <button
-          type="button"
-          aria-label="Hozzárendelés szerkesztése"
-          onClick={() => onEditMapping(source.id)}
-          className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="Törlés"
           onClick={handleDelete}
-          className="rounded-md p-1.5 text-muted hover:bg-inset focus-visible:outline-2 focus-visible:outline-accent"
+          aria-label={`${source.name} törlése`}
+          className="ml-auto text-danger hover:!bg-danger/10"
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+          Törlés
+        </Button>
       </div>
     </li>
   );

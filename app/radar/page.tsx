@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Flame } from "lucide-react";
+import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
+import { Button } from "@/components/ui/Button";
+import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Select } from "@/components/ui/Select";
@@ -35,6 +37,7 @@ export default function WeekRadarPage() {
   const [showDone, setShowDone] = useState(false);
   const [criticalOnly, setCriticalOnly] = useState(false);
   const [platformFilter, setPlatformFilter] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [now] = useState(() => new Date());
 
   const courseChips = useMemo(() => {
@@ -96,6 +99,46 @@ export default function WeekRadarPage() {
 
   const filtersActive =
     selectedCourses.size > 0 || showDone || criticalOnly || platformFilter !== "";
+  const toggleCount = [showDone, criticalOnly, platformFilter !== ""].filter(Boolean).length;
+
+  function clearFilters() {
+    setSelectedCourses(new Set());
+    setShowDone(false);
+    setCriticalOnly(false);
+    setPlatformFilter("");
+  }
+
+  // The non-course filters: in the sidebar from lg, in a bottom sheet below it.
+  const toggles = (
+    <>
+      <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} className="self-start">
+        <Flame className="h-3.5 w-3.5" />
+        Csak kritikus
+      </Pill>
+      <label className="flex items-center gap-2 text-[14px] text-foreground">
+        <input
+          type="checkbox"
+          checked={showDone}
+          onChange={(e) => setShowDone(e.target.checked)}
+          className="h-4 w-4 accent-accent"
+        />
+        Készek is
+      </label>
+      <Select
+        value={platformFilter}
+        onChange={(e) => setPlatformFilter(e.target.value)}
+        className="!py-1.5"
+        aria-label="Platform"
+      >
+        <option value="">Minden platform</option>
+        {platformsInUse.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </Select>
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
@@ -133,85 +176,70 @@ export default function WeekRadarPage() {
           <div
             role="search"
             aria-label="Szűrők"
-            className="sheet-paper flex min-w-0 flex-col gap-3 px-4 py-3 lg:sticky lg:top-[88px] lg:gap-4 lg:self-start lg:py-4"
+            className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-[88px] lg:gap-4 lg:self-start lg:rounded-[var(--radius-slip)] lg:bg-card lg:px-4 lg:py-4 lg:shadow-[var(--shadow-sheet)]"
           >
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-col lg:items-stretch lg:gap-3">
-              <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} className="lg:self-start">
-                <Flame className="h-3.5 w-3.5" />
-                Csak kritikus
-              </Pill>
-              <label className="flex items-center gap-2 text-[14px] text-foreground">
-                <input
-                  type="checkbox"
-                  checked={showDone}
-                  onChange={(e) => setShowDone(e.target.checked)}
-                  className="h-4 w-4 accent-accent"
-                />
-                Készek is
-              </label>
-              <Select
-                value={platformFilter}
-                onChange={(e) => setPlatformFilter(e.target.value)}
-                className="!w-auto max-w-[14rem] !py-1.5 lg:!w-full lg:max-w-none"
-                aria-label="Platform"
+            <div className="hidden lg:flex lg:flex-col lg:gap-3">{toggles}</div>
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-t lg:border-border lg:px-0 lg:pt-3">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13.5px] font-semibold lg:hidden ${
+                  toggleCount > 0 ? "border-accent bg-accent text-accent-ink" : "border-border-strong bg-card text-heading"
+                }`}
               >
-                <option value="">Minden platform</option>
-                {platformsInUse.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
+                <SlidersHorizontal className="h-4 w-4" />
+                Szűrők
+                {toggleCount > 0 && <span className="tabular-nums">· {toggleCount}</span>}
+              </button>
+              {courseChips.map((chip) => {
+                const active = selectedCourses.has(chip.id);
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleCourse(chip.id)}
+                    className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-[13.5px] font-medium transition-colors duration-150 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-[14px] ${
+                      active
+                        ? "border-accent bg-accent text-accent-ink hover:bg-accent-hover"
+                        : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-black/[0.05]"
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60"
+                      style={{ backgroundColor: chip.color }}
+                    />
+                    <span className="lg:truncate">{chip.name}</span>
+                  </button>
+                );
+              })}
             </div>
-            {courseChips.length > 0 && (
-              <div
-                role="group"
-                aria-label="Tárgyak"
-                className="-mx-4 flex gap-2 overflow-x-auto border-t border-border px-4 pt-3 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0"
-              >
-                {courseChips.map((chip) => {
-                  const active = selectedCourses.has(chip.id);
-                  return (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => toggleCourse(chip.id)}
-                      className={`inline-flex h-8 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 lg:h-9 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-[14px] ${
-                        active
-                          ? "border-accent bg-accent text-accent-ink hover:bg-accent-hover"
-                          : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-black/[0.05]"
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60"
-                        style={{ backgroundColor: chip.color }}
-                      />
-                      <span className="lg:truncate">{chip.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <p className="flex flex-wrap items-center gap-x-2 border-t border-border pt-3 text-[13px] tabular-nums text-muted">
+            <p
+              className={`flex flex-wrap items-center gap-x-2 text-[13px] tabular-nums text-muted lg:flex lg:border-t lg:border-border lg:pt-3 ${
+                filtersActive ? "" : "hidden"
+              }`}
+            >
               {filtered.length} találat
               {filtersActive && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCourses(new Set());
-                    setShowDone(false);
-                    setCriticalOnly(false);
-                    setPlatformFilter("");
-                  }}
-                  className="ml-auto font-semibold text-heading underline"
-                >
+                <button type="button" onClick={clearFilters} className="ml-auto font-semibold text-heading underline">
                   Szűrők törlése
                 </button>
               )}
             </p>
           </div>
+
+          <Dialog open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Szűrők">
+            <div className="flex flex-col gap-4">{toggles}</div>
+            <DialogActions>
+              <Button type="button" variant="secondary" onClick={clearFilters} disabled={!filtersActive}>
+                Szűrők törlése
+              </Button>
+              <Button type="button" onClick={() => setFiltersOpen(false)}>
+                {filtered.length} találat mutatása
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <div className="min-w-0">
             {overdue.length === 0 && weeks.length === 0 ? (
