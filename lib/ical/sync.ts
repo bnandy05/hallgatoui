@@ -1,8 +1,8 @@
 import { newId } from "@/lib/id";
 import type { Course, Deadline, DiscoveredContext, IcalFeed } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { parseCanvasEvent } from "@/lib/ical/canvas";
-import { matchCourse } from "@/lib/ical/match";
+import { cleanCanvasTitle, parseCanvasEvent } from "@/lib/ical/canvas";
+import { matchCourse, matchCourseInText } from "@/lib/ical/match";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_NOTE_LENGTH = 500;
@@ -125,4 +125,19 @@ export function mergeFeedSync({
   });
 
   return { deadlines: [...carried, ...synced], discovered: [...discoveredByKey.values()] };
+}
+
+/**
+ * Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles.
+ * Run whenever courses or their keywords change, so the order of imports doesn't matter.
+ */
+export function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
+  const autoFeedIds = new Set(feeds.filter((f) => f.courseId === null).map((f) => f.id));
+  return deadlines.map((d) => {
+    if (d.source !== "ical" || d.courseId !== null || !d.feedId || !autoFeedIds.has(d.feedId)) {
+      return d;
+    }
+    const courseId = matchCourseInText(d.title, courses);
+    return courseId ? { ...d, courseId, title: cleanCanvasTitle(d.title) } : d;
+  });
 }
