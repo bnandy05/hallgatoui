@@ -23,7 +23,7 @@ import {
   mergeTimetableImport,
   type ParsedSession,
 } from "@/lib/ical/neptun";
-import { keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
+import { autoLinkContexts, keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
@@ -638,8 +638,12 @@ export const useStore = create<AppStore>()(
             now,
           });
 
+          // Contexts that already belong to a course bring their Canvas course link along.
+          const { courses, linked } = autoLinkContexts(state.courses, { ...feed, discovered });
+
           return {
             deadlines,
+            courses,
             feeds: state.feeds.map((f) =>
               f.id === feedId
                 ? {
@@ -647,6 +651,7 @@ export const useStore = create<AppStore>()(
                     lastSyncedAt: now.toISOString(),
                     lastError: undefined,
                     discovered,
+                    ...(linked.length > 0 && { linkedContexts: [...(f.linkedContexts ?? []), ...linked] }),
                   }
                 : f
             ),
@@ -665,14 +670,17 @@ export const useStore = create<AppStore>()(
         set((state) => {
           let courses = state.courses;
           const ignoredByFeed = new Map<string, string[]>();
+          // Contexts whose link this adds, so a later sync won't add it again after a delete.
+          const linkedByFeed = new Map<string, string[]>();
 
           for (const decision of decisions) {
             const { items } = decision;
             const keywords = [...new Set(items.map((i) => keywordForContext(i.context)))];
             const links: CourseLink[] = [];
-            for (const { context } of items) {
+            for (const { feedId, context } of items) {
               const url = context.courseUrl ? normalizeLinkUrl(context.courseUrl) : null;
-              if (!url) continue;
+              if (!url || decision.kind === "skip") continue;
+              linkedByFeed.set(feedId, [...(linkedByFeed.get(feedId) ?? []), context.key]);
               links.push({
                 id: newId(),
                 platformId: "canvas",
@@ -718,9 +726,14 @@ export const useStore = create<AppStore>()(
           }
 
           const feeds = state.feeds.map((f) => {
-            const keys = ignoredByFeed.get(f.id);
-            if (!keys) return f;
-            return { ...f, ignoredContexts: [...new Set([...(f.ignoredContexts ?? []), ...keys])] };
+            const ignored = ignoredByFeed.get(f.id);
+            const linked = linkedByFeed.get(f.id);
+            if (!ignored && !linked) return f;
+            return {
+              ...f,
+              ...(ignored && { ignoredContexts: [...new Set([...(f.ignoredContexts ?? []), ...ignored])] }),
+              ...(linked && { linkedContexts: [...new Set([...(f.linkedContexts ?? []), ...linked])] }),
+            };
           });
 
           return { courses, feeds, deadlines: rematchDeadlines(state.deadlines, feeds, courses) };
