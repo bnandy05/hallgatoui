@@ -51,7 +51,7 @@ export function NotificationSettings() {
 
   return (
     <section id="ertesitesek" className="flex flex-col gap-6">
-      <SectionHeading title="Értesítések" sub="A böngésző szól, mielőtt egy határidő lejár." />
+      <SectionHeading title="Értesítések" sub="Böngészőértesítés a határidők lejárta előtt." />
 
       <div className="sheet-paper flex flex-col px-5 py-1">
         {permission === "unsupported" ? (
@@ -72,7 +72,7 @@ export function NotificationSettings() {
         {active && (
           <>
             <div className="border-t border-border/70 py-4">
-              <p className="mb-2.5 text-[14.5px] font-medium text-heading">Mikor szóljon?</p>
+              <p className="mb-2.5 text-[14.5px] font-medium text-heading">Időzítés</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label="Emlékeztető időpontok">
                 {LEAD_OPTIONS.map((opt) => (
                   <Pill

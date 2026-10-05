@@ -90,7 +90,7 @@ export function DataSettings() {
     <section className="flex flex-col gap-6">
       <SectionHeading
         title="Adatok"
-        sub="Az adataid csak ebben a böngészőben vannak. Érdemes rendszeresen mentést készíteni."
+        sub="Az adataid a fiókodban tárolódnak. Biztonsági mentést fájlba is készíthetsz."
       />
 
       <div className="sheet-paper divide-y divide-border/70 px-5">
@@ -123,7 +123,7 @@ export function DataSettings() {
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
             <p className="text-[14.5px] font-medium text-heading">Mintaadatok</p>
-            <p className="text-[13px] text-muted">Kitalált tárgyak és határidők, hogy kipróbálhasd az oldalt.</p>
+            <p className="text-[13px] text-muted">Minta tárgyak és határidők az oldal kipróbálásához.</p>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
             <Sparkles className="h-4 w-4" />

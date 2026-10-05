@@ -61,7 +61,7 @@ export function CalendarSubscriptionSettings() {
   function handleRotate() {
     if (
       !confirm(
-        "Új linket kapsz, a régi előfizetések (Apple, Google Naptár) nem frissülnek tovább, és újra fel kell iratkoznod rájuk. Folytatod?"
+        "Új linket kapsz, a régi megszűnik. Az Apple vagy a Google Naptárban újra hozzá kell adnod a naptárat. Folytatod?"
       )
     ) {
       return;
@@ -70,7 +70,7 @@ export function CalendarSubscriptionSettings() {
   }
 
   function handleDisable() {
-    if (!confirm("Kikapcsolod? A naptár-link megszűnik, az adataid a fiókodban megmaradnak.")) {
+    if (!confirm("Kikapcsolod? A feliratkozási link megszűnik, az adataid a fiókodban megmaradnak.")) {
       return;
     }
     void run("delete", async () => {
@@ -90,10 +90,10 @@ export function CalendarSubscriptionSettings() {
   const spinner = <Loader2 className="h-4 w-4 animate-spin" />;
 
   return (
-    <section id="naptar-elofizetes" className="flex flex-col gap-8">
+    <section id="naptar-exportalas" className="flex flex-col gap-8">
       <SectionHeading
-        title="Naptár-előfizetés"
-        sub="Minden tárgyad és határidőd egyetlen naptárban, amelyre az Apple vagy a Google Naptárban előfizethetsz."
+        title="Naptár exportálása"
+        sub="Minden tárgyad és határidőd egyetlen naptárban, amelyet hozzáadhatsz az Apple vagy a Google Naptárhoz."
       />
 
       {token === undefined ? (
@@ -105,27 +105,28 @@ export function CalendarSubscriptionSettings() {
       ) : token === null ? (
         <div className="slip flex flex-col gap-4 bg-card px-5 pb-5 pt-6">
           <span aria-hidden="true" className="pin -top-[4px] left-5" style={{ "--pin-color": "var(--pin-neutral)" } as CSSProperties} />
-          <p className="font-display text-[22px] text-heading">Egy link, amit a naptárad magától frissít</p>
+          <p className="font-display text-[22px] text-heading">Automatikusan frissülő naptár</p>
           <div className="flex gap-2.5 rounded-[var(--radius)] bg-canary/60 p-3 text-[13.5px] text-foreground">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>
-              A link titkos: bárki megnézheti vele a tárgyaidat és a határidőidet. A szerver a naptárforrásaidat
-              (a linkjeik privát Canvas- vagy Moodle-tokent is tartalmazhatnak) magától frissíti, így a naptárad
-              akkor is naprakész, ha az oldal nincs nyitva. Kikapcsolás után a link megszűnik.
+              A feliratkozási link titkos: aki ismeri, megtekintheti vele a tárgyaidat és a határidőidet. A szerver
+              rendszeresen frissíti a naptárforrásaidat (ezek linkjei privát Canvas- vagy Moodle-tokent is
+              tartalmazhatnak), így a naptárad akkor is naprakész, ha az oldal nincs megnyitva. Kikapcsolás után a
+              link megszűnik.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" disabled={busy !== null} onClick={() => void run("create", createCalendarToken)}>
               {busy === "create" ? spinner : <CalendarPlus className="h-4 w-4" />}
-              Előfizetés bekapcsolása
+              Feliratkozási link létrehozása
             </Button>
             <Button type="button" variant="secondary" onClick={downloadCalendar}>
               <Download className="h-4 w-4" />
-              Inkább letöltöm (.ics)
+              Letöltés (.ics)
             </Button>
           </div>
           <p className="text-[13px] text-muted">
-            A letöltés egyszeri pillanatkép: nem frissül magától, és nem kell hozzá előfizetés.
+            A letöltött fájl az aktuális állapotot tartalmazza, később nem frissül.
           </p>
           {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
         </div>
@@ -133,12 +134,12 @@ export function CalendarSubscriptionSettings() {
         <div className="slip flex flex-col gap-4 bg-card px-5 pb-5 pt-6">
           <span aria-hidden="true" className="pin -top-[4px] left-5" style={{ "--pin-color": "var(--success)" } as CSSProperties} />
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="font-display text-[22px] text-heading">Az előfizetési linked</p>
+            <p className="font-display text-[22px] text-heading">Feliratkozási link</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_13rem]">
             <div className="min-w-0">
-              <CopyField value={httpsUrl} label="Előfizetési link" />
-              <p className="mt-2 text-[12.5px] text-muted">A linkkel bárki megnézheti a naptáradat, ezért ne oszd meg.</p>
+              <CopyField value={httpsUrl} label="Feliratkozási link" />
+              <p className="mt-2 text-[12.5px] text-muted">Aki ismeri a linket, megtekintheti a naptáradat, ezért ne oszd meg.</p>
             </div>
             <div>
               <Label htmlFor="naptar-nezet">Nézet</Label>
@@ -168,8 +169,8 @@ export function CalendarSubscriptionSettings() {
             </a>
           </div>
           <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted">
-            <li>Minden nézetre külön is előfizethetsz, így például tárgyanként más színt adhatsz nekik.</li>
-            <li>A Google Naptár 8–24 óránként frissít, ezt nem lehet gyorsítani, és az emlékeztetőket sem veszi át.</li>
+            <li>Minden nézet külön naptárként is hozzáadható, így például tárgyanként eltérő színt kaphatnak.</li>
+            <li>A Google Naptár 8–24 óránként frissít; ez nem gyorsítható, és az emlékeztetőket nem veszi át.</li>
             <li>Az Apple Naptárban a naptár beállításainál állíthatod a frissítés gyakoriságát.</li>
           </ul>
           {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
@@ -177,7 +178,7 @@ export function CalendarSubscriptionSettings() {
       )}
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">Mi kerüljön bele</h3>
+        <h3 className="font-display text-[22px] text-heading">Tartalom</h3>
         <div className="sheet-paper divide-y divide-border/70 px-5 py-1">
           <Switch
             checked={exportOptions.includeDone}
@@ -214,7 +215,7 @@ export function CalendarSubscriptionSettings() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">Extrák</h3>
+        <h3 className="font-display text-[22px] text-heading">Kiegészítések</h3>
         <div className="sheet-paper divide-y divide-border/70 px-5 py-1">
           <Switch
             checked={exportOptions.alarms}
@@ -255,7 +256,7 @@ export function CalendarSubscriptionSettings() {
             className="text-danger hover:!bg-danger/10 sm:ml-auto"
           >
             {busy === "delete" && spinner}
-            Előfizetés kikapcsolása
+            Feliratkozási link kikapcsolása
           </Button>
         </div>
       )}

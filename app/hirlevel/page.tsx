@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-const PROMPT = "Leiratkozol az e-mailes összefoglalóról? A naptár-előfizetésed megmarad.";
+const PROMPT = "Leiratkozol az e-mail-összefoglalóról? A naptár feliratkozási linkje továbbra is működik.";
 
 const ERRORS: Record<string, string> = {
   invalid: "A link érvénytelen vagy már nem használható.",
@@ -29,7 +29,7 @@ export default async function Page(props: PageProps<"/hirlevel">) {
 
   let body;
   if (result === "ok") {
-    body = <p className="text-[15px] text-foreground">Leiratkoztál, több összefoglalót nem küldünk.</p>;
+    body = <p className="text-[15px] text-foreground">Sikeresen leiratkoztál, további összefoglalót nem küldünk.</p>;
   } else if (result) {
     body = <p className="text-[15px] font-semibold text-danger">{ERRORS[result] ?? ERRORS.invalid}</p>;
   } else if (!userId || !key) {
