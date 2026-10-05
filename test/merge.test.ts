@@ -258,3 +258,43 @@ test("offsetFromResponse", () => {
   // Server header 12:00:10 (truncated), request took 200 ms: the server is about 10.4 s ahead.
   assert.equal(offsetFromResponse("Mon, 05 Oct 2026 12:00:10 GMT", sent, sent + 200), 10_400);
 });
+
+test("a rule set merges as one block: both sides edited, the later edit wins whole", () => {
+  const rules = (updatedAt: string, label: string, table: number) =>
+    ({
+      id: "rules:c1", courseId: "c1", source: "manual", schemaVersion: 1, updatedAt,
+      components: [{ id: "zh", label, kind: "exam", scale: { kind: "points", max: 50 } }],
+      retakes: [], derived: [], tables: [{ id: "t", rows: [{ min: 0, value: 1 }, { min: table, value: 2 }] }],
+      outcomes: [], flags: [],
+    }) as SyncPayload["data"]["requirementRules"][number];
+  const base = payload([], { requirementRules: [rules(T0, "ZH", 20)] });
+  const local = payload([], { requirementRules: [rules(T1, "ZH (helyi)", 20)] });
+  const remote = payload([], { requirementRules: [rules(T2, "ZH", 25)] });
+  const merged = mergeAppData(base, local, remote, NOW).data.requirementRules[0];
+  // A field-level merge would combine the local label with the remote table.
+  assert.equal(merged.components[0].label, "ZH");
+  assert.equal(merged.tables[0].rows[1].min, 25);
+});
+
+test("results from two devices merge field by field under one deterministic id", () => {
+  const result = (updatedAt: string, points: number) => ({
+    id: "c1|zh|n:1", courseId: "c1", componentId: "zh", instanceKey: "n:1", state: "recorded" as const,
+    value: { kind: "points" as const, points }, updatedAt,
+  });
+  const base = payload([], { requirementResults: [] });
+  const local = payload([], { requirementResults: [result(T1, 30)] });
+  const remote = payload([], { requirementResults: [result(T2, 35)] });
+  const merged = mergeAppData(base, local, remote, NOW).data.requirementResults;
+  assert.equal(merged.length, 1);
+  assert.deepEqual(merged[0].value, { kind: "points", points: 35 });
+});
+
+test("merging with a document from before requirements existed keeps the local ones", () => {
+  const result = { id: "c1|zh|n:1", courseId: "c1", componentId: "zh", instanceKey: "n:1", state: "na" as const, updatedAt: T1 };
+  const old = payload();
+  delete (old.data as Partial<SyncPayload["data"]>).requirementResults;
+  delete (old.data as Partial<SyncPayload["data"]>).requirementRules;
+  const merged = mergeAppData(old, payload([], { requirementResults: [result] }), old, NOW).data;
+  assert.equal(merged.requirementResults.length, 1);
+  assert.deepEqual(merged.requirementRules, []);
+});

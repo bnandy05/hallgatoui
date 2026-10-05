@@ -7,6 +7,7 @@ import { MAX_REQUIREMENTS_CHARS } from "@/lib/importData";
 import { linkHost } from "@/lib/url";
 import type { Resource } from "@/lib/types";
 import { ResourceForm } from "@/components/ResourceList";
+import { RulesPanel } from "@/components/requirements/RulesPanel";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -72,10 +73,11 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
 
   if (!text && docs.length === 0) {
     return (
-      <>
+      <div className="flex flex-col gap-4">
+        <RulesPanel courseId={course.id} />
         <EmptyState
           icon={ClipboardList}
-          title="Még nincsenek követelmények"
+          title="Még nincs leírás"
           text="Írd le, mi kell a jegyhez (ZH-k, beadandók, hiányzás, pontozás), vagy linkeld a követelményrendszert."
           action={
             <>
@@ -91,12 +93,13 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
           }
         />
         {dialogs}
-      </>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
+      <RulesPanel courseId={course.id} />
       <div className="sheet-paper flex flex-col gap-3 px-5 py-4">
         {text ? (
           <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-foreground [overflow-wrap:anywhere]">

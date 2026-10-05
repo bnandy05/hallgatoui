@@ -49,8 +49,8 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 ## In progress: course requirements tracker (issue #33)
 
 The full plan (rule schema, grade engine, timetable linking, catch-up popup, reminders, extraction with Jev + a hand-written parser, shared templates per university and subject code, owner answers) is in the project's shared folder, `plans/requirements-tracker/README.md`. Milestones:
-- **M0, this branch:** a "Követelmények" section on the course page. It holds the requirements as free text (`Course.requirements`, at most 20,000 characters) and the requirement documents (resources of kind `kovetelmeny`, shown here and not under Anyagok).
-- **M1:** manual rules and the grade engine.
+- **M0 (done):** a "Követelmények" section on the course page. It holds the requirements as free text (`Course.requirements`, at most 20,000 characters) and the requirement documents (resources of kind `kovetelmeny`, shown here and not under Anyagok).
+- **M1 (done, same branch):** rules per course from a template or as validated JSON, result entry per component, the grade engine (current / best / worst, gates, retakes, post steps), the "Mi kell a jegyhez?" solver and the "Ellenőrizd" flags. Rules and results sync with the data document. Not yet: a form-based rule editor (JSON only for now).
 - **M2:** timetable linking, the catch-up popup and reminders.
 - **M3:** extraction and shared templates.
 
