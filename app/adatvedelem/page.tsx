@@ -71,6 +71,14 @@ const PURPOSES: Purpose[] = [
     until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
   },
   {
+    what: "Közös követelmény-sablonok",
+    data:
+      "Ha megadod az egyetemed, és egy tárgy beolvasott vagy átvett szabályait elmented, a szabályok (az összetevők, a pontozás és a jegyszámítás, megjegyzések nélkül) az egyetem, a tárgykód és a félév szerint közös sablonba kerülnek, amelyet az egyetemed hallgatói ugyanezzel a tárgykóddal átvehetnek. A sablonban nincs név, e-mail-cím vagy eredmény; a fiókod azonosítójának visszafejthetetlen lenyomatát tároljuk, hogy ne számoljunk kétszer. A megosztást a beolvasáskor kikapcsolhatod.",
+    basis: "Szerződés teljesítése (6. cikk (1) b)).",
+    until:
+      "Az egyetemed a fiókod törléséig vagy módosításáig marad meg. A fiók törlésekor a lenyomatodat minden sablonból töröljük; a mások által is megerősített szabályok megmaradnak, mert nem tartalmaznak rólad adatot.",
+  },
+  {
     what: "Visszaélés elleni védelem",
     data:
       "IP-cím, a belépési, regisztrációs és levélküldési kísérletek számlálásához. Az e-mail-címeket a számlálókban csak lenyomatként tároljuk.",

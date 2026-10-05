@@ -15,6 +15,7 @@ import { Pill } from "@/components/ui/Pill";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { ExtractForm } from "@/components/requirements/ExtractDialog";
+import { SharedTemplateOffer, TemplateReview, useSharedTemplate, type TemplateOffer } from "@/components/requirements/SharedTemplate";
 import {
   AssignmentInput,
   AttendanceInput,
@@ -64,6 +65,9 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
+  const [offer, setOffer] = useState<TemplateOffer | null>(null);
+  const course = useStore((s) => s.courses.find((c) => c.id === courseId));
+  const shared = useSharedTemplate(course);
 
   const results = useMemo(
     () => (rules ? allResults.filter((r) => r.courseId === courseId) : EMPTY_RESULTS),
@@ -86,8 +90,10 @@ export function RulesPanel({ courseId }: { courseId: string }) {
     <Dialog open={extractOpen} onClose={() => setExtractOpen(false)} title="Beolvasás a követelményrendszerből" size="lg">
       <ExtractForm
         replacing={!!rules}
-        onSave={(next) => {
+        canShare={shared.canShare}
+        onSave={(next, share) => {
           setRequirementRules(courseId, { ...next, source: "extracted" });
+          if (share) shared.publish(next);
           setExtractOpen(false);
         }}
         onManual={() => {
@@ -98,10 +104,31 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       />
     </Dialog>
   );
+  const templateDialog = (
+    <Dialog open={offer !== null} onClose={() => setOffer(null)} title="Közösségi sablon" size="lg">
+      {offer && (
+        <TemplateReview
+          offer={offer}
+          onSave={() => {
+            setRequirementRules(courseId, { ...offer.rules, source: "template", templateId: `shared:${offer.variantId}` });
+            shared.publish(offer.rules);
+            setOffer(null);
+          }}
+          onReport={() => {
+            void shared.report(offer);
+            setOffer(null);
+            setExtractOpen(true);
+          }}
+          onCancel={() => setOffer(null)}
+        />
+      )}
+    </Dialog>
+  );
   const dialogs = (
     <>
       {jsonDialog}
       {extractDialog}
+      {templateDialog}
     </>
   );
 
@@ -114,6 +141,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             Állítsd be a tárgy szabályait, és a rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez.
           </p>
         </div>
+        {course && <SharedTemplateOffer course={course} shared={shared} onReview={setOffer} />}
         <Button type="button" size="sm" onClick={() => setExtractOpen(true)} className="self-start">
           <FileText className="h-4 w-4" />
           Beolvasás a követelményrendszerből

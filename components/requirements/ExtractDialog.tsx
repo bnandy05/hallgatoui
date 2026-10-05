@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Label } from "@/components/ui/Label";
 import { Pill } from "@/components/ui/Pill";
+import { Switch } from "@/components/ui/Switch";
 import { Textarea } from "@/components/ui/Textarea";
 
 // Setup from the pasted requirements document: the parser runs here, Jev (through our server)
@@ -24,12 +25,14 @@ type JevState = "idle" | "loading" | "done" | "unavailable";
 
 export function ExtractForm({
   replacing,
+  canShare,
   onSave,
   onManual,
   onCancel,
 }: {
   replacing: boolean;
-  onSave: (rules: SubjectRules) => void;
+  canShare: boolean;
+  onSave: (rules: SubjectRules, share: boolean) => void;
   onManual: () => void;
   onCancel: () => void;
 }) {
@@ -38,6 +41,7 @@ export function ExtractForm({
   const [jev, setJev] = useState<Record<string, JevAnswer>>({});
   const [jevState, setJevState] = useState<JevState>("idle");
   const [mine, setMine] = useState<Answers>({});
+  const [share, setShare] = useState(true);
 
   const answers = useMemo(() => {
     const out: Answers = {};
@@ -231,12 +235,21 @@ export function ExtractForm({
         </ul>
       </details>
 
+      {canShare && (
+        <Switch
+          checked={share}
+          onChange={setShare}
+          label="Megosztom a sablont"
+          description="Az egyetemed hallgatói, akik ugyanezt a tárgykódot veszik fel, átvehetik ezeket a szabályokat. Névtelenül, az eredményeid nélkül."
+        />
+      )}
+
       <DialogActions>
         {open > 0 && <p className="mr-auto self-center text-[13px] text-muted">Még {open} kérdés vár válaszra.</p>}
         <Button type="button" variant="secondary" onClick={() => setStep("paste")}>
           Vissza
         </Button>
-        <Button type="button" disabled={open > 0 || jevState === "loading"} onClick={() => onSave(result.rules!)}>
+        <Button type="button" disabled={open > 0 || jevState === "loading"} onClick={() => onSave(result.rules!, canShare && share)}>
           Mentés
         </Button>
       </DialogActions>
