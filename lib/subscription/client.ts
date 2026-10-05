@@ -8,7 +8,7 @@ import type { DigestFrequency, DigestStatus } from "@/lib/digest";
 
 const CALENDAR_API = "/api/fiok/naptar";
 const DIGEST_API = "/api/fiok/hirlevel";
-const GENERIC_ERROR = "A naptár-előfizetés nem érhető el";
+const GENERIC_ERROR = "A naptárexport nem érhető el";
 const NETWORK_ERROR = "A szerver nem érhető el";
 
 /** Path part of the subscription URL; add an origin or a scheme in front of it. */

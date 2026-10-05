@@ -17,11 +17,16 @@ import { AppearanceSettings, THEME_LABELS } from "@/components/settings/Appearan
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 
-const SECTIONS = ["fiok", "naptarak", "elofizetes", "ertesitesek", "megjelenes", "platformok", "adatok"] as const;
+const SECTIONS = ["fiok", "naptarak", "exportalas", "ertesitesek", "megjelenes", "platformok", "adatok"] as const;
 type SectionKey = (typeof SECTIONS)[number];
 
 // Anchors used by links elsewhere in the app, mapped onto their tab.
-const HASH_ALIASES: Record<string, SectionKey> = { "naptar-elofizetes": "elofizetes", hirlevel: "ertesitesek" };
+const HASH_ALIASES: Record<string, SectionKey> = {
+  elofizetes: "exportalas",
+  "naptar-elofizetes": "exportalas",
+  "naptar-exportalas": "exportalas",
+  hirlevel: "ertesitesek",
+};
 const HASH_EVENT = "settings-hash";
 
 function sectionFromHash(hash: string): SectionKey {
@@ -101,7 +106,7 @@ export default function WeekSettingsPage() {
   const sections: { id: SectionKey; label: string; summary: string; on?: boolean }[] = [
     { id: "fiok", label: "Fiók", summary: accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : "Belépve" },
     { id: "naptarak", label: "Naptárak", summary: feedCount > 0 ? `${feedCount} forrás` : "Még nincs forrás" },
-    { id: "elofizetes", label: "Előfizetés", summary: "Naptár-link és letöltés" },
+    { id: "exportalas", label: "Exportálás", summary: "Feliratkozási link és letöltés" },
     {
       id: "ertesitesek",
       label: "Értesítések",
@@ -179,7 +184,7 @@ export default function WeekSettingsPage() {
                 items={[
                   { id: "fiok", label: "Fiók" },
                   { id: "naptarak", label: "Naptárak", count: feedCount > 0 ? feedCount : undefined },
-                  { id: "elofizetes", label: "Előfizetés" },
+                  { id: "exportalas", label: "Exportálás" },
                   {
                     id: "ertesitesek",
                     label: (
@@ -204,7 +209,7 @@ export default function WeekSettingsPage() {
                   <FeedSettings />
                 </div>
               </TabPanel>
-              <TabPanel id="elofizetes" active={active === "elofizetes"}>
+              <TabPanel id="exportalas" active={active === "exportalas"}>
                 <CalendarSubscriptionSettings />
               </TabPanel>
               <TabPanel id="ertesitesek" active={active === "ertesitesek"}>

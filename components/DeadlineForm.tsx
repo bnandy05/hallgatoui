@@ -158,7 +158,7 @@ export function DeadlineForm({
           </div>
           {!parsed && (
             <p className="mt-1.5 text-[12.5px] text-muted">
-              Írd be egy sorban, Enterrel kitöltöm a mezőket. A <span className="font-semibold">!</span> kritikusnak jelöli.
+              Írd be egy sorban, és Enterre kitöltődnek a mezők. A <span className="font-semibold">!</span> kritikusnak jelöli.
             </p>
           )}
           {parsed && (

@@ -238,7 +238,7 @@ function DeadlineDetail({
           className={deadline.critical ? "!border-danger text-danger" : ""}
         >
           <Flame className="h-4 w-4" />
-          {deadline.critical ? "Kritikus" : "Kritikusnak jelölöm"}
+          {deadline.critical ? "Kritikus" : "Megjelölés kritikusként"}
         </Button>
         <Button
           type="button"

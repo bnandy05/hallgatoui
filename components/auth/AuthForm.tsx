@@ -122,10 +122,10 @@ export function AuthForm() {
     return (
       <Card className="flex flex-col gap-4">
         <MailCheck className="h-6 w-6 text-heading" aria-hidden="true" />
-        <SectionHeading title="Nézd meg a postafiókod" />
+        <SectionHeading title="Ellenőrizd a postafiókodat" />
         <p className="text-[15px] text-muted">
           Ha a {sent.email} címhez tartozik fiók, küldtünk oda egy levelet. A benne lévő link {sent.minutes} érvényes.
-          Ha nem érkezik meg, nézd meg a levélszemét mappát is.
+          Ha nem érkezik meg, ellenőrizd a levélszemét mappát is.
         </p>
         <Button variant="secondary" className="self-start" onClick={() => go("belepes")}>
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />

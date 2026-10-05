@@ -75,8 +75,8 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[14px] text-muted">
-        A Neptun gyakran angol tárgynevet ír, kóddal együtt sem, ezért egyszer meg kell mondanod, melyik
-        tárgyadhoz tartoznak az órák. A választást a következő importnál is megjegyezzük.
+        A Neptun a tárgyneveket gyakran angolul, kód nélkül exportálja, ezért egyszer meg kell adnod, melyik
+        tárgyadhoz tartoznak az órák. A hozzárendelést a következő importnál is megőrizzük.
       </p>
 
       {subjects.length === 0 && <p className="text-[14px] text-muted">Nincs hozzárendelendő tárgy.</p>}
