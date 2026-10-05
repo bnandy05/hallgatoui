@@ -14,10 +14,9 @@ import type {
   TimetableSource,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { matchCourseInText } from "@/lib/ical/match";
-import { cleanCanvasTitle, formatKindLabel } from "@/lib/ical/canvas";
+import { formatKindLabel } from "@/lib/ical/canvas";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
-import { mergeFeedSync } from "@/lib/ical/sync";
+import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
 import { findDuplicates, pairKey } from "@/lib/ical/dedupe";
 import {
   applySubjectMapping,
@@ -30,18 +29,6 @@ import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
 import type { ThemePref } from "@/lib/theme";
 import type { SyncPayload } from "@/lib/sync/merge";
-
-/** Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles. */
-function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
-  const autoFeedIds = new Set(feeds.filter((f) => f.courseId === null).map((f) => f.id));
-  return deadlines.map((d) => {
-    if (d.source !== "ical" || d.courseId !== null || !d.feedId || !autoFeedIds.has(d.feedId)) {
-      return d;
-    }
-    const courseId = matchCourseInText(d.title, courses);
-    return courseId ? { ...d, courseId, title: cleanCanvasTitle(d.title) } : d;
-  });
-}
 
 export function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
@@ -372,13 +359,17 @@ export const useStore = create<AppStore>()(
           links: input.links ?? [],
           resources: input.resources ?? [],
         };
-        set((state) => ({ courses: [...state.courses, course] }));
+        set((state) => {
+          const courses = [...state.courses, course];
+          return { courses, deadlines: rematchDeadlines(state.deadlines, state.feeds, courses) };
+        });
         return id;
       },
       updateCourse: (id, patch) => {
-        set((state) => ({
-          courses: state.courses.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-        }));
+        set((state) => {
+          const courses = state.courses.map((c) => (c.id === id ? { ...c, ...patch } : c));
+          return { courses, deadlines: rematchDeadlines(state.deadlines, state.feeds, courses) };
+        });
       },
       deleteCourse: (id) => {
         set((state) => ({
@@ -705,6 +696,8 @@ export const useStore = create<AppStore>()(
           };
           return {
             courses,
+            // Canvas deadlines imported earlier may match the new courses' keywords now.
+            deadlines: rematchDeadlines(state.deadlines, state.feeds, courses),
             timetableSources: previous
               ? state.timetableSources.map((s) => (s.id === sourceId ? source : s))
               : [...state.timetableSources, source],
@@ -725,6 +718,7 @@ export const useStore = create<AppStore>()(
           const source = { ...previous, subjectCourses: { ...previous.subjectCourses, ...mapping } };
           return {
             courses,
+            deadlines: rematchDeadlines(state.deadlines, state.feeds, courses),
             timetableSources: state.timetableSources.map((s) => (s.id === sourceId ? source : s)),
             classSessions: applySubjectMapping(source, state.classSessions),
           };

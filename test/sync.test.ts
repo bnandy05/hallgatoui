@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseIcs } from "@/lib/ical/parse";
-import { mergeFeedSync } from "@/lib/ical/sync";
+import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
 import { isRecentlyChanged } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { readFixture } from "./fixtures";
@@ -79,4 +79,19 @@ test("deadlines of other feeds and manual ones are untouched", () => {
   };
   const { deadlines } = sync([manual]);
   assert.deepEqual(deadlines.find((d) => d.id === "m1"), manual);
+});
+
+test("rematch assigns deadlines synced before their course existed (Canvas before Neptun)", () => {
+  const before = mergeFeedSync({ feed, events, deadlines: [], courses: [], now }).deadlines;
+  assert.ok(before.every((d) => d.courseId === null));
+
+  // A timetable import later creates the course with the subject name as keyword.
+  const later = [makeCourse("c-dm", "Diszkrét matematika I", ["Diszkrét matematika I"])];
+  const after = rematchDeadlines(before, [feed], later);
+  const quiz = after.find((d) => d.title.startsWith("Otthoni kvíz 01"))!;
+  assert.equal(quiz.courseId, "c-dm");
+  assert.equal(quiz.title, "Otthoni kvíz 01");
+
+  const fixed = rematchDeadlines(before, [makeFeed({ courseId: "c-other" })], later);
+  assert.ok(fixed.every((d) => d.courseId === null), "feeds with a fixed course are left alone");
 });
