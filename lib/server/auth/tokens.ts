@@ -18,4 +18,7 @@ export const TOKEN_TTL_SECONDS: Record<TokenPurpose, number> = {
   "email-change": 48 * 3600,
 };
 
+/** An unconfirmed registration (user record and email index) is deleted after this. */
+export const PENDING_ACCOUNT_TTL_SECONDS = 7 * 86400;
+
 export const SESSION_TTL_SECONDS = 90 * 86400;

@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const dataReady = useDataReady();
-  const bare = isAuthPath(pathname);
+  const bare = isPublicPath(pathname);
   const didAutoSync = useRef(false);
 
   useEffect(() => {
@@ -155,7 +155,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-[13px] text-muted-dim md:pb-6">
         <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 sm:px-6">
           <span>Az adataid a fiókodban vannak, így minden eszközödön ugyanazok.</span>
-          <span>Független projekt, nem kapcsolódik a Neptunhoz.</span>
+          <span className="flex flex-wrap gap-x-6 gap-y-1">
+            <span>Független projekt, nem kapcsolódik a Neptunhoz.</span>
+            <Link href="/adatvedelem" className="underline underline-offset-2 hover:text-muted">
+              Adatvédelem
+            </Link>
+          </span>
         </div>
       </footer>
       {!bare && <TabBar pathname={pathname} />}

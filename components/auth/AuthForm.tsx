@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, MailCheck } from "lucide-react";
 import { hardNavigate, safeReturnPath } from "@/lib/account/path";
@@ -213,6 +214,16 @@ export function AuthForm() {
         {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
         {submitLabel}
       </Button>
+
+      {current === "regisztracio" && (
+        <p className="text-[13px] text-muted">
+          A fiókhoz az e-mail-címedet és a megadott tanulmányi adataidat kezeljük. Részletek az{" "}
+          <Link href="/adatvedelem" className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
+            adatvédelmi tájékoztatóban
+          </Link>
+          .
+        </p>
+      )}
 
       {current === "belepes" && (
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
