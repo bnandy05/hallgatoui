@@ -6,6 +6,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 
 ## Done (in `main`)
 
+- **Offline, field-level sync and series** (plan: `docs/superpowers/plans/2026-10-05-offline-and-series.md`, branch `impeccablelocal`): per-item `updatedAt` + tombstones with a server-offset clock and a field-level latest-wins merge; a hand-written service worker (`public/sw.js`), manifest and icons so the app opens offline and can be installed; creating a deadline on several dates or repeating (`lib/recurrence.ts`, `seriesId`, series delete choice). Not yet checked in a browser (offline reload of `/`, `/radar`, a course page; install prompt; the form's new tabs; DST week across 25 Oct; sync of a series is one save).
 - **Merged calendar subscription**:
   - one `.ics` link (`/api/naptar/<token>.ics`) for Apple and Google Calendar, backed by Upstash Redis;
   - the server re-fetches the source feeds every 15 minutes;

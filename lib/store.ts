@@ -29,11 +29,14 @@ import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
 import type { ThemePref } from "@/lib/theme";
 import type { SyncPayload } from "@/lib/sync/merge";
+import { setServerOffset, syncNow } from "@/lib/sync/clock";
+import { stampChanges, type Stamped } from "@/lib/sync/stamp";
 
 export function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
     classSessions: [],
     timetableSources: [],
+    tombstones: {},
   };
 }
 
@@ -61,6 +64,7 @@ export function selectPayload(s: AppData & { exportOptions: ExportOptions }): Sy
       ignoredDuplicatePairs: s.ignoredDuplicatePairs,
       classSessions: s.classSessions,
       timetableSources: s.timetableSources,
+      tombstones: s.tombstones,
     },
     exportOptions: s.exportOptions,
   };
@@ -117,6 +121,9 @@ export interface AppStore extends AppData {
   syncBase: SyncPayload | null;
   syncStatus: SyncStatus;
   syncError?: string;
+  /** Server clock minus this device's clock, learned from API responses (see lib/sync/clock.ts). */
+  serverOffsetMs: number;
+  setServerOffsetMs: (ms: number) => void;
   setAccount: (account: Account | null) => void;
   /** Replaces the data with the server's and records it as synced. Needs `account`. */
   applyServerData: (payload: SyncPayload, version: number) => void;
@@ -161,11 +168,12 @@ export interface AppStore extends AppData {
   removeResource: (courseId: string, resourceId: string) => void;
 
   // deadlines
-  addDeadline: (
-    d: Omit<Deadline, "id" | "source" | "done"> & { done?: boolean }
-  ) => string;
+  addDeadline: (d: NewDeadline) => string;
+  /** Several manual deadlines in one change (one sync); more than one share a new `seriesId`. */
+  addDeadlines: (items: NewDeadline[]) => string[];
   updateDeadline: (id: string, patch: Partial<Omit<Deadline, "id">>) => void;
   removeDeadline: (id: string) => void;
+  removeDeadlines: (ids: string[]) => void;
   toggleDone: (id: string) => void;
 
   // platforms
@@ -265,9 +273,28 @@ function groupFollowerIds(state: AppData & { exportOptions: ExportOptions }, id:
   return new Set(group?.others.map((d) => d.id));
 }
 
+type NewDeadline = Omit<Deadline, "id" | "source" | "done"> & { done?: boolean };
+
+/**
+ * Wraps zustand's `set` so every change to a synced list is stamped (`updatedAt`) and every removal
+ * tombstoned, whatever action made it. Merge results and server data bypass it (`rawSet`).
+ */
+function trackChanges(rawSet: (fn: (state: AppStore) => Partial<AppStore> | AppStore) => void) {
+  return ((partial: unknown, replace?: boolean) => {
+    const fn = (state: AppStore) => {
+      const patch = typeof partial === "function" ? (partial as (s: AppStore) => Partial<AppStore> | AppStore)(state) : (partial as Partial<AppStore>);
+      if (!patch || patch === state) return patch as AppStore;
+      return stampChanges(state as Stamped, patch as Partial<Stamped>, syncNow()) as Partial<AppStore>;
+    };
+    (rawSet as unknown as (f: typeof fn, r?: boolean) => void)(fn, replace);
+  }) as unknown as (partial: Partial<AppStore> | ((state: AppStore) => Partial<AppStore> | AppStore)) => void;
+}
+
 export const useStore = create<AppStore>()(
   persist(
-    (set) => ({
+    (rawSet) => {
+      const set = trackChanges(rawSet as never);
+      return ({
       ...emptyAppData(),
       notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
       notifiedKeys: [],
@@ -279,14 +306,19 @@ export const useStore = create<AppStore>()(
       syncStatus: "idle",
       showClasses: true,
       theme: "system",
+      serverOffsetMs: 0,
 
       // ---- account and sync ----
+      setServerOffsetMs: (serverOffsetMs) => {
+        set({ serverOffsetMs });
+      },
       setAccount: (account) => {
         set({ account });
       },
       applyServerData: (payload, version) => {
-        set((state) => ({
+        rawSet((state) => ({
           ...payload.data,
+          tombstones: payload.data.tombstones ?? {},
           exportOptions: payload.exportOptions,
           ownerUserId: state.account?.userId ?? null,
           syncedVersion: version,
@@ -296,7 +328,7 @@ export const useStore = create<AppStore>()(
         }));
       },
       applyMerged: (payload) => {
-        set({ ...payload.data, exportOptions: payload.exportOptions });
+        rawSet({ ...payload.data, tombstones: payload.data.tombstones ?? {}, exportOptions: payload.exportOptions });
       },
       markSynced: (version, base) => {
         set((state) => ({
@@ -309,7 +341,7 @@ export const useStore = create<AppStore>()(
         set({ syncStatus, syncError });
       },
       clearAccountData: () => {
-        set({
+        rawSet({
           ...emptyAppData(),
           exportOptions: DEFAULT_EXPORT_OPTIONS,
           notifiedKeys: [],
@@ -483,6 +515,19 @@ export const useStore = create<AppStore>()(
         set((state) => ({ deadlines: [...state.deadlines, deadline] }));
         return id;
       },
+      addDeadlines: (items) => {
+        if (items.length === 0) return [];
+        const seriesId = items.length > 1 ? newId() : undefined;
+        const created: Deadline[] = items.map((d) => ({
+          ...d,
+          id: newId(),
+          source: "manual",
+          done: d.done ?? false,
+          ...(seriesId && { seriesId }),
+        }));
+        set((state) => ({ deadlines: [...state.deadlines, ...created] }));
+        return created.map((d) => d.id);
+      },
       updateDeadline: (id, patch) => {
         set((state) => {
           const shared =
@@ -505,6 +550,10 @@ export const useStore = create<AppStore>()(
       },
       removeDeadline: (id) => {
         set((state) => ({ deadlines: state.deadlines.filter((d) => d.id !== id) }));
+      },
+      removeDeadlines: (ids) => {
+        const drop = new Set(ids);
+        set((state) => ({ deadlines: state.deadlines.filter((d) => !drop.has(d.id)) }));
       },
       toggleDone: (id) => {
         set((state) => {
@@ -774,7 +823,8 @@ export const useStore = create<AppStore>()(
           ],
         }));
       },
-    }),
+      });
+    },
     {
       name: CACHE_KEY,
       version: 1,
@@ -797,8 +847,12 @@ export const useStore = create<AppStore>()(
           ownerUserId: saved.ownerUserId ?? null,
           syncedVersion: saved.syncedVersion ?? 0,
           syncBase: saved.syncBase ?? null,
+          tombstones: saved.tombstones ?? {},
+          serverOffsetMs: saved.serverOffsetMs ?? 0,
         };
       },
+      // The clock module cannot import the store, so it gets the persisted offset here.
+      onRehydrateStorage: () => (state) => setServerOffset(state?.serverOffsetMs ?? 0),
       partialize: (state) => ({
         version: state.version,
         courses: state.courses,
@@ -808,6 +862,8 @@ export const useStore = create<AppStore>()(
         ignoredDuplicatePairs: state.ignoredDuplicatePairs,
         classSessions: state.classSessions,
         timetableSources: state.timetableSources,
+        tombstones: state.tombstones,
+        serverOffsetMs: state.serverOffsetMs,
         showClasses: state.showClasses,
         theme: state.theme,
         notificationPrefs: state.notificationPrefs,

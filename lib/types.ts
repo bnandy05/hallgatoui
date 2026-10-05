@@ -5,6 +5,7 @@ export interface Platform {
   name: string;
   color: string; // hex
   builtIn: boolean;
+  updatedAt?: string; // ISO, last edit on the server's clock (see lib/sync/clock.ts)
 }
 
 export interface CourseLink {
@@ -12,6 +13,7 @@ export interface CourseLink {
   platformId: PlatformId;
   label?: string;
   url: string;
+  updatedAt?: string;
 }
 
 export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "egyeb";
@@ -23,6 +25,7 @@ export interface Resource {
   kind: ResourceKind;
   note?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Course {
@@ -35,6 +38,7 @@ export interface Course {
   resources: Resource[];
   matchKeywords: string[]; // used to auto-assign iCal events
   createdAt: string;
+  updatedAt?: string;
 }
 
 export type DeadlineSource = "manual" | "ical";
@@ -54,6 +58,8 @@ export interface Deadline {
   externalUid?: string;
   previousDue?: string; // ISO, the due date before the last change reported by the feed
   dueChangedAt?: string; // ISO, when that change was noticed
+  seriesId?: string; // deadlines created together (several dates / repeating); informational only
+  updatedAt?: string;
 }
 
 export type CourseKind = "Ea" | "Gy" | "Lab"; // lecture / practice / lab
@@ -86,6 +92,7 @@ export interface IcalFeed {
   discovered?: DiscoveredContext[]; // contexts seen in the last sync (all events)
   ignoredContexts?: string[]; // context keys the user chose to skip
   markDoneBefore?: string; // ISO; deadlines created by a sync that are due before it start as done
+  updatedAt?: string;
 }
 
 export type SessionKind = "ora" | "vizsga" | "szunnap" | "egyeb";
@@ -113,6 +120,7 @@ export interface TimetableSource {
   url?: string; // only when added by URL (re-fetchable through /api/ical)
   importedAt: string;
   subjectCourses: Record<string, string | null>; // subjectKey -> courseId (null = skipped)
+  updatedAt?: string;
 }
 
 export interface AppData {
@@ -126,6 +134,11 @@ export interface AppData {
   /** Imported timetable (Neptun). Defaults to []. */
   classSessions: ClassSession[];
   timetableSources: TimetableSource[];
+  /**
+   * Deletions: item id -> ISO time. Lets a merge tell "deleted elsewhere" from "never had it"
+   * (courses, deadlines, custom platforms, feeds, timetable sources, links, resources). Pruned.
+   */
+  tombstones?: Record<string, string>;
 }
 
 /**

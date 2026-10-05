@@ -16,13 +16,24 @@ async function parseJsonSafe(res: Response): Promise<IcalApiResponse> {
   }
 }
 
+/** Thrown when the request never reached the server (offline, DNS, dropped): not a problem with the feed. */
+export class NetworkError extends Error {}
+
+const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
+
 /** Fetches and parses a feed via the server-side /api/ical route (CORS proxy). */
 export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
-  const res = await fetch("/api/ical", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
+  if (isOffline()) throw new NetworkError("Nincs kapcsolat");
+  let res: Response;
+  try {
+    res = await fetch("/api/ical", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+  } catch {
+    throw new NetworkError("Nincs kapcsolat");
+  }
   const json = await parseJsonSafe(res);
 
   if (!res.ok) {
@@ -47,6 +58,8 @@ export async function syncFeed(feedId: string): Promise<void> {
     const events = await fetchFeed(feed.url);
     applyFeedSync(feedId, events);
   } catch (err) {
+    // No connection says nothing about the feed (and lastError is a synced change): skip quietly.
+    if (err instanceof NetworkError) return;
     const message = err instanceof Error ? err.message : "A naptár nem érhető el";
     updateFeed(feedId, { lastError: message });
   }
@@ -57,6 +70,7 @@ export async function syncFeed(feedId: string): Promise<void> {
  * is missing or older than an hour are synced.
  */
 export async function syncAllFeeds(opts?: { staleOnly?: boolean }): Promise<void> {
+  if (isOffline()) return;
   const { feeds } = useStore.getState();
   const now = Date.now();
 

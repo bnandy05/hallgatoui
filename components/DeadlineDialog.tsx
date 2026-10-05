@@ -20,14 +20,14 @@ export function DeadlineDialog({
   defaultCourseId,
   initialQuickText,
 }: DeadlineDialogProps) {
-  const addDeadline = useStore((s) => s.addDeadline);
+  const addDeadlines = useStore((s) => s.addDeadlines);
   const updateDeadline = useStore((s) => s.updateDeadline);
 
-  function handleSubmit(values: DeadlineFormValues) {
+  function handleSubmit(values: DeadlineFormValues[]) {
     if (deadline) {
-      updateDeadline(deadline.id, values);
+      updateDeadline(deadline.id, values[0]);
     } else {
-      addDeadline(values);
+      addDeadlines(values);
     }
     onClose();
   }

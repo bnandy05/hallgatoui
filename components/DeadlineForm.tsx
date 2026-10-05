@@ -1,19 +1,21 @@
 "use client";
 
 import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { format } from "date-fns";
+import { addWeeks, format } from "date-fns";
 import { hu } from "date-fns/locale";
-import { Wand2 } from "lucide-react";
+import { Plus, Wand2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { normalizeLinkUrl } from "@/lib/url";
 import { BUILT_IN_PLATFORMS } from "@/lib/platforms";
 import { parseQuickDeadline } from "@/lib/quickAdd";
+import { expandDueDates, MAX_SERIES, seriesTitles, wasCapped, type RepeatSpec } from "@/lib/recurrence";
 import type { Deadline } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
+import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import { Textarea } from "@/components/ui/Textarea";
 
 export interface DeadlineFormValues {
@@ -30,11 +32,25 @@ export interface DeadlineFormProps {
   initial?: Deadline;
   defaultCourseId?: string | null;
   initialQuickText?: string;
-  onSubmit: (values: DeadlineFormValues) => void;
+  /** One item when editing or creating a single deadline, several for a series. */
+  onSubmit: (values: DeadlineFormValues[]) => void;
   onCancel: () => void;
 }
 
 const NO_COURSE = "";
+
+type RepeatMode = "once" | "dates" | "every";
+const REPEAT_TABS = [
+  { id: "once", label: "Egyszer" },
+  { id: "dates", label: "Több időpont" },
+  { id: "every", label: "Ismétlődő" },
+];
+
+function parseLocal(value: string): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 function defaultDueLocal(): string {
   const d = new Date();
@@ -83,6 +99,38 @@ export function DeadlineForm({
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState<string | null>(null);
 
+  // Creating only: several dates or a repeat rule. Editing stays a single date.
+  const [mode, setMode] = useState<RepeatMode>("once");
+  const [extraDates, setExtraDates] = useState<string[]>([]);
+  const [interval, setIntervalValue] = useState("1");
+  const [unit, setUnit] = useState<"day" | "week">("week");
+  const [endKind, setEndKind] = useState<"count" | "until">("count");
+  const [count, setCount] = useState("6");
+  const [until, setUntil] = useState("");
+  const [numbered, setNumbered] = useState(true);
+
+  const dueDate = parseLocal(due);
+  const spec = useMemo<RepeatSpec>(() => {
+    if (initial || mode === "once") return { kind: "once" };
+    if (mode === "dates") {
+      return { kind: "dates", extra: extraDates.map(parseLocal).filter((d): d is Date => d !== null) };
+    }
+    const untilDate = parseLocal(until);
+    return {
+      kind: "every",
+      interval: Number(interval) || 1,
+      unit,
+      end: endKind === "count" || !untilDate ? { count: endKind === "count" ? Number(count) || 1 : 1 } : { until: untilDate },
+    };
+  }, [initial, mode, extraDates, interval, unit, endKind, count, until]);
+  const dates = useMemo(() => (dueDate ? expandDueDates(dueDate, spec) : []), [dueDate, spec]);
+  const capped = dueDate ? wasCapped(dueDate, spec) : false;
+  const previewDates = (() => {
+    const f = (d: Date) => format(d, "MMM d.", { locale: hu });
+    if (dates.length <= 4) return dates.map(f).join(", ");
+    return `${dates.slice(0, 3).map(f).join(", ")}, …, ${f(dates[dates.length - 1])}`;
+  })();
+
   const parsed = useMemo(
     () => (quickText.trim() ? parseQuickDeadline(quickText, courses, new Date()) : null),
     [quickText, courses]
@@ -120,15 +168,20 @@ export function DeadlineForm({
       normalizedUrl = normalized;
     }
 
-    onSubmit({
+    const base = {
       courseId: courseId === NO_COURSE ? null : courseId,
-      title: trimmedTitle,
-      due: new Date(due).toISOString(),
       platformId: platformId || undefined,
       url: normalizedUrl,
       note: note.trim() || undefined,
       critical,
-    });
+    };
+    if (initial || dates.length <= 1) {
+      const only = dates[0] ?? new Date(due);
+      onSubmit([{ ...base, title: trimmedTitle, due: only.toISOString() }]);
+      return;
+    }
+    const titles = numbered ? seriesTitles(trimmedTitle, dates.length) : dates.map(() => trimmedTitle);
+    onSubmit(dates.map((d, i) => ({ ...base, title: titles[i], due: d.toISOString() })));
   }
 
   return (
@@ -222,6 +275,133 @@ export function DeadlineForm({
           />
         </div>
       </div>
+
+      {!initial && (
+        <div className="flex flex-col gap-3">
+          <Tabs
+            label="Ismétlés"
+            items={REPEAT_TABS}
+            value={mode}
+            onChange={(id) => setMode(id as RepeatMode)}
+          />
+          <TabPanel id="dates" active={mode === "dates"} className="flex flex-col gap-2">
+            {extraDates.map((value, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  aria-label={`További időpont ${i + 1}`}
+                  value={value}
+                  onChange={(e) =>
+                    setExtraDates((list) => list.map((v, j) => (j === i ? e.target.value : v)))
+                  }
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`${i + 1}. további időpont törlése`}
+                  onClick={() => setExtraDates((list) => list.filter((_, j) => j !== i))}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  setExtraDates((list) => {
+                    const last = parseLocal(list[list.length - 1] ?? due) ?? new Date();
+                    return [...list, toDueInput(addWeeks(last, 1))];
+                  })
+                }
+              >
+                <Plus className="h-4 w-4" />
+                Időpont hozzáadása
+              </Button>
+            </div>
+          </TabPanel>
+          <TabPanel id="every" active={mode === "every"} className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2 text-[14px] text-foreground">
+              <span>Minden</span>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={52}
+                aria-label="Ismétlés gyakorisága"
+                value={interval}
+                onChange={(e) => setIntervalValue(e.target.value)}
+                className="!w-20"
+              />
+              <Select
+                aria-label="Egység"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as "day" | "week")}
+                className="!w-auto"
+              >
+                <option value="week">hét</option>
+                <option value="day">nap</option>
+              </Select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[14px] text-foreground">
+              <Select
+                aria-label="Vége"
+                value={endKind}
+                onChange={(e) => setEndKind(e.target.value as "count" | "until")}
+                className="!w-auto"
+              >
+                <option value="count">Alkalmak száma</option>
+                <option value="until">Eddig</option>
+              </Select>
+              {endKind === "count" ? (
+                <>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={MAX_SERIES}
+                    aria-label="Alkalmak száma"
+                    value={count}
+                    onChange={(e) => setCount(e.target.value)}
+                    className="!w-20"
+                  />
+                  <span>alkalom</span>
+                </>
+              ) : (
+                <Input
+                  type="date"
+                  aria-label="Utolsó nap"
+                  value={until}
+                  onChange={(e) => setUntil(e.target.value)}
+                  required
+                  className="!w-auto"
+                />
+              )}
+            </div>
+          </TabPanel>
+          {dates.length > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-2 text-[14px] font-medium text-foreground">
+                <input
+                  type="checkbox"
+                  checked={numbered}
+                  onChange={(e) => setNumbered(e.target.checked)}
+                  className="h-4 w-4 accent-accent"
+                />
+                Sorszám a cím végére
+              </label>
+              <p className="text-[12.5px] text-muted" aria-live="polite">
+                {dates.length} határidő: {previewDates}
+                {capped && ` (legfeljebb ${MAX_SERIES})`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

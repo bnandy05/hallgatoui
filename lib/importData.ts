@@ -106,6 +106,18 @@ function sourcesFrom(value: unknown): TimetableSource[] {
   });
 }
 
+const MAX_TOMBSTONES = 5000;
+
+/** Keeps the string-to-string entries of a tombstone map (newest first, capped). */
+function tombstonesFrom(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    (e): e is [string, string] => typeof e[1] === "string" && e[0].length <= 200
+  );
+  entries.sort(([, a], [, b]) => (a < b ? 1 : a > b ? -1 : 0));
+  return Object.fromEntries(entries.slice(0, MAX_TOMBSTONES));
+}
+
 /**
  * Validates an arbitrary JSON value as an AppData export and returns it
  * typed. Throws an Error with a Hungarian message when the shape doesn't
@@ -147,6 +159,7 @@ export function parseAppData(json: unknown): AppData {
     feeds: data.feeds as AppData["feeds"],
     classSessions: sessionsFrom(data.classSessions),
     timetableSources: sourcesFrom(data.timetableSources),
+    tombstones: tombstonesFrom(data.tombstones),
     ignoredDuplicatePairs: Array.isArray(data.ignoredDuplicatePairs)
       ? data.ignoredDuplicatePairs
           .filter((p): p is string => typeof p === "string" && p.length <= 600)
