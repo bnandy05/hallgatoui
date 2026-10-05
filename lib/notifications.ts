@@ -2,6 +2,8 @@ import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { formatRelative } from "@/lib/radar";
 import type { Course, Deadline, NotificationPrefs } from "@/lib/types";
+import type { CatchUpGroup, LinkedInstance } from "@/lib/catchup";
+import { budapestDate, dateKey } from "@/lib/ical/budapest";
 
 export const LEAD_OPTIONS = [
   { minutes: 1440, label: "1 nappal előtte" },
@@ -67,4 +69,28 @@ export function dueNotifications(
   }
 
   return result.sort((a, b) => a.due - b.due).map((r) => r.item);
+}
+
+const AFTER_CLASS_MS = 30 * MINUTE_MS;
+
+/**
+ * One "Mi történt az óráidon?" notification a day, 30 minutes after the day's last linked class
+ * has ended, if any of today's classes still wait for a result. The key is per Budapest day.
+ */
+export function catchUpNotification(
+  linked: LinkedInstance[],
+  pending: CatchUpGroup[],
+  sentKeys: Set<string>,
+  now: Date
+): { key: string; title: string; body: string } | null {
+  const today = dateKey(budapestDate(now));
+  const isToday = (iso: string | undefined) => !!iso && dateKey(budapestDate(new Date(iso))) === today;
+  const ends = linked
+    .filter((li) => li.instance.session && li.instance.tracked && isToday(li.instance.end))
+    .map((li) => Date.parse(li.instance.end!));
+  if (ends.length === 0 || now.getTime() < Math.max(...ends) + AFTER_CLASS_MS) return null;
+  const waiting = pending.filter((g) => g.session && isToday(g.end)).length;
+  const key = `catchup:${today}`;
+  if (waiting === 0 || sentKeys.has(key)) return null;
+  return { key, title: "Mi történt az óráidon?", body: waiting === 1 ? "Egy mai órád vár adatra." : `${waiting} mai órád vár adatra.` };
 }
