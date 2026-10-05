@@ -91,6 +91,7 @@ export interface IcalFeed {
   lastError?: string;
   discovered?: DiscoveredContext[]; // contexts seen in the last sync (all events)
   ignoredContexts?: string[]; // context keys the user chose to skip
+  linkedContexts?: string[]; // context keys whose Canvas course link was added once (a deleted link stays deleted)
   markDoneBefore?: string; // ISO; deadlines created by a sync that are due before it start as done
   updatedAt?: string;
 }
