@@ -28,7 +28,8 @@ function fieldHasResult(f: CatchUpField, byId: Map<string, RequirementResult>): 
 
 function groupTitle(group: CatchUpGroup): string {
   if (group.deadline) return group.deadline.title;
-  if (group.session) return group.session.subject;
+  // Neptun subject names are often English; the course name stands for the class.
+  if (group.session) return "";
   return group.fields[0]?.target.label ?? "";
 }
 
@@ -201,6 +202,7 @@ function CatchUpSlip({
   const done = group.fields.every((f) => fieldHasResult(f, byId));
   const cancelled = group.fields.every((f) => byId.get(resultId(f.courseId, f.target.id, f.instance.key))?.state === "na");
   const title = groupTitle(group);
+  const heading = !title ? (courseName ?? group.session?.subject ?? "") : courseName && courseName !== title ? `${courseName} · ${title}` : title;
 
   function cancelAll() {
     setItems(group.fields.map((f) => itemFor(f, cancelled ? null : { state: "na" })));
@@ -216,7 +218,7 @@ function CatchUpSlip({
       <fieldset className="min-w-0">
         <legend className="contents">
           <span className="block text-[15px] font-bold leading-snug text-heading [overflow-wrap:anywhere]">
-            {courseName && courseName !== title ? `${courseName} · ${title}` : title}
+            {heading}
           </span>
           <span className="mt-0.5 block text-[12.5px] tabular-nums text-muted">{groupWhen(group)}</span>
         </legend>
@@ -233,7 +235,7 @@ function CatchUpSlip({
                     target={f.target}
                     scale={f.scale}
                     result={result}
-                    label={`${title}: ${f.target.label}`}
+                    label={`${heading}: ${f.target.label}`}
                     onChange={(patch) => onSave(f, patch)}
                     labelOf={labelOf}
                   />
