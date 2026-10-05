@@ -7,6 +7,9 @@ export const THEME_PREFS: readonly ThemePref[] = ["system", "light", "dark"];
 /** The felt colour per theme, for the browser chrome (`theme-color`). Keep in sync with tokens.css. */
 export const THEME_COLOR: Record<Theme, string> = { light: "#dde2e4", dark: "#171b1e" };
 
+/** Paper and pin colours of the logo mark for the generated icons (light tokens `--panel` and `--pin`). */
+export const ICON_COLORS = { paper: "#fdfdfa", pin: "#d8352a" } as const;
+
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /**

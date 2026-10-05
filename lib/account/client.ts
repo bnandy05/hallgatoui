@@ -1,5 +1,7 @@
 import { hardNavigate } from "@/lib/account/path";
 import { useStore } from "@/lib/store";
+import { clearOfflineCache } from "@/lib/sw";
+import { offsetFromResponse, setServerOffset } from "@/lib/sync/clock";
 import type { SyncPayload } from "@/lib/sync/merge";
 
 // Fetch wrappers for /api/fiok* and /api/adatok. They never throw: errors come back as
@@ -10,14 +12,26 @@ const NETWORK_ERROR = "A szerver nem érhető el";
 
 export type Result<T = undefined> = ({ ok: true } & (T extends undefined ? object : T)) | { ok: false; error: string; status: number };
 
+/** Records how far this device's clock is from the server's (the `Date` header of a good response). */
+function learnServerClock(res: Response, sentAt: number) {
+  const offset = offsetFromResponse(res.headers.get("date"), sentAt, Date.now());
+  if (offset === null) return;
+  setServerOffset(offset);
+  // The persisted copy only changes when the clock moved noticeably, so requests don't rewrite the cache.
+  if (Math.abs(offset - useStore.getState().serverOffsetMs) > 2000) useStore.getState().setServerOffsetMs(offset);
+}
+
 async function call(path: string, method: string, body?: unknown): Promise<Response | null> {
   try {
-    return await fetch(path, {
+    const sentAt = Date.now();
+    const res = await fetch(path, {
       method,
       headers: body === undefined ? undefined : { "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
     });
+    if (res.ok) learnServerClock(res, sentAt);
+    return res;
   } catch {
     return null;
   }
@@ -86,6 +100,7 @@ export async function signOut(everywhere: boolean): Promise<string | null> {
   const res = await call(`/api/fiok/kilepes${everywhere ? "?mindenhol=1" : ""}`, "POST");
   if (!res?.ok) return (await errorOf(res)).error;
   useStore.getState().clearAccountData();
+  clearOfflineCache();
   hardNavigate("/belepes");
   return null;
 }
@@ -94,6 +109,7 @@ export async function deleteAccount(email: string): Promise<string | null> {
   const res = await call("/api/fiok", "DELETE", { email });
   if (!res?.ok) return (await errorOf(res)).error;
   useStore.getState().clearAccountData();
+  clearOfflineCache();
   hardNavigate("/belepes");
   return null;
 }

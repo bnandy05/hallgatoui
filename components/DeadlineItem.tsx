@@ -102,6 +102,11 @@ function DeadlineDetail({
   const toggleDone = useStore((s) => s.toggleDone);
   const updateDeadline = useStore((s) => s.updateDeadline);
   const removeDeadline = useStore((s) => s.removeDeadline);
+  const removeDeadlines = useStore((s) => s.removeDeadlines);
+  const siblings = useStore((s) =>
+    deadline.seriesId ? s.deadlines.filter((d) => d.seriesId === deadline.seriesId) : null
+  );
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [now] = useState(() => new Date());
 
   const due = new Date(deadline.due);
@@ -115,11 +120,26 @@ function DeadlineDetail({
   const share = !deadline.done && left > 0 ? Math.min(1, left / WEEK_MS) : 0;
   const manual = deadline.source === "manual";
 
+  // Position within the series, by due date; only shown while others of it remain.
+  const ordered = siblings && siblings.length > 1
+    ? [...siblings].sort((a, b) => a.due.localeCompare(b.due) || a.id.localeCompare(b.id))
+    : null;
+  const seriesPosition = ordered ? ordered.findIndex((d) => d.id === deadline.id) + 1 : 0;
+  const laterIds = ordered ? ordered.filter((d) => d.due >= deadline.due).map((d) => d.id) : [];
+
   function handleDelete() {
-    if (confirm("Biztosan törlöd?")) {
+    if (ordered) {
+      setDeleteOpen(true);
+    } else if (confirm("Biztosan törlöd?")) {
       onClose();
       removeDeadline(deadline.id);
     }
+  }
+
+  function deleteWith(ids: string[]) {
+    setDeleteOpen(false);
+    onClose();
+    removeDeadlines(ids);
   }
 
   return (
@@ -138,6 +158,11 @@ function DeadlineDetail({
               style={{ width: `${share * 100}%` }}
             />
           </span>
+        )}
+        {ordered && seriesPosition > 0 && (
+          <p className="text-[13px] tabular-nums text-muted">
+            Sorozat: {seriesPosition}/{ordered.length}
+          </p>
         )}
         {(badgeLabel || changed || !manual) && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -249,6 +274,28 @@ function DeadlineDetail({
           {deadline.done ? "Mégsem kész" : "Kész"}
         </Button>
       </DialogActions>
+
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Törlés a sorozatból">
+        <p className="text-[14.5px] text-foreground">
+          Ez a határidő egy sorozat tagja ({ordered?.length} határidő). Mit törölsz?
+        </p>
+        <DialogActions>
+          <Button type="button" variant="secondary" onClick={() => setDeleteOpen(false)}>
+            Mégse
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => deleteWith([deadline.id])}>
+            Csak ezt
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => deleteWith(laterIds)}
+            disabled={laterIds.length < 2}
+          >
+            Ezt és a későbbieket ({laterIds.length})
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

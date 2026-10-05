@@ -6,7 +6,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CalendarDays, ListTodo, Plus, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { useDataReady } from "@/lib/useDataReady";
-import { isPublicPath } from "@/lib/account/path";
+import { isAuthPath } from "@/lib/account/path";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AccountSync } from "@/components/AccountSync";
 import { SyncStatus } from "@/components/SyncStatus";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
@@ -114,6 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <KeyboardInset />
       {hydrated && <ThemeSync />}
       {hydrated && <AccountSync />}
+      {hydrated && <ServiceWorkerRegister />}
       {dataReady && !bare && <NotificationScheduler />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">

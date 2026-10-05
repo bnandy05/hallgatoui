@@ -239,12 +239,28 @@ export function startSync(): () => void {
     else if (dirty()) void flush();
     else void pull();
   };
-  const onVisible = () => {
-    if (document.visibilityState === "visible") void pull();
+  // A page opened offline (or frozen by the phone) may never see "online": try again when it is used.
+  const resume = () => {
+    if (started) return void pull();
+    clearTimeout(retryTimer);
+    retryTimer = undefined;
+    void start();
   };
-  const onFocus = () => void pull();
+  // Leaving the page: upload now instead of waiting for the debounce (the cache keeps the edits anyway).
+  const pushNow = () => {
+    if (!started || !dirty()) return;
+    clearTimeout(debounce);
+    debounce = undefined;
+    void flush();
+  };
+  const onVisible = () => {
+    if (document.visibilityState === "visible") resume();
+    else pushNow();
+  };
+  const onFocus = () => resume();
   window.addEventListener("online", onOnline);
   window.addEventListener("focus", onFocus);
+  window.addEventListener("pagehide", pushNow);
   document.addEventListener("visibilitychange", onVisible);
   const interval = setInterval(() => {
     if (document.visibilityState === "visible") void pull();
@@ -267,6 +283,7 @@ export function startSync(): () => void {
     clearInterval(interval);
     window.removeEventListener("online", onOnline);
     window.removeEventListener("focus", onFocus);
+    window.removeEventListener("pagehide", pushNow);
     document.removeEventListener("visibilitychange", onVisible);
     flushActive = null;
   };
