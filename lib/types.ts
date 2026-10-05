@@ -16,7 +16,7 @@ export interface CourseLink {
   updatedAt?: string;
 }
 
-export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "egyeb";
+export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "kovetelmeny" | "egyeb";
 
 export interface Resource {
   id: string;
@@ -37,6 +37,7 @@ export interface Course {
   links: CourseLink[];
   resources: Resource[];
   matchKeywords: string[]; // used to auto-assign iCal events
+  requirements?: string; // the course's requirements as free text (documents are resources of kind "kovetelmeny")
   createdAt: string;
   updatedAt?: string;
 }

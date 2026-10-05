@@ -1,6 +1,8 @@
 import type { AppData, ClassSession, Course, Deadline, IcalFeed, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
 
+export const MAX_REQUIREMENTS_CHARS = 20_000;
+
 function isHttpUrl(value: unknown): boolean {
   if (typeof value !== "string") return false;
   try {
@@ -11,10 +13,13 @@ function isHttpUrl(value: unknown): boolean {
   }
 }
 
-/** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs. */
+/** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs; caps free text. */
 function sanitizeUrls(data: AppData): AppData {
-  const courses = data.courses.map((c) => ({
+  const courses = data.courses.map(({ requirements, ...c }) => ({
     ...c,
+    ...(typeof requirements === "string" && requirements.trim()
+      ? { requirements: requirements.slice(0, MAX_REQUIREMENTS_CHARS) }
+      : {}),
     links: c.links.flatMap((l) => {
       const url = normalizeLinkUrl(String(l.url ?? ""));
       return url ? [{ ...l, url }] : [];
