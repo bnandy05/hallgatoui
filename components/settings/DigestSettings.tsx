@@ -25,7 +25,7 @@ export function DigestSettings() {
     <section id="hirlevel" className="flex flex-col gap-6">
       <SectionHeading
         title="E-mail-összefoglaló"
-        sub="Heti vagy havi levél a közelgő és lejárt határidőkről, akkor is, ha az oldal nincs nyitva."
+        sub="Napi, heti vagy havi levél a közelgő és lejárt határidőkről, akkor is, ha az oldal nincs nyitva."
       />
       {token ? (
         <DigestForm key={token} />
@@ -157,7 +157,7 @@ function DigestForm() {
           ))}
         </div>
         <p className="mt-1.5 text-[13px] text-muted">
-          Reggel érkezik, akkor is, ha épp nincs nyitott határidő.
+          Reggel érkezik. A napi levél csak akkor jön, ha ma vagy holnap van határidőd.
         </p>
       </div>
       {status}
