@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except the API, Next internals, files with an extension, and the public pages.
-  matcher: ["/((?!api|_next|belepes|fiok/link|hirlevel|.*\\..*).*)"],
+  matcher: ["/((?!api|_next|belepes|fiok/link|hirlevel|adatvedelem|.*\\..*).*)"],
 };

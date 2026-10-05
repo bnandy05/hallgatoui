@@ -10,6 +10,11 @@ export function isAuthPath(pathname: string): boolean {
   return pathname === "/belepes" || pathname.startsWith("/belepes/") || pathname.startsWith("/fiok/link");
 }
 
+/** Pages anyone can open without an account: no app chrome and no sync (which would send them to /belepes). */
+export function isPublicPath(pathname: string): boolean {
+  return isAuthPath(pathname) || pathname === "/hirlevel" || pathname === "/adatvedelem";
+}
+
 /** Full page load (not a client navigation): the store and the proxy gate must start fresh. */
 export function hardNavigate(path: string): void {
   window.location.href = path;

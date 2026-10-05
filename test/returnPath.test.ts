@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isAuthPath, safeReturnPath } from "@/lib/account/path";
+import { isAuthPath, isPublicPath, safeReturnPath } from "@/lib/account/path";
 
 test("safeReturnPath keeps same-site paths", () => {
   assert.equal(safeReturnPath("/radar"), "/radar");
@@ -17,4 +17,12 @@ test("isAuthPath", () => {
   assert.equal(isAuthPath("/belepes"), true);
   assert.equal(isAuthPath("/fiok/link"), true);
   assert.equal(isAuthPath("/radar"), false);
+});
+
+test("isPublicPath", () => {
+  assert.equal(isPublicPath("/belepes"), true);
+  assert.equal(isPublicPath("/hirlevel"), true);
+  assert.equal(isPublicPath("/adatvedelem"), true);
+  assert.equal(isPublicPath("/"), false);
+  assert.equal(isPublicPath("/beallitasok"), false);
 });
