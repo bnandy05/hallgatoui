@@ -23,9 +23,7 @@ export const DIGEST_FREQUENCIES: { id: DigestFrequency; label: string }[] = [
 
 /** What the browser sees about its own digest. */
 export interface DigestStatus {
-  email: string;
   frequency: DigestFrequency;
-  confirmed: boolean;
   lastSentAt?: string;
 }
 

@@ -22,7 +22,7 @@ Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord�
 
 ## Adatvédelem
 
-Nincs fiók és nincs bejelentkezés: minden adat a böngésződben (localStorage) marad. Kivétel a naptár-előfizetés, ha bekapcsolod: ekkor a tárgyaid és határidőid egy pillanatképe a szerverre kerül, hogy a naptáralkalmazásod le tudja kérni. A feliratkozási link csak olvasni enged; módosítani csak a böngésződben tárolt titkos kulccsal lehet. Az előfizetés bármikor törölhető a Beállításokban. A `.ics` letöltés szerver nélkül is működik.
+Az adataid a fiókodhoz tartoznak (e-mail + jelszó vagy belépő link, megerősített e-mail-cím), és a szerveren tárolódnak, így minden eszközön ugyanazok. A böngésző csak gyorsítótárat tart. A naptár-előfizetési link csak olvasni enged, és bármikor lecserélhető vagy kikapcsolható a Beállításokban; a fiók törlésekor minden adatod törlődik. A `.ics` letöltés szerver nélkül is működik.
 
 ## Fejlesztés
 
@@ -42,14 +42,15 @@ Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, lucide-react. A 
 | --- | --- |
 | `app/` | Oldalak (`/`, `/targy/[id]`, `/radar`, `/beallitasok`) és API-útvonalak |
 | `app/api/ical` | CORS-proxy az iCal feedekhez (SSRF-védelemmel) |
-| `app/api/naptar` | A naptár-előfizetés végpontjai |
+| `app/api/fiok`, `app/api/adatok` | Fiókkezelés és az adatdokumentum szinkronja |
+| `app/api/naptar` | A nyilvános `.ics` végpont |
 | `components/` | UI; `components/ui/` az alapelemek, `components/settings/` a beállítások szekciói |
 | `lib/` | Tiszta logika: store, radar, keresés, iCal-feldolgozás és -export |
 | `app/tokens.css` | Design-tokenek („night blueprint” sötét téma, Fira Code) |
 
-## Naptár-előfizetés / deployment
+## Fiókok, naptár-előfizetés / deployment
 
-Az összefésült naptár (`/api/naptar/<token>.ics`) szerveroldali tárolást igényel (Upstash Redis). Vercelen: Project → Storage → Upstash Redis hozzáadása. Környezeti változók (a Marketplace bármelyik párt beállíthatja):
+A fiókok, az adatok és az összefésült naptár (`/api/naptar/<token>.ics`) szerveroldali tárolást igényelnek (Upstash Redis), a regisztrációs és belépő levelekhez pedig e-mail-küldést (lásd lent, Resend). Új környezeti változó nincs. Vercelen: Project → Storage → Upstash Redis hozzáadása. Környezeti változók (a Marketplace bármelyik párt beállíthatja):
 
 - `UPSTASH_REDIS_REST_URL` és `UPSTASH_REDIS_REST_TOKEN`, vagy
 - `KV_REST_API_URL` és `KV_REST_API_TOKEN`.
@@ -58,7 +59,7 @@ Fejlesztésben (`npm run dev`) nincs szükség rájuk: memóriabeli tároló mű
 
 ### E-mail-összefoglaló
 
-A naptár-előfizetésre épül (Beállítások → Értesítések): napi, heti (hétfő) vagy havi (1-je) levél a közelgő és lejárt határidőkről, dupla megerősítéssel és leiratkozó linkkel. A napi levél csak akkor megy ki, ha aznap vagy másnap van határidő, és a napi órarendet is mutatja. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
+A fiókhoz tartozik (Beállítások → Értesítések): napi, heti (hétfő) vagy havi (1-je) levél a fiók e-mail-címére a közelgő és lejárt határidőkről, leiratkozó linkkel (külön megerősítés nincs, a fiók címe már megerősített). A napi levél csak akkor megy ki, ha aznap vagy másnap van határidő, és a napi órarendet is mutatja. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
 
 - `RESEND_API_KEY`: [Resend](https://resend.com) API-kulcs;
 - `DIGEST_FROM`: feladó egy Resendben ellenőrzött domainről, pl. `Hallgatói réteg <hirlevel@example.hu>`;

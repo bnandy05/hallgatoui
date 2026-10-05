@@ -2,7 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
+import { useSyncLabel } from "@/components/SyncStatus";
+import { AccountSettings } from "@/components/settings/AccountSettings";
 import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
@@ -15,7 +17,7 @@ import { AppearanceSettings, THEME_LABELS } from "@/components/settings/Appearan
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 
-const SECTIONS = ["naptarak", "elofizetes", "ertesitesek", "megjelenes", "platformok", "adatok"] as const;
+const SECTIONS = ["fiok", "naptarak", "elofizetes", "ertesitesek", "megjelenes", "platformok", "adatok"] as const;
 type SectionKey = (typeof SECTIONS)[number];
 
 // Anchors used by links elsewhere in the app, mapped onto their tab.
@@ -25,7 +27,7 @@ const HASH_EVENT = "settings-hash";
 function sectionFromHash(hash: string): SectionKey {
   const key = decodeURIComponent(hash.replace(/^#/, ""));
   if (key in HASH_ALIASES) return HASH_ALIASES[key];
-  return (SECTIONS as readonly string[]).includes(key) ? (key as SectionKey) : "naptarak";
+  return (SECTIONS as readonly string[]).includes(key) ? (key as SectionKey) : "fiok";
 }
 
 function subscribeHash(callback: () => void) {
@@ -69,11 +71,13 @@ function SettingsSkeleton() {
 }
 
 export default function WeekSettingsPage() {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
+  const accountEmail = useStore((s) => s.account?.email);
+  const sync = useSyncLabel();
   const active = useSyncExternalStore(
     subscribeHash,
     () => sectionFromHash(window.location.hash),
-    () => "naptarak" as SectionKey
+    () => "fiok" as SectionKey
   );
   const hasHash = useSyncExternalStore(
     subscribeHash,
@@ -82,7 +86,6 @@ export default function WeekSettingsPage() {
   );
   const feedCount = useStore((s) => s.feeds.length + s.timetableSources.length);
   const customCount = useStore((s) => s.customPlatforms.length);
-  const subscribed = useStore((s) => s.subscription !== null);
   const notificationsOn = useStore((s) => s.notificationPrefs.enabled);
   const themePref = useStore((s) => s.theme);
   const permission = useNotificationPermission();
@@ -96,8 +99,9 @@ export default function WeekSettingsPage() {
 
   const notificationsActive = notificationsOn && permission === "granted";
   const sections: { id: SectionKey; label: string; summary: string; on?: boolean }[] = [
+    { id: "fiok", label: "Fiók", summary: accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : "Belépve" },
     { id: "naptarak", label: "Naptárak", summary: feedCount > 0 ? `${feedCount} forrás` : "Még nincs forrás" },
-    { id: "elofizetes", label: "Előfizetés", summary: subscribed ? "Bekapcsolva" : "Kikapcsolva", on: subscribed },
+    { id: "elofizetes", label: "Előfizetés", summary: "Naptár-link és letöltés" },
     {
       id: "ertesitesek",
       label: "Értesítések",
@@ -173,11 +177,9 @@ export default function WeekSettingsPage() {
                 value={active}
                 onChange={selectSection}
                 items={[
+                  { id: "fiok", label: "Fiók" },
                   { id: "naptarak", label: "Naptárak", count: feedCount > 0 ? feedCount : undefined },
-                  {
-                    id: "elofizetes",
-                    label: <span className="inline-flex items-center gap-2">Előfizetés {status(subscribed)}</span>,
-                  },
+                  { id: "elofizetes", label: "Előfizetés" },
                   {
                     id: "ertesitesek",
                     label: (
@@ -194,6 +196,9 @@ export default function WeekSettingsPage() {
             </div>
 
             <div className="min-w-0 max-w-[760px]">
+              <TabPanel id="fiok" active={active === "fiok"}>
+                <AccountSettings />
+              </TabPanel>
               <TabPanel id="naptarak" active={active === "naptarak"}>
                 <div className="flex flex-col gap-10">
                   <FeedSettings />

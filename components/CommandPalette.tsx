@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { syncAllFeeds } from "@/lib/ical/client";
@@ -53,7 +53,7 @@ const subscribeNever = () => () => {};
 const getIsMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 
 export function CommandPalette() {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const [open, setOpen] = useState(false);
   const [newDeadlineOpen, setNewDeadlineOpen] = useState(false);
   const [quickText, setQuickText] = useState("");

@@ -1,102 +1,129 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getKv } from "@/lib/server/kv";
+import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
+import type { AccountStore, StoredUser } from "@/lib/server/account/store";
+import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import {
-  confirmDigest,
-  requestDigest,
+  removeDigest,
   runDigest,
+  saveDigest,
   unsubscribeDigest,
+  unsubscribeUrl,
   type StoredDigest,
 } from "@/lib/server/digest";
-import { DIGEST_INDEX_KEY, digKey, subKey, type StoredSubscription } from "@/lib/server/subscription";
-import { makeCourse, makeDeadline } from "./helpers";
-
-// Without Upstash credentials (and outside production) getKv is the in-memory store and
-// sendEmail only logs, so the whole server flow runs offline.
+import type { OutgoingEmail } from "@/lib/server/email";
+import { DIGEST_INDEX_KEY, digKey } from "@/lib/server/subscription";
+import { saveData } from "@/lib/server/validate";
+import type { AppData } from "@/lib/types";
+import { emptyAppData, makeCourse, makeDeadline } from "./helpers";
 
 const APP = "https://app.example.hu";
 const MONDAY = new Date("2026-10-05T04:00:00.000Z");
 const TUESDAY = new Date("2026-10-06T04:00:00.000Z");
 const NEXT_MONDAY = new Date("2026-10-12T04:00:00.000Z");
 
-function subscription(): StoredSubscription {
+function data(due: string): AppData {
   return {
-    secretHash: "x",
-    updatedAt: MONDAY.toISOString(),
-    snapshot: {
-      courses: [makeCourse("c1", "Analízis")],
-      deadlines: [makeDeadline({ id: "d1", courseId: "c1", due: "2026-10-07T21:59:00.000Z" })],
-      feeds: [],
-      customPlatforms: [],
-      ignoredDuplicatePairs: [],
-      classSessions: [],
-      options: { includeDone: false, alarms: true, weeklySummary: true, studyBlocks: true, dedupe: true, includeClasses: false },
-    },
+    ...emptyAppData(),
+    courses: [makeCourse("c1", "Analízis")],
+    deadlines: [makeDeadline({ id: "d1", courseId: "c1", due })],
   };
 }
 
-test("request → confirm → one digest per period → unsubscribe", async (t) => {
-  t.mock.method(console, "info", () => {});
-  const kv = getKv()!;
-  const token = "tok_digest_flow_000000000";
-  await kv.set(subKey(token), subscription(), 600);
-
-  const requested = await requestDigest(kv, token, null, "a@example.hu", "heti", APP, MONDAY);
-  assert.equal(requested?.confirmed, false);
-  assert.ok((await kv.smembers(DIGEST_INDEX_KEY)).includes(token));
-  assert.equal(await runDigest(kv, token, MONDAY, APP), "skipped"); // not confirmed yet
-
-  assert.equal(await confirmDigest(kv, token, "wrong-key", MONDAY), "invalid");
-  // The raw key only travels in the mail; reproduce it by replacing the stored hash.
-  const { hashSecret } = await import("@/lib/server/subscription");
-  const stored = (await kv.get<StoredDigest>(digKey(token)))!;
-  await kv.set(digKey(token), { ...stored, confirmHash: hashSecret("k") }, 600);
-  assert.equal(await confirmDigest(kv, token, "k", MONDAY), "ok");
-
-  // Confirmed in the week of Oct 5: the first weekly digest goes out next Monday, once.
-  assert.equal(await runDigest(kv, token, TUESDAY, APP), "skipped");
-  assert.equal(await runDigest(kv, token, NEXT_MONDAY, APP), "sent");
-  assert.equal(await runDigest(kv, token, NEXT_MONDAY, APP), "skipped");
-  assert.ok((await kv.get<StoredDigest>(digKey(token)))?.lastSentAt);
-
-  const { unsubscribeKey } = (await kv.get<StoredDigest>(digKey(token)))!;
-  assert.equal(await unsubscribeDigest(kv, token, "nope"), "invalid");
-  assert.equal(await unsubscribeDigest(kv, token, unsubscribeKey), "ok");
-  assert.equal(await kv.get(digKey(token)), null);
-  assert.ok(!(await kv.smembers(DIGEST_INDEX_KEY)).includes(token));
-});
-
-test("an expired confirmation and a vanished subscription clean themselves up", async (t) => {
-  t.mock.method(console, "info", () => {});
-  const kv = getKv()!;
-  const token = "tok_digest_cleanup_000000";
-  await requestDigest(kv, token, null, "b@example.hu", "heti", APP, MONDAY);
-  // No subscription stored for this token.
-  assert.equal(await runDigest(kv, token, TUESDAY, APP), "removed");
-  assert.equal(await kv.get(digKey(token)), null);
-
-  await kv.set(subKey(token), subscription(), 600);
-  await requestDigest(kv, token, null, "b@example.hu", "heti", APP, MONDAY);
-  const threeDaysLater = new Date(MONDAY.getTime() + 3 * 24 * 60 * 60 * 1000);
-  assert.equal(await runDigest(kv, token, threeDaysLater, APP), "removed");
-});
-
-test("changing only the frequency keeps a confirmed address confirmed", async (t) => {
-  t.mock.method(console, "info", () => {});
-  const kv = getKv()!;
-  const token = "tok_digest_freq_000000000";
-  const confirmed: StoredDigest = {
-    email: "c@example.hu",
-    frequency: "heti",
-    confirmed: true,
-    requestedAt: MONDAY.toISOString(),
-    unsubscribeKey: "u",
-    lastPeriod: "w:20261005",
+async function setup(email = "anna@example.hu", verified = true, due = "2026-10-07T21:59:00.000Z") {
+  const store = createMemoryAccountStore();
+  const user: StoredUser = {
+    id: "u1",
+    email,
+    createdAt: MONDAY.toISOString(),
+    emailVerifiedAt: verified ? MONDAY.toISOString() : undefined,
   };
-  const next = await requestDigest(kv, token, confirmed, "c@example.hu", "havi", APP, MONDAY);
-  assert.equal(next?.confirmed, true);
-  assert.equal(next?.lastPeriod, "m:202610");
-  const moved = await requestDigest(kv, token, confirmed, "d@example.hu", "havi", APP, MONDAY);
-  assert.equal(moved?.confirmed, false);
-  assert.equal(moved?.unsubscribeKey, "u");
+  await store.putUser(user);
+  await saveData(store, user.id, 0, data(due), DEFAULT_EXPORT_OPTIONS, MONDAY);
+  const mails: OutgoingEmail[] = [];
+  const send = async (m: OutgoingEmail) => (mails.push(m), true);
+  return { store, user, mails, send };
+}
+
+const stored = (store: AccountStore) => store.kv.get<StoredDigest>(digKey("u1"));
+
+test("save → one digest per period to the account email → unsubscribe", async () => {
+  const { store, mails, send } = await setup();
+  const saved = await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  assert.equal(saved.frequency, "heti");
+  assert.ok((await store.kv.smembers(DIGEST_INDEX_KEY)).includes("u1"));
+
+  // Saved in the week of Oct 5: the first weekly digest goes out next Monday, once.
+  assert.equal(await runDigest(store, "u1", TUESDAY, APP, send), "skipped");
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "sent");
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "skipped");
+  assert.equal(mails.length, 1);
+  assert.equal(mails[0].to, "anna@example.hu");
+  assert.ok((await stored(store))?.lastSentAt);
+
+  const { unsubscribeKey } = (await stored(store))!;
+  assert.ok(mails[0].headers?.["List-Unsubscribe"]?.includes("u=u1"));
+  assert.ok(unsubscribeUrl(APP, "u1", unsubscribeKey).includes("u=u1"));
+  assert.equal(await unsubscribeDigest(store.kv, "u1", "nope"), "invalid");
+  assert.equal(await unsubscribeDigest(store.kv, "u1", unsubscribeKey), "ok");
+  assert.equal(await stored(store), null);
+  assert.ok(!(await store.kv.smembers(DIGEST_INDEX_KEY)).includes("u1"));
+});
+
+test("changing the account email redirects the next digest", async () => {
+  const { store, user, mails, send } = await setup();
+  await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  await store.putUser({ ...user, email: "new@example.hu" });
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "sent");
+  assert.equal(mails[0].to, "new@example.hu");
+});
+
+test("an unverified user is skipped, not removed", async () => {
+  const { store, mails, send } = await setup("x@example.hu", false);
+  await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "skipped");
+  assert.equal(mails.length, 0);
+  assert.ok(await stored(store));
+});
+
+test("a deleted user is removed from the index", async () => {
+  const { store, send } = await setup();
+  await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  await store.deleteUser("u1");
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "removed");
+  assert.equal(await stored(store), null);
+  assert.ok(!(await store.kv.smembers(DIGEST_INDEX_KEY)).includes("u1"));
+});
+
+test("a user without data yet is skipped", async () => {
+  const { store, send } = await setup();
+  await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  await store.deleteData("u1");
+  assert.equal(await runDigest(store, "u1", NEXT_MONDAY, APP, send), "skipped");
+});
+
+test("a daily digest with nothing due today or tomorrow is empty and counts as done", async () => {
+  const { store, mails, send } = await setup("a@example.hu", true, "2026-10-20T21:59:00.000Z");
+  await saveDigest(store.kv, "u1", null, "napi", MONDAY);
+  assert.equal(await runDigest(store, "u1", TUESDAY, APP, send), "empty");
+  assert.equal(await runDigest(store, "u1", TUESDAY, APP, send), "skipped");
+  assert.equal(mails.length, 0);
+});
+
+test("changing only the frequency keeps the key and starts with the next period", async () => {
+  const { store } = await setup();
+  const first = await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  const next = await saveDigest(store.kv, "u1", first, "havi", MONDAY);
+  assert.equal(next.unsubscribeKey, first.unsubscribeKey);
+  assert.equal(next.lastPeriod, "m:202610");
+  const same = await saveDigest(store.kv, "u1", next, "havi", TUESDAY);
+  assert.equal(same.lastPeriod, "m:202610");
+});
+
+test("removeDigest deletes the record and the index entry", async () => {
+  const { store } = await setup();
+  await saveDigest(store.kv, "u1", null, "heti", MONDAY);
+  await removeDigest(store.kv, "u1");
+  assert.equal(await stored(store), null);
+  assert.ok(!(await store.kv.smembers(DIGEST_INDEX_KEY)).includes("u1"));
 });

@@ -12,7 +12,6 @@ import type {
   Platform,
   Resource,
   TimetableSource,
-  Subscription,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { matchCourseInText } from "@/lib/ical/match";
@@ -30,6 +29,7 @@ import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
 import type { ThemePref } from "@/lib/theme";
+import type { SyncPayload } from "@/lib/sync/merge";
 
 /** Assigns unassigned iCal deadlines (of course-less feeds) by keyword and cleans their titles. */
 function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Course[]): Deadline[] {
@@ -43,7 +43,7 @@ function rematchDeadlines(deadlines: Deadline[], feeds: IcalFeed[], courses: Cou
   });
 }
 
-function emptyAppData(): AppData {
+export function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
     classSessions: [],
     timetableSources: [],
@@ -51,6 +51,55 @@ function emptyAppData(): AppData {
 }
 
 const MAX_NOTIFIED_KEYS = 500;
+
+const CACHE_KEY = "hallgatoireteg-v2";
+const LEGACY_CACHE_KEY = "hallgatoireteg-v1";
+
+export interface Account {
+  userId: string;
+  email: string;
+}
+
+export type SyncStatus = "idle" | "saving" | "offline" | "error";
+
+/** Picks the synced part (AppData + export options) out of the store state. */
+export function selectPayload(s: AppData & { exportOptions: ExportOptions }): SyncPayload {
+  return {
+    data: {
+      version: s.version,
+      courses: s.courses,
+      deadlines: s.deadlines,
+      customPlatforms: s.customPlatforms,
+      feeds: s.feeds,
+      ignoredDuplicatePairs: s.ignoredDuplicatePairs,
+      classSessions: s.classSessions,
+      timetableSources: s.timetableSources,
+    },
+    exportOptions: s.exportOptions,
+  };
+}
+
+/**
+ * localStorage with a one-time hand-over of the pre-accounts cache: its data has no owner, so the
+ * first sign-in on this browser can upload it into an empty account. The old key is removed so
+ * data never lingers after sign-out.
+ */
+const cacheStorage = {
+  getItem: (name: string) => {
+    let value = localStorage.getItem(name);
+    if (value === null && name === CACHE_KEY) {
+      const legacy = localStorage.getItem(LEGACY_CACHE_KEY);
+      if (legacy !== null) {
+        value = legacy;
+        localStorage.setItem(name, legacy);
+        localStorage.removeItem(LEGACY_CACHE_KEY);
+      }
+    }
+    return value;
+  },
+  setItem: (name: string, value: string) => localStorage.setItem(name, value),
+  removeItem: (name: string) => localStorage.removeItem(name),
+};
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   enabled: false,
@@ -70,12 +119,26 @@ export interface AppStore extends AppData {
   notifiedKeys: string[];
   setNotificationPrefs: (patch: Partial<NotificationPrefs>) => void;
   markNotified: (keys: string[]) => void;
-  // calendar subscription (persisted, but not part of AppData: never exported/imported)
-  subscription: Subscription | null;
   exportOptions: ExportOptions;
-  setSubscription: (subscription: Subscription | null) => void;
-  patchSubscription: (patch: Partial<Subscription>) => void;
   setExportOptions: (patch: Partial<ExportOptions>) => void;
+  // account and sync (persisted as a cache; the server is the source of truth)
+  account: Account | null;
+  /** Whose data the persisted AppData is; null for data from before accounts existed. */
+  ownerUserId: string | null;
+  syncedVersion: number;
+  /** The last state known to be on the server, the base of the three-way merge. */
+  syncBase: SyncPayload | null;
+  syncStatus: SyncStatus;
+  syncError?: string;
+  setAccount: (account: Account | null) => void;
+  /** Replaces the data with the server's and records it as synced. Needs `account`. */
+  applyServerData: (payload: SyncPayload, version: number) => void;
+  /** Replaces the data with a merge result, leaving the sync base alone. */
+  applyMerged: (payload: SyncPayload) => void;
+  markSynced: (version: number, base: SyncPayload) => void;
+  setSyncStatus: (status: SyncStatus, error?: string) => void;
+  /** Sign-out and user change: drops this user's data and sync state, keeps device preferences. */
+  clearAccountData: () => void;
   // home board: show the timetable (device preference, not part of AppData)
   showClasses: boolean;
   setShowClasses: (show: boolean) => void;
@@ -221,18 +284,58 @@ export const useStore = create<AppStore>()(
       ...emptyAppData(),
       notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
       notifiedKeys: [],
-      subscription: null,
       exportOptions: DEFAULT_EXPORT_OPTIONS,
+      account: null,
+      ownerUserId: null,
+      syncedVersion: 0,
+      syncBase: null,
+      syncStatus: "idle",
       showClasses: true,
       theme: "system",
 
-      // ---- calendar subscription ----
-      setSubscription: (subscription) => {
-        set({ subscription });
+      // ---- account and sync ----
+      setAccount: (account) => {
+        set({ account });
       },
-      patchSubscription: (patch) => {
-        set((state) => (state.subscription ? { subscription: { ...state.subscription, ...patch } } : state));
+      applyServerData: (payload, version) => {
+        set((state) => ({
+          ...payload.data,
+          exportOptions: payload.exportOptions,
+          ownerUserId: state.account?.userId ?? null,
+          syncedVersion: version,
+          syncBase: payload,
+          syncStatus: "idle",
+          syncError: undefined,
+        }));
       },
+      applyMerged: (payload) => {
+        set({ ...payload.data, exportOptions: payload.exportOptions });
+      },
+      markSynced: (version, base) => {
+        set((state) => ({
+          syncedVersion: version,
+          syncBase: base,
+          ownerUserId: state.account?.userId ?? state.ownerUserId,
+        }));
+      },
+      setSyncStatus: (syncStatus, syncError) => {
+        set({ syncStatus, syncError });
+      },
+      clearAccountData: () => {
+        set({
+          ...emptyAppData(),
+          exportOptions: DEFAULT_EXPORT_OPTIONS,
+          notifiedKeys: [],
+          account: null,
+          ownerUserId: null,
+          syncedVersion: 0,
+          syncBase: null,
+          syncStatus: "idle",
+          syncError: undefined,
+        });
+      },
+
+      // ---- export options ----
       setExportOptions: (patch) => {
         set((state) => ({ exportOptions: { ...state.exportOptions, ...patch } }));
       },
@@ -679,12 +782,14 @@ export const useStore = create<AppStore>()(
       },
     }),
     {
-      name: "hallgatoireteg-v1",
+      name: CACHE_KEY,
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => cacheStorage),
       // persist merges shallowly, so options added in newer versions need their defaults here.
       merge: (persisted, current) => {
-        const saved = (persisted ?? {}) as Partial<AppStore>;
+        // `subscription` belonged to the pre-accounts calendar (local credentials); drop it.
+        const { subscription: _legacy, ...saved } = (persisted ?? {}) as Partial<AppStore> & { subscription?: unknown };
+        void _legacy;
         return {
           ...current,
           ...saved,
@@ -694,6 +799,10 @@ export const useStore = create<AppStore>()(
           timetableSources: saved.timetableSources ?? [],
           showClasses: saved.showClasses ?? true,
           theme: saved.theme ?? "system",
+          account: saved.account ?? null,
+          ownerUserId: saved.ownerUserId ?? null,
+          syncedVersion: saved.syncedVersion ?? 0,
+          syncBase: saved.syncBase ?? null,
         };
       },
       partialize: (state) => ({
@@ -709,8 +818,11 @@ export const useStore = create<AppStore>()(
         theme: state.theme,
         notificationPrefs: state.notificationPrefs,
         notifiedKeys: state.notifiedKeys,
-        subscription: state.subscription,
         exportOptions: state.exportOptions,
+        account: state.account,
+        ownerUserId: state.ownerUserId,
+        syncedVersion: state.syncedVersion,
+        syncBase: state.syncBase,
       }),
     }
   )

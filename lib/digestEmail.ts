@@ -29,7 +29,7 @@ export interface RenderedEmail {
   text: string;
 }
 
-const LIGHT = {
+export const LIGHT = {
   felt: "#dde2e4",
   feltDark: "#c9cfd2",
   strip: "#e9ecee",
@@ -74,10 +74,10 @@ const DARK = {
 const FONT = "Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif";
 const DISPLAY_FONT = "Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif";
 /** The printed-notice voice: condensed heavy Archivo where the client loads it. */
-const DISPLAY = `font-family:${DISPLAY_FONT};font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em`;
+export const DISPLAY = `font-family:${DISPLAY_FONT};font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em`;
 const TABULAR = "font-variant-numeric:tabular-nums";
 const SHADOW_PAPER = "0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)";
-const SHADOW_SHEET = "0 1px 2px rgba(30,40,48,0.08),0 10px 24px -12px rgba(30,40,48,0.3)";
+export const SHADOW_SHEET = "0 1px 2px rgba(30,40,48,0.08),0 10px 24px -12px rgba(30,40,48,0.3)";
 
 const MONTHS_SHORT = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
 const MONTHS = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"];
@@ -110,7 +110,7 @@ function rangeLabel(from: YMD, to: YMD): string {
 }
 
 /** A colour at `amount` (0..1) over another, both #rrggbb: the app's color-mix, precomputed. */
-function mix(color: string, over: string, amount: number): string {
+export function mix(color: string, over: string, amount: number): string {
   const channel = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
   return `#${[0, 1, 2]
     .map((i) => Math.round(channel(color, i) * amount + channel(over, i) * (1 - amount)).toString(16).padStart(2, "0"))
@@ -141,7 +141,7 @@ function courseHtml(course: Course): string {
 
 // --- shared pieces -------------------------------------------------------------------------
 
-function documentHtml(title: string, preheader: string, body: string): string {
+export function documentHtml(title: string, preheader: string, body: string): string {
   return `<!doctype html>
 <html lang="hu">
 <head>
@@ -212,14 +212,14 @@ function wordmark(): string {
 </td></tr>`;
 }
 
-function primaryButton(href: string, label: string): string {
+export function primaryButton(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
 <td class="btn" style="background:${LIGHT.ink};border:1px solid ${LIGHT.ink};border-radius:4px;box-shadow:0 1px 2px rgba(20,24,28,0.25)">
 <a href="${escapeHtml(href)}" class="btn" style="display:inline-block;padding:11px 18px;font-family:${FONT};font-size:15px;font-weight:600;line-height:1.2;color:${LIGHT.accentInk};text-decoration:none">${escapeHtml(label)}</a>
 </td></tr></table>`;
 }
 
-function footer(lines: string[]): string {
+export function footer(lines: string[]): string {
   return `<tr><td class="dim rule" style="padding:28px 2px 0;border-top:1px solid ${LIGHT.feltDark};font-size:12.5px;line-height:1.55;color:${LIGHT.mutedDim}">
 ${lines.map((l) => `<p style="margin:0 0 4px">${l}</p>`).join("\n")}
 </td></tr>`;
@@ -656,35 +656,4 @@ ${footer([
   ].join("\n");
 
   return { subject, html: documentHtml(title, `${summary}${overdueLine ? ` ${overdueLine}` : ""}`, body), text };
-}
-
-// --- confirmation --------------------------------------------------------------------------
-
-export function renderConfirmEmail({ frequency, confirmUrl }: { frequency: DigestFrequency; confirmUrl: string }): RenderedEmail {
-  const label = frequency;
-  const when =
-    frequency === "napi"
-      ? "reggelente, amikor aznap vagy másnap határidőd van,"
-      : frequency === "heti"
-        ? "minden hétfő reggel"
-        : "minden hónap első reggelén";
-  const subject = "Erősítsd meg a feliratkozást";
-  const intro = `Ezzel a címmel ${label} összefoglalót kértek a Hallgatói réteg határidőiről. Ha te voltál, erősítsd meg, és ${when} megkapod a közelgő és lejárt határidőidet.`;
-  const ignore = "Ha nem te kérted, nem kell semmit tenned: megerősítés nélkül több levelet nem küldünk. A link 48 óráig érvényes.";
-
-  const body = `<tr><td style="padding:6px 0 0">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:${LIGHT.paper};border:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.5)};border-radius:2px;box-shadow:${SHADOW_SHEET}">
-<tr><td style="padding:26px 26px 28px">
-<h1 class="heading h1" style="margin:0 0 14px;${DISPLAY};font-size:34px;color:${LIGHT.heading}">${escapeHtml(subject)}</h1>
-<p class="ink" style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${LIGHT.ink}">${escapeHtml(intro)}</p>
-${primaryButton(confirmUrl, "Feliratkozás megerősítése")}
-<p class="muted" style="margin:22px 0 0;font-size:13px;line-height:1.55;color:${LIGHT.muted}">Ha a gomb nem működik, nyisd meg ezt a címet:<br><a href="${escapeHtml(confirmUrl)}" class="muted" style="color:${LIGHT.muted};word-break:break-all">${escapeHtml(confirmUrl)}</a></p>
-</td></tr>
-</table>
-</td></tr>
-<tr><td style="padding:0 0 28px"></td></tr>
-${footer([escapeHtml(ignore), "Független projekt, nem kapcsolódik a Neptunhoz."])}`;
-
-  const text = [subject, "", intro, "", `Megerősítés: ${confirmUrl}`, "", ignore].join("\n");
-  return { subject, html: documentHtml(subject, intro, body), text };
 }

@@ -7,8 +7,8 @@ import { Redis } from "@upstash/redis";
  */
 export interface Kv {
   get<T>(key: string): Promise<T | null>;
-  /** Stores a JSON value that expires after ttlSeconds. */
-  set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
+  /** Stores a JSON value that expires after ttlSeconds (omitted: it never expires). */
+  set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
   del(...keys: string[]): Promise<void>;
   /** Resets the expiry of an existing key. */
   expire(key: string, ttlSeconds: number): Promise<void>;
@@ -25,14 +25,24 @@ interface MemoryEntry {
   expiresAt: number;
 }
 
-function createMemoryKv(): Kv {
+/** A fully fresh in-memory store (tests); getKv uses a global one that survives reloads. */
+export function createMemoryKv(): Kv {
+  return buildMemoryKv(new Map(), new Map());
+}
+
+function globalMemoryKv(): Kv {
   // Survive dev-server module reloads.
   const g = globalThis as {
     __hallgatoiMemoryKv?: Map<string, MemoryEntry>;
     __hallgatoiMemorySets?: Map<string, Set<string>>;
   };
-  const store = (g.__hallgatoiMemoryKv ??= new Map<string, MemoryEntry>());
-  const sets = (g.__hallgatoiMemorySets ??= new Map<string, Set<string>>());
+  return buildMemoryKv(
+    (g.__hallgatoiMemoryKv ??= new Map<string, MemoryEntry>()),
+    (g.__hallgatoiMemorySets ??= new Map<string, Set<string>>())
+  );
+}
+
+function buildMemoryKv(store: Map<string, MemoryEntry>, sets: Map<string, Set<string>>): Kv {
 
   function live(key: string): MemoryEntry | undefined {
     const entry = store.get(key);
@@ -50,7 +60,10 @@ function createMemoryKv(): Kv {
       return entry ? (JSON.parse(entry.value) as T) : null;
     },
     async set(key, value, ttlSeconds) {
-      store.set(key, { value: JSON.stringify(value), expiresAt: Date.now() + ttlSeconds * 1000 });
+      store.set(key, {
+        value: JSON.stringify(value),
+        expiresAt: ttlSeconds === undefined ? Infinity : Date.now() + ttlSeconds * 1000,
+      });
     },
     async del(...keys) {
       for (const key of keys) store.delete(key);
@@ -82,14 +95,15 @@ function createMemoryKv(): Kv {
   };
 }
 
-function createRedisKv(url: string, token: string): Kv {
+export function createRedisKv(url: string, token: string): Kv {
   const redis = new Redis({ url, token });
   return {
     async get<T>(key: string) {
       return (await redis.get<T>(key)) ?? null;
     },
     async set(key, value, ttlSeconds) {
-      await redis.set(key, value, { ex: ttlSeconds });
+      if (ttlSeconds === undefined) await redis.set(key, value);
+      else await redis.set(key, value, { ex: ttlSeconds });
     },
     async del(...keys) {
       if (keys.length > 0) await redis.del(...keys);
@@ -123,7 +137,7 @@ export function getKv(): Kv | null {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   if (url && token) cached = createRedisKv(url, token);
-  else if (process.env.NODE_ENV !== "production") cached = createMemoryKv();
+  else if (process.env.NODE_ENV !== "production") cached = globalMemoryKv();
   else cached = null;
   return cached;
 }

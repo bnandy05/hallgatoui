@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 
 const NEUTRAL_PIN = "var(--pin-neutral)"; // resolved to a colour by the engine
@@ -134,7 +134,7 @@ function placeOf(i: number, W: number, H: number): Place {
  */
 export function PinboardField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const { visible } = useDedupedDeadlines();
   const courses = useStore((s) => s.courses);
   const engine = useRef<{ sync: (doneIds: string[], colorOf: (id: string) => string) => void } | null>(null);

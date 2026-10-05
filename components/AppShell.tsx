@@ -5,8 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CalendarDays, ListTodo, Plus, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
+import { isAuthPath } from "@/lib/account/path";
+import { AccountSync } from "@/components/AccountSync";
+import { SyncStatus } from "@/components/SyncStatus";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
-import { SubscriptionSync } from "@/components/SubscriptionSync";
 import { KeyboardInset } from "@/components/KeyboardInset";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
@@ -72,7 +75,7 @@ function Wordmark() {
 }
 
 function NewDeadlineButton() {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -94,25 +97,28 @@ function NewDeadlineButton() {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
+  const dataReady = useDataReady();
+  const bare = isAuthPath(pathname);
   const didAutoSync = useRef(false);
 
   useEffect(() => {
-    if (!hydrated || didAutoSync.current) return;
+    if (!dataReady || bare || didAutoSync.current) return;
     didAutoSync.current = true;
     // Fire and forget: doesn't block the UI, errors are stored per-feed.
     void syncAllFeeds({ staleOnly: true });
-  }, [hydrated]);
+  }, [dataReady, bare]);
 
   return (
     <div className="isolate flex min-h-full flex-1 flex-col">
       <PinboardField />
       <KeyboardInset />
       {hydrated && <ThemeSync />}
-      {hydrated && <NotificationScheduler />}
-      {hydrated && <SubscriptionSync />}
+      {hydrated && <AccountSync />}
+      {dataReady && !bare && <NotificationScheduler />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">
           <Wordmark />
+          {!bare && (
           <nav aria-label="Fő navigáció" className="ml-4 hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => {
               const isActive = isActiveLink(link.href, pathname);
@@ -132,10 +138,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+          )}
           <div className="ml-auto flex items-center gap-2">
+            {!bare && <SyncStatus compact />}
             <ThemeToggle />
-            <CommandPalette />
-            <NewDeadlineButton />
+            {!bare && <CommandPalette />}
+            {!bare && <NewDeadlineButton />}
           </div>
         </div>
       </header>
@@ -144,11 +152,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-[13px] text-muted-dim md:pb-6">
         <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 sm:px-6">
-          <span>Az adataid ebben a böngészőben maradnak, amíg nem kapcsolod be a naptár-előfizetést.</span>
+          <span>Az adataid a fiókodban vannak, így minden eszközödön ugyanazok.</span>
           <span>Független projekt, nem kapcsolódik a Neptunhoz.</span>
         </div>
       </footer>
-      <TabBar pathname={pathname} />
+      {!bare && <TabBar pathname={pathname} />}
     </div>
   );
 }

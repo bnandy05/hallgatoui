@@ -3,7 +3,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
@@ -28,7 +28,7 @@ function RadarSkeleton() {
 }
 
 export default function WeekRadarPage() {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const courses = useStore((s) => s.courses);
   const { visible: deadlines } = useDedupedDeadlines();
   const customPlatforms = useStore((s) => s.customPlatforms);

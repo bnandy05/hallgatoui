@@ -6,7 +6,7 @@ import { ArrowRight, CalendarClock, CalendarPlus, Plus, Sparkles } from "lucide-
 import { addDays, format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
 import { visibleSessions } from "@/lib/ical/neptun";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { formatRelative, isCritical, weekRangeLabel, weekStartOf, weekSummary } from "@/lib/radar";
@@ -72,7 +72,7 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
 }
 
 export default function WeekHome() {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const courses = useStore((s) => s.courses);
   const { visible: deadlines } = useDedupedDeadlines();
   const loadDemo = useStore((s) => s.loadDemo);

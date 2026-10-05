@@ -152,7 +152,7 @@ export interface ExportOptions {
   includeClasses: boolean; // also put the timetable into "összes" and the course views
 }
 
-/** What the browser uploads for a calendar subscription; the server renders the .ics from it. */
+/** What the server's calendar and digest are built from (see lib/server/calendarInput.ts). */
 export interface CalendarSnapshot {
   courses: Course[];
   deadlines: Deadline[];
@@ -161,15 +161,4 @@ export interface CalendarSnapshot {
   ignoredDuplicatePairs: string[];
   classSessions: ClassSession[]; // the server never re-fetches timetables
   options: ExportOptions;
-}
-
-/**
- * Local handle of an active calendar subscription. The secret (write capability) never
- * leaves this browser except as a Bearer token. Not part of AppData: not exported/imported.
- */
-export interface Subscription {
-  token: string;
-  secret: string;
-  lastPushedAt?: string;
-  lastError?: string;
 }
