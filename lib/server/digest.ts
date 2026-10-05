@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import {
   collectDigest,
   digestPeriodKey,
+  shouldSendDigest,
   type DigestFrequency,
   type DigestStatus,
 } from "@/lib/digest";
@@ -138,7 +139,7 @@ export async function unsubscribeDigest(kv: Kv, token: string, key: string): Pro
   return "ok";
 }
 
-export type SendOutcome = "sent" | "skipped" | "removed" | "failed";
+export type SendOutcome = "sent" | "skipped" | "empty" | "removed" | "failed";
 
 /** Sends one subscription's digest if its period hasn't had one yet. */
 export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string): Promise<SendOutcome> {
@@ -168,8 +169,15 @@ export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string
     ignoredDuplicatePairs: sub.snapshot.ignoredDuplicatePairs ?? [],
     dedupe: sub.snapshot.options.dedupe,
     failingFeeds: warnings.map((w) => w.feedName),
+    classSessions: sub.snapshot.classSessions ?? [],
     now,
   });
+
+  // A daily mail with nothing due today or tomorrow is noise: the day counts as done.
+  if (!shouldSendDigest(digest.frequency, content)) {
+    await kv.set(digKey(token), { ...digest, lastPeriod: period }, TTL_SECONDS);
+    return "empty";
+  }
 
   const unsubscribe = unsubscribeUrl(appUrl, token, digest.unsubscribeKey);
   const sent = await sendEmail({

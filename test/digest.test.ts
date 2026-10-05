@@ -4,10 +4,12 @@ import {
   collectDigest,
   digestPeriodKey,
   digestRange,
+  shouldSendDigest,
   normalizeEmail,
   type DigestInput,
 } from "@/lib/digest";
 import { formatDigestDue, renderDigestEmail } from "@/lib/digestEmail";
+import type { ClassSession } from "@/lib/types";
 import { makeCourse, makeDeadline, makeFeed } from "./helpers";
 
 // Monday 2026-10-05, 06:00 Budapest (CEST, UTC+2).
@@ -116,4 +118,55 @@ test("digestRange covers this Monday–Sunday or the rest of the calendar month"
 test("formatDigestDue prints Budapest wall-clock time", () => {
   assert.equal(formatDigestDue(new Date("2026-10-07T21:59:00.000Z")), "okt. 7. (Sze) 23:59");
   assert.equal(formatDigestDue(new Date("2026-12-01T22:59:00.000Z")), "dec. 1. (K) 23:59");
+});
+
+function session(overrides: Partial<ClassSession>): ClassSession {
+  return {
+    id: "s", sourceId: "src", externalUid: "u", kind: "ora", subject: "Analysis I", subjectKey: "analysis i",
+    teachers: [], start: "2026-10-05T06:15:00.000Z", end: "2026-10-05T07:45:00.000Z", courseId: "c1", ...overrides,
+  };
+}
+
+test("daily digest: Budapest day period, week range that always includes tomorrow", () => {
+  assert.equal(digestPeriodKey("napi", NOW), "d:20261005");
+  assert.deepEqual(digestRange("napi", NOW), { from: [2026, 10, 5], to: [2026, 10, 11] });
+  const sunday = new Date("2026-10-11T04:00:00.000Z");
+  assert.deepEqual(digestRange("napi", sunday), { from: [2026, 10, 11], to: [2026, 10, 12] });
+});
+
+test("daily digest: today's classes, and only sent when something is due today or tomorrow", () => {
+  const classSessions = [
+    session({ id: "a", start: "2026-10-05T10:15:00.000Z", end: "2026-10-05T11:45:00.000Z" }),
+    session({ id: "b" }),
+    session({ id: "tomorrow", start: "2026-10-06T06:15:00.000Z", end: "2026-10-06T07:45:00.000Z" }),
+    session({ id: "holiday", kind: "szunnap", start: "2026-10-05T00:00:00.000Z", end: "2026-10-05T00:00:00.000Z" }),
+  ];
+  const later = [makeDeadline({ id: "fri", due: "2026-10-09T21:59:00.000Z" })];
+  const quiet = collectDigest(input({ frequency: "napi", deadlines: later, classSessions }));
+  assert.deepEqual(quiet.classesToday.map((c) => c.session.id), ["b", "a"]);
+  assert.equal(quiet.classesToday[0].course?.name, "Diszkrét matematika I");
+  assert.equal(shouldSendDigest("napi", quiet), false);
+  assert.equal(shouldSendDigest("heti", collectDigest(input({ deadlines: later }))), true);
+
+  const tomorrow = [...later, makeDeadline({ id: "tue", due: "2026-10-06T21:59:00.000Z" })];
+  const busy = collectDigest(input({ frequency: "napi", deadlines: tomorrow, classSessions }));
+  assert.equal(shouldSendDigest("napi", busy), true);
+  assert.equal(collectDigest(input({ deadlines: tomorrow, classSessions })).classesToday.length, 0);
+});
+
+test("renderDigestEmail daily: date heading, today with time left, tomorrow and the rest of the week", () => {
+  const deadlines = [
+    makeDeadline({ id: "today", title: "ZH 1", courseId: "c1", due: "2026-10-05T08:00:00.000Z" }),
+    makeDeadline({ id: "tue", title: "Kvíz 3", due: "2026-10-06T21:59:00.000Z" }),
+    makeDeadline({ id: "fri", title: "Beadandó 03", due: "2026-10-09T21:59:00.000Z" }),
+  ];
+  const content = collectDigest(input({ frequency: "napi", deadlines, classSessions: [session({})] }));
+  const mail = renderDigestEmail({ frequency: "napi", content, now: NOW, appUrl: "https://app.example.hu", unsubscribeUrl: "https://u" });
+  assert.equal(mail.subject, "Napi összefoglaló: ma 1 határidő, holnap 1");
+  assert.ok(mail.html.includes("Hétfő, okt. 5."));
+  assert.ok(mail.html.includes("még 4 óra"));
+  assert.ok(mail.html.includes("08:15–09:45"));
+  assert.ok(mail.html.includes("Holnap"));
+  assert.ok(mail.html.includes("A hét hátralévő része"));
+  assert.ok(mail.text.includes("Beadandó 03"));
 });
