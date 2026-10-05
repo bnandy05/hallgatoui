@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CalendarDays, ListTodo, Plus, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { useDataReady } from "@/lib/useDataReady";
-import { isAuthPath } from "@/lib/account/path";
+import { isPublicPath } from "@/lib/account/path";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AccountSync } from "@/components/AccountSync";
 import { SyncStatus } from "@/components/SyncStatus";
