@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronRight, FileQuestion, Link2, Pencil, Plus, Trash2 } fr
 import { addDays, format, isSameDay, startOfDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
 import { linkHost } from "@/lib/url";
@@ -119,7 +119,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
 }
 
 export function CourseWeekDetail({ id }: { id: string }) {
-  const hydrated = useHydrated();
+  const hydrated = useDataReady();
   const course = useStore((s) => s.courses.find((c) => c.id === id));
   const deleteCourse = useStore((s) => s.deleteCourse);
   const { visible: deadlines } = useDedupedDeadlines();

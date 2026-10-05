@@ -1,20 +1,24 @@
-import type { Deadline, IcalFeed } from "@/lib/types";
+import type { CalendarSnapshot, Deadline, IcalFeed } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { buildCalendar, type HealthWarning } from "@/lib/ical/export";
 import { fetchAndParseFeed } from "@/lib/ical/fetch";
 import { parseView } from "@/lib/ical/views";
 import { mergeFeedSync } from "@/lib/ical/sync";
+import { calendarInput } from "@/lib/server/calendarInput";
 import { trackDueChanges, type DueRecord } from "@/lib/server/dueChanges";
+import type { AccountStore } from "@/lib/server/account/store";
 import type { Kv } from "@/lib/server/kv";
 import {
   FEED_FETCH_TIMEOUT_MS,
+  ICS_TTL_SECONDS,
   SOURCE_FRESH_MS,
   chgKey,
+  icsIndexKey,
+  icsKey,
   srcKey,
   TTL_SECONDS,
   WARN_AFTER_MS,
   type SourceCache,
-  type StoredSubscription,
 } from "@/lib/server/subscription";
 
 const KEEP_HISTORY_MS = 30 * 24 * 60 * 60 * 1000; // same window mergeFeedSync uses
@@ -43,11 +47,11 @@ function slimEvents(events: IcalEventDTO[], now: number): IcalEventDTO[] {
 /** Returns the feed's source cache, re-fetching when it is older than SOURCE_FRESH_MS. */
 async function loadSource(
   kv: Kv,
-  token: string,
+  userId: string,
   feed: IcalFeed,
   now: Date
 ): Promise<SourceCache | null> {
-  const key = srcKey(token, feed.id);
+  const key = srcKey(userId, feed.id);
   let cached: SourceCache | null = null;
   try {
     cached = await kv.get<SourceCache>(key);
@@ -83,21 +87,21 @@ async function loadSource(
 }
 
 /**
- * The snapshot's deadlines refreshed with the server-side source caches, plus warnings for feeds
+ * The account's deadlines refreshed with the server-side source caches, plus warnings for feeds
  * failing for more than a day. Also advances the due-change record. Used by the calendar and the
  * email digest.
  */
 export async function loadLiveDeadlines(
   kv: Kv,
-  token: string,
-  sub: StoredSubscription,
+  userId: string,
+  input: CalendarSnapshot,
   now: Date
 ): Promise<{ deadlines: Deadline[]; warnings: HealthWarning[] }> {
-  const { courses, feeds } = sub.snapshot;
+  const { courses, feeds } = input;
 
-  const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, token, feed, now)));
+  const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, userId, feed, now)));
 
-  let deadlines: Deadline[] = sub.snapshot.deadlines;
+  let deadlines: Deadline[] = input.deadlines;
   const warnings: HealthWarning[] = [];
 
   feeds.forEach((feed, i) => {
@@ -120,15 +124,15 @@ export async function loadLiveDeadlines(
   // The "módosult" window starts when a change is first seen here, so it must outlive requests.
   let record: DueRecord | null = null;
   try {
-    record = await kv.get<DueRecord>(chgKey(token));
+    record = await kv.get<DueRecord>(chgKey(userId));
   } catch {
     record = null;
   }
-  const tracked = trackDueChanges(record, deadlines, now, sub.snapshot.deadlines);
+  const tracked = trackDueChanges(record, deadlines, now, input.deadlines);
   deadlines = tracked.deadlines;
   if (tracked.changed) {
     try {
-      await kv.set(chgKey(token), tracked.record, TTL_SECONDS);
+      await kv.set(chgKey(userId), tracked.record, TTL_SECONDS);
     } catch {
       // Rendering still works; the next request will try again.
     }
@@ -136,30 +140,60 @@ export async function loadLiveDeadlines(
   return { deadlines, warnings };
 }
 
-/** Renders the subscription's .ics: the snapshot, refreshed with the server-side source caches. */
-export async function renderSubscription(
-  kv: Kv,
-  token: string,
-  sub: StoredSubscription,
+/**
+ * Renders a user's .ics for a view: the account's data refreshed with the server-side source
+ * caches. A rendered view is cached for ICS_TTL_SECONDS and dropped by every data save (see
+ * saveData). Returns null when the user has no data yet.
+ */
+export async function renderCalendar(
+  store: AccountStore,
+  userId: string,
   now: Date,
   appUrl: string,
   viewParam?: string | null
-): Promise<string> {
-  const { courses, feeds, options, customPlatforms } = sub.snapshot;
-  const { deadlines, warnings } = await loadLiveDeadlines(kv, token, sub, now);
+): Promise<string | null> {
+  const kv = store.kv;
+  // Keyed on the raw parameter so a cache hit never loads the data document (calendar apps poll
+  // often); anything that isn't view-shaped shares the default entry.
+  const raw = viewParam?.trim().toLowerCase() ?? "";
+  const key = icsKey(userId, /^[a-z0-9-]{1,80}$/.test(raw) ? raw : "osszes");
 
-  return buildCalendar({
+  try {
+    const cached = await kv.get<{ ics: string; renderedAt: string }>(key);
+    if (cached && now.getTime() - new Date(cached.renderedAt).getTime() < ICS_TTL_SECONDS * 1000) {
+      return cached.ics;
+    }
+  } catch {
+    // Render fresh.
+  }
+
+  const doc = await store.getData(userId);
+  if (!doc) return null;
+  const input = calendarInput(doc);
+  const view = parseView(viewParam, input.courses);
+
+  const { courses, feeds, options, customPlatforms } = input;
+  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now);
+  const ics = buildCalendar({
     courses,
     deadlines,
     options,
     now,
     appUrl,
     warnings,
-    view: parseView(viewParam, courses),
+    view,
     // Dedup runs inside buildCalendar, i.e. after every mergeFeedSync above.
     feeds,
-    customPlatforms: customPlatforms ?? [],
-    ignoredDuplicatePairs: sub.snapshot.ignoredDuplicatePairs ?? [],
-    classSessions: sub.snapshot.classSessions ?? [],
+    customPlatforms,
+    ignoredDuplicatePairs: input.ignoredDuplicatePairs,
+    classSessions: input.classSessions,
   });
+
+  try {
+    await kv.set(key, { ics, renderedAt: now.toISOString() }, ICS_TTL_SECONDS);
+    await kv.sadd(icsIndexKey(userId), key);
+  } catch {
+    // Served uncached; the next request renders again.
+  }
+  return ics;
 }

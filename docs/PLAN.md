@@ -22,7 +22,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 - **README** rewritten.
 - **Redesign is the default**: the former `/uj` routes replaced the old pages. Motion pass: the board's columns are drawn in and the now-line is drawn through today, the days slide when you change week, ticked deadlines get a drawn strike, and dialogs and tab panels have entrances (see DESIGN.md → Motion). Slips are pinned up on mount, ticked ones unpin and swing, unticked ones re-pin; the felt background shows one slip per done task (DESIGN.md → Pinboard Field, Slip motion).
 - **Duplicate removal** (`lib/ical/dedupe.ts`, on by default, toggle in Beállítások → Naptár-előfizetés): source priority manual > canvas > moodle > neptun > other; "+N forrás" pill with "Nem duplikátum"; the calendar emits the primary with a "Források:" block; `ignoredDuplicatePairs` in `AppData`.
-- **Server "(módosult)" fix**: `chg:<token>` record (`lib/server/dueChanges.ts`), so the 48 h window starts when a move is first seen.
+- **Server "(módosult)" fix**: `chg:<userId>` record (was `chg:<token>`) (`lib/server/dueChanges.ts`), so the 48 h window starts when a move is first seen.
 - **Neptun timetable import** (`lib/ical/neptun.ts`): one unified calendar import in Beállítások → Naptárak (link or .ics file, Neptun auto-detected by content), only current-week and future classes (existing users get past semesters purged on their next re-import), one-time subject mapping, classes on the home board, course page and course table, calendar view `?nezet=orarend` and `ExportOptions.includeClasses`. Classes are not deadlines.
 - **Test runner**: `npm test` (`node:test`, `TZ=UTC`) with fixture-based tests for parsing, sync, canvas contexts, export, dedupe, due changes and the Neptun import.
 - **Budapest all-day fix**: an all-day `DTSTART` is 23:59 Budapest time on the server too (`budapestInstant`).
@@ -32,6 +32,7 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 - **Dark theme "after hours"** (on `impeccablelocal`, not yet in `main`): a second token block in `app/tokens.css` on `[data-theme="dark"]` (charcoal felt, grey card slips, chalk ink, inverted primary, darker copy-paper washes, red pin kept). Preference `theme` (system by default, light, dark) is a store device preference applied before paint by `THEME_SCRIPT` in `app/layout.tsx`; sun/moon toggle in the header, three options with board samples in Beállítások → Megjelenés. Hardcoded black washes, shadows and the felt canvas inks are tokens now. See DESIGN.md → After hours.
 - **On-screen keyboard**: dialogs are laid out in the visible part of the screen (`components/KeyboardInset.tsx` publishes `--visual-top`/`--visual-height`/`--keyboard-inset` from `visualViewport` for iOS; `interactiveWidget: "resizes-content"` handles Android), the focused field is scrolled back into view when the keyboard opens, the search results shrink to fit, and the mobile tab bar hides while typing (`data-keyboard`).
 - **Email digest** (issue #32, branch `impeccablelocal`, not yet in `main`): opt-in napi/heti/havi summary on top of the calendar subscription, sent through Resend from a daily Vercel cron. Double opt-in, one-click unsubscribe, privacy note in settings. The daily mail leads with today (date heading, "Ma" strip with today's classes and time-left bars, "Holnap", overdue, the rest of the week as a ruled list) and is only sent when something is due today or tomorrow. Rendered samples and screenshots: `docs/email-previews/`. **Owner to do before it works in production:** create a Resend account, verify a sender domain, set `RESEND_API_KEY`, `DIGEST_FROM` and `CRON_SECRET` in Vercel (see README). The Hobby plan runs the cron once a day within the hour, which is enough.
+- **Accounts, part 1** (branch `impeccablelocal`): sign-in is required (email + password, magic link, confirmed email), data lives on the server as one versioned document per user (`/api/adatok`, compare-and-set, three-way merge on conflict), localStorage is a cache. The calendar subscription and the email digest belong to the account (`/api/fiok/naptar`, `/api/fiok/hirlevel`; no secret, no snapshot upload, no digest confirmation; the rendered `.ics` is cached 15 min and dropped on every save). Existing token/secret subscriptions and digests were abandoned on purpose (two users). Design: `docs/superpowers/specs/2026-10-05-accounts-design.md`, plan: `docs/superpowers/plans/2026-10-05-accounts.md`.
 - **Copy**: the Odyssey/nautical copy is gone (notebook-and-blueprint voice, see `PRODUCT.md`), the logo is a notebook icon.
 
 ### Decisions a future session needs
@@ -42,6 +43,16 @@ Conventions for all work: see [`CLAUDE.md`](../CLAUDE.md). The process: an agent
 - The fixture `neptun-orarend.ics` has 6 distinct subjects (11 subject/group pairs), not 10.
 - Timetable subjects are never matched to Canvas courses automatically (English names, no codes): the user maps them once. Mapping a subject adds its name to the course's `matchKeywords`.
 
+
+## Next: accounts part 2, Google and Apple sign-in
+
+OIDC sign-in next to email + password and the magic link. Needs owner decisions and setup:
+- approval for the `jose` dependency (ID-token verification);
+- a Google Cloud OAuth client (consent screen, redirect URI);
+- an Apple Developer account ($99/year), a Services ID, domain verification, and the Apple client secret (a JWT) renewed at least every 6 months;
+- account linking rules (same confirmed email → same account).
+
+Capacity notes (free tiers): Upstash 500K commands/month is roughly 250 calendar users with the `.ics` cache (one render per 15 min per view, plus the data and feed caches); Resend allows 100 mails/day, which also bounds sign-up and digest mails.
 
 ## Step 0: real iCal fixtures (owner, on their computer)
 
@@ -89,7 +100,7 @@ The owner wants [Impeccable](https://github.com/pbakaus/impeccable) (design comm
 - Neptun exams into dedup once a `neptun-vizsga.ics` fixture exists (the dedupe tests use a synthetic Neptun exam).
 - A Neptun URL feed, if Neptun ever offers one (the optional URL import already goes through `/api/ical`).
 - `moodle.ics` is still missing (ELTE Moodle has export disabled).
-- ~~On the server, "(módosult)" never expires~~ fixed (`chg:<token>`).
+- ~~On the server, "(módosult)" never expires~~ fixed (`chg:<userId>`).
 - ~~No automated tests~~ `npm test`.
 - `/targy/[id]` hasn't been screenshot-checked since the restyle, and neither has the timetable UI.
 

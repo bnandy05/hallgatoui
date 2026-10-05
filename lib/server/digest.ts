@@ -6,189 +6,136 @@ import {
   type DigestFrequency,
   type DigestStatus,
 } from "@/lib/digest";
-import { renderConfirmEmail, renderDigestEmail } from "@/lib/digestEmail";
+import { renderDigestEmail } from "@/lib/digestEmail";
+import type { AccountStore } from "@/lib/server/account/store";
 import { loadLiveDeadlines } from "@/lib/server/calendar";
-import { sendEmail } from "@/lib/server/email";
+import { calendarInput } from "@/lib/server/calendarInput";
+import { sendEmail, type OutgoingEmail } from "@/lib/server/email";
 import type { Kv } from "@/lib/server/kv";
-import {
-  DIGEST_INDEX_KEY,
-  digKey,
-  hashSecret,
-  subKey,
-  TTL_SECONDS,
-  type StoredSubscription,
-} from "@/lib/server/subscription";
+import { DIGEST_INDEX_KEY, digKey } from "@/lib/server/subscription";
 
-// Server side of the email digest: settings stored next to a calendar subscription, double
-// opt-in, and the daily send. Server-only.
-
-export const CONFIRM_WINDOW_MS = 48 * 60 * 60 * 1000;
+// Server side of the email digest: settings stored per account (the address is the account's
+// confirmed email) and the daily send. Server-only.
 
 export interface StoredDigest {
-  email: string;
   frequency: DigestFrequency;
-  confirmed: boolean;
-  /** sha256 of the confirmation key; only while unconfirmed. */
-  confirmHash?: string;
-  requestedAt: string;
   /** Raw: it goes into every digest's unsubscribe link and only allows unsubscribing. */
   unsubscribeKey: string;
-  /** digestPeriodKey of the last digest sent (or of the confirmation, so none goes out early). */
+  /** digestPeriodKey of the last digest sent (or of the save, so none goes out early). */
   lastPeriod?: string;
   lastSentAt?: string;
 }
 
 export function digestStatus(digest: StoredDigest | null): DigestStatus | null {
   if (!digest) return null;
-  return {
-    email: digest.email,
-    frequency: digest.frequency,
-    confirmed: digest.confirmed,
-    lastSentAt: digest.lastSentAt,
-  };
+  return { frequency: digest.frequency, lastSentAt: digest.lastSentAt };
 }
 
 function randomKey(): string {
   return randomBytes(24).toString("base64url");
 }
 
-export function confirmUrl(appUrl: string, token: string, key: string): string {
-  return `${appUrl}/hirlevel?m=megerosites&t=${encodeURIComponent(token)}&k=${encodeURIComponent(key)}`;
-}
-
-export function unsubscribeUrl(appUrl: string, token: string, key: string): string {
-  return `${appUrl}/hirlevel?m=leiratkozas&t=${encodeURIComponent(token)}&k=${encodeURIComponent(key)}`;
+export function unsubscribeUrl(appUrl: string, userId: string, key: string): string {
+  return `${appUrl}/hirlevel?m=leiratkozas&u=${encodeURIComponent(userId)}&k=${encodeURIComponent(key)}`;
 }
 
 /** RFC 8058 one-click endpoint (POST), for mail clients' own unsubscribe button. */
-function oneClickUrl(appUrl: string, token: string, key: string): string {
-  return `${appUrl}/api/hirlevel?m=leiratkozas&t=${encodeURIComponent(token)}&k=${encodeURIComponent(key)}`;
+function oneClickUrl(appUrl: string, userId: string, key: string): string {
+  return `${appUrl}/api/hirlevel?m=leiratkozas&u=${encodeURIComponent(userId)}&k=${encodeURIComponent(key)}`;
 }
 
 /**
- * Saves the settings. A new address starts unconfirmed and gets a confirmation mail; changing
- * only the frequency of a confirmed address keeps it confirmed. Returns the stored digest, or
- * null when the confirmation mail could not be sent.
+ * Creates or updates the user's digest. No confirmation: the account email is already
+ * confirmed. A new or changed frequency starts with its next period, not with a mail tomorrow.
  */
-export async function requestDigest(
+export async function saveDigest(
   kv: Kv,
-  token: string,
+  userId: string,
   previous: StoredDigest | null,
-  email: string,
   frequency: DigestFrequency,
-  appUrl: string,
   now: Date
-): Promise<StoredDigest | null> {
-  if (previous && previous.email === email && previous.confirmed) {
-    const next: StoredDigest = {
-      ...previous,
-      frequency,
-      // A new frequency starts with its next period, not with a mail tomorrow morning.
-      lastPeriod: previous.frequency === frequency ? previous.lastPeriod : digestPeriodKey(frequency, now),
-    };
-    await kv.set(digKey(token), next, TTL_SECONDS);
-    return next;
-  }
-
-  const key = randomKey();
+): Promise<StoredDigest> {
   const next: StoredDigest = {
-    email,
+    ...previous,
     frequency,
-    confirmed: false,
-    confirmHash: hashSecret(key),
-    requestedAt: now.toISOString(),
     unsubscribeKey: previous?.unsubscribeKey ?? randomKey(),
+    lastPeriod: previous && previous.frequency === frequency ? previous.lastPeriod : digestPeriodKey(frequency, now),
   };
-  const sent = await sendEmail({ to: email, ...renderConfirmEmail({ frequency, confirmUrl: confirmUrl(appUrl, token, key) }) });
-  if (!sent) return null;
-  await kv.set(digKey(token), next, TTL_SECONDS);
-  await kv.sadd(DIGEST_INDEX_KEY, token);
+  await kv.set(digKey(userId), next);
+  await kv.sadd(DIGEST_INDEX_KEY, userId);
   return next;
 }
 
-export type LinkResult = "ok" | "invalid" | "expired";
+export type LinkResult = "ok" | "invalid";
 
-export async function confirmDigest(kv: Kv, token: string, key: string, now: Date): Promise<LinkResult> {
-  const digest = await kv.get<StoredDigest>(digKey(token));
-  if (!digest) return "invalid";
-  if (digest.confirmed) return "ok"; // a second click on the same link
-  if (!digest.confirmHash || digest.confirmHash !== hashSecret(key)) return "invalid";
-  if (now.getTime() - new Date(digest.requestedAt).getTime() > CONFIRM_WINDOW_MS) return "expired";
-  const next: StoredDigest = {
-    ...digest,
-    confirmed: true,
-    confirmHash: undefined,
-    lastPeriod: digestPeriodKey(digest.frequency, now),
-  };
-  await kv.set(digKey(token), next, TTL_SECONDS);
-  await kv.sadd(DIGEST_INDEX_KEY, token);
-  return "ok";
-}
-
-export async function removeDigest(kv: Kv, token: string): Promise<void> {
-  await kv.del(digKey(token));
-  await kv.srem(DIGEST_INDEX_KEY, token);
+export async function removeDigest(kv: Kv, userId: string): Promise<void> {
+  await kv.del(digKey(userId));
+  await kv.srem(DIGEST_INDEX_KEY, userId);
 }
 
 /** Unsubscribe link: only the key from the digest mails works. */
-export async function unsubscribeDigest(kv: Kv, token: string, key: string): Promise<LinkResult> {
-  const digest = await kv.get<StoredDigest>(digKey(token));
+export async function unsubscribeDigest(kv: Kv, userId: string, key: string): Promise<LinkResult> {
+  const digest = await kv.get<StoredDigest>(digKey(userId));
   if (!digest) return "ok"; // already gone
   if (digest.unsubscribeKey !== key) return "invalid";
-  await removeDigest(kv, token);
+  await removeDigest(kv, userId);
   return "ok";
 }
 
 export type SendOutcome = "sent" | "skipped" | "empty" | "removed" | "failed";
 
-/** Sends one subscription's digest if its period hasn't had one yet. */
-export async function runDigest(kv: Kv, token: string, now: Date, appUrl: string): Promise<SendOutcome> {
-  const digest = await kv.get<StoredDigest>(digKey(token));
-  const sub = digest ? await kv.get<StoredSubscription>(subKey(token)) : null;
-  if (!digest || !sub) {
-    // The subscription expired or was deleted: nothing left to summarise.
-    await removeDigest(kv, token);
+/** Sends one user's digest if its period hasn't had one yet. */
+export async function runDigest(
+  store: AccountStore,
+  userId: string,
+  now: Date,
+  appUrl: string,
+  send: (email: OutgoingEmail) => Promise<boolean> = sendEmail
+): Promise<SendOutcome> {
+  const kv = store.kv;
+  const digest = await kv.get<StoredDigest>(digKey(userId));
+  const user = digest ? await store.getUser(userId) : null;
+  if (!digest || !user) {
+    // The account is gone: nothing left to summarise.
+    await removeDigest(kv, userId);
     return "removed";
   }
-  if (!digest.confirmed) {
-    if (now.getTime() - new Date(digest.requestedAt).getTime() > CONFIRM_WINDOW_MS) {
-      await removeDigest(kv, token);
-      return "removed";
-    }
-    return "skipped";
-  }
+  if (!user.emailVerifiedAt) return "skipped";
   const period = digestPeriodKey(digest.frequency, now);
   if (digest.lastPeriod === period) return "skipped";
 
-  const { deadlines, warnings } = await loadLiveDeadlines(kv, token, sub, now);
+  const doc = await store.getData(userId);
+  if (!doc) return "skipped";
+  const input = calendarInput(doc);
+  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now);
   const content = collectDigest({
     frequency: digest.frequency,
-    courses: sub.snapshot.courses,
+    courses: input.courses,
     deadlines,
-    feeds: sub.snapshot.feeds,
-    ignoredDuplicatePairs: sub.snapshot.ignoredDuplicatePairs ?? [],
-    dedupe: sub.snapshot.options.dedupe,
+    feeds: input.feeds,
+    ignoredDuplicatePairs: input.ignoredDuplicatePairs,
+    dedupe: input.options.dedupe,
     failingFeeds: warnings.map((w) => w.feedName),
-    classSessions: sub.snapshot.classSessions ?? [],
+    classSessions: input.classSessions,
     now,
   });
 
   // A daily mail with nothing due today or tomorrow is noise: the day counts as done.
   if (!shouldSendDigest(digest.frequency, content)) {
-    await kv.set(digKey(token), { ...digest, lastPeriod: period }, TTL_SECONDS);
+    await kv.set(digKey(userId), { ...digest, lastPeriod: period });
     return "empty";
   }
 
-  const unsubscribe = unsubscribeUrl(appUrl, token, digest.unsubscribeKey);
-  const sent = await sendEmail({
-    to: digest.email,
+  const unsubscribe = unsubscribeUrl(appUrl, userId, digest.unsubscribeKey);
+  const sent = await send({
+    to: user.email,
     ...renderDigestEmail({ frequency: digest.frequency, content, now, appUrl, unsubscribeUrl: unsubscribe }),
     headers: {
-      "List-Unsubscribe": `<${oneClickUrl(appUrl, token, digest.unsubscribeKey)}>`,
+      "List-Unsubscribe": `<${oneClickUrl(appUrl, userId, digest.unsubscribeKey)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
   });
   if (!sent) return "failed"; // retried by the next run
-  await kv.set(digKey(token), { ...digest, lastPeriod: period, lastSentAt: now.toISOString() }, TTL_SECONDS);
+  await kv.set(digKey(userId), { ...digest, lastPeriod: period, lastSentAt: now.toISOString() });
   return "sent";
 }

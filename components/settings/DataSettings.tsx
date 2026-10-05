@@ -56,7 +56,7 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm("A mentés felülírja a jelenlegi adatokat. Folytatod?")) {
+      if (!confirm("A mentés felülírja a fiókod jelenlegi adatait. Folytatod?")) {
         return;
       }
 
@@ -75,7 +75,7 @@ export function DataSettings() {
   }
 
   function handleReset() {
-    if (confirm("Minden adat törlődik ebből a böngészőből. Biztosan folytatod?")) {
+    if (confirm("Minden adat törlődik a fiókodból, minden eszközről. Biztosan folytatod?")) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();

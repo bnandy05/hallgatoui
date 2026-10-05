@@ -1,45 +1,22 @@
 import { visibleSessions } from "@/lib/ical/neptun";
-import { buildCalendar, DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
-import { useStore, type AppStore } from "@/lib/store";
-import type { CalendarSnapshot, Subscription } from "@/lib/types";
+import { buildCalendar } from "@/lib/ical/export";
+import { useStore } from "@/lib/store";
 import type { DigestFrequency, DigestStatus } from "@/lib/digest";
 
-const API = "/api/naptar";
+// Browser side of the account's calendar subscription and email digest. Both live on the server
+// under the signed-in account; these wrappers never throw, errors come back as Hungarian messages.
+
+const CALENDAR_API = "/api/fiok/naptar";
+const DIGEST_API = "/api/fiok/hirlevel";
 const GENERIC_ERROR = "A naptár-előfizetés nem érhető el";
-
-type SnapshotSource = Pick<
-  AppStore,
-  "courses" | "deadlines" | "feeds" | "customPlatforms" | "exportOptions" | "ignoredDuplicatePairs" | "classSessions" | "timetableSources"
->;
-
-/**
- * What gets uploaded. Course links/resources and the feeds' discovery state are left out:
- * the calendar doesn't need them.
- */
-export function buildSnapshot(state: SnapshotSource): CalendarSnapshot {
-  return {
-    courses: state.courses.map((c) => ({ ...c, links: [], resources: [] })),
-    deadlines: state.deadlines,
-    feeds: state.feeds.map((f) => ({
-      id: f.id,
-      name: f.name,
-      url: f.url,
-      platformId: f.platformId,
-      courseId: f.courseId,
-      ignoredContexts: f.ignoredContexts,
-      markDoneBefore: f.markDoneBefore,
-    })),
-    customPlatforms: state.customPlatforms,
-    ignoredDuplicatePairs: state.ignoredDuplicatePairs,
-    classSessions: visibleSessions(state.classSessions, state.timetableSources),
-    options: { ...DEFAULT_EXPORT_OPTIONS, ...state.exportOptions },
-  };
-}
+const NETWORK_ERROR = "A szerver nem érhető el";
 
 /** Path part of the subscription URL; add an origin or a scheme in front of it. */
 export function subscriptionPath(token: string): string {
   return `/api/naptar/${token}.ics`;
 }
+
+type Failure = { error: string };
 
 async function errorFrom(res: Response): Promise<string> {
   try {
@@ -51,119 +28,43 @@ async function errorFrom(res: Response): Promise<string> {
   return GENERIC_ERROR;
 }
 
-function networkError(): string {
-  return "A szerver nem érhető el";
-}
-
-/** Creates a subscription from the current data. Returns an error message, or null on success. */
-export async function createSubscription(): Promise<string | null> {
-  const state = useStore.getState();
+async function request(url: string, method: string, body?: unknown): Promise<Response | Failure> {
   try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ snapshot: buildSnapshot(state) }),
+    const res = await fetch(url, {
+      method,
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
     });
-    if (!res.ok) return await errorFrom(res);
-    const json = (await res.json()) as Partial<Subscription>;
-    if (typeof json.token !== "string" || typeof json.secret !== "string") return GENERIC_ERROR;
-    lastPushedJson = JSON.stringify(buildSnapshot(state));
-    state.setSubscription({
-      token: json.token,
-      secret: json.secret,
-      lastPushedAt: new Date().toISOString(),
-    });
-    return null;
+    return res.ok ? res : { error: await errorFrom(res) };
   } catch {
-    return networkError();
+    return { error: NETWORK_ERROR };
   }
 }
 
-let lastPushedJson: string | null = null;
-let pushing: Promise<void> | null = null;
-let pushAgain = false;
+const failed = (r: Response | Failure): r is Failure => !(r instanceof Response);
 
-async function pushOnce(): Promise<void> {
-  const state = useStore.getState();
-  const sub = state.subscription;
-  if (!sub) return;
-  const json = JSON.stringify(buildSnapshot(state));
+async function tokenRequest(method: string, url = CALENDAR_API): Promise<{ token: string | null } | Failure> {
+  const res = await request(url, method);
+  if (failed(res)) return res;
   try {
-    const res = await fetch(`${API}/${sub.token}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json", authorization: `Bearer ${sub.secret}` },
-      body: `{"snapshot":${json}}`,
-    });
-    if (!res.ok) {
-      const message =
-        res.status === 404
-          ? "Az előfizetés már nem létezik a szerveren. Kapcsold ki, majd be újra."
-          : await errorFrom(res);
-      state.patchSubscription({ lastError: message });
-      return;
-    }
-    lastPushedJson = json;
-    state.patchSubscription({ lastPushedAt: new Date().toISOString(), lastError: undefined });
+    const json = (await res.json()) as { token?: unknown };
+    return { token: typeof json.token === "string" ? json.token : null };
   } catch {
-    state.patchSubscription({ lastError: networkError() });
+    return { error: GENERIC_ERROR };
   }
 }
 
-/**
- * Uploads the current data. With `onlyIfChanged`, nothing is sent when the snapshot equals
- * the last one pushed from this tab. Overlapping calls are coalesced.
- */
-export async function pushSnapshot(opts?: { onlyIfChanged?: boolean }): Promise<void> {
-  const state = useStore.getState();
-  if (!state.subscription) return;
-  if (opts?.onlyIfChanged && JSON.stringify(buildSnapshot(state)) === lastPushedJson) return;
-
-  if (pushing) {
-    pushAgain = true;
-    return pushing;
-  }
-  pushing = (async () => {
-    do {
-      pushAgain = false;
-      await pushOnce();
-    } while (pushAgain);
-  })().finally(() => {
-    pushing = null;
-  });
-  return pushing;
-}
-
-/** Deletes the subscription on the server and clears it locally. Returns an error message or null. */
-export async function deleteSubscription(): Promise<string | null> {
-  const state = useStore.getState();
-  const sub = state.subscription;
-  if (!sub) return null;
-  try {
-    const res = await fetch(`${API}/${sub.token}`, {
-      method: "DELETE",
-      headers: { authorization: `Bearer ${sub.secret}` },
-    });
-    // 404: already gone on the server, which is what we wanted.
-    if (!res.ok && res.status !== 404) {
-      const message = await errorFrom(res);
-      state.patchSubscription({ lastError: message });
-      return message;
-    }
-  } catch {
-    const message = networkError();
-    state.patchSubscription({ lastError: message });
-    return message;
-  }
-  lastPushedJson = null;
-  state.setSubscription(null);
-  return null;
-}
-
-/** New token and secret: the old link stops working. Returns an error message or null. */
-export async function rotateSubscription(): Promise<string | null> {
-  const failure = await deleteSubscription();
-  if (failure) return failure;
-  return createSubscription();
+/** The account's calendar token, or null when the subscription is off. */
+export const fetchCalendarToken = () => tokenRequest("GET");
+/** Turns the subscription on (keeps the existing token if there is one). */
+export const createCalendarToken = () => tokenRequest("POST");
+/** New token: the old link stops working. */
+export const rotateCalendarToken = () => tokenRequest("POST", `${CALENDAR_API}?uj=1`);
+/** Turns the subscription off. Returns an error message or null. */
+export async function deleteCalendarToken(): Promise<string | null> {
+  const res = await request(CALENDAR_API, "DELETE");
+  return failed(res) ? res.error : null;
 }
 
 /** One-time .ics download built in the browser; works without a subscription or server. */
@@ -194,28 +95,20 @@ export function downloadCalendar(): void {
 /** `error` is set on failure; otherwise `digest` (null when there is none). */
 interface DigestResult {
   digest?: DigestStatus | null;
+  email?: string;
   available?: boolean;
   error?: string;
 }
 
 async function digestRequest(method: "GET" | "PUT" | "DELETE", body?: unknown): Promise<DigestResult> {
-  const sub = useStore.getState().subscription;
-  if (!sub) return { error: "Előbb kapcsold be a naptár-előfizetést" };
+  const res = await request(DIGEST_API, method, body);
+  if (failed(res)) return { error: res.error };
+  if (method === "DELETE") return { digest: null };
   try {
-    const res = await fetch(`${API}/${sub.token}/hirlevel`, {
-      method,
-      headers: {
-        authorization: `Bearer ${sub.secret}`,
-        ...(body ? { "content-type": "application/json" } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (!res.ok) return { error: await errorFrom(res) };
-    if (method === "DELETE") return { digest: null };
-    const json = (await res.json()) as { digest?: DigestStatus | null; available?: boolean };
-    return { digest: json.digest ?? null, available: json.available };
+    const json = (await res.json()) as { digest?: DigestStatus | null; email?: string; available?: boolean };
+    return { digest: json.digest ?? null, email: json.email, available: json.available };
   } catch {
-    return { error: networkError() };
+    return { error: GENERIC_ERROR };
   }
 }
 
@@ -223,9 +116,9 @@ export function fetchDigest(): Promise<DigestResult> {
   return digestRequest("GET");
 }
 
-/** Saves the address and frequency; a new address gets a confirmation mail. */
-export function saveDigest(email: string, frequency: DigestFrequency): Promise<DigestResult> {
-  return digestRequest("PUT", { email, frequency });
+/** Creates or updates the digest; it goes to the account email. */
+export function saveDigest(frequency: DigestFrequency): Promise<DigestResult> {
+  return digestRequest("PUT", { frequency });
 }
 
 export function deleteDigest(): Promise<DigestResult> {

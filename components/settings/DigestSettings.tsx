@@ -1,51 +1,35 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { hu } from "date-fns/locale";
-import { Loader2, Mail, ShieldAlert } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { Loader2, Mail } from "lucide-react";
 import { DIGEST_FREQUENCIES, type DigestFrequency, type DigestStatus } from "@/lib/digest";
 import { deleteDigest, fetchDigest, saveDigest } from "@/lib/subscription/client";
-import { Button, buttonClasses } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
+import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-type Load = { state: "loading" } | { state: "ready"; digest: DigestStatus | null; available: boolean } | { state: "error"; message: string };
+type Load =
+  | { state: "loading" }
+  | { state: "ready"; digest: DigestStatus | null; email: string; available: boolean }
+  | { state: "error"; message: string };
 
-/** Email digest: lives on the server next to the calendar subscription, so it needs one. */
+/** Email digest: stored on the account, sent to the account's confirmed address. */
 export function DigestSettings() {
-  const subscription = useStore((s) => s.subscription);
-  const token = subscription?.token ?? null;
-
   return (
     <section id="hirlevel" className="flex flex-col gap-6">
       <SectionHeading
         title="E-mail-összefoglaló"
         sub="Napi, heti vagy havi levél a közelgő és lejárt határidőkről, akkor is, ha az oldal nincs nyitva."
       />
-      {token ? (
-        <DigestForm key={token} />
-      ) : (
-        <div className="sheet-paper flex flex-col items-start gap-3 px-5 py-4">
-          <p className="text-[14px] text-muted">
-            Az összefoglalót a szerver állítja össze a naptár-előfizetésed adataiból, ezért előbb azt kell bekapcsolnod.
-          </p>
-          <Link href="/beallitasok#elofizetes" className={buttonClasses({ variant: "secondary", size: "sm" })}>
-            Naptár-előfizetés
-          </Link>
-        </div>
-      )}
+      <DigestForm />
     </section>
   );
 }
 
 function DigestForm() {
   const [load, setLoad] = useState<Load>({ state: "loading" });
-  const [email, setEmail] = useState("");
   const [frequency, setFrequency] = useState<DigestFrequency>("heti");
   const [busy, setBusy] = useState<"save" | "delete" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +43,8 @@ function DigestForm() {
         return;
       }
       const digest = result.digest ?? null;
-      setLoad({ state: "ready", digest, available: result.available !== false });
-      if (digest) {
-        setEmail(digest.email);
-        setFrequency(digest.frequency);
-      }
+      setLoad({ state: "ready", digest, email: result.email ?? "", available: result.available !== false });
+      if (digest) setFrequency(digest.frequency);
     });
     return () => {
       cancelled = true;
@@ -80,72 +61,37 @@ function DigestForm() {
     return <p className="text-[14px] text-muted">Az e-mail-küldés ezen a szerveren nincs beállítva.</p>;
   }
 
-  const digest = load.digest;
-  const sameEmail = digest !== null && digest.email === email.trim().toLowerCase();
-  // A pending sign-up can always be sent again (a new confirmation mail).
-  const unchanged = sameEmail && digest.confirmed && digest.frequency === frequency;
+  const { digest, email } = load;
+  const unchanged = digest !== null && digest.frequency === frequency;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy("save");
     setError(null);
-    const result = await saveDigest(email, frequency);
+    const result = await saveDigest(frequency);
     if (result.error) setError(result.error);
-    else setLoad({ state: "ready", digest: result.digest ?? null, available: true });
+    else setLoad({ state: "ready", digest: result.digest ?? null, email, available: true });
     setBusy(null);
   }
 
   async function remove() {
-    if (!confirm("Leiratkozol az e-mail-összefoglalóról? Az e-mail-címed törlődik a szerverről.")) return;
+    if (!confirm("Leiratkozol az e-mail-összefoglalóról?")) return;
     setBusy("delete");
     setError(null);
     const result = await deleteDigest();
     if (result.error) setError(result.error);
-    else {
-      setLoad({ state: "ready", digest: null, available: true });
-      setEmail("");
-    }
+    else setLoad({ state: "ready", digest: null, email, available: true });
     setBusy(null);
   }
 
-  const status = !digest ? null : digest.confirmed ? (
-    <p className="text-[13.5px] text-muted">
-      <span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full bg-success align-middle" />
-      Feliratkozva
-      {digest.lastSentAt &&
-        `, utolsó levél ${formatDistanceToNow(new Date(digest.lastSentAt), { addSuffix: true, locale: hu })}`}
-    </p>
-  ) : (
-    <p className="text-[13.5px] font-semibold text-warning">
-      Megerősítésre vár: nyisd meg a {digest.email} címre küldött levelet (48 óráig érvényes).
-    </p>
-  );
   const spinner = <Loader2 className="h-4 w-4 animate-spin" />;
 
   return (
     <form onSubmit={submit} className="sheet-paper flex flex-col gap-4 px-5 py-5">
-      {!digest && (
-        <div className="flex gap-2.5 rounded-[var(--radius)] bg-canary/60 p-3 text-[13.5px] text-foreground">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <p>
-            Az e-mail-címed a naptár-előfizetés mellett a szerveren tárolódik, és csak az összefoglalóhoz használjuk.
-            A feliratkozást egy levélben meg kell erősítened. Leiratkozáskor vagy az előfizetés kikapcsolásakor a cím
-            törlődik.
-          </p>
-        </div>
-      )}
       <div>
-        <Label htmlFor="digest-email">E-mail-cím</Label>
-        <Input
-          id="digest-email"
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={254}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="nev@example.hu"
-        />
+        <p className="text-[13px] font-semibold text-heading">Címzett</p>
+        <p className="mt-0.5 break-all text-[15px] text-foreground">{email}</p>
+        <p className="mt-1 text-[13px] text-muted">A fiókod e-mail-címére érkezik; ha megváltoztatod, a levél is oda megy.</p>
       </div>
       <div>
         <p className="mb-1.5 text-[13px] font-semibold text-heading">Gyakoriság</p>
@@ -160,18 +106,19 @@ function DigestForm() {
           Reggel érkezik. A napi levél csak akkor jön, ha ma vagy holnap van határidőd.
         </p>
       </div>
-      {status}
+      {digest && (
+        <p className="text-[13.5px] text-muted">
+          <span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full bg-success align-middle" />
+          Feliratkozva
+          {digest.lastSentAt &&
+            `, utolsó levél ${formatDistanceToNow(new Date(digest.lastSentAt), { addSuffix: true, locale: hu })}`}
+        </p>
+      )}
       {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={busy !== null || unchanged}>
           {busy === "save" ? spinner : <Mail className="h-4 w-4" />}
-          {!digest
-            ? "Feliratkozás"
-            : !sameEmail
-              ? "Új cím megerősítése"
-              : digest.confirmed
-                ? "Mentés"
-                : "Megerősítő levél újraküldése"}
+          {digest ? "Mentés" : "Feliratkozás"}
         </Button>
         {digest && (
           <Button
