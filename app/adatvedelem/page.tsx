@@ -64,6 +64,13 @@ const PURPOSES: Purpose[] = [
     until: "Leiratkozásig vagy a fiók törléséig.",
   },
   {
+    what: "Követelményrendszer beolvasása",
+    data:
+      "Ha egy tárgy követelményrendszerét beilleszted és az Értelmezés gombot választod: a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek. A szöveget, a mondatokat és a válaszokat nem tároljuk; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
+    basis: "Szerződés teljesítése (6. cikk (1) b)): a kérésedre végzett szolgáltatás.",
+    until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
+  },
+  {
     what: "Visszaélés elleni védelem",
     data:
       "IP-cím, a belépési, regisztrációs és levélküldési kísérletek számlálásához. Az e-mail-címeket a számlálókban csak lenyomatként tároljuk.",
@@ -87,6 +94,11 @@ const PROCESSORS = [
     name: "Resend",
     role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: e-mail-cím és a levél tartalma.",
     where: "Egyesült Államok.",
+  },
+  {
+    name: "TypeSafe AI (Jev)",
+    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése (csak ezek a mondatok, személyes adat nélkül).",
+    where: "A szolgáltató nem teszi közzé, hol fut; saját nyilatkozata szerint a kéréseket nem használja modelltanításra.",
   },
 ];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { AlertTriangle, Calculator, Check, CircleDashed, Code, Trash2, X } from "lucide-react";
+import { AlertTriangle, Calculator, Check, CircleDashed, Code, FileText, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { evaluate, type GateStatus, type GradeValue, type OutcomeEval } from "@/lib/rules/engine";
 import { RULE_TEMPLATES, ruleTemplate } from "@/lib/rules/fixtures";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/Label";
 import { Pill } from "@/components/ui/Pill";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { ExtractForm } from "@/components/requirements/ExtractDialog";
 import {
   AssignmentInput,
   AttendanceInput,
@@ -62,6 +63,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const allResults = useStore((s) => s.requirementResults);
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const [jsonOpen, setJsonOpen] = useState(false);
+  const [extractOpen, setExtractOpen] = useState(false);
 
   const results = useMemo(
     () => (rules ? allResults.filter((r) => r.courseId === courseId) : EMPTY_RESULTS),
@@ -80,6 +82,28 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       />
     </Dialog>
   );
+  const extractDialog = (
+    <Dialog open={extractOpen} onClose={() => setExtractOpen(false)} title="Beolvasás a követelményrendszerből" size="lg">
+      <ExtractForm
+        replacing={!!rules}
+        onSave={(next) => {
+          setRequirementRules(courseId, { ...next, source: "extracted" });
+          setExtractOpen(false);
+        }}
+        onManual={() => {
+          setExtractOpen(false);
+          setJsonOpen(true);
+        }}
+        onCancel={() => setExtractOpen(false)}
+      />
+    </Dialog>
+  );
+  const dialogs = (
+    <>
+      {jsonDialog}
+      {extractDialog}
+    </>
+  );
 
   if (!rules) {
     return (
@@ -90,6 +114,10 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             Állítsd be a tárgy szabályait, és a rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez.
           </p>
         </div>
+        <Button type="button" size="sm" onClick={() => setExtractOpen(true)} className="self-start">
+          <FileText className="h-4 w-4" />
+          Beolvasás a követelményrendszerből
+        </Button>
         <TemplatePicker
           onPick={(id) => {
             const template = ruleTemplate(id);
@@ -100,7 +128,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
           <Code className="h-4 w-4" />
           Saját szabályok (JSON)
         </Button>
-        {jsonDialog}
+        {dialogs}
       </div>
     );
   }
@@ -111,7 +139,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       rules={rules}
       results={results}
       onEditJson={() => setJsonOpen(true)}
-      dialogs={jsonDialog}
+      onExtract={() => setExtractOpen(true)}
+      dialogs={dialogs}
     />
   );
 }
@@ -142,12 +171,14 @@ function RulesView({
   rules,
   results,
   onEditJson,
+  onExtract,
   dialogs,
 }: {
   courseId: string;
   rules: RequirementRules;
   results: RequirementResult[];
   onEditJson: () => void;
+  onExtract: () => void;
   dialogs: React.ReactNode;
 }) {
   const setRequirementRules = useStore((s) => s.setRequirementRules);
@@ -253,12 +284,17 @@ function RulesView({
       <p className="text-[12.5px] text-muted-dim">
         A hivatalos jegyet az oktató adja; ez a számítás a beállított szabályokból és a rögzített eredményeidből készül.
         {template && ` Sablon: ${template.name} (${template.university}).`}
+        {rules.source === "extracted" && " A szabályokat a beillesztett követelményrendszerből olvastuk ki."}
       </p>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onEditJson}>
           <Code className="h-4 w-4" />
           Szabályok szerkesztése
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onExtract}>
+          <FileText className="h-4 w-4" />
+          Újraolvasás szövegből
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={removeRules}>
           <Trash2 className="h-4 w-4" />

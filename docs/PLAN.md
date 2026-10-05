@@ -52,7 +52,7 @@ The full plan (rule schema, grade engine, timetable linking, catch-up popup, rem
 - **M0 (done):** a "Követelmények" section on the course page. It holds the requirements as free text (`Course.requirements`, at most 20,000 characters) and the requirement documents (resources of kind `kovetelmeny`, shown here and not under Anyagok).
 - **M1 (done, same branch):** rules per course from a template or as validated JSON, result entry per component, the grade engine (current / best / worst, gates, retakes, post steps), the "Mi kell a jegyhez?" solver and the "Ellenőrizd" flags. Rules and results sync with the data document. Not yet: a form-based rule editor (JSON only for now).
 - **M2:** timetable linking, the catch-up popup and reminders.
-- **M3:** extraction and shared templates.
+- **M3 (extraction done, branch `claude/project-thread-u60pvz`):** paste the requirements text, a Hungarian pattern parser builds the rules, Jev answers the questions the text leaves open (confident answers only), the student answers the rest, and a result that fails validation is rejected whole. The four fixture texts in `fixtures/kovetelmeny/` were rewritten from the brief (the real PDFs never arrived) and are grade-equivalent to the templates. Not yet: shared templates per university and subject code, PDF upload (`pdfjs-dist` needs approval), checking where Jev runs and what it keeps.
 
 ## Next: accounts part 2, Google and Apple sign-in
 
