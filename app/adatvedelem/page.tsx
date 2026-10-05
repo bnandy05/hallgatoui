@@ -50,7 +50,7 @@ const PURPOSES: Purpose[] = [
       "A fiók törléséig, vagy amíg nem törlöd őket. A forrásokból letöltött naptárak és az előállított naptárfájlok átmeneti másolata 15 percig marad meg.",
   },
   {
-    what: "Naptár-előfizetés",
+    what: "Naptár feliratkozási link",
     data:
       "Ha bekapcsolod, egy véletlen azonosító, amellyel a naptáralkalmazásod lekérheti a határidőidet. Aki ismeri a linket, látja a naptár tartalmát (a tárgyak linkjei nélkül).",
     basis: "Szerződés teljesítése (6. cikk (1) b)).",
