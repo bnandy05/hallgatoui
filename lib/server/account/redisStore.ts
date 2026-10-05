@@ -37,14 +37,21 @@ export function createRedisAccountStore(url: string, token: string): AccountStor
     async getUser(id) {
       return (await redis.get<StoredUser>(userKey(id))) ?? null;
     },
-    async putUser(user) {
-      await redis.set(userKey(user.id), user);
+    async putUser(user, ttlSeconds) {
+      // A plain SET also clears an earlier expiry.
+      if (ttlSeconds === undefined) await redis.set(userKey(user.id), user);
+      else await redis.set(userKey(user.id), user, { ex: ttlSeconds });
     },
     async deleteUser(id) {
       await redis.del(userKey(id));
     },
-    async claimEmail(email, userId) {
-      return (await redis.set(emailKey(email), userId, { nx: true })) === "OK";
+    async claimEmail(email, userId, ttlSeconds) {
+      const options = ttlSeconds === undefined ? { nx: true as const } : { nx: true as const, ex: ttlSeconds };
+      return (await redis.set(emailKey(email), userId, options)) === "OK";
+    },
+    async setEmailExpiry(email, ttlSeconds) {
+      if (ttlSeconds === undefined) await redis.persist(emailKey(email));
+      else await redis.expire(emailKey(email), ttlSeconds);
     },
     async userIdByEmail(email) {
       const id = await redis.get<string>(emailKey(email));

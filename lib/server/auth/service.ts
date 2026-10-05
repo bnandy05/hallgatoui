@@ -4,7 +4,13 @@ import { renderAuthEmail, type AuthEmailKind } from "@/lib/authEmail";
 import type { OutgoingEmail } from "@/lib/server/email";
 import type { AccountStore, StoredUser, TokenPurpose } from "@/lib/server/account/store";
 import { checkPasswordPolicy, hashPassword, verifyPassword } from "@/lib/server/auth/password";
-import { SESSION_TTL_SECONDS, TOKEN_TTL_SECONDS, hashToken, newToken } from "@/lib/server/auth/tokens";
+import {
+  PENDING_ACCOUNT_TTL_SECONDS,
+  SESSION_TTL_SECONDS,
+  TOKEN_TTL_SECONDS,
+  hashToken,
+  newToken,
+} from "@/lib/server/auth/tokens";
 import { DIGEST_INDEX_KEY, chgKey, digKey, icsIndexKey, srcKey, subKey } from "@/lib/server/subscription";
 
 // Account logic (register, sign-in, email links, sessions) over an AccountStore. Every function
@@ -110,7 +116,8 @@ export async function register(d: AuthDeps, email: unknown, password: unknown): 
   if (existing) {
     // Unconfirmed: whoever registers last owns the pending account (stops address squatting).
     existing = { ...existing, passwordHash };
-    await d.store.putUser(existing);
+    await d.store.putUser(existing, PENDING_ACCOUNT_TTL_SECONDS);
+    await d.store.setEmailExpiry(normalized, PENDING_ACCOUNT_TTL_SECONDS);
   } else {
     const user: StoredUser = {
       id: randomUUID(),
@@ -118,8 +125,9 @@ export async function register(d: AuthDeps, email: unknown, password: unknown): 
       passwordHash,
       createdAt: d.now().toISOString(),
     };
-    if (!(await d.store.claimEmail(normalized, user.id))) return { ok: true }; // lost a race; the winner mails
-    await d.store.putUser(user);
+    // Unconfirmed registrations expire on their own (storage limitation); confirming keeps them.
+    if (!(await d.store.claimEmail(normalized, user.id, PENDING_ACCOUNT_TTL_SECONDS))) return { ok: true }; // lost a race; the winner mails
+    await d.store.putUser(user, PENDING_ACCOUNT_TTL_SECONDS);
     existing = user;
   }
   return (await sendLink(d, "confirm", normalized, existing.id)) ? { ok: true } : ERR_MAIL;
@@ -192,6 +200,7 @@ export async function consumeLink(
     }
   }
   await d.store.putUser(next);
+  if (!user.emailVerifiedAt) await d.store.setEmailExpiry(user.email);
   if (kind === "jelszo") await d.store.deleteUserSessions(user.id);
   // An email-change link only proves control of the new address, not of the account (a
   // mistyped address must not hand the account to its owner), so it never signs anyone in.

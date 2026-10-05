@@ -22,13 +22,18 @@ export function createMemoryAccountStoreOver(kv: Kv): AccountStore {
   return {
     kv,
     getUser: (id) => kv.get<StoredUser>(userKey(id)),
-    putUser: (user) => kv.set(userKey(user.id), user),
+    putUser: (user, ttlSeconds) => kv.set(userKey(user.id), user, ttlSeconds),
     deleteUser: (id) => kv.del(userKey(id)),
-    claimEmail: (email, userId) =>
+    claimEmail: (email, userId, ttlSeconds) =>
       atomically(async () => {
         if (await kv.get(emailKey(email))) return false;
-        await kv.set(emailKey(email), userId);
+        await kv.set(emailKey(email), userId, ttlSeconds);
         return true;
+      }),
+    setEmailExpiry: (email, ttlSeconds) =>
+      atomically(async () => {
+        const userId = await kv.get<string>(emailKey(email));
+        if (userId !== null) await kv.set(emailKey(email), userId, ttlSeconds);
       }),
     userIdByEmail: (email) => kv.get<string>(emailKey(email)),
     releaseEmail: (email) => kv.del(emailKey(email)),

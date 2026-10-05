@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
+import { createMemoryAccountStore, createMemoryAccountStoreOver } from "@/lib/server/account/memoryStore";
+import { createMemoryKv, type Kv } from "@/lib/server/kv";
 import {
   changePassword,
   consumeLink,
@@ -17,7 +18,7 @@ import {
   type AuthError,
 } from "@/lib/server/auth/service";
 import { checkPasswordPolicy, hashPassword, verifyPassword } from "@/lib/server/auth/password";
-import { hashToken } from "@/lib/server/auth/tokens";
+import { PENDING_ACCOUNT_TTL_SECONDS, hashToken } from "@/lib/server/auth/tokens";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import type { OutgoingEmail } from "@/lib/server/email";
 import { emptyAppData } from "./helpers";
@@ -137,6 +138,31 @@ test("registering an unconfirmed address again replaces the password", async () 
   ok(await consumeLink(s.d, kind, token));
   err(await login(s.d, "anna@x.hu", PW), 401);
   ok(await login(s.d, "anna@x.hu", "another long password"));
+});
+
+test("an unconfirmed registration expires; confirming keeps the account for good", async () => {
+  const s = setup();
+  // Record the expiry of the last write to each key (undefined = kept for good).
+  const expiry = new Map<string, number | undefined>();
+  const inner = createMemoryKv();
+  const kv: Kv = { ...inner, set: (key, value, ttl) => (expiry.set(key, ttl), inner.set(key, value, ttl)) };
+  s.d.store = createMemoryAccountStoreOver(kv);
+
+  ok(await register(s.d, "anna@x.hu", PW));
+  const userId = (await s.d.store.userIdByEmail("anna@x.hu"))!;
+  assert.equal(expiry.get(`user:${userId}`), PENDING_ACCOUNT_TTL_SECONDS);
+  assert.equal(expiry.get("email:anna@x.hu"), PENDING_ACCOUNT_TTL_SECONDS);
+
+  // Registering again refreshes both expiries.
+  expiry.clear();
+  ok(await register(s.d, "anna@x.hu", "another long password"));
+  assert.equal(expiry.get(`user:${userId}`), PENDING_ACCOUNT_TTL_SECONDS);
+  assert.equal(expiry.get("email:anna@x.hu"), PENDING_ACCOUNT_TTL_SECONDS);
+
+  const { kind, token } = s.link(s.mails.at(-1)!);
+  ok(await consumeLink(s.d, kind, token));
+  assert.ok(expiry.has(`user:${userId}`) && expiry.get(`user:${userId}`) === undefined);
+  assert.ok(expiry.has("email:anna@x.hu") && expiry.get("email:anna@x.hu") === undefined);
 });
 
 test("registering a confirmed address mails a sign-in link and keeps the password", async () => {

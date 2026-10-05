@@ -42,10 +42,13 @@ export type CasResult = { ok: true; version: number } | { ok: false; current: Da
 
 export interface AccountStore {
   getUser(id: string): Promise<StoredUser | null>;
-  putUser(user: StoredUser): Promise<void>;
+  /** ttlSeconds makes the record expire (unconfirmed accounts); omitted, it is kept and any expiry is removed. */
+  putUser(user: StoredUser, ttlSeconds?: number): Promise<void>;
   deleteUser(id: string): Promise<void>;
-  /** Insert-if-absent. Returns false when the email is taken. */
-  claimEmail(email: string, userId: string): Promise<boolean>;
+  /** Insert-if-absent, expiring after ttlSeconds when given. Returns false when the email is taken. */
+  claimEmail(email: string, userId: string, ttlSeconds?: number): Promise<boolean>;
+  /** Resets the expiry of an email index entry; omitted, the entry is kept for good. */
+  setEmailExpiry(email: string, ttlSeconds?: number): Promise<void>;
   userIdByEmail(email: string): Promise<string | null>;
   releaseEmail(email: string): Promise<void>;
   /** Also adds the hash to `usess:<userId>`. */
