@@ -3,9 +3,9 @@
 
 export const CONTROLLER = {
   /** The person (or organisation) running the service. */
-  name: "[ADATKEZELŐ NEVE]",
+  name: "Bere Nándor",
   /** Address for privacy requests; it is shown on the notice. */
-  email: "[ADATVÉDELMI E-MAIL-CÍM]",
+  email: "berenandor@icloud.com",
 };
 
 /** Date of the last change to the notice, shown on it (YYYY-MM-DD). */
