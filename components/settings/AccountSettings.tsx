@@ -221,7 +221,7 @@ function DeleteSection({ email }: { email: string }) {
     <section className="flex flex-col gap-4">
       <SectionHeading
         title="Fiók törlése"
-        sub="Törli a fiókot és minden adatot a szerverről: tárgyakat, határidőket, a naptár-előfizetést és az e-mail-összefoglalót."
+        sub="Törli a fiókot és minden adatot a szerverről: tárgyakat, határidőket, a naptár feliratkozási linkjét és az e-mail-összefoglalót."
       />
       <Button variant="danger" className="self-start" onClick={() => setOpen(true)}>
         Fiók törlése

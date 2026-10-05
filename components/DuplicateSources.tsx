@@ -30,7 +30,7 @@ export function DuplicateSources({ deadline, small = false }: { deadline: Deadli
         onClick={() => setOpen((v) => !v)}
         expanded={open}
         controls={listId}
-        title="Ugyanez a határidő más forrásból is megjött"
+        title="Ez a határidő több forrásban is szerepel"
         className={small ? "!px-1.5 !py-0 !text-[10.5px]" : "!px-2 !py-0 !text-[11px]"}
       >
         +{copies.length} forrás

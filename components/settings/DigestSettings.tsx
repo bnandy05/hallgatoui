@@ -103,7 +103,7 @@ function DigestForm() {
           ))}
         </div>
         <p className="mt-1.5 text-[13px] text-muted">
-          Reggel érkezik. A napi levél csak akkor jön, ha ma vagy holnap van határidőd.
+          Reggel érkezik. A napi levelet csak akkor küldjük, ha aznap vagy másnap van határidőd.
         </p>
       </div>
       {digest && (
