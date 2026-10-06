@@ -2,6 +2,7 @@ import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import type { AppData } from "@/lib/types";
 import { errorResponse } from "@/lib/server/subscription";
 import { checkOrigin, guarded, json, readJson, requireUser } from "@/lib/server/auth/http";
+import { withoutRequirementData } from "@/lib/legacyRequirements";
 import { MAX_DATA_BYTES, saveData, validateAppData, validateExportOptions } from "@/lib/server/validate";
 
 // The signed-in user's data document: GET (optionally "only if newer than ?since=") and PUT with
@@ -33,7 +34,7 @@ export function GET(req: Request) {
     }
     const doc = await store.getData(userId);
     if (!doc) return json({ version: 0, updatedAt: null, data: EMPTY, exportOptions: DEFAULT_EXPORT_OPTIONS });
-    return json({ version: doc.version, updatedAt: doc.updatedAt, data: doc.data, exportOptions: doc.exportOptions });
+    return json({ version: doc.version, updatedAt: doc.updatedAt, data: withoutRequirementData(doc.data), exportOptions: doc.exportOptions });
   });
 }
 

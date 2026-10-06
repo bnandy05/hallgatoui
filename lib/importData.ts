@@ -1,5 +1,6 @@
 import type { AppData, ClassSession, Course, Deadline, IcalFeed, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
+import { coursesWithoutRequirements } from "@/lib/legacyRequirements";
 
 function isHttpUrl(value: unknown): boolean {
   if (typeof value !== "string") return false;
@@ -153,7 +154,7 @@ export function parseAppData(json: unknown): AppData {
 
   return sanitizeUrls({
     version: 1,
-    courses: data.courses,
+    courses: coursesWithoutRequirements(data.courses),
     deadlines: data.deadlines,
     customPlatforms: data.customPlatforms as AppData["customPlatforms"],
     feeds: data.feeds as AppData["feeds"],

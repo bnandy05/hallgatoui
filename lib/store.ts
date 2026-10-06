@@ -30,6 +30,7 @@ import { buildDemoData } from "@/lib/demo";
 import type { ThemePref } from "@/lib/theme";
 import type { SyncPayload } from "@/lib/sync/merge";
 import { setServerOffset, syncNow } from "@/lib/sync/clock";
+import { coursesWithoutRequirements, withoutRequirementData } from "@/lib/legacyRequirements";
 import { stampChanges, type Stamped } from "@/lib/sync/stamp";
 
 export function emptyAppData(): AppData {
@@ -317,7 +318,7 @@ export const useStore = create<AppStore>()(
       },
       applyServerData: (payload, version) => {
         rawSet((state) => ({
-          ...payload.data,
+          ...withoutRequirementData(payload.data),
           tombstones: payload.data.tombstones ?? {},
           exportOptions: payload.exportOptions,
           ownerUserId: state.account?.userId ?? null,
@@ -328,7 +329,7 @@ export const useStore = create<AppStore>()(
         }));
       },
       applyMerged: (payload) => {
-        rawSet({ ...payload.data, tombstones: payload.data.tombstones ?? {}, exportOptions: payload.exportOptions });
+        rawSet({ ...withoutRequirementData(payload.data), tombstones: payload.data.tombstones ?? {}, exportOptions: payload.exportOptions });
       },
       markSynced: (version, base) => {
         set((state) => ({
@@ -850,6 +851,7 @@ export const useStore = create<AppStore>()(
         return {
           ...current,
           ...saved,
+          ...(saved.courses ? { courses: coursesWithoutRequirements(saved.courses) } : {}),
           exportOptions: { ...DEFAULT_EXPORT_OPTIONS, ...saved.exportOptions },
           ignoredDuplicatePairs: saved.ignoredDuplicatePairs ?? [],
           classSessions: saved.classSessions ?? [],
