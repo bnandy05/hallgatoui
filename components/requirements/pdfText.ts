@@ -3,15 +3,16 @@
 import { documentText, MAX_PDF_BYTES, MAX_PDF_PAGES, type PdfTextItem } from "@/lib/rules/extract/pdf";
 
 // Reads a requirements PDF's text layer in the browser with pdf.js. The file never leaves the
-// device; only the text goes on, into the same review as pasted text. pdf.js is loaded on demand.
+// device; only the text goes on, into the same review as pasted text. pdf.js is loaded on demand,
+// from its legacy build: the modern one needs very recent browsers (Safari 17 and older fail).
 
 export class PdfTextError extends Error {}
 
 export async function readPdfText(file: File): Promise<string> {
   if (file.size > MAX_PDF_BYTES) throw new PdfTextError("A PDF legfeljebb 10 MB lehet.");
-  const pdfjs = await import("pdfjs-dist");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   if (!pdfjs.GlobalWorkerOptions.workerPort) {
-    pdfjs.GlobalWorkerOptions.workerPort = new Worker(new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url), {
+    pdfjs.GlobalWorkerOptions.workerPort = new Worker(new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url), {
       type: "module",
     });
   }

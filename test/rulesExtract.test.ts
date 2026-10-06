@@ -51,11 +51,12 @@ test("an explicit consequence or mode is read from the text, not asked", () => {
   assert.equal(x.rules!.retakes[0].pick, "worse");
 });
 
-test("a stated total that doesn't add up rejects the whole result", () => {
+test("a stated total that doesn't add up hands the text to the guided reading, with the reason", () => {
   const x = extractRules(source("dotnet").replace("Összesen 31 pont", "Összesen 30 pont"), answers("dotnet"));
-  assert.equal(x.ok, false);
-  assert.equal(x.rules, null);
-  assert.match(x.errors[0], /összesen 30 pont.*31/);
+  assert.equal(x.mode, "guided");
+  assert.equal(x.rules, null, "nothing is saved before the guided questions are answered");
+  assert.ok(x.open.length > 0);
+  assert.match(x.notes[0], /összesen 30 pont.*31/);
 });
 
 test("text that isn't a requirements document is rejected", () => {
@@ -64,11 +65,11 @@ test("text that isn't a requirements document is rejected", () => {
   assert.match(x.errors[0], /nem ismertünk fel/);
 });
 
-test("a formula naming something unknown rejects the result", () => {
+test("a formula naming something unknown hands the text to the guided reading", () => {
   const text = source("analizis").replace("Ö = F/2 + Z1 + Z2", "Ö = F/2 + Z1 + Z2 + Q");
   const x = extractRules(text, answers("analizis"));
-  assert.equal(x.ok, false);
-  assert.ok(x.errors.some((e) => /„q”/.test(e)), x.errors.join("\n"));
+  assert.equal(x.mode, "guided");
+  assert.ok(x.notes.some((e) => /„q”/.test(e)), x.notes.join("\n"));
 });
 
 test("unrecognised sentences are listed for the student", () => {

@@ -66,9 +66,9 @@ const PURPOSES: Purpose[] = [
   {
     what: "Követelményrendszer beolvasása",
     data:
-      "Ha egy tárgy követelményrendszerét beilleszted vagy PDF-ként feltöltöd, és az Értelmezés gombot választod: a PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek. A szöveget, a mondatokat és a válaszokat nem tároljuk; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
+      "Ha egy tárgy követelményrendszerét beilleszted vagy PDF-ként feltöltöd, és az Értelmezés gombot választod: a PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek; ha a szöveg megfogalmazását nem ismerjük fel, a pontozásról, a számonkérésekről és a hiányzásról szóló mondatait. A szöveget és a mondatokat nem tároljuk; a Jev válaszait a kérdés lenyomatához (hash) kötve, a fiókodtól függetlenül 30 napig megőrizzük, hogy ugyanazt ne kérdezzük újra; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)): a kérésedre végzett szolgáltatás.",
-    until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
+    until: "A szöveg csak a kérés idejéig van nálunk. A Jev válaszai 30 napig, a kérésszámláló 24 óráig.",
   },
   {
     what: "Tárgy-, összetevő- és ismétlődés-javaslatok",
