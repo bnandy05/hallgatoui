@@ -12,6 +12,8 @@ import {
   type DiscoveryDecision,
   type DiscoveryGroup,
 } from "@/lib/ical/discover";
+import { useCourseSuggestions } from "@/lib/suggest/useCourseSuggestions";
+import { SuggestionNote } from "@/components/SuggestionNote";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
@@ -49,11 +51,19 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
   );
   // Explicit choices keyed by group id; untouched groups fall back to defaults.
   const [choices, setChoices] = useState<Record<string, GroupChoice>>({});
+  // Untouched groups default to a suggested course: local matching first, Jev for the rest.
+  const { suggestions, asking } = useCourseSuggestions(
+    groups.map((g) => g.baseName),
+    courses
+  );
 
   function choiceOf(group: DiscoveryGroup): GroupChoice {
+    const suggested = suggestions.get(group.baseName)?.courseId;
     return (
       choices[group.id] ?? {
-        target: findExistingCourse(group, courses) ?? TARGET_NEW,
+        target:
+          findExistingCourse(group, courses) ??
+          (suggested && courses.some((c) => c.id === suggested) ? suggested : TARGET_NEW),
         name: group.baseName,
       }
     );
@@ -95,6 +105,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
       </p>
 
       {groups.length === 0 && <p className="text-[14px] text-muted">Nincs új tárgy.</p>}
+      {asking && <p className="text-[13px] text-muted">Javaslatok keresése a tárgyaid között…</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {groups.map((group) => {
@@ -127,6 +138,9 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                   <option value={TARGET_SKIP}>Kihagyás</option>
                 </Select>
               </div>
+              {!choices[group.id] && !findExistingCourse(group, courses) && (
+                <SuggestionNote suggestion={suggestions.get(group.baseName)} />
+              )}
 
               <ul className="mt-2 flex flex-col gap-1">
                 {group.items.map(({ context }) => (

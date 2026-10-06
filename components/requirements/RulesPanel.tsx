@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { AlertTriangle, Calculator, Check, CircleDashed, Code, Trash2, X } from "lucide-react";
+import { AlertTriangle, Calculator, Check, CircleDashed, Code, FileText, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { evaluate, type GateStatus, type GradeValue, type OutcomeEval } from "@/lib/rules/engine";
 import { RULE_TEMPLATES, ruleTemplate } from "@/lib/rules/fixtures";
@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/Label";
 import { Pill } from "@/components/ui/Pill";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { ExtractForm } from "@/components/requirements/ExtractDialog";
+import { SharedTemplateOffer, TemplateReview, useSharedTemplate, type TemplateOffer } from "@/components/requirements/SharedTemplate";
 import {
   AssignmentInput,
   AttendanceInput,
@@ -23,6 +25,7 @@ import {
   SeriesInput,
   useResultSetter,
 } from "@/components/requirements/ResultInputs";
+import { LinkedComponent } from "@/components/requirements/LinkedComponent";
 
 // The checked part of the requirements: a rule set (from a template or written as JSON), the
 // student's results against it, the standing of every grade and "what do I need" answers.
@@ -62,6 +65,10 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const allResults = useStore((s) => s.requirementResults);
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const [jsonOpen, setJsonOpen] = useState(false);
+  const [extractOpen, setExtractOpen] = useState(false);
+  const [offer, setOffer] = useState<TemplateOffer | null>(null);
+  const course = useStore((s) => s.courses.find((c) => c.id === courseId));
+  const shared = useSharedTemplate(course);
 
   const results = useMemo(
     () => (rules ? allResults.filter((r) => r.courseId === courseId) : EMPTY_RESULTS),
@@ -80,6 +87,51 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       />
     </Dialog>
   );
+  const extractDialog = (
+    <Dialog open={extractOpen} onClose={() => setExtractOpen(false)} title="Beolvasás a követelményrendszerből" size="lg">
+      <ExtractForm
+        replacing={!!rules}
+        canShare={shared.canShare}
+        onSave={(next, share) => {
+          setRequirementRules(courseId, { ...next, source: "extracted" });
+          if (share) shared.publish(next);
+          setExtractOpen(false);
+        }}
+        onManual={() => {
+          setExtractOpen(false);
+          setJsonOpen(true);
+        }}
+        onCancel={() => setExtractOpen(false)}
+      />
+    </Dialog>
+  );
+  const templateDialog = (
+    <Dialog open={offer !== null} onClose={() => setOffer(null)} title="Közösségi sablon" size="lg">
+      {offer && (
+        <TemplateReview
+          offer={offer}
+          onSave={() => {
+            setRequirementRules(courseId, { ...offer.rules, source: "template", templateId: `shared:${offer.variantId}` });
+            shared.publish(offer.rules);
+            setOffer(null);
+          }}
+          onReport={() => {
+            void shared.report(offer);
+            setOffer(null);
+            setExtractOpen(true);
+          }}
+          onCancel={() => setOffer(null)}
+        />
+      )}
+    </Dialog>
+  );
+  const dialogs = (
+    <>
+      {jsonDialog}
+      {extractDialog}
+      {templateDialog}
+    </>
+  );
 
   if (!rules) {
     return (
@@ -90,6 +142,11 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             Állítsd be a tárgy szabályait, és a rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez.
           </p>
         </div>
+        {course && <SharedTemplateOffer course={course} shared={shared} onReview={setOffer} />}
+        <Button type="button" size="sm" onClick={() => setExtractOpen(true)} className="self-start">
+          <FileText className="h-4 w-4" />
+          Beolvasás a követelményrendszerből
+        </Button>
         <TemplatePicker
           onPick={(id) => {
             const template = ruleTemplate(id);
@@ -100,7 +157,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
           <Code className="h-4 w-4" />
           Saját szabályok (JSON)
         </Button>
-        {jsonDialog}
+        {dialogs}
       </div>
     );
   }
@@ -111,7 +168,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       rules={rules}
       results={results}
       onEditJson={() => setJsonOpen(true)}
-      dialogs={jsonDialog}
+      onExtract={() => setExtractOpen(true)}
+      dialogs={dialogs}
     />
   );
 }
@@ -142,12 +200,14 @@ function RulesView({
   rules,
   results,
   onEditJson,
+  onExtract,
   dialogs,
 }: {
   courseId: string;
   rules: RequirementRules;
   results: RequirementResult[];
   onEditJson: () => void;
+  onExtract: () => void;
   dialogs: React.ReactNode;
 }) {
   const setRequirementRules = useStore((s) => s.setRequirementRules);
@@ -210,31 +270,58 @@ function RulesView({
         <div className="divide-y divide-border">
           {rules.components.map((c) => {
             const rs = resultsOf(c.id);
+            let input: React.ReactNode = null;
             switch (c.kind) {
               case "exam":
-                return <ExamInput key={c.id} component={c} results={rs} set={set} />;
+                input = <ExamInput component={c} results={rs} set={set} />;
+                break;
               case "assignment":
-                return <AssignmentInput key={c.id} component={c} results={rs} set={set} />;
+                input = <AssignmentInput component={c} results={rs} set={set} />;
+                break;
               case "series":
-                return <SeriesInput key={c.id} component={c} results={rs} set={set} />;
+                input = <SeriesInput component={c} results={rs} set={set} />;
+                break;
               case "attendance":
-                return <AttendanceInput key={c.id} component={c} results={rs} set={set} />;
+                input = <AttendanceInput component={c} results={rs} set={set} />;
+                break;
               case "bonus":
-                return <BonusInput key={c.id} component={c} results={rs} set={set} />;
+                input = <BonusInput component={c} results={rs} set={set} />;
+                break;
             }
+            return (
+              <LinkedComponent
+                key={c.id}
+                courseId={courseId}
+                target={c}
+                link={rules.calendarLinks?.[c.id]}
+                results={rs}
+                labelOf={labelOf}
+              >
+                {input}
+              </LinkedComponent>
+            );
           })}
           {rules.retakes.map((slot) => {
             const first = rules.components.find((c) => c.id === slot.targets[0]);
             if (!first || first.kind !== "exam") return null;
             return (
-              <RetakeInput
+              <LinkedComponent
                 key={slot.id}
-                slot={slot}
+                courseId={courseId}
+                target={{ ...slot, kind: "retake" }}
                 scale={first.scale}
-                targets={slot.targets.map((id) => ({ id, label: labelOf(id) }))}
+                link={rules.calendarLinks?.[slot.id]}
                 results={resultsOf(slot.id)}
-                set={set}
-              />
+                labelOf={labelOf}
+              >
+                <RetakeInput
+                  slot={slot}
+                  scale={first.scale}
+                  targets={slot.targets.map((id) => ({ id, label: labelOf(id) }))}
+                  results={resultsOf(slot.id)}
+                  set={set}
+                />
+              </LinkedComponent>
             );
           })}
         </div>
@@ -253,12 +340,17 @@ function RulesView({
       <p className="text-[12.5px] text-muted-dim">
         A hivatalos jegyet az oktató adja; ez a számítás a beállított szabályokból és a rögzített eredményeidből készül.
         {template && ` Sablon: ${template.name} (${template.university}).`}
+        {rules.source === "extracted" && " A szabályokat a beillesztett követelményrendszerből olvastuk ki."}
       </p>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onEditJson}>
           <Code className="h-4 w-4" />
           Szabályok szerkesztése
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onExtract}>
+          <FileText className="h-4 w-4" />
+          Újraolvasás szövegből
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={removeRules}>
           <Trash2 className="h-4 w-4" />
