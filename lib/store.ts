@@ -14,7 +14,6 @@ import type {
   TimetableSource,
 } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { resultId, type RequirementResult, type RequirementRules, type SubjectRules } from "@/lib/rules/types";
 import { formatKindLabel } from "@/lib/ical/canvas";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
@@ -37,21 +36,7 @@ export function emptyAppData(): AppData {
   return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
     classSessions: [],
     timetableSources: [],
-    requirementRules: [],
-    requirementResults: [],
     tombstones: {},
-  };
-}
-
-/** Server or merged data from before a field existed gets that field's default. */
-function withDataDefaults(data: AppData): AppData {
-  return {
-    ...data,
-    classSessions: data.classSessions ?? [],
-    timetableSources: data.timetableSources ?? [],
-    requirementRules: data.requirementRules ?? [],
-    requirementResults: data.requirementResults ?? [],
-    tombstones: data.tombstones ?? {},
   };
 }
 
@@ -79,8 +64,6 @@ export function selectPayload(s: AppData & { exportOptions: ExportOptions }): Sy
       ignoredDuplicatePairs: s.ignoredDuplicatePairs,
       classSessions: s.classSessions,
       timetableSources: s.timetableSources,
-      requirementRules: s.requirementRules,
-      requirementResults: s.requirementResults,
       tombstones: s.tombstones,
     },
     exportOptions: s.exportOptions,
@@ -183,20 +166,6 @@ export interface AppStore extends AppData {
     patch: Partial<Omit<Resource, "id">>
   ) => void;
   removeResource: (courseId: string, resourceId: string) => void;
-
-  // requirement rules and results
-  /** Sets (or with null removes) a course's rule set. Its results stay, so a re-pick keeps them. */
-  setRequirementRules: (
-    courseId: string,
-    rules: (SubjectRules & Pick<RequirementRules, "source" | "templateId">) | null
-  ) => void;
-  /** Records, updates or (with null) clears one result, keyed by component and instance. */
-  setRequirementResult: (
-    courseId: string,
-    componentId: string,
-    instanceKey: string,
-    patch: Pick<RequirementResult, "state"> & Partial<Pick<RequirementResult, "value" | "retakeOf" | "at" | "label">> | null
-  ) => void;
 
   // deadlines
   addDeadline: (d: NewDeadline) => string;
@@ -348,7 +317,8 @@ export const useStore = create<AppStore>()(
       },
       applyServerData: (payload, version) => {
         rawSet((state) => ({
-          ...withDataDefaults(payload.data),
+          ...payload.data,
+          tombstones: payload.data.tombstones ?? {},
           exportOptions: payload.exportOptions,
           ownerUserId: state.account?.userId ?? null,
           syncedVersion: version,
@@ -358,7 +328,7 @@ export const useStore = create<AppStore>()(
         }));
       },
       applyMerged: (payload) => {
-        rawSet({ ...withDataDefaults(payload.data), exportOptions: payload.exportOptions });
+        rawSet({ ...payload.data, tombstones: payload.data.tombstones ?? {}, exportOptions: payload.exportOptions });
       },
       markSynced: (version, base) => {
         set((state) => ({
@@ -451,8 +421,6 @@ export const useStore = create<AppStore>()(
               Object.entries(src.subjectCourses).filter(([, courseId]) => courseId !== id)
             ),
           })),
-          requirementRules: state.requirementRules.filter((r) => r.courseId !== id),
-          requirementResults: state.requirementResults.filter((r) => r.courseId !== id),
         }));
       },
 
@@ -840,29 +808,6 @@ export const useStore = create<AppStore>()(
         set({ ignoredDuplicatePairs: [] });
       },
 
-      // ---- requirement rules and results ----
-      setRequirementRules: (courseId, rules) => {
-        set((state) => {
-          const id = `rules:${courseId}`;
-          const rest = state.requirementRules.filter((r) => r.id !== id);
-          if (!rules) return { requirementRules: rest };
-          const { updatedAt: _u, ...clean } = rules as RequirementRules;
-          void _u;
-          const next: RequirementRules = { ...clean, id, courseId };
-          return { requirementRules: [...rest, next] };
-        });
-      },
-      setRequirementResult: (courseId, componentId, instanceKey, patch) => {
-        set((state) => {
-          const id = resultId(courseId, componentId, instanceKey);
-          const rest = state.requirementResults.filter((r) => r.id !== id);
-          if (!patch) return { requirementResults: rest };
-          const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
-          if (result.state !== "recorded") delete result.value;
-          return { requirementResults: [...rest, result] };
-        });
-      },
-
       // ---- data ----
       importData: (data) => {
         set(() => ({ ...data }));
@@ -909,8 +854,6 @@ export const useStore = create<AppStore>()(
           ignoredDuplicatePairs: saved.ignoredDuplicatePairs ?? [],
           classSessions: saved.classSessions ?? [],
           timetableSources: saved.timetableSources ?? [],
-          requirementRules: saved.requirementRules ?? [],
-          requirementResults: saved.requirementResults ?? [],
           showClasses: saved.showClasses ?? true,
           theme: saved.theme ?? "system",
           account: saved.account ?? null,
@@ -932,8 +875,6 @@ export const useStore = create<AppStore>()(
         ignoredDuplicatePairs: state.ignoredDuplicatePairs,
         classSessions: state.classSessions,
         timetableSources: state.timetableSources,
-        requirementRules: state.requirementRules,
-        requirementResults: state.requirementResults,
         tombstones: state.tombstones,
         serverOffsetMs: state.serverOffsetMs,
         showClasses: state.showClasses,

@@ -15,8 +15,6 @@ export function DataSettings() {
   const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
   const classSessions = useStore((s) => s.classSessions);
   const timetableSources = useStore((s) => s.timetableSources);
-  const requirementRules = useStore((s) => s.requirementRules);
-  const requirementResults = useStore((s) => s.requirementResults);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const feeds = useStore((s) => s.feeds);
   const importData = useStore((s) => s.importData);
@@ -32,8 +30,6 @@ export function DataSettings() {
       ignoredDuplicatePairs,
       classSessions,
       timetableSources,
-      requirementRules,
-      requirementResults,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",

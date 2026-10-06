@@ -28,7 +28,6 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   zh: "Korábbi ZH",
   megoldas: "Mintamegoldás",
   video: "Videó",
-  kovetelmeny: "Követelmény",
   egyeb: "Egyéb",
 };
 
@@ -37,6 +36,5 @@ export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   zh: "#dc2626",
   megoldas: "#16a34a",
   video: "#9333ea",
-  kovetelmeny: "#b45309",
   egyeb: "#6b7280",
 };

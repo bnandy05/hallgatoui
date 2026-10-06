@@ -23,7 +23,7 @@ function session(i: number, sourceId = "t1"): ClassSession {
   };
 }
 
-test("calendarInput strips course links, resources and requirements and carries the export options", () => {
+test("calendarInput strips course links and resources and carries the export options", () => {
   const data: AppData = {
     ...emptyAppData(),
     courses: [
@@ -31,7 +31,6 @@ test("calendarInput strips course links, resources and requirements and carries 
         ...makeCourse("c1", "Analízis"),
         links: [{ id: "l1", platformId: "teams", url: "https://teams.example.com/x" }],
         resources: [{ id: "r1", title: "J", url: "https://example.com/j.pdf", kind: "jegyzet" as const, createdAt: "2026-09-01T00:00:00.000Z" }],
-        requirements: "2 ZH",
       },
     ],
     feeds: [makeFeed({ id: "f1" })],
@@ -40,7 +39,6 @@ test("calendarInput strips course links, resources and requirements and carries 
   const input = calendarInput(doc(data, { ...DEFAULT_EXPORT_OPTIONS, dedupe: false }));
   assert.deepEqual(input.courses[0].links, []);
   assert.deepEqual(input.courses[0].resources, []);
-  assert.equal(input.courses[0].requirements, undefined);
   assert.equal(input.courses[0].name, "Analízis");
   assert.equal(input.options.dedupe, false);
   assert.deepEqual(input.ignoredDuplicatePairs, ["a|b"]);

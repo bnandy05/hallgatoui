@@ -56,9 +56,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
 
   if (!course) return null;
 
-  // Requirement documents live in the course's "Követelmények" section.
-  const resources = course.resources.filter((r) => r.kind !== "kovetelmeny");
-  const editingResource = resources.find((r) => r.id === editing);
+  const editingResource = course.resources.find((r) => r.id === editing);
 
   function handleSubmit(values: Omit<Resource, "id" | "createdAt">) {
     if (!course) return;
@@ -74,8 +72,8 @@ export function ResourceList({ courseId }: ResourceListProps) {
     }
   }
 
-  const sorted = [...resources].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const kindsInUse = KINDS.filter((kind) => resources.some((r) => r.kind === kind));
+  const sorted = [...course.resources].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const kindsInUse = KINDS.filter((kind) => course.resources.some((r) => r.kind === kind));
   const activeFilter = filter !== "all" && kindsInUse.includes(filter) ? filter : "all";
   const filtered = activeFilter === "all" ? sorted : sorted.filter((r) => r.kind === activeFilter);
 
@@ -93,7 +91,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
     </Dialog>
   );
 
-  if (resources.length === 0) {
+  if (course.resources.length === 0) {
     return (
       <>
         <EmptyState
@@ -120,14 +118,14 @@ export function ResourceList({ courseId }: ResourceListProps) {
           aria-label="Típus"
           className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
         >
-          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label="Mind" count={resources.length} />
+          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label="Mind" count={course.resources.length} />
           {kindsInUse.map((kind) => (
             <FilterChip
               key={kind}
               active={activeFilter === kind}
               onClick={() => setFilter(kind)}
               label={RESOURCE_KIND_LABELS[kind]}
-              count={resources.filter((r) => r.kind === kind).length}
+              count={course.resources.filter((r) => r.kind === kind).length}
             />
           ))}
         </div>
@@ -228,16 +226,12 @@ function FilterChip({
 
 interface ResourceFormProps {
   initial?: Resource;
-  /** Hides the type picker and saves every resource with this kind. */
-  fixedKind?: ResourceKind;
   onSubmit: (values: Omit<Resource, "id" | "createdAt">) => void;
   onCancel: () => void;
 }
 
-export function ResourceForm({ initial, fixedKind, onSubmit, onCancel }: ResourceFormProps) {
-  const [form, setForm] = useState<ResourceFormState>(() =>
-    initial ? fromResource(initial) : { ...emptyForm(), kind: fixedKind ?? "jegyzet" }
-  );
+function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
+  const [form, setForm] = useState<ResourceFormState>(() => (initial ? fromResource(initial) : emptyForm()));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -248,12 +242,12 @@ export function ResourceForm({ initial, fixedKind, onSubmit, onCancel }: Resourc
       setForm((f) => ({ ...f, error: "Érvénytelen link" }));
       return;
     }
-    onSubmit({ title, url, kind: fixedKind ?? form.kind, note: form.note.trim() || undefined });
+    onSubmit({ title, url, kind: form.kind, note: form.note.trim() || undefined });
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className={fixedKind ? "" : "grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]"}>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]">
         <div>
           <Label htmlFor="resource-title">Cím</Label>
           <Input
@@ -263,22 +257,20 @@ export function ResourceForm({ initial, fixedKind, onSubmit, onCancel }: Resourc
             required
           />
         </div>
-        {!fixedKind && (
-          <div>
-            <Label htmlFor="resource-kind">Típus</Label>
-            <Select
-              id="resource-kind"
-              value={form.kind}
-              onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as ResourceKind }))}
-            >
-              {KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {RESOURCE_KIND_LABELS[kind]}
-                </option>
-              ))}
-            </Select>
-          </div>
-        )}
+        <div>
+          <Label htmlFor="resource-kind">Típus</Label>
+          <Select
+            id="resource-kind"
+            value={form.kind}
+            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as ResourceKind }))}
+          >
+            {KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {RESOURCE_KIND_LABELS[kind]}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <div>

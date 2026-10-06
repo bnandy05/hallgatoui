@@ -16,8 +16,6 @@ const EMPTY: AppData = {
   ignoredDuplicatePairs: [],
   classSessions: [],
   timetableSources: [],
-  requirementRules: [],
-  requirementResults: [],
 };
 
 export function GET(req: Request) {

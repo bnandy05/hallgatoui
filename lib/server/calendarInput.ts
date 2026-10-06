@@ -5,13 +5,13 @@ import { MAX_CLASS_SESSIONS } from "@/lib/server/subscription";
 import type { CalendarSnapshot } from "@/lib/types";
 
 /**
- * What the calendar and the digest need from an account's data. Course links/resources/requirements and the
+ * What the calendar and the digest need from an account's data. Course links/resources and the
  * feeds' discovery state are left out; the timetable is limited to subjects the user didn't skip.
  */
 export function calendarInput(doc: DataDoc): CalendarSnapshot {
   const { data, exportOptions } = doc;
   return {
-    courses: data.courses.map((c) => ({ ...c, links: [], resources: [], requirements: undefined })),
+    courses: data.courses.map((c) => ({ ...c, links: [], resources: [] })),
     deadlines: data.deadlines,
     feeds: data.feeds.map((f) => ({
       id: f.id,

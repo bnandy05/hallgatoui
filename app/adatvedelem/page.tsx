@@ -44,7 +44,7 @@ const PURPOSES: Purpose[] = [
   {
     what: "Tanulmányi adatok",
     data:
-      "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, hiányzások), határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
+      "Amit te viszel be vagy importálsz: tárgyak, linkek, határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)).",
     until:
       "A fiók törléséig, vagy amíg nem törlöd őket. A forrásokból letöltött naptárak és az előállított naptárfájlok átmeneti másolata 15 percig marad meg.",
@@ -62,21 +62,6 @@ const PURPOSES: Purpose[] = [
       "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy.",
     basis: "Hozzájárulás (6. cikk (1) a)). Bármikor visszavonhatod a beállításokban vagy a levél leiratkozó linkjével.",
     until: "Leiratkozásig vagy a fiók törléséig.",
-  },
-  {
-    what: "Követelményrendszer beolvasása",
-    data:
-      "Ha egy tárgy követelményrendszerét beilleszted és az Értelmezés gombot választod: a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek. A szöveget, a mondatokat és a válaszokat nem tároljuk; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
-    basis: "Szerződés teljesítése (6. cikk (1) b)): a kérésedre végzett szolgáltatás.",
-    until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
-  },
-  {
-    what: "Közös követelmény-sablonok",
-    data:
-      "Ha megadod az egyetemed, és egy tárgy beolvasott vagy átvett szabályait elmented, a szabályok (az összetevők, a pontozás és a jegyszámítás, megjegyzések nélkül) az egyetem, a tárgykód és a félév szerint közös sablonba kerülnek, amelyet az egyetemed hallgatói ugyanezzel a tárgykóddal átvehetnek. A sablonban nincs név, e-mail-cím vagy eredmény; a fiókod azonosítójának visszafejthetetlen lenyomatát tároljuk, hogy ne számoljunk kétszer. A megosztást a beolvasáskor kikapcsolhatod.",
-    basis: "Szerződés teljesítése (6. cikk (1) b)).",
-    until:
-      "Az egyetemed a fiókod törléséig vagy módosításáig marad meg. A fiók törlésekor a lenyomatodat minden sablonból töröljük; a mások által is megerősített szabályok megmaradnak, mert nem tartalmaznak rólad adatot.",
   },
   {
     what: "Visszaélés elleni védelem",
@@ -102,11 +87,6 @@ const PROCESSORS = [
     name: "Resend",
     role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: e-mail-cím és a levél tartalma.",
     where: "Egyesült Államok.",
-  },
-  {
-    name: "TypeSafe AI (Jev)",
-    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése (csak ezek a mondatok, személyes adat nélkül).",
-    where: "A szolgáltató nem teszi közzé, hol fut; saját nyilatkozata szerint a kéréseket nem használja modelltanításra.",
   },
 ];
 

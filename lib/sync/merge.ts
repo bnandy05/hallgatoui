@@ -88,31 +88,13 @@ function mergeItem<T extends Item>(b: T | undefined, l: T, r: T, tombstones: Rec
   return out as unknown as T;
 }
 
-/** Item-level merge: the side that changed wins; changed on both, the later edit (a tie the remote). */
-function mergeWhole<T extends Item>(b: T | undefined, l: T, r: T): T {
-  if (same(l, r)) return l;
-  if (b) {
-    const localChanged = !same(l, b);
-    const remoteChanged = !same(r, b);
-    if (localChanged && !remoteChanged) return l;
-    if (remoteChanged && !localChanged) return r;
-  }
-  return timeOf(r) >= timeOf(l) ? r : l;
-}
-
 /**
  * Time-aware three-way merge of an id-keyed list (see the table in docs/superpowers/plans/
  * 2026-10-05-offline-and-series.md). Items on both sides merge field by field; a deletion beats an
  * edit only when the edit is older than the tombstone. Order: remote's, then local-only items in
  * local order.
  */
-function mergeById<T extends Item>(
-  base: T[],
-  local: T[],
-  remote: T[],
-  tombstones: Record<string, string>,
-  whole = false
-): T[] {
+function mergeById<T extends Item>(base: T[], local: T[], remote: T[], tombstones: Record<string, string>): T[] {
   const baseMap = new Map(base.map((i) => [i.id, i]));
   const localMap = new Map(local.map((i) => [i.id, i]));
   const remoteMap = new Map(remote.map((i) => [i.id, i]));
@@ -123,7 +105,7 @@ function mergeById<T extends Item>(
     const l = localMap.get(id);
     const r = remoteMap.get(id);
     const deletedAt = tombstones[id] ?? "";
-    if (l && r) return whole ? mergeWhole(b, l, r) : mergeItem(b, l, r, tombstones);
+    if (l && r) return mergeItem(b, l, r, tombstones);
     const only = l ?? r;
     if (!only) return undefined;
     // Present on one side only: added there, or deleted on the other side.
@@ -222,9 +204,6 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
   const customPlatforms = mergeById(b.customPlatforms, l.customPlatforms, r.customPlatforms, tombstones);
   const feeds = mergeById(b.feeds, l.feeds, r.feeds, tombstones);
   const timetableSources = mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones);
-  // A rule set merges as one block, so two devices' edits can't mix into an invalid set.
-  const requirementRules = mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true);
-  const requirementResults = mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones);
 
   // An item that survived (edited after its deletion) is not deleted any more.
   const alive = new Set<string>();
@@ -240,8 +219,6 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
   collect(customPlatforms);
   collect(feeds);
   collect(timetableSources);
-  collect(requirementRules);
-  collect(requirementResults);
   tombstones = Object.fromEntries(Object.entries(tombstones).filter(([id]) => !alive.has(id)));
 
   return {
@@ -253,8 +230,6 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
       feeds,
       classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
       timetableSources,
-      requirementRules,
-      requirementResults,
       ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
       tombstones: pruneTombstones(tombstones, now),
     },

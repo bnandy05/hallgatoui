@@ -7,12 +7,9 @@ import type { AppData } from "@/lib/types";
 // applies it to the result of each action, so single actions need no bookkeeping and an action that
 // leaves an item as it was (a feed sync that found nothing new) leaves its timestamp alone.
 
-export type Stamped = Pick<
-  AppData,
-  "courses" | "deadlines" | "customPlatforms" | "feeds" | "timetableSources" | "requirementRules" | "requirementResults" | "tombstones"
->;
+export type Stamped = Pick<AppData, "courses" | "deadlines" | "customPlatforms" | "feeds" | "timetableSources" | "tombstones">;
 
-const LISTS = ["courses", "deadlines", "customPlatforms", "feeds", "timetableSources", "requirementRules", "requirementResults"] as const;
+const LISTS = ["courses", "deadlines", "customPlatforms", "feeds", "timetableSources"] as const;
 
 type Item = { id: string; updatedAt?: string };
 
