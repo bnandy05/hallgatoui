@@ -1,5 +1,9 @@
 import type { AppData, ClassSession, Course, Deadline, IcalFeed, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
+import { validateRules } from "@/lib/rules/validate";
+import type { RequirementResult, RequirementRules, ResultValue } from "@/lib/rules/types";
+
+export const MAX_REQUIREMENTS_CHARS = 20_000;
 
 function isHttpUrl(value: unknown): boolean {
   if (typeof value !== "string") return false;
@@ -11,10 +15,13 @@ function isHttpUrl(value: unknown): boolean {
   }
 }
 
-/** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs. */
+/** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs; caps free text. */
 function sanitizeUrls(data: AppData): AppData {
-  const courses = data.courses.map((c) => ({
+  const courses = data.courses.map(({ requirements, ...c }) => ({
     ...c,
+    ...(typeof requirements === "string" && requirements.trim()
+      ? { requirements: requirements.slice(0, MAX_REQUIREMENTS_CHARS) }
+      : {}),
     links: c.links.flatMap((l) => {
       const url = normalizeLinkUrl(String(l.url ?? ""));
       return url ? [{ ...l, url }] : [];
@@ -106,6 +113,103 @@ function sourcesFrom(value: unknown): TimetableSource[] {
   });
 }
 
+export const MAX_REQUIREMENT_RESULTS = 4000;
+
+/** Keeps the rule sets that pass the rules validator, one per course. */
+function requirementRulesFrom(value: unknown, courseIds: Set<string>): RequirementRules[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: RequirementRules[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.courseId !== "string" || !courseIds.has(o.courseId) || seen.has(o.courseId)) continue;
+    const checked = validateRules(o);
+    if (!checked.ok) continue;
+    seen.add(o.courseId);
+    out.push({
+      ...checked.rules,
+      id: `rules:${o.courseId}`,
+      courseId: o.courseId,
+      source: o.source === "template" || o.source === "extracted" ? o.source : "manual",
+      ...(typeof o.templateId === "string" && o.templateId.length <= 100 && { templateId: o.templateId }),
+      ...(typeof o.updatedAt === "string" && { updatedAt: o.updatedAt }),
+    });
+  }
+  return out;
+}
+
+const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+function resultValueFrom(value: unknown): ResultValue | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const v = value as Record<string, unknown>;
+  switch (v.kind) {
+    case "points": {
+      if (!finite(v.points)) return undefined;
+      const parts =
+        v.parts && typeof v.parts === "object" && !Array.isArray(v.parts)
+          ? Object.fromEntries(Object.entries(v.parts as Record<string, unknown>).filter((e): e is [string, number] => finite(e[1])))
+          : undefined;
+      return { kind: "points", points: v.points, ...(parts && Object.keys(parts).length > 0 && { parts }) };
+    }
+    case "grade":
+      return [1, 2, 3, 4, 5].includes(v.grade as number) ? { kind: "grade", grade: v.grade as 1 | 2 | 3 | 4 | 5 } : undefined;
+    case "pm":
+      return v.sign === "+" || v.sign === "-" ? { kind: "pm", sign: v.sign } : undefined;
+    case "attendance":
+      return v.status === "present" || v.status === "excused" || v.status === "unexcused"
+        ? { kind: "attendance", status: v.status }
+        : undefined;
+    case "assignment":
+      return typeof v.outcome === "string" ? { kind: "assignment", outcome: v.outcome } : undefined;
+    case "quiz":
+      return finite(v.bestPercent) && typeof v.onTime === "boolean"
+        ? { kind: "quiz", bestPercent: v.bestPercent, onTime: v.onTime, ...(finite(v.attemptsUsed) && { attemptsUsed: v.attemptsUsed }) }
+        : undefined;
+    case "bonus":
+      return finite(v.points)
+        ? { kind: "bonus", points: v.points, ...(typeof v.note === "string" && { note: v.note.slice(0, 200) }) }
+        : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/** Keeps well-formed results of existing courses; the id is rebuilt from its parts. */
+function requirementResultsFrom(value: unknown, courseIds: Set<string>): RequirementResult[] {
+  if (!Array.isArray(value)) return [];
+  const out: RequirementResult[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (out.length >= MAX_REQUIREMENT_RESULTS) break;
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.courseId !== "string" || !courseIds.has(o.courseId)) continue;
+    if (typeof o.componentId !== "string" || !/^[a-z][a-z0-9_]*$/.test(o.componentId) || o.componentId.length > 40) continue;
+    if (typeof o.instanceKey !== "string" || o.instanceKey.length === 0 || o.instanceKey.length > 200) continue;
+    if (o.state !== "recorded" && o.state !== "pending" && o.state !== "na") continue;
+    const id = `${o.courseId}|${o.componentId}|${o.instanceKey}`;
+    if (seen.has(id)) continue;
+    const resultValue = resultValueFrom(o.value);
+    if (o.state === "recorded" && !resultValue) continue;
+    seen.add(id);
+    out.push({
+      id,
+      courseId: o.courseId,
+      componentId: o.componentId,
+      instanceKey: o.instanceKey,
+      state: o.state,
+      ...(resultValue && { value: resultValue }),
+      ...(typeof o.retakeOf === "string" && o.retakeOf.length <= 40 && { retakeOf: o.retakeOf }),
+      ...(typeof o.at === "string" && o.at.length <= 40 && { at: o.at }),
+      ...(typeof o.label === "string" && { label: o.label.slice(0, 120) }),
+      ...(typeof o.updatedAt === "string" && { updatedAt: o.updatedAt }),
+    });
+  }
+  return out;
+}
+
 const MAX_TOMBSTONES = 5000;
 
 /** Keeps the string-to-string entries of a tombstone map (newest first, capped). */
@@ -159,6 +263,8 @@ export function parseAppData(json: unknown): AppData {
     feeds: data.feeds as AppData["feeds"],
     classSessions: sessionsFrom(data.classSessions),
     timetableSources: sourcesFrom(data.timetableSources),
+    requirementRules: requirementRulesFrom(data.requirementRules, new Set(data.courses.map((c) => c.id))),
+    requirementResults: requirementResultsFrom(data.requirementResults, new Set(data.courses.map((c) => c.id))),
     tombstones: tombstonesFrom(data.tombstones),
     ignoredDuplicatePairs: Array.isArray(data.ignoredDuplicatePairs)
       ? data.ignoredDuplicatePairs

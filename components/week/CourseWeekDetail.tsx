@@ -18,6 +18,7 @@ import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { LinkEditor } from "@/components/LinkEditor";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { RequirementsSection } from "@/components/RequirementsSection";
 import { ResourceList } from "@/components/ResourceList";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -345,6 +346,10 @@ export function CourseWeekDetail({ id }: { id: string }) {
               <UpcomingClasses sessions={courseSessions} now={now} />
             </Section>
           )}
+
+          <Section id="course-requirements" title="Követelmények">
+            <RequirementsSection courseId={course.id} />
+          </Section>
 
           <Section id="course-resources" title="Anyagok">
             <ResourceList courseId={course.id} />
