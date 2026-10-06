@@ -127,3 +127,27 @@ test("removeDigest deletes the record and the index entry", async () => {
   assert.equal(await stored(store), null);
   assert.ok(!(await store.kv.smembers(DIGEST_INDEX_KEY)).includes("u1"));
 });
+
+test("the digest lists linked classes that ended without a result", async () => {
+  const { RULE_TEMPLATES } = await import("@/lib/rules/fixtures");
+  const { store, mails, send } = await setup();
+  const session = {
+    id: "s1", sourceId: "src", externalUid: "uid-1", kind: "ora" as const, subject: "Programming theory", subjectKey: "programming theory",
+    group: "6", teachers: [], start: "2026-10-05T06:00:00.000Z", end: "2026-10-05T07:30:00.000Z", courseId: "c1",
+  };
+  const doc: AppData = {
+    ...data("2026-12-01T10:00:00.000Z"),
+    classSessions: [session],
+    timetableSources: [{ id: "src", name: "Neptun órarend", importedAt: MONDAY.toISOString(), subjectCourses: { "programming theory": "c1" } }],
+    requirementRules: [{
+      ...RULE_TEMPLATES[1].rules, id: "rules:c1", courseId: "c1", source: "template",
+      calendarLinks: { jelen: { mode: "sessions", selector: {}, since: "2026-10-04T22:00:00.000Z" } },
+    }],
+  };
+  await saveData(store, "u1", 1, doc, DEFAULT_EXPORT_OPTIONS, MONDAY);
+  await saveDigest(store.kv, "u1", null, "napi", MONDAY);
+  // Tuesday morning: Monday's class has no attendance yet, nothing is due today or tomorrow.
+  assert.equal(await runDigest(store, "u1", TUESDAY, APP, send), "sent");
+  assert.match(mails[0].text, /Rögzítésre vár/);
+  assert.match(mails[0].text, /Analízis: okt\. 5\. \(H\) 08:00: jelenlét/);
+});

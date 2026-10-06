@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { CalendarPlus, Download, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { parseView, viewParam } from "@/lib/ical/views";
+import { userExceptions } from "@/lib/ical/dedupe";
 import {
   createCalendarToken,
   deleteCalendarToken,
@@ -25,7 +26,7 @@ export function CalendarSubscriptionSettings() {
   const courses = useStore((s) => s.courses);
   const exportOptions = useStore((s) => s.exportOptions);
   const setExportOptions = useStore((s) => s.setExportOptions);
-  const ignoredCount = useStore((s) => s.ignoredDuplicatePairs.length);
+  const ignoredCount = useStore((s) => userExceptions(s.ignoredDuplicatePairs).length);
   const clearIgnoredDuplicates = useStore((s) => s.clearIgnoredDuplicates);
 
   // undefined: still loading; null: the subscription is off.

@@ -26,6 +26,7 @@ const HASH_ALIASES: Record<string, SectionKey> = {
   "naptar-elofizetes": "exportalas",
   "naptar-exportalas": "exportalas",
   hirlevel: "ertesitesek",
+  egyetem: "fiok",
 };
 const HASH_EVENT = "settings-hash";
 
