@@ -71,9 +71,9 @@ const PURPOSES: Purpose[] = [
     until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
   },
   {
-    what: "Tárgy- és ismétlődés-javaslatok",
+    what: "Tárgy-, összetevő- és ismétlődés-javaslatok",
     data:
-      "Ha egy naptár- vagy órarend-tárgyat, illetve két egy napra eső határidőt a saját szabályaink nem tudnak egyértelműen eldönteni, a szerver a TypeSafe AI-nak (Jev) elküldi a tárgyneveket, illetve a két határidő címét, forrását és időpontját, és megkérdezi, melyik tárgyadhoz tartozik, vagy ugyanarról a feladatról van-e szó. A kérdés nem tartalmaz azonosítót, nevet vagy e-mail-címet. A válaszokat a kérdés visszafejthetetlen lenyomata alatt 30 napig tároljuk, és mindenki ugyanarra a kérdésre ezt kapja, így egy kérdést csak egyszer teszünk fel. Az ismétlődésnek ítélt párt az adataid között jelöljük meg; ezt a párosítás szétválasztásával felülírhatod.",
+      "Ha egy naptár- vagy órarend-tárgyat, illetve két egy napra eső határidőt a saját szabályaink nem tudnak egyértelműen eldönteni, a szerver a TypeSafe AI-nak (Jev) elküldi a tárgyneveket, illetve a két határidő címét, forrását és időpontját, és megkérdezi, melyik tárgyadhoz tartozik, vagy ugyanarról a feladatról van-e szó. Ha egy követelmény-összetevőhöz határidőt kötsz, és a saját szabályaink nem találnak hozzá illőt, a tárgy legutóbbi határidőinek címét és az összetevők nevét is elküldhetjük, hogy melyik határidő melyik összetevőhöz tartozik. A kérdés nem tartalmaz azonosítót, nevet vagy e-mail-címet. A válaszokat a kérdés visszafejthetetlen lenyomata alatt 30 napig tároljuk, és mindenki ugyanarra a kérdésre ezt kapja, így egy kérdést csak egyszer teszünk fel. Az ismétlődésnek ítélt párt az adataid között jelöljük meg; ezt a párosítás szétválasztásával felülírhatod.",
     basis: "Jogos érdek (6. cikk (1) f)): a tárgyak és a kétszer szereplő határidők rendezése helyetted, a lehető legkevesebb adattal.",
     until: "A válaszok 30 napig, a napi kérésszámláló 24 óráig; a megjelölt párok a fiókod adataival együtt.",
   },
@@ -112,7 +112,7 @@ const PROCESSORS = [
   },
   {
     name: "TypeSafe AI (Jev)",
-    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése, valamint tárgy- és ismétlődés-javaslatok (csak a mondatok, a tárgynevek és a határidők címe, forrása és időpontja, személyes adat nélkül).",
+    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése, valamint tárgy-, összetevő- és ismétlődés-javaslatok (csak a mondatok, a tárgy- és összetevőnevek, valamint a határidők címe, forrása és időpontja, személyes adat nélkül).",
     where: "A szolgáltató nem teszi közzé, hol fut; saját nyilatkozata szerint a kéréseket nem használja modelltanításra.",
   },
 ];

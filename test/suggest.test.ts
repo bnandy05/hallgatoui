@@ -2,7 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { borderlinePairs, confirmedPairKey, findDuplicates, pairKey, userExceptions } from "@/lib/ical/dedupe";
 import { guessCourse, nameSimilarity, nameTokens } from "@/lib/suggest/courseMatch";
-import { courseQuestion, duplicateQuestion } from "@/lib/suggest/questions";
+import { componentQuestion, courseQuestion, duplicateQuestion } from "@/lib/suggest/questions";
+import { componentOption, localDeadlineMatches } from "@/lib/suggest/componentMatch";
+import type { LinkTarget } from "@/lib/rules/links";
 import { questionCacheKey, suggestWithJev, SUGGEST_DAILY_LIMIT } from "@/lib/server/jevSuggest";
 import { createMemoryKv } from "@/lib/server/kv";
 import type { Deadline } from "@/lib/types";
@@ -125,4 +127,32 @@ test("the daily allowance counts only questions Jev actually gets", async () => 
   assert.equal(jev.calls.length, 1);
   assert.equal(res.limited, true);
   assert.deepEqual(Object.keys(res.answers), ["0"]);
+});
+
+// ---- deadlines to grade components ----
+
+
+const exam = (id: string, label: string) => ({ id, label, kind: "exam" }) as unknown as LinkTarget;
+const assignment = { id: "bead", label: "Beadandó", kind: "assignment" } as unknown as LinkTarget;
+const dl = (id: string, title: string, due: string) => makeDeadline({ id, title, due, courseId: "dm" });
+
+test("numbers pick between sibling components; an unnumbered one is left to Jev", () => {
+  const zh1 = exam("zh1", "1. zh");
+  const zh2 = exam("zh2", "2. zh");
+  const targets = [zh1, zh2, assignment];
+  const deadlines = [dl("a", "ZH 1", "2026-10-20T08:00:00Z"), dl("b", "ZH 2", "2026-11-20T08:00:00Z"), dl("c", "ZH", "2026-12-01T08:00:00Z"), dl("d", "Beadandó 1", "2026-10-10T21:59:00Z")];
+  assert.deepEqual(localDeadlineMatches(zh2, targets, "dm", deadlines).map((d) => d.id), ["b"]);
+  assert.deepEqual(localDeadlineMatches(zh1, targets, "dm", deadlines).map((d) => d.id), ["a"]);
+  assert.deepEqual(localDeadlineMatches(assignment, targets, "dm", deadlines).map((d) => d.id), ["d"]);
+  // A single exam component takes any zh, numbered or not.
+  assert.deepEqual(localDeadlineMatches(zh1, [zh1], "dm", deadlines).map((d) => d.id), ["a", "b", "c"]);
+});
+
+test("a component question lists the components by label and kind, plus none", () => {
+  const q = componentQuestion("0", "Midterm", [componentOption(exam("zh1", "1. zh")), componentOption(assignment)]);
+  assert.deepEqual(q.options.map((o) => o.criterion), [
+    'The grade component "1. zh (test or exam)"',
+    'The grade component "Beadandó (assignment)"',
+    "None of these components, or it is unclear.",
+  ]);
 });

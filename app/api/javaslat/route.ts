@@ -3,6 +3,7 @@ import { isJevConfigured } from "@/lib/server/jev";
 import { suggestWithJev } from "@/lib/server/jevSuggest";
 import { errorResponse } from "@/lib/server/subscription";
 import {
+  componentQuestion,
   courseQuestion,
   duplicateQuestion,
   MAX_SUGGEST_COURSES,
@@ -12,12 +13,15 @@ import {
 } from "@/lib/suggest/questions";
 
 // Jev's suggestions for what the local rules could not settle: which course a subject name
-// belongs to (Neptun mapping, Canvas discovery) and whether two deadlines are one item. The
+// belongs to (Neptun mapping, Canvas discovery), which grade component a deadline is an item of,
+// and whether two deadlines are one item. The
 // client sends only names and titles, never ids; answers are cached for everyone (see
 // lib/server/jevSuggest.ts). Answers below the confidence threshold are left out.
 //
 // Body: { kind: "course", names: string[], courses: string[] }
 //    → { answers: ({ course: number | null, confidence } | null)[], limited }
+// Body: { kind: "component", titles: string[], components: string[] }
+//    → { answers: ({ component: number | null, confidence } | null)[], limited }
 // Body: { kind: "duplicate", pairs: { a: DuplicateSide, b: DuplicateSide }[] }
 //    → { answers: ({ same: boolean, confidence } | null)[], limited }
 
@@ -43,21 +47,25 @@ export function POST(req: Request) {
     const kv = auth.deps.store.kv;
     const body = m.body as Record<string, unknown>;
 
-    if (body.kind === "course") {
-      const { names, courses } = body;
-      if (!Array.isArray(names) || !names.every(isText) || names.length === 0 || names.length > MAX_SUGGEST_ITEMS) {
-        return errorResponse("Hibás tárgynevek", 400);
+    if (body.kind === "course" || body.kind === "component") {
+      const course = body.kind === "course";
+      const items = course ? body.names : body.titles;
+      const options = course ? body.courses : body.components;
+      if (!Array.isArray(items) || !items.every(isText) || items.length === 0 || items.length > MAX_SUGGEST_ITEMS) {
+        return errorResponse("Hibás kérdések", 400);
       }
-      if (!Array.isArray(courses) || !courses.every(isText) || courses.length === 0 || courses.length > MAX_SUGGEST_COURSES) {
-        return errorResponse("Hibás tárgylista", 400);
+      if (!Array.isArray(options) || !options.every(isText) || options.length === 0 || options.length > MAX_SUGGEST_COURSES) {
+        return errorResponse("Hibás választási lehetőségek", 400);
       }
-      const questions = names.map((n, i) => courseQuestion(String(i), n, courses));
+      const build = course ? courseQuestion : componentQuestion;
+      const questions = items.map((text, i) => build(String(i), text, options));
       const { answers, limited } = await suggestWithJev(kv, auth.user.id, questions, apiKey);
+      const field = course ? "course" : "component";
       return json({
-        answers: names.map((_, i) => {
+        answers: items.map((_, i) => {
           const a = answers[String(i)];
           if (!a) return null;
-          return { course: a.option === NONE_OPTION ? null : Number(a.option.slice(1)), confidence: a.confidence };
+          return { [field]: a.option === NONE_OPTION ? null : Number(a.option.slice(1)), confidence: a.confidence };
         }),
         limited,
       });

@@ -57,6 +57,17 @@ export async function askCourses(names: string[], courses: Course[]): Promise<Ma
   return out;
 }
 
+/** Jev's component (index into `components`) per title, same order; null when none or unsure. */
+export async function askComponents(titles: string[], components: string[]): Promise<(number | null)[] | null> {
+  const res = await post<{ answers: ({ component: number | null; confidence: number } | null)[] }>({
+    kind: "component",
+    titles: titles.slice(0, MAX_SUGGEST_ITEMS),
+    components: components.slice(0, MAX_SUGGEST_COURSES),
+  });
+  if (!res) return null;
+  return titles.map((_, i) => (i < MAX_SUGGEST_ITEMS ? (res.answers[i]?.component ?? null) : null));
+}
+
 /**
  * Jev's verdict per pair (same order): true/false, or null where it has no confident answer.
  * Null overall when the request failed (offline, no key, limit), so the pairs are asked later.

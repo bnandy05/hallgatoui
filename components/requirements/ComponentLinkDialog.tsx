@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { timetableCutoff } from "@/lib/ical/neptun";
 import { budapestDate, isoWeekday } from "@/lib/ical/budapest";
@@ -9,12 +9,14 @@ import { instanceLabel, resolveInstances, shortDayLabel } from "@/lib/rules/inst
 import {
   isMultiInstance,
   linkModes,
-  suggestDeadlineLinks,
+  linkTargets,
   type ComponentLink,
   type LinkMode,
   type LinkTarget,
   type SessionSelector,
 } from "@/lib/rules/links";
+import { askComponents } from "@/lib/suggest/client";
+import { componentOption, localDeadlineMatches } from "@/lib/suggest/componentMatch";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
@@ -85,11 +87,37 @@ function LinkForm({
   const [selector, setSelector] = useState<SessionSelector>(initialSelector);
   const [limit, setLimit] = useState(link?.mode === "sessions" && link.limit ? String(link.limit) : "");
   const [weeksText, setWeeksText] = useState(link?.mode === "weeks" ? link.weeks.join(", ") : "");
+  const ruleSet = useStore((s) => s.requirementRules.find((r) => r.courseId === courseId));
+  const targets = useMemo(() => (ruleSet ? linkTargets(ruleSet) : [target]), [ruleSet, target]);
+  // Kind words and numbers first; only when they find nothing does Jev get the course's deadlines.
+  const [local] = useState(() => localDeadlineMatches(target, targets, courseId, deadlines).map(deadlineIdentity));
   const [picked, setPicked] = useState<Set<string>>(() => {
     if (link?.mode === "deadlines") return new Set(link.identities);
-    const suggested = suggestDeadlineLinks(target, courseId, deadlines).map(deadlineIdentity);
-    return new Set(multi ? suggested : suggested.slice(0, 1));
+    return new Set(multi ? local : local.slice(0, 1));
   });
+  const pickedByHand = useRef(false);
+  const [jevPicked, setJevPicked] = useState(false);
+  useEffect(() => {
+    if (link || local.length > 0 || courseDeadlines.length === 0 || !modes.includes("deadlines")) return;
+    let cancelled = false;
+    const asked = courseDeadlines.slice(-20); // the latest ones; they are what is still open
+    const index = targets.findIndex((t) => t.id === target.id);
+    void askComponents(
+      asked.map((d) => d.title),
+      targets.map(componentOption)
+    ).then((answers) => {
+      if (cancelled || !answers || pickedByHand.current) return;
+      const mine = asked.filter((_, i) => answers[i] === index).map(deadlineIdentity);
+      if (mine.length === 0) return;
+      setPicked(new Set(multi ? mine : mine.slice(0, 1)));
+      setJevPicked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Asked once per opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const defaultSince = useMemo(() => timetableCutoff(new Date()).toISOString(), []);
   const [askEarlier, setAskEarlier] = useState(!!link && !link.since);
   const since = askEarlier ? undefined : (link?.since ?? defaultSince);
@@ -257,15 +285,17 @@ function LinkForm({
                         name="link-deadline"
                         className="mt-1"
                         checked={picked.has(id)}
-                        onChange={() =>
+                        onChange={() => {
+                          pickedByHand.current = true;
+                          setJevPicked(false);
                           setPicked((prev) => {
                             if (!multi) return new Set([id]);
                             const next = new Set(prev);
                             if (next.has(id)) next.delete(id);
                             else next.add(id);
                             return next;
-                          })
-                        }
+                          });
+                        }}
                       />
                       <span className="min-w-0">
                         <span className="block text-[14px] text-foreground [overflow-wrap:anywhere]">{d.title}</span>
@@ -277,6 +307,7 @@ function LinkForm({
               })}
             </ul>
           )}
+          {jevPicked && <p className="text-[12.5px] text-muted">A kijelölés a Jev javaslata, ellenőrizd.</p>}
         </div>
       )}
 

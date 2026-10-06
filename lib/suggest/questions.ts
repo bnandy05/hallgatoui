@@ -45,3 +45,17 @@ export function duplicateQuestion(id: string, a: DuplicateSide, b: DuplicateSide
     ],
   };
 }
+
+/** Which grade component of the course (`components`, "label (kind)", in the order sent) a deadline belongs to. */
+export function componentQuestion(id: string, title: string, components: string[]): JevQuestion {
+  return {
+    id,
+    quote: `A deadline in the student's calendar for one university course: "${clip(title)}"`,
+    instructions:
+      "Which component of the course's grading is this deadline an instance of (an assignment submission, a quiz, a test or exam, a retake)? Numbers matter: 'ZH 2' belongs to a second test, not the first. Choose 'none' if it belongs to none of them (a consultation, a lecture, a deadline unrelated to grading) or it is unclear.",
+    options: [
+      ...components.map((c, i) => ({ id: `c${i}`, criterion: `The grade component "${clip(c)}"` })),
+      { id: NONE_OPTION, criterion: "None of these components, or it is unclear." },
+    ],
+  };
+}
