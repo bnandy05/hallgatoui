@@ -11,6 +11,7 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AccountSync } from "@/components/AccountSync";
 import { SyncStatus } from "@/components/SyncStatus";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
+import { RemindersMenu } from "@/components/RemindersMenu";
 import { KeyboardInset } from "@/components/KeyboardInset";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
@@ -143,6 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
           <div className="ml-auto flex items-center gap-2">
             {!bare && <SyncStatus compact />}
+            {dataReady && !bare && <RemindersMenu />}
             <ThemeToggle />
             {!bare && <CommandPalette />}
             {!bare && <NewDeadlineButton />}
