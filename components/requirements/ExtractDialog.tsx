@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, Check, FileText } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { AlertTriangle, Check, FileText, Upload } from "lucide-react";
 import { describeRules } from "@/lib/rules/describe";
 import { extractRules, MAX_EXTRACT_CHARS, type Answers } from "@/lib/rules/extract";
 import type { SubjectRules } from "@/lib/rules/types";
@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/Label";
 import { Pill } from "@/components/ui/Pill";
 import { Switch } from "@/components/ui/Switch";
 import { Textarea } from "@/components/ui/Textarea";
+import { PdfTextError, readPdfText } from "./pdfText";
 
-// Setup from the pasted requirements document: the parser runs here, Jev (through our server)
+// Setup from the requirements document (pasted, or a PDF read in the browser): the parser runs here, Jev (through our server)
 // answers the questions it can answer confidently, the student answers the rest, and only a
 // result that passes every check can be saved. A rejected result offers the manual setup.
 
@@ -42,6 +43,20 @@ export function ExtractForm({
   const [jevState, setJevState] = useState<JevState>("idle");
   const [mine, setMine] = useState<Answers>({});
   const [share, setShare] = useState(true);
+  const [pdf, setPdf] = useState<{ name: string; reading: boolean; error?: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handlePdf(file: File | undefined) {
+    if (!file) return;
+    setPdf({ name: file.name, reading: true });
+    try {
+      setText((await readPdfText(file)).slice(0, MAX_EXTRACT_CHARS));
+      setPdf({ name: file.name, reading: false });
+    } catch (e) {
+      const error = e instanceof PdfTextError ? e.message : "A PDF beolvasása nem sikerült. Másold be a szöveget kézzel.";
+      setPdf({ name: file.name, reading: false, error });
+    }
+  }
 
   const answers = useMemo(() => {
     const out: Answers = {};
@@ -85,6 +100,29 @@ export function ExtractForm({
         className="flex flex-col gap-4"
       >
         <div>
+          <div className="mb-1.5 flex flex-wrap items-center gap-3">
+            <Button type="button" variant="secondary" size="sm" disabled={pdf?.reading} onClick={() => fileRef.current?.click()}>
+              <Upload className="h-3.5 w-3.5" aria-hidden />
+              {pdf?.reading ? "Beolvasás…" : "PDF feltöltése"}
+            </Button>
+            {pdf && !pdf.reading && (
+              <p className={`min-w-0 truncate text-[13px] ${pdf.error ? "text-danger" : "text-muted"}`} role={pdf.error ? "alert" : undefined}>
+                {pdf.error ?? `${pdf.name}: a szöveget lent ellenőrizheted.`}
+              </p>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => {
+              void handlePdf(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+            className="sr-only"
+            aria-label="Követelményrendszer (PDF) kiválasztása"
+            tabIndex={-1}
+          />
           <Label htmlFor="extract-text">A követelményrendszer szövege</Label>
           <Textarea
             id="extract-text"
@@ -92,10 +130,10 @@ export function ExtractForm({
             onChange={(e) => setText(e.target.value)}
             rows={14}
             maxLength={MAX_EXTRACT_CHARS}
-            placeholder="Másold ide a tárgy követelményrendszerét (PDF-ből vagy a Canvas oldaláról)."
+            placeholder="Töltsd fel a PDF-et, vagy másold ide a tárgy követelményrendszerét (például a Canvas oldaláról)."
           />
           <p className="mt-1.5 text-[12.5px] text-muted">
-            A szöveget nem tároljuk. A nem egyértelmű mondatokat a Jev (TypeSafe AI) értelmezi; ne illessz be személyes
+            A PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget sem tároljuk. A nem egyértelmű mondatokat a Jev (TypeSafe AI) értelmezi; ne illessz be személyes
             adatot.
             {replacing && " A mentés lecseréli a tárgy mostani szabályait, az eredményeid megmaradnak."}
           </p>

@@ -37,12 +37,29 @@ export function fold(text: string): string {
 }
 
 /**
+ * Joins the lines a PDF wrapped mid-sentence: a line that starts with a lower-case letter (not an
+ * "a)" list marker), or follows one ending in a comma, continues the previous line. Hungarian
+ * sentences, headings, list items and table rows all start otherwise.
+ */
+export function unwrapLines(text: string): string {
+  const out: string[] = [];
+  for (const line of text.split("\n")) {
+    const t = line.trim();
+    const prev = out.length ? out[out.length - 1] : "";
+    if (t && prev && ((/^\p{Ll}/u.test(t) && !/^\p{Ll}\)/u.test(t)) || /,$/.test(prev))) out[out.length - 1] = `${prev} ${t}`;
+    else out.push(t);
+  }
+  return out.join("\n");
+}
+
+/**
  * Lines, then sentences within a line. A line ending without a full stop is not joined with the
- * next one, because in pasted requirements that is a heading, a list item or a table row.
+ * next one (unless `unwrapLines` sees a wrapped sentence), because in pasted requirements that is
+ * a heading, a list item or a table row.
  */
 export function segment(text: string): Sentence[] {
   const out: Sentence[] = [];
-  for (const rawLine of normalizeText(text).slice(0, MAX_EXTRACT_CHARS).split("\n")) {
+  for (const rawLine of unwrapLines(normalizeText(text).slice(0, MAX_EXTRACT_CHARS)).split("\n")) {
     const line = rawLine.replace(/^\s*(?:[-*•▪◦·]|\d+\)|[a-z]\))\s+/u, "").trim();
     if (!line) continue;
     // A sentence ends at . ! ? followed by a capital letter (so "2. zh" and "max. 8" stay whole).
