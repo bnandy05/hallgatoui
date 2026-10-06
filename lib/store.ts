@@ -18,7 +18,7 @@ import { resultId, type RequirementResult, type RequirementRules, type SubjectRu
 import { formatKindLabel } from "@/lib/ical/canvas";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
-import { findDuplicates, pairKey } from "@/lib/ical/dedupe";
+import { CONFIRMED_PREFIX, confirmedPairKey, findDuplicates, pairKey } from "@/lib/ical/dedupe";
 import {
   applySubjectMapping,
   mergeTimetableImport,
@@ -238,6 +238,8 @@ export interface AppStore extends AppData {
   // duplicates
   ignoreDuplicate: (aId: string, bId: string) => void;
   clearIgnoredDuplicates: () => void;
+  /** Records pairs Jev judged to be one item (see `borderlinePairs`); a user exception still wins. */
+  confirmDuplicates: (pairs: [string, string][]) => void;
 
   // data
   importData: (data: AppData) => void;
@@ -837,7 +839,24 @@ export const useStore = create<AppStore>()(
         });
       },
       clearIgnoredDuplicates: () => {
-        set({ ignoredDuplicatePairs: [] });
+        // Only the user's exceptions; Jev's confirmations stay, so they aren't asked again.
+        set((state) => ({ ignoredDuplicatePairs: state.ignoredDuplicatePairs.filter((p) => p.startsWith(CONFIRMED_PREFIX)) }));
+      },
+      confirmDuplicates: (pairs) => {
+        set((state) => {
+          const have = new Set(state.ignoredDuplicatePairs);
+          const added: string[] = [];
+          for (const [aId, bId] of pairs) {
+            const a = state.deadlines.find((d) => d.id === aId);
+            const b = state.deadlines.find((d) => d.id === bId);
+            if (!a || !b) continue;
+            const key = confirmedPairKey(a, b);
+            if (have.has(key) || have.has(pairKey(a, b))) continue;
+            have.add(key);
+            added.push(key);
+          }
+          return added.length ? { ignoredDuplicatePairs: [...state.ignoredDuplicatePairs, ...added] } : state;
+        });
       },
 
       // ---- requirement rules and results ----

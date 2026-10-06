@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useStore, type SubjectDecision } from "@/lib/store";
-import { suggestCourseForSubject, type SubjectInfo } from "@/lib/ical/neptun";
+import type { SubjectInfo } from "@/lib/ical/neptun";
+import { useCourseSuggestions } from "@/lib/suggest/useCourseSuggestions";
+import { SuggestionNote } from "@/components/SuggestionNote";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
@@ -37,22 +39,31 @@ interface Choice {
 function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMappingDialogProps) {
   const courses = useStore((s) => s.courses);
 
-  // Children mount only while the dialog is open, so initialise from props here.
-  const [choices, setChoices] = useState<Record<string, Choice>>(() =>
-    Object.fromEntries(
-      subjects.map((s) => {
-        const earlier = initial[s.subjectKey];
-        const target =
-          earlier !== undefined
-            ? (earlier ?? TARGET_SKIP)
-            : (suggestCourseForSubject(s.subject, courses) ?? TARGET_NEW);
-        return [s.subjectKey, { target, name: s.subject }];
-      })
-    )
+  // Subjects without an earlier choice get a suggestion: local matching first, Jev for the rest.
+  const { suggestions, asking } = useCourseSuggestions(
+    subjects.filter((s) => initial[s.subjectKey] === undefined).map((s) => s.subject),
+    courses
   );
+  // Explicit choices only; untouched subjects follow the earlier choice or the suggestion.
+  const [touched, setTouched] = useState<Record<string, Choice>>({});
 
-  function patch(key: string, change: Partial<Choice>) {
-    setChoices((prev) => ({ ...prev, [key]: { ...prev[key], ...change } }));
+  function choiceOf(s: SubjectInfo): Choice {
+    const own = touched[s.subjectKey];
+    if (own) return own;
+    const earlier = initial[s.subjectKey];
+    const suggested = suggestions.get(s.subject)?.courseId;
+    const target =
+      earlier !== undefined
+        ? (earlier ?? TARGET_SKIP)
+        : suggested && courses.some((c) => c.id === suggested)
+          ? suggested
+          : TARGET_NEW;
+    return { target, name: s.subject };
+  }
+  const choices = Object.fromEntries(subjects.map((s) => [s.subjectKey, choiceOf(s)]));
+
+  function patch(s: SubjectInfo, change: Partial<Choice>) {
+    setTouched((prev) => ({ ...prev, [s.subjectKey]: { ...choiceOf(s), ...change } }));
   }
 
   function handleSave() {
@@ -80,6 +91,7 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
       </p>
 
       {subjects.length === 0 && <p className="text-[14px] text-muted">Nincs hozzárendelendő tárgy.</p>}
+      {asking && <p className="text-[13px] text-muted">Javaslatok keresése a tárgyaid között…</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {subjects.map((s) => {
@@ -96,7 +108,7 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
                 <Select
                   aria-label={`${s.subject}: tárgy`}
                   value={choice.target}
-                  onChange={(e) => patch(s.subjectKey, { target: e.target.value })}
+                  onChange={(e) => patch(s, { target: e.target.value })}
                 >
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -110,10 +122,13 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
                   <Input
                     aria-label={`${s.subject}: az új tárgy neve`}
                     value={choice.name}
-                    onChange={(e) => patch(s.subjectKey, { name: e.target.value })}
+                    onChange={(e) => patch(s, { name: e.target.value })}
                   />
                 )}
               </div>
+              {!touched[s.subjectKey] && initial[s.subjectKey] === undefined && (
+                <SuggestionNote suggestion={suggestions.get(s.subject)} />
+              )}
             </li>
           );
         })}
