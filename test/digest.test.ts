@@ -170,3 +170,25 @@ test("renderDigestEmail daily: date heading, today with time left, tomorrow and 
   assert.ok(mail.html.includes("A hét hátralévő része"));
   assert.ok(mail.text.includes("Beadandó 03"));
 });
+
+test("Rögzítésre vár: a daily mail goes out for yesterday's unrecorded class, with the popup link", () => {
+  const pending = [
+    { title: "Programozáselmélet", detail: "okt. 4. (V) 08:00 · 5. hét: jelenlét, röpzh", end: "2026-10-04T08:00:00.000Z" },
+    { title: "Programozáselmélet", detail: "szept. 29. (K) 08:00 · 4. hét: jelenlét", end: "2026-09-29T08:00:00.000Z" },
+  ];
+  const quiet = collectDigest(input({ frequency: "napi", deadlines: [] }));
+  assert.equal(shouldSendDigest("napi", quiet), false);
+  const withPending = collectDigest(input({ frequency: "napi", deadlines: [], pending }));
+  assert.equal(shouldSendDigest("napi", withPending), true);
+  // Only older items: no daily mail for them alone (they were in an earlier one).
+  const old = collectDigest(input({ frequency: "napi", deadlines: [], pending: pending.slice(1) }));
+  assert.equal(shouldSendDigest("napi", old), false);
+
+  const mail = renderDigestEmail({ frequency: "napi", content: withPending, now: NOW, appUrl: "https://app.hu", unsubscribeUrl: "https://app.hu/x" });
+  assert.match(mail.subject, /2 rögzítésre vár/);
+  assert.match(mail.html, /Rögzítésre vár/);
+  assert.match(mail.html, /https:\/\/app\.hu\/\?potlas=1/);
+  assert.match(mail.text, /Kitöltés: https:\/\/app\.hu\/\?potlas=1/);
+  const weekly = renderDigestEmail({ frequency: "heti", content: collectDigest(input({ awaitingLate: 2 })), now: NOW, appUrl: "https://app.hu", unsubscribeUrl: "https://app.hu/x" });
+  assert.match(weekly.html, /Már két hete vársz 2 eredményre/);
+});

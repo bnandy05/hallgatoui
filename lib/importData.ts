@@ -1,6 +1,8 @@
-import type { AppData, ClassSession, Course, Deadline, IcalFeed, TimetableSource } from "@/lib/types";
+import type { AppData, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterInfo, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
 import { validateRules } from "@/lib/rules/validate";
+import { linksFrom } from "@/lib/rules/links";
+import { normalizeSemesterStart } from "@/lib/timetable/semester";
 import type { RequirementResult, RequirementRules, ResultValue } from "@/lib/rules/types";
 
 export const MAX_REQUIREMENTS_CHARS = 20_000;
@@ -127,8 +129,10 @@ function requirementRulesFrom(value: unknown, courseIds: Set<string>): Requireme
     const checked = validateRules(o);
     if (!checked.ok) continue;
     seen.add(o.courseId);
+    const calendarLinks = linksFrom(o.calendarLinks, checked.rules);
     out.push({
       ...checked.rules,
+      ...(calendarLinks && { calendarLinks }),
       id: `rules:${o.courseId}`,
       courseId: o.courseId,
       source: o.source === "template" || o.source === "extracted" ? o.source : "manual",
@@ -210,6 +214,22 @@ function requirementResultsFrom(value: unknown, courseIds: Set<string>): Require
   return out;
 }
 
+function semesterFrom(value: unknown): SemesterInfo | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const o = value as Record<string, unknown>;
+  const start = typeof o.start === "string" ? normalizeSemesterStart(o.start) : null;
+  if (!start) return undefined;
+  return { start, ...(typeof o.updatedAt === "string" && o.updatedAt.length <= 40 && { updatedAt: o.updatedAt }) };
+}
+
+function catchUpFrom(value: unknown): CatchUpState | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const at = (value as Record<string, unknown>).promptedUntil;
+  return typeof at === "string" && at.length <= 40 && Number.isFinite(Date.parse(at)) ? { promptedUntil: at } : undefined;
+}
+
+const optional = <K extends string, V>(key: K, value: V | undefined) => (value === undefined ? {} : ({ [key]: value } as Record<K, V>));
+
 const MAX_TOMBSTONES = 5000;
 
 /** Keeps the string-to-string entries of a tombstone map (newest first, capped). */
@@ -266,6 +286,8 @@ export function parseAppData(json: unknown): AppData {
     requirementRules: requirementRulesFrom(data.requirementRules, new Set(data.courses.map((c) => c.id))),
     requirementResults: requirementResultsFrom(data.requirementResults, new Set(data.courses.map((c) => c.id))),
     tombstones: tombstonesFrom(data.tombstones),
+    ...optional("semester", semesterFrom(data.semester)),
+    ...optional("catchUp", catchUpFrom(data.catchUp)),
     ignoredDuplicatePairs: Array.isArray(data.ignoredDuplicatePairs)
       ? data.ignoredDuplicatePairs
           .filter((p): p is string => typeof p === "string" && p.length <= 600)
