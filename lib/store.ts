@@ -13,6 +13,7 @@ import type {
   Resource,
   TimetableSource,
 } from "@/lib/types";
+import type { ComponentLink } from "@/lib/rules/links";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { resultId, type RequirementResult, type RequirementRules, type SubjectRules } from "@/lib/rules/types";
 import { formatKindLabel } from "@/lib/ical/canvas";
@@ -20,10 +21,14 @@ import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
 import { CONFIRMED_PREFIX, confirmedPairKey, findDuplicates, pairKey } from "@/lib/ical/dedupe";
 import {
+  applyMappingDecisions,
   applySubjectMapping,
+  mappingSubjectKey,
   mergeTimetableImport,
   type ParsedSession,
 } from "@/lib/ical/neptun";
+import { budapestInstant } from "@/lib/ical/budapest";
+import { normalizeSemesterStart, parseYmd } from "@/lib/timetable/semester";
 import { autoLinkContexts, keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
@@ -52,6 +57,8 @@ function withDataDefaults(data: AppData): AppData {
     requirementRules: data.requirementRules ?? [],
     requirementResults: data.requirementResults ?? [],
     tombstones: data.tombstones ?? {},
+    semester: data.semester,
+    catchUp: data.catchUp,
   };
 }
 
@@ -82,6 +89,8 @@ export function selectPayload(s: AppData & { exportOptions: ExportOptions }): Sy
       requirementRules: s.requirementRules,
       requirementResults: s.requirementResults,
       tombstones: s.tombstones,
+      ...(s.semester && { semester: s.semester }),
+      ...(s.catchUp && { catchUp: s.catchUp }),
     },
     exportOptions: s.exportOptions,
   };
@@ -150,6 +159,9 @@ export interface AppStore extends AppData {
   setSyncStatus: (status: SyncStatus, error?: string) => void;
   /** Sign-out and user change: drops this user's data and sync state, keeps device preferences. */
   clearAccountData: () => void;
+  /** True once this tab has the server's data (not persisted): the catch-up popup waits for it. */
+  pulledThisSession: boolean;
+  setPulledThisSession: (pulled: boolean) => void;
   // home board: show the timetable (device preference, not part of AppData)
   showClasses: boolean;
   setShowClasses: (show: boolean) => void;
@@ -197,6 +209,22 @@ export interface AppStore extends AppData {
     instanceKey: string,
     patch: Pick<RequirementResult, "state"> & Partial<Pick<RequirementResult, "value" | "retakeOf" | "at" | "label">> | null
   ) => void;
+
+  /** Several results in one change (one sync): the catch-up's bulk answers. */
+  setRequirementResults: (
+    items: {
+      courseId: string;
+      componentId: string;
+      instanceKey: string;
+      patch: Pick<RequirementResult, "state"> & Partial<Pick<RequirementResult, "value" | "retakeOf" | "at" | "label">> | null;
+    }[]
+  ) => void;
+  /** Ties a component (or retake slot) to classes, weeks or deadlines; null unlinks it. */
+  setComponentLink: (courseId: string, componentId: string, link: ComponentLink | null) => void;
+  /** Sets (or with null clears) week 1 of the semester; any date moves to its Monday. */
+  setSemester: (start: string | null) => void;
+  /** The catch-up popup was closed: it opens by itself again only for newer items. */
+  markCatchUpPrompted: () => void;
 
   // deadlines
   addDeadline: (d: NewDeadline) => string;
@@ -260,7 +288,7 @@ function resolveDecisions(
   let next = courses;
   let created = 0;
   for (const [key, decision] of Object.entries(decisions)) {
-    const subject = subjectNames[key] ?? key;
+    const subject = subjectNames[key] ?? subjectNames[mappingSubjectKey(key)] ?? key;
     if (decision.kind === "skip") {
       mapping[key] = null;
     } else if (decision.kind === "existing") {
@@ -340,8 +368,12 @@ export const useStore = create<AppStore>()(
       showClasses: true,
       theme: "system",
       serverOffsetMs: 0,
+      pulledThisSession: false,
 
       // ---- account and sync ----
+      setPulledThisSession: (pulledThisSession) => {
+        rawSet({ pulledThisSession });
+      },
       setServerOffsetMs: (serverOffsetMs) => {
         set({ serverOffsetMs });
       },
@@ -375,6 +407,8 @@ export const useStore = create<AppStore>()(
       clearAccountData: () => {
         rawSet({
           ...emptyAppData(),
+          semester: undefined,
+          catchUp: undefined,
           exportOptions: DEFAULT_EXPORT_OPTIONS,
           notifiedKeys: [],
           account: null,
@@ -383,6 +417,7 @@ export const useStore = create<AppStore>()(
           syncBase: null,
           syncStatus: "idle",
           syncError: undefined,
+          pulledThisSession: false,
         });
       },
 
@@ -788,8 +823,9 @@ export const useStore = create<AppStore>()(
             url: meta.url ?? previous?.url,
             importedAt: new Date().toISOString(),
             // A re-import reuses the earlier mapping; only new subjects were asked about.
-            subjectCourses: { ...previous?.subjectCourses, ...mapping },
+            subjectCourses: applyMappingDecisions(previous?.subjectCourses ?? {}, mapping),
           };
+          const semesterYmd = state.semester ? parseYmd(state.semester.start) : null;
           return {
             courses,
             // Canvas deadlines imported earlier may match the new courses' keywords now.
@@ -797,7 +833,10 @@ export const useStore = create<AppStore>()(
             timetableSources: previous
               ? state.timetableSources.map((s) => (s.id === sourceId ? source : s))
               : [...state.timetableSources, source],
-            classSessions: mergeTimetableImport(source, parsed, state.classSessions),
+            classSessions: mergeTimetableImport(source, parsed, state.classSessions, {
+              now: new Date(),
+              ...(semesterYmd && { semesterStart: budapestInstant(semesterYmd, 0, 0) }),
+            }),
           };
         });
         return sourceId;
@@ -811,7 +850,7 @@ export const useStore = create<AppStore>()(
             if (s.sourceId === sourceId) subjectNames[s.subjectKey] = s.subject;
           }
           const { courses, mapping } = resolveDecisions(state.courses, decisions, subjectNames);
-          const source = { ...previous, subjectCourses: { ...previous.subjectCourses, ...mapping } };
+          const source = { ...previous, subjectCourses: applyMappingDecisions(previous.subjectCourses, mapping) };
           return {
             courses,
             deadlines: rematchDeadlines(state.deadlines, state.feeds, courses),
@@ -863,11 +902,16 @@ export const useStore = create<AppStore>()(
       setRequirementRules: (courseId, rules) => {
         set((state) => {
           const id = `rules:${courseId}`;
+          const previous = state.requirementRules.find((r) => r.id === id);
           const rest = state.requirementRules.filter((r) => r.id !== id);
           if (!rules) return { requirementRules: rest };
-          const { updatedAt: _u, ...clean } = rules as RequirementRules;
+          const { updatedAt: _u, calendarLinks: _l, ...clean } = rules as RequirementRules;
           void _u;
-          const next: RequirementRules = { ...clean, id, courseId };
+          void _l;
+          // Editing the rules keeps the calendar links of the components that are still there.
+          const ids = new Set([...clean.components.map((c) => c.id), ...clean.retakes.map((r) => r.id)]);
+          const kept = Object.entries(previous?.calendarLinks ?? {}).filter(([cid]) => ids.has(cid));
+          const next: RequirementRules = { ...clean, id, courseId, ...(kept.length > 0 && { calendarLinks: Object.fromEntries(kept) }) };
           return { requirementRules: [...rest, next] };
         });
       },
@@ -881,13 +925,52 @@ export const useStore = create<AppStore>()(
           return { requirementResults: [...rest, result] };
         });
       },
+      setRequirementResults: (items) => {
+        if (items.length === 0) return;
+        set((state) => {
+          const byId = new Map(state.requirementResults.map((r) => [r.id, r]));
+          for (const { courseId, componentId, instanceKey, patch } of items) {
+            const id = resultId(courseId, componentId, instanceKey);
+            if (!patch) {
+              byId.delete(id);
+              continue;
+            }
+            const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
+            if (result.state !== "recorded") delete result.value;
+            byId.set(id, result);
+          }
+          return { requirementResults: [...byId.values()] };
+        });
+      },
+      setComponentLink: (courseId, componentId, link) => {
+        set((state) => {
+          const rules = state.requirementRules.find((r) => r.courseId === courseId);
+          if (!rules) return state;
+          const links = { ...rules.calendarLinks };
+          if (link) links[componentId] = link;
+          else delete links[componentId];
+          const { calendarLinks: _old, ...rest } = rules;
+          void _old;
+          const next: RequirementRules = { ...rest, ...(Object.keys(links).length > 0 && { calendarLinks: links }) };
+          return { requirementRules: state.requirementRules.map((r) => (r.id === rules.id ? next : r)) };
+        });
+      },
+      setSemester: (start) => {
+        const normalized = start ? normalizeSemesterStart(start) : null;
+        if (start && !normalized) return;
+        // A scalar, not a list item: stamped here instead of by trackChanges.
+        set({ semester: normalized ? { start: normalized, updatedAt: syncNow() } : undefined });
+      },
+      markCatchUpPrompted: () => {
+        set({ catchUp: { promptedUntil: syncNow() } });
+      },
 
       // ---- data ----
       importData: (data) => {
-        set(() => ({ ...data }));
+        set(() => ({ semester: undefined, catchUp: undefined, ...data }));
       },
       resetAll: () => {
-        set(() => ({ ...emptyAppData(), notifiedKeys: [] }));
+        set(() => ({ ...emptyAppData(), semester: undefined, catchUp: undefined, notifiedKeys: [] }));
       },
       loadDemo: () => {
         const demo = buildDemoData(new Date());
@@ -938,6 +1021,7 @@ export const useStore = create<AppStore>()(
           syncBase: saved.syncBase ?? null,
           tombstones: saved.tombstones ?? {},
           serverOffsetMs: saved.serverOffsetMs ?? 0,
+          pulledThisSession: false,
         };
       },
       // The clock module cannot import the store, so it gets the persisted offset here.
@@ -954,6 +1038,8 @@ export const useStore = create<AppStore>()(
         requirementRules: state.requirementRules,
         requirementResults: state.requirementResults,
         tombstones: state.tombstones,
+        semester: state.semester,
+        catchUp: state.catchUp,
         serverOffsetMs: state.serverOffsetMs,
         showClasses: state.showClasses,
         theme: state.theme,
