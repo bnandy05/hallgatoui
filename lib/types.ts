@@ -1,3 +1,5 @@
+import type { RequirementResult, RequirementRules } from "@/lib/rules/types";
+
 export type PlatformId = string; // built-in ids below or "custom-<id>"
 
 export interface Platform {
@@ -16,7 +18,7 @@ export interface CourseLink {
   updatedAt?: string;
 }
 
-export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "egyeb";
+export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "kovetelmeny" | "egyeb";
 
 export interface Resource {
   id: string;
@@ -37,6 +39,7 @@ export interface Course {
   links: CourseLink[];
   resources: Resource[];
   matchKeywords: string[]; // used to auto-assign iCal events
+  requirements?: string; // the course's requirements as free text (documents are resources of kind "kovetelmeny")
   createdAt: string;
   updatedAt?: string;
 }
@@ -135,6 +138,9 @@ export interface AppData {
   /** Imported timetable (Neptun). Defaults to []. */
   classSessions: ClassSession[];
   timetableSources: TimetableSource[];
+  /** Per-course requirement rules (one per course) and the recorded results. Default to []. */
+  requirementRules: RequirementRules[];
+  requirementResults: RequirementResult[];
   /**
    * Deletions: item id -> ISO time. Lets a merge tell "deleted elsewhere" from "never had it"
    * (courses, deadlines, custom platforms, feeds, timetable sources, links, resources). Pruned.

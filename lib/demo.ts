@@ -225,7 +225,7 @@ export function buildDemoData(now: Date): AppData {
     },
   ];
 
-  return { version: 1, courses, deadlines, customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [] };
+  return { version: 1, courses, deadlines, customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [], requirementRules: [], requirementResults: [] };
 }
 
 function demoResources(

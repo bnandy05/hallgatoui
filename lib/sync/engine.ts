@@ -227,6 +227,8 @@ export function startSync(): () => void {
       state.feeds !== prev.feeds ||
       state.classSessions !== prev.classSessions ||
       state.timetableSources !== prev.timetableSources ||
+      state.requirementRules !== prev.requirementRules ||
+      state.requirementResults !== prev.requirementResults ||
       state.ignoredDuplicatePairs !== prev.ignoredDuplicatePairs ||
       state.exportOptions !== prev.exportOptions;
     if (changed) schedule();
