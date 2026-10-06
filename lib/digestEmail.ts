@@ -11,7 +11,6 @@ import {
 import {
   itemsOnDay,
   type DigestContent,
-  type DigestPending,
   type DigestFrequency,
   type DigestItem,
 } from "@/lib/digest";
@@ -369,58 +368,6 @@ ${slipStack(items, true, true)}
 </td></tr>`;
 }
 
-const PENDING_SHOWN = 5;
-
-/** "Rögzítésre vár": classes and deadlines that ended without a result, with a link to the popup. */
-function pendingBlock(pending: DigestPending[], awaitingLate: number, appUrl: string): string {
-  const rows = pending
-    .slice(0, PENDING_SHOWN)
-    .map(
-      (p) => `<tr><td class="ruled" style="padding:7px 0;border-top:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)}">
-<div class="heading" style="font-size:14.5px;font-weight:600;line-height:1.4;color:${LIGHT.heading}">${escapeHtml(p.title)}</div>
-<div class="muted" style="font-size:13px;line-height:1.45;${TABULAR};color:${LIGHT.muted}">${escapeHtml(p.detail)}</div>
-</td></tr>`
-    )
-    .join("\n");
-  const more = pending.length > PENDING_SHOWN ? `<p class="muted" style="margin:6px 0 0;font-size:13px;color:${LIGHT.muted}">és még ${pending.length - PENDING_SHOWN}</p>` : "";
-  const late = awaitingLate > 0
-    ? `<p class="ink" style="margin:${pending.length ? "10px" : "0"} 0 0;font-size:13.5px;line-height:1.5;color:${LIGHT.ink}">${pendingLateSentence(awaitingLate)}</p>`
-    : "";
-  return `<tr><td style="padding:0 0 22px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:${LIGHT.paper};border:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)};border-radius:2px;box-shadow:${SHADOW_PAPER}">
-<tr><td style="padding:14px 16px 4px">
-<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">Rögzítésre vár</span>
-${pending.length ? `<span class="muted" style="padding-left:8px;font-size:13px;color:${LIGHT.muted}">${pending.length} alkalom eredménye hiányzik</span>` : ""}
-</td></tr>
-<tr><td style="padding:6px 16px 14px">
-${pending.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>${more}` : ""}
-${late}
-<p style="margin:12px 0 0;font-size:14px"><a href="${escapeHtml(`${appUrl}/?potlas=1`)}" class="heading" style="font-weight:700;color:${LIGHT.heading};text-decoration:underline">Kitöltés</a></p>
-</td></tr>
-</table>
-</td></tr>`;
-}
-
-function pendingLateSentence(count: number): string {
-  return count === 1
-    ? "Egy eredmény, amire vártál, már két hete nem érkezett meg."
-    : `Már két hete vársz ${count} eredményre.`;
-}
-
-function pendingText(pending: DigestPending[], awaitingLate: number, appUrl: string): string[] {
-  if (pending.length === 0 && awaitingLate === 0) return [];
-  return [
-    "",
-    "Rögzítésre vár",
-    ...pending.slice(0, PENDING_SHOWN).map((p) => `- ${p.title}: ${p.detail}`),
-    ...(pending.length > PENDING_SHOWN ? [`- és még ${pending.length - PENDING_SHOWN}`] : []),
-    ...(awaitingLate > 0 ? [pendingLateSentence(awaitingLate)] : []),
-    `Kitöltés: ${appUrl}/?potlas=1`,
-  ];
-}
-
-const hasPending = (c: DigestContent) => c.pending.length > 0 || c.awaitingLate > 0;
-
 function feedNotice(name: string): string {
   return `<tr><td style="padding:0 0 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="canary" style="width:100%;background:${LIGHT.canary};border-radius:2px">
@@ -559,8 +506,7 @@ function renderDailyEmail({ content, now, appUrl, unsubscribeUrl }: RenderDigest
   const subject =
     `Napi összefoglaló: ${todayItems.length === 0 ? "ma nincs határidő" : `ma ${todayItems.length} határidő`}` +
     (tomorrowItems.length > 0 ? `, holnap ${tomorrowItems.length}` : "") +
-    (overdue.length > 0 ? `, ${overdue.length} lejárt` : "") +
-    (content.pending.length > 0 ? `, ${content.pending.length} rögzítésre vár` : "");
+    (overdue.length > 0 ? `, ${overdue.length} lejárt` : "");
 
   const body = `<tr><td style="padding:0 2px 22px">
 <h1 class="heading h1" style="margin:0;${DISPLAY};font-size:44px;color:${LIGHT.heading}">${escapeHtml(dateTitle)}</h1>
@@ -587,13 +533,12 @@ ${
     : `<tr><td style="padding:0 0 14px"></td></tr>`
 }
 ${overdue.length > 0 ? overdueBlock(overdue) : ""}
-${hasPending(content) ? pendingBlock(content.pending, content.awaitingLate, appUrl) : ""}
 ${rest.length > 0 ? restOfWeek(rest) : ""}
 <tr><td style="padding:24px 0 30px">
 ${primaryButton(`${appUrl}/`, "A hét megnyitása")}
 </td></tr>
 ${footer([
-  "Ezt a levelet azért kapod, mert feliratkoztál a Hallgatói réteg napi összefoglalójára. Csak akkor érkezik, ha ma vagy holnap van határidőd, vagy egy tegnapi vagy mai órád eredménye még nincs rögzítve.",
+  "Ezt a levelet azért kapod, mert feliratkoztál a Hallgatói réteg napi összefoglalójára. Csak akkor érkezik, ha ma vagy holnap van határidőd.",
   `<a href="${escapeHtml(unsubscribeUrl)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Leiratkozás</a> · <a href="${escapeHtml(`${appUrl}/beallitasok#ertesitesek`)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Beállítások</a>`,
   "Független projekt, nem kapcsolódik a Neptunhoz.",
 ])}`;
@@ -614,7 +559,6 @@ ${footer([
     ...(todayItems.length ? todayItems.map(itemText) : ["- Mára nincs határidőd."]),
     ...(tomorrowItems.length ? ["", "Holnap", ...tomorrowItems.map(itemText)] : []),
     ...(overdue.length ? ["", "Lejárt", ...overdue.map(itemText)] : []),
-    ...pendingText(content.pending, content.awaitingLate, appUrl),
     ...(rest.length ? ["", "A hét hátralévő része", ...rest.map(itemText)] : []),
     "",
     `A hét: ${appUrl}/`,
@@ -688,7 +632,6 @@ Ha új határidő érkezik, a következő összefoglalóban már látod.
 </td></tr>
 ${failingFeeds.map(feedNotice).join("\n")}
 ${overdue.length > 0 ? overdueBlock(overdue) : ""}
-${hasPending(content) ? pendingBlock(content.pending, content.awaitingLate, appUrl) : ""}
 ${board.join("\n")}
 <tr><td style="padding:22px 0 30px">
 ${primaryButton(`${appUrl}/radar`, "Határidők megnyitása")}
@@ -706,7 +649,6 @@ ${footer([
     ...(overdueLine ? [overdueLine] : []),
     ...failingFeeds.map((name) => `\nA(z) „${name}” naptár több mint egy napja nem frissül. Ellenőrizd a linkjét a Beállításokban.`),
     ...(overdue.length ? ["", "Lejárt", ...overdue.map(itemText)] : []),
-    ...pendingText(content.pending, content.awaitingLate, appUrl),
     ...(upcoming.length ? ["", weekly ? "A héten" : MONTHS[from[1] - 1], ...upcoming.map(itemText)] : []),
     "",
     `Határidők: ${appUrl}/radar`,

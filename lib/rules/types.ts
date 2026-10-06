@@ -3,8 +3,6 @@
 // form stays flat (no recursion) and one schema serves the editor, sync and validation.
 // The plan behind this is in the project folder plans/requirements-tracker/ (schema.md).
 
-import type { ComponentLink } from "./links";
-
 export type Formula = string;
 
 /** A sub-score of an exam or a series item, e.g. "Elmélet" 2 + "Gyakorlat" 2 points. */
@@ -158,8 +156,6 @@ export interface RequirementRules extends SubjectRules {
   courseId: string;
   source: "manual" | "template" | "extracted";
   templateId?: string;
-  /** The student's calendar links per component or retake id (lib/rules/links.ts). */
-  calendarLinks?: Record<string, ComponentLink>;
   updatedAt?: string;
 }
 

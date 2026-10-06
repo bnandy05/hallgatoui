@@ -1,19 +1,14 @@
 import { extractRules, MAX_EXTRACT_CHARS } from "@/lib/rules/extract";
 import { guarded, json, mutation, requireUser } from "@/lib/server/auth/http";
-import { isJevConfigured, JEV_MAX_QUESTIONS, type JevAnswer } from "@/lib/server/jev";
-import { suggestWithJev } from "@/lib/server/jevSuggest";
+import { askJev, isJevConfigured } from "@/lib/server/jev";
 import { errorResponse } from "@/lib/server/subscription";
 
 // Jev's answers to the questions the rule extraction leaves open. The parser runs in the browser
 // too; here it runs again on the same text so the questions sent to Jev are the server's own,
 // never the client's. Nothing is stored or logged: the text lives for one request, and Jev only
-// gets the sentences the questions are about. Answers can open new questions (the guided
-// reading asks "how many" only after "is there"), so Jev gets up to three rounds. Its answers
-// are cached for everyone under a hash of the question, like the other suggestions.
+// gets the sentences the questions are about.
 
-export const maxDuration = 60;
-const MAX_ROUNDS = 3;
-const ROUND_BUDGET_MS = 35_000;
+export const maxDuration = 30;
 
 const HOURLY_LIMIT = 10;
 const DAILY_LIMIT = 30;
@@ -44,21 +39,8 @@ export function POST(req: Request) {
     ) {
       return errorResponse("Túl sok elemzés, próbáld újra később", 429);
     }
-    const started = Date.now();
-    const answers: Record<string, JevAnswer> = {};
-    const asked = new Set<string>();
-    for (let round = 0; round < MAX_ROUNDS && Date.now() - started < ROUND_BUDGET_MS; round++) {
-      const chosen = Object.fromEntries(Object.entries(answers).map(([id, a]) => [id, a.option]));
-      const fresh = extractRules(text, chosen).questions.filter((q) => !asked.has(q.id));
-      if (fresh.length === 0) break;
-      for (const q of fresh) asked.add(q.id);
-      // Jev takes at most JEV_MAX_QUESTIONS per call.
-      for (let i = 0; i < fresh.length; i += JEV_MAX_QUESTIONS) {
-        const got = await suggestWithJev(kv, auth.user.id, fresh.slice(i, i + JEV_MAX_QUESTIONS), apiKey);
-        Object.assign(answers, got.answers);
-        if (got.limited) return json({ answers });
-      }
-    }
+    const { questions } = extractRules(text);
+    const answers = questions.length ? await askJev(questions, apiKey) : {};
     return json({ answers });
   });
 }

@@ -2,10 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseIcs } from "@/lib/ical/parse";
 import {
-  applyMappingDecisions,
   applySubjectMapping,
-  isSplitByGroup,
-  mappedCourse,
   isNeptunCalendar,
   mergeTimetableImport,
   nextSessionFor,
@@ -200,46 +197,4 @@ test("a past semester is dropped and its subjects are not asked about", () => {
   const now = new Date("2026-10-07T14:00:00Z");
   assert.equal(upcomingSessions(past, now).length, 0);
   assert.equal(summarizeSubjects(upcomingSessions(past, now)).length, 0);
-});
-
-test("a re-import keeps this semester's past classes, not older ones", () => {
-  const mapped = { ...source, subjectCourses: { "analysis i": "c-an" } };
-  const first = mergeTimetableImport(mapped, parsed, []);
-  const now = new Date("2026-10-07T12:00:00Z");
-  const upcoming = upcomingSessions(parsed, now);
-  // Without options a re-import replaces everything (the old behaviour).
-  assert.equal(mergeTimetableImport(mapped, upcoming, first).length, upcoming.length);
-  const kept = mergeTimetableImport(mapped, upcoming, first, { now, semesterStart: new Date("2026-09-06T22:00:00.000Z") });
-  assert.equal(kept.length, parsed.length);
-  const id = first.find((s) => s.externalUid === parsed[0].externalUid)?.id;
-  assert.equal(kept.find((s) => s.externalUid === parsed[0].externalUid)?.id, id);
-  // A semester that starts later drops the earlier weeks.
-  const later = mergeTimetableImport(mapped, upcoming, first, { now, semesterStart: new Date("2026-09-20T22:00:00.000Z") });
-  assert.ok(later.every((s) => s.start >= "2026-09-20T22:00:00.000Z"));
-  assert.ok(later.length < parsed.length && later.length > upcoming.length);
-});
-
-test("Ea and Gy of one subject can map to two courses", () => {
-  const split = { ...source, subjectCourses: { "analysis i|1": "c-ea", "analysis i|4": "c-gy" } };
-  const sessions = mergeTimetableImport(split, parsed, []);
-  const an = sessions.filter((s) => s.subject === "Analysis I");
-  assert.ok(an.filter((s) => s.group === "1").every((s) => s.courseId === "c-ea"));
-  assert.ok(an.filter((s) => s.group === "4").every((s) => s.courseId === "c-gy"));
-  assert.equal(mappedCourse(split, { subjectKey: "analysis i", group: "9" }), undefined);
-  assert.equal(isSplitByGroup(split.subjectCourses, "analysis i"), true);
-  assert.equal(isSplitByGroup(split.subjectCourses, "programming theory"), false);
-  // Skipping one group hides only that group; unmapped groups are reported per subject.
-  const skipped = { ...source, subjectCourses: { "analysis i|1": null, "analysis i|4": "c-gy" } };
-  const visible = visibleSessions(mergeTimetableImport(skipped, parsed, []), [skipped]);
-  assert.ok(visible.some((s) => s.subject === "Analysis I" && s.group === "4"));
-  assert.ok(!visible.some((s) => s.subject === "Analysis I" && s.group === "1"));
-  assert.ok(!unmappedSubjects(sessions, [split]).some((s) => s.subject === "Analysis I"));
-  // Switching back to one course for the subject removes the group entries.
-  assert.deepEqual(applyMappingDecisions(split.subjectCourses, { "analysis i": "c-an" }), { "analysis i": "c-an" });
-  assert.deepEqual(
-    applyMappingDecisions({ "analysis i": "c-an", "x": null }, { "analysis i|1": "c-ea", "analysis i|4": "c-gy" }),
-    { x: null, "analysis i|1": "c-ea", "analysis i|4": "c-gy" }
-  );
-  // A new group on a re-import is added next to the existing ones.
-  assert.deepEqual(applyMappingDecisions(split.subjectCourses, { "analysis i|9": null }), { ...split.subjectCourses, "analysis i|9": null });
 });

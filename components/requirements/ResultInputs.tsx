@@ -43,10 +43,10 @@ function parseNumber(text: string): number | null | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export const formatNumber = (n: number | undefined) => (n === undefined ? "" : String(n).replace(".", ","));
+const formatNumber = (n: number | undefined) => (n === undefined ? "" : String(n).replace(".", ","));
 
 /** A small number field that commits on blur or Enter and refuses values outside 0..max. */
-export function NumberCell({
+function NumberCell({
   value,
   max,
   label,
@@ -97,7 +97,7 @@ function pointsOf(result: RequirementResult | undefined): number | undefined {
 }
 
 /** Points (optionally split into parts) or a 1–5 grade on a scale. */
-export function ScaleInput({
+function ScaleInput({
   scale,
   result,
   label,
@@ -141,7 +141,7 @@ export function ScaleInput({
 }
 
 /** One cell per part; the total is their sum, saved once every part has a value. */
-export function PartsInput({
+function PartsInput({
   parts,
   result,
   label,
@@ -193,7 +193,7 @@ function Row({ label, children, hint }: { label: string; children: ReactNode; hi
   );
 }
 
-export function scaleHint(scale: Scale): string {
+function scaleHint(scale: Scale): string {
   if (scale.kind === "grade") return `Jegy, legalább ${scale.passAt ?? 2}-es kell`;
   const pass = scale.passAt !== undefined ? `, legalább ${formatNumber(scale.passAt)}` : "";
   return `${formatNumber(scale.max)} pont${pass}`;
@@ -424,7 +424,7 @@ function PlusMinusCell({
   );
 }
 
-export function QuizCell({
+function QuizCell({
   result,
   label,
   onChange,

@@ -5,8 +5,6 @@ Test inputs for the rule extraction (`lib/rules/extract/*`, `test/rulesExtract.t
 Each folder holds:
 
 - `source.txt`: the requirements as a student would paste them from the PDF.
-- `source.pdf`: the same text printed by Chromium on a narrow A5 page, so most sentences wrap;
-  `test/rulesPdf.test.ts` reads it with pdf.js and checks it gives the same rules.
 - `answers.json`: the answers to the extraction's questions (what Jev or the student would pick),
   chosen to match the assumptions of the hand-written template.
 

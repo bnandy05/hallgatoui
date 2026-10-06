@@ -127,15 +127,6 @@ export interface TimetableSource {
   updatedAt?: string;
 }
 
-export interface SemesterInfo {
-  start: string; // "YYYY-MM-DD", the Monday of week 1 (Budapest calendar)
-  updatedAt?: string;
-}
-
-export interface CatchUpState {
-  promptedUntil?: string; // ISO
-}
-
 export interface AppData {
   version: 1;
   courses: Course[];
@@ -150,10 +141,6 @@ export interface AppData {
   /** Per-course requirement rules (one per course) and the recorded results. Default to []. */
   requirementRules: RequirementRules[];
   requirementResults: RequirementResult[];
-  /** Week 1 of the teaching period, for week numbers in requirement links. Optional. */
-  semester?: SemesterInfo;
-  /** When the catch-up popup last closed (account-wide, merged as the later of two). Optional. */
-  catchUp?: CatchUpState;
   /**
    * Deletions: item id -> ISO time. Lets a merge tell "deleted elsewhere" from "never had it"
    * (courses, deadlines, custom platforms, feeds, timetable sources, links, resources). Pruned.

@@ -22,7 +22,6 @@ import { DiscoveryDialog } from "@/components/DiscoveryDialog";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { TimetableSourceItem } from "@/components/settings/TimetableSourceItem";
 import { useTimetableImport } from "@/components/settings/useTimetableImport";
-import { SemesterField } from "@/components/settings/SemesterField";
 
 const AUTO_COURSE = "";
 const DEFAULT_PLATFORM = "canvas";
@@ -522,12 +521,6 @@ export function FeedSettings() {
           </button>
         </li>
       </ul>
-
-      {timetableSources.length > 0 && (
-        <div className="sheet-paper px-4 py-3.5">
-          <SemesterField />
-        </div>
-      )}
 
       <input
         ref={fileRef}

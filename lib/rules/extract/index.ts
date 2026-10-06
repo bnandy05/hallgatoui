@@ -7,13 +7,11 @@ import { evaluate } from "../engine";
 import type { SubjectRules } from "../types";
 import { validateRules } from "../validate";
 import { assemble, type Answers, type Question } from "./assemble";
-import { readGuided } from "./guided";
 import { readDraft } from "./lexicon";
 import { segment, MAX_EXTRACT_CHARS } from "./text";
 
 export type { Answers, Question, QuestionOption } from "./assemble";
 export { MAX_EXTRACT_CHARS };
-export { NO_MENTION } from "./guided";
 
 export interface Extraction {
   /** ok: the draft is valid (it may still have open questions); otherwise rejected with errors. */
@@ -24,15 +22,9 @@ export interface Extraction {
   open: string[]; // ids of questions without an answer: saving waits for them
   unrecognised: string[]; // sentences no pattern understood
   sources: { label: string; quote: string }[];
-  /** parser: the Hungarian patterns read it; guided: they didn't, so a questionnaire did (more to check). */
-  mode: "parser" | "guided";
-  /** Why the guided reading took over (the parser's own complaint), for the review screen. */
-  notes: string[];
 }
 
 const MIN_RECOGNISED = 3;
-
-const NOT_REQUIREMENTS = "A szövegből nem ismertünk fel követelményeket. Biztosan a követelményrendszert illesztetted be?";
 
 export function extractRules(text: string, answers: Answers = {}, now = new Date()): Extraction {
   const sentences = segment(text);
@@ -42,39 +34,18 @@ export function extractRules(text: string, answers: Answers = {}, now = new Date
     .filter((s) => !draft.used.has(s.index) && !draft.headings.has(s.index))
     .map((s) => s.text)
     .slice(0, 50);
-  const recognised = draft.used.size >= MIN_RECOGNISED;
-  const parsed = finish(rules, questions, errors, sources, answers, now, draft.totalStated?.value, totalId);
-  if (recognised && parsed.ok) return { ...parsed, unrecognised, mode: "parser", notes: [] };
-
-  // The patterns didn't get it: the guided questionnaire reads the same text instead. Its rules
-  // only count once every question is answered; until then the review shows just the questions.
-  const g = readGuided(sentences, answers);
-  if (g.questions.length === 0 || (!g.rules && g.errors.length > 0 && !recognised)) {
-    const why = recognised ? parsed.errors : [NOT_REQUIREMENTS, ...g.errors];
-    return { ...parsed, ok: false, rules: null, errors: why, unrecognised, mode: "parser", notes: [] };
-  }
-  const notes = recognised ? parsed.errors.map((e) => `A szokásos megfogalmazások szerint olvasva: ${e}`) : [];
-  const done = finish(g.rules, g.questions, g.errors, g.sources, answers, now);
-  // A guided reading stays open to correction: wrong answers show as errors, not a rejection.
-  return { ...done, ok: true, unrecognised: [], mode: "guided", notes };
-}
-
-function finish(
-  rules: SubjectRules | null,
-  questions: Question[],
-  errors: string[],
-  sources: { label: string; quote: string }[],
-  answers: Answers,
-  now: Date,
-  totalStated?: number,
-  totalId?: string
-): Omit<Extraction, "unrecognised" | "mode" | "notes"> {
   const open = questions.filter((q) => !q.options.some((o) => o.id === answers[q.id])).map((q) => q.id);
-  const base = { questions, open, sources };
-  if (errors.length || !rules) return { ...base, ok: false, rules: null, errors: errors.length ? errors : ["A szövegből nem tudtunk szabályt összeállítani."] };
+  const base = { questions, open, unrecognised, sources };
+
+  if (draft.used.size < MIN_RECOGNISED) {
+    return { ...base, ok: false, rules: null, errors: ["A szövegből nem ismertünk fel követelményeket. Biztosan a követelményrendszert illesztetted be?"] };
+  }
+  if (errors.length) return { ...base, ok: false, rules: null, errors };
+
   const checked = validateRules(rules);
   if (!checked.ok) return { ...base, ok: false, rules: null, errors: checked.errors.map((e) => `Érvénytelen szabály: ${e}`) };
-  const semantic = semanticErrors(checked.rules, now, totalStated, totalId);
+
+  const semantic = semanticErrors(checked.rules, now, draft.totalStated?.value, totalId);
   if (semantic.length) return { ...base, ok: false, rules: null, errors: semantic };
   return { ...base, ok: true, rules: checked.rules, errors: [] };
 }

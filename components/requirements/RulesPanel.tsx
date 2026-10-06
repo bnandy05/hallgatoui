@@ -25,7 +25,6 @@ import {
   SeriesInput,
   useResultSetter,
 } from "@/components/requirements/ResultInputs";
-import { LinkedComponent } from "@/components/requirements/LinkedComponent";
 
 // The checked part of the requirements: a rule set (from a template or written as JSON), the
 // student's results against it, the standing of every grade and "what do I need" answers.
@@ -270,58 +269,31 @@ function RulesView({
         <div className="divide-y divide-border">
           {rules.components.map((c) => {
             const rs = resultsOf(c.id);
-            let input: React.ReactNode = null;
             switch (c.kind) {
               case "exam":
-                input = <ExamInput component={c} results={rs} set={set} />;
-                break;
+                return <ExamInput key={c.id} component={c} results={rs} set={set} />;
               case "assignment":
-                input = <AssignmentInput component={c} results={rs} set={set} />;
-                break;
+                return <AssignmentInput key={c.id} component={c} results={rs} set={set} />;
               case "series":
-                input = <SeriesInput component={c} results={rs} set={set} />;
-                break;
+                return <SeriesInput key={c.id} component={c} results={rs} set={set} />;
               case "attendance":
-                input = <AttendanceInput component={c} results={rs} set={set} />;
-                break;
+                return <AttendanceInput key={c.id} component={c} results={rs} set={set} />;
               case "bonus":
-                input = <BonusInput component={c} results={rs} set={set} />;
-                break;
+                return <BonusInput key={c.id} component={c} results={rs} set={set} />;
             }
-            return (
-              <LinkedComponent
-                key={c.id}
-                courseId={courseId}
-                target={c}
-                link={rules.calendarLinks?.[c.id]}
-                results={rs}
-                labelOf={labelOf}
-              >
-                {input}
-              </LinkedComponent>
-            );
           })}
           {rules.retakes.map((slot) => {
             const first = rules.components.find((c) => c.id === slot.targets[0]);
             if (!first || first.kind !== "exam") return null;
             return (
-              <LinkedComponent
+              <RetakeInput
                 key={slot.id}
-                courseId={courseId}
-                target={{ ...slot, kind: "retake" }}
+                slot={slot}
                 scale={first.scale}
-                link={rules.calendarLinks?.[slot.id]}
+                targets={slot.targets.map((id) => ({ id, label: labelOf(id) }))}
                 results={resultsOf(slot.id)}
-                labelOf={labelOf}
-              >
-                <RetakeInput
-                  slot={slot}
-                  scale={first.scale}
-                  targets={slot.targets.map((id) => ({ id, label: labelOf(id) }))}
-                  results={resultsOf(slot.id)}
-                  set={set}
-                />
-              </LinkedComponent>
+                set={set}
+              />
             );
           })}
         </div>

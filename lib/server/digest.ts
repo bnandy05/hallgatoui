@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import {
   collectDigest,
-  digestPendingFrom,
   digestPeriodKey,
   shouldSendDigest,
   type DigestFrequency,
@@ -11,7 +10,6 @@ import { renderDigestEmail } from "@/lib/digestEmail";
 import type { AccountStore } from "@/lib/server/account/store";
 import { loadLiveDeadlines } from "@/lib/server/calendar";
 import { calendarInput } from "@/lib/server/calendarInput";
-import { awaitingResults, pendingInputs } from "@/lib/catchup";
 import { sendEmail, type OutgoingEmail } from "@/lib/server/email";
 import type { Kv } from "@/lib/server/kv";
 import { DIGEST_INDEX_KEY, digKey } from "@/lib/server/subscription";
@@ -110,16 +108,6 @@ export async function runDigest(
   if (!doc) return "skipped";
   const input = calendarInput(doc);
   const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now);
-  // Requirement results still to record, from the same pure functions as the app's popup.
-  const catchUp = {
-    courses: doc.data.courses,
-    rules: doc.data.requirementRules ?? [],
-    results: doc.data.requirementResults ?? [],
-    sessions: input.classSessions,
-    deadlines,
-    semester: doc.data.semester,
-    now,
-  };
   const content = collectDigest({
     frequency: digest.frequency,
     courses: input.courses,
@@ -129,8 +117,6 @@ export async function runDigest(
     dedupe: input.options.dedupe,
     failingFeeds: warnings.map((w) => w.feedName),
     classSessions: input.classSessions,
-    pending: digestPendingFrom(pendingInputs(catchUp), doc.data.courses),
-    awaitingLate: awaitingResults(catchUp).filter((a) => a.overdue).length,
     now,
   });
 

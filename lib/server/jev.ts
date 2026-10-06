@@ -1,16 +1,9 @@
-// Jev (TypeSafe AI) answers multiple-choice questions: the rule extraction's, and the
-// suggestions in lib/server/jevSuggest.ts. It only ever sees a question's state (the sentence, the
-// titles or names it is about), never the whole document or the student. Plain fetch, no SDK.
-// Env JEV_API_KEY. An answer below the confidence threshold is dropped, so the student decides it
-// instead (the plan's "never guess" rule). Server-only.
+import type { Question } from "@/lib/rules/extract";
 
-/** What Jev needs of a question; the extraction's `Question` has this shape too. */
-export interface JevQuestion {
-  id: string;
-  instructions: string; // English
-  quote: string; // the state Jev reads
-  options: { id: string; criterion: string }[];
-}
+// Jev (TypeSafe AI) answers the extraction's multiple-choice questions. It only ever sees the
+// sentence a question is about, never the whole document, the course or the student. Plain fetch,
+// no SDK. Env JEV_API_KEY. An answer below the confidence threshold is dropped, so the student
+// decides it instead (the plan's "never guess" rule). Server-only.
 
 const JEV_URL = "https://api.typesafe.ai/v1/systemone";
 export const JEV_MODEL = "jev-1.13.0";
@@ -32,7 +25,7 @@ interface JevResponse {
 }
 
 /** The request body for one sentence and the questions about it. */
-export function jevRequest(quote: string, questions: JevQuestion[]): { body: unknown; keys: Map<string, string> } {
+export function jevRequest(quote: string, questions: Question[]): { body: unknown; keys: Map<string, string> } {
   const keys = new Map<string, string>();
   const qs: Record<string, unknown> = {};
   questions.forEach((q, i) => {
@@ -48,20 +41,19 @@ export function jevRequest(quote: string, questions: JevQuestion[]): { body: unk
 }
 
 /**
- * Asks Jev every question (grouped by state, one request per state, in parallel) and returns
- * every valid answer with its confidence, confident or not. A question whose request failed is
- * missing from the result.
+ * Asks Jev every question (grouped by sentence, one request per sentence, in parallel) and
+ * returns the confident answers. Failures are swallowed: a missing answer means the student picks.
  */
-export async function askJevRaw(
-  questions: JevQuestion[],
+export async function askJev(
+  questions: Question[],
   apiKey: string,
   fetchImpl: typeof fetch = fetch
 ): Promise<Record<string, JevAnswer>> {
-  const byState = new Map<string, JevQuestion[]>();
-  for (const q of questions.slice(0, JEV_MAX_QUESTIONS)) byState.set(q.quote, [...(byState.get(q.quote) ?? []), q]);
+  const bySentence = new Map<string, Question[]>();
+  for (const q of questions.slice(0, JEV_MAX_QUESTIONS)) bySentence.set(q.quote, [...(bySentence.get(q.quote) ?? []), q]);
   const out: Record<string, JevAnswer> = {};
   await Promise.all(
-    [...byState].map(async ([quote, qs]) => {
+    [...bySentence].map(async ([quote, qs]) => {
       const { body, keys } = jevRequest(quote, qs);
       try {
         const res = await fetchImpl(JEV_URL, {
@@ -80,6 +72,7 @@ export async function askJevRaw(
           const q = qs.find((x) => x.id === id)!;
           if (!a?.choice || typeof a.confidence !== "number") continue;
           if (!q.options.some((o) => o.id === a.choice)) continue;
+          if (a.confidence < JEV_MIN_CONFIDENCE) continue;
           out[id] = { option: a.choice, confidence: a.confidence };
         }
       } catch (err) {
@@ -88,16 +81,4 @@ export async function askJevRaw(
     })
   );
   return out;
-}
-
-export const confidentOnly = (answers: Record<string, JevAnswer>): Record<string, JevAnswer> =>
-  Object.fromEntries(Object.entries(answers).filter(([, a]) => a.confidence >= JEV_MIN_CONFIDENCE));
-
-/** The confident answers only; failures and doubts are left to the student. */
-export async function askJev(
-  questions: JevQuestion[],
-  apiKey: string,
-  fetchImpl: typeof fetch = fetch
-): Promise<Record<string, JevAnswer>> {
-  return confidentOnly(await askJevRaw(questions, apiKey, fetchImpl));
 }

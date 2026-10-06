@@ -3,14 +3,11 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useStore, type SubjectDecision } from "@/lib/store";
 import {
-  mappedCourse,
   parseNeptunEvents,
   summarizeSubjects,
   upcomingSessions,
   type ParsedSession,
 } from "@/lib/ical/neptun";
-import { budapestInstant } from "@/lib/ical/budapest";
-import { parseYmd } from "@/lib/timetable/semester";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
 
@@ -51,23 +48,18 @@ export function useTimetableImport(): TimetableImport {
   const [pending, setPending] = useState<PendingImport | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  /** Subjects (and groups) the dialog has to ask about: all of them, or only the new ones on a re-import. */
+  /** Subjects the dialog has to ask about: all of them, or only the new ones on a re-import. */
   function subjectsToAsk(p: PendingImport) {
-    const known = knownMapping(p);
-    return summarizeSubjects(p.parsed.filter((s) => mappedCourse({ subjectCourses: known }, s) === undefined));
-  }
-
-  function knownMapping(p: PendingImport): Record<string, string | null> {
-    return (p.sourceId ? useStore.getState().timetableSources.find((s) => s.id === p.sourceId)?.subjectCourses : undefined) ?? {};
+    const known = p.sourceId
+      ? useStore.getState().timetableSources.find((s) => s.id === p.sourceId)?.subjectCourses
+      : undefined;
+    return summarizeSubjects(p.parsed).filter((s) => !known || known[s.subjectKey] === undefined);
   }
 
   function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}): string | null {
     const all = parseNeptunEvents(events);
     if (all.length === 0) return EMPTY_ERROR;
-    // With a semester start, this semester's earlier classes come too (attendance refers to them).
-    const semester = useStore.getState().semester;
-    const start = semester ? parseYmd(semester.start) : null;
-    const parsed = upcomingSessions(all, new Date(), start ? budapestInstant(start, 0, 0) : undefined);
+    const parsed = upcomingSessions(all, new Date());
     if (parsed.length === 0) return NO_UPCOMING_ERROR;
     const next: PendingImport = { parsed, sourceId: opts.sourceId, url: opts.url };
     if (subjectsToAsk(next).length === 0) {
@@ -91,7 +83,7 @@ export function useTimetableImport(): TimetableImport {
         onClose={() => setPending(null)}
         title="Órarendi tárgyak hozzárendelése"
         subjects={pending ? subjectsToAsk(pending) : []}
-        initial={pending ? knownMapping(pending) : {}}
+        initial={{}}
         onConfirm={(decisions: Record<string, SubjectDecision>) => {
           if (!pending) return;
           importTimetable({ sourceId: pending.sourceId, name: SOURCE_NAME, url: pending.url }, pending.parsed, decisions);

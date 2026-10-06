@@ -3,11 +3,8 @@ import { budapestDate, budapestParts, dateKey } from "@/lib/ical/budapest";
 import { normalizeSearch } from "@/lib/text";
 
 // Duplicate detection: the same deadline reaching us from several sources (Canvas, Neptun,
-// a manual entry...). Pure and computed on demand, groups are never stored. Only decisions are
-// persisted, in `ignoredDuplicatePairs`: a plain pair key is the user's "not a duplicate"
-// exception; a key prefixed with CONFIRMED_PREFIX is a borderline pair Jev judged to be the same
-// item (`borderlinePairs` finds those; titles similar enough never need asking). An exception
-// always wins over a confirmation.
+// a manual entry...). Pure and computed on demand, groups are never stored. Only the user's
+// "not a duplicate" exceptions (ignoredDuplicatePairs) are persisted.
 
 export interface DuplicateGroup {
   primary: Deadline;
@@ -55,18 +52,6 @@ export function deadlineIdentity(d: Deadline): string {
     return d.feedId && d.externalUid ? `ical:${d.feedId}:${d.externalUid}` : `ical-id:${d.id}`;
   }
   return `manual:${d.id}`;
-}
-
-export const CONFIRMED_PREFIX = "=";
-
-/** The `ignoredDuplicatePairs` entry recording a confirmed duplicate. */
-export function confirmedPairKey(a: Deadline, b: Deadline): string {
-  return CONFIRMED_PREFIX + pairKey(a, b);
-}
-
-/** The user's own exceptions (confirmations by Jev left out), e.g. for "Kivételek törlése (n)". */
-export function userExceptions(pairs: string[]): string[] {
-  return pairs.filter((p) => !p.startsWith(CONFIRMED_PREFIX));
 }
 
 /** Order-independent key of two deadlines. */
@@ -140,19 +125,6 @@ function titlesSimilar(a: PreparedTitle, b: PreparedTitle): boolean {
   return shared / Math.min(a.tokens.size, b.tokens.size) >= OVERLAP_THRESHOLD;
 }
 
-/** Not similar enough to merge, but not clearly different either: worth asking Jev. */
-function titlesPlausible(a: PreparedTitle, b: PreparedTitle): boolean {
-  if (a.numbers.size > 0 && b.numbers.size > 0 && !sameSet(a.numbers, b.numbers)) return false;
-  if (a.tokens.size === 0 || b.tokens.size === 0) {
-    // One side is only generic words ("ZH", "Beadandó"): plausible against another assessment.
-    const generic = (p: PreparedTitle) => p.seq.some((t) => BOILERPLATE.has(t));
-    return (generic(a) && generic(b)) || (a.numbers.size > 0 && sameSet(a.numbers, b.numbers));
-  }
-  for (const t of a.tokens) if (b.tokens.has(t)) return true;
-  // Nothing shared: only the same number makes it plausible ("1. zárthelyi" / "Midterm 1").
-  return a.numbers.size > 0 && sameSet(a.numbers, b.numbers);
-}
-
 function isAllDay(due: Date): boolean {
   const { hour, minute } = budapestParts(due);
   return hour === 23 && minute === 59;
@@ -167,21 +139,13 @@ function priorityOf(d: Deadline, feeds: IcalFeed[]): number {
   return SOURCE_PRIORITY[deadlineSourceKey(d, feeds)] ?? OTHER_PRIORITY;
 }
 
-type PairVerdict = "same" | "different" | "borderline";
-
-/**
- * Walks every pair that could be one item (different sources, same course, same Budapest day,
- * within an hour unless one is all-day, not excepted by the user) and hands it to `visit` with
- * the verdict: confirmed or similar titles → "same"; clearly different titles → "different";
- * compatible numbers and some shared or only generic words ("1. zárthelyi" / "ZH1",
- * "Midterm" / "ZH") → "borderline".
- */
-function walkCandidatePairs(
+/** Finds groups of deadlines that are the same item seen through different sources. */
+export function findDuplicates(
   deadlines: Deadline[],
+  feeds: IcalFeed[],
   ignoredPairs: string[],
-  courses: Course[],
-  visit: (i: number, j: number, verdict: PairVerdict) => void
-): void {
+  courses: Course[]
+): DuplicateGroup[] {
   const ignored = new Set(ignoredPairs);
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
@@ -198,6 +162,8 @@ function walkCandidatePairs(
     else buckets.set(key, [i]);
   });
 
+  const parent = deadlines.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   const prepared = new Map<number, PreparedTitle>();
   const titleOf = (i: number) => {
     let p = prepared.get(i);
@@ -223,27 +189,12 @@ function walkCandidatePairs(
         ) {
           continue;
         }
-        const key = pairKey(a, b);
-        if (ignored.has(key)) continue;
-        if (ignored.has(CONFIRMED_PREFIX + key) || titlesSimilar(titleOf(i), titleOf(j))) visit(i, j, "same");
-        else visit(i, j, titlesPlausible(titleOf(i), titleOf(j)) ? "borderline" : "different");
+        if (ignored.has(pairKey(a, b))) continue;
+        if (!titlesSimilar(titleOf(i), titleOf(j))) continue;
+        parent[find(i)] = find(j);
       }
     }
   }
-}
-
-/** Finds groups of deadlines that are the same item seen through different sources. */
-export function findDuplicates(
-  deadlines: Deadline[],
-  feeds: IcalFeed[],
-  ignoredPairs: string[],
-  courses: Course[]
-): DuplicateGroup[] {
-  const parent = deadlines.map((_, i) => i);
-  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
-  walkCandidatePairs(deadlines, ignoredPairs, courses, (i, j, verdict) => {
-    if (verdict === "same") parent[find(i)] = find(j);
-  });
 
   const members = new Map<number, Deadline[]>();
   deadlines.forEach((d, i) => {
@@ -302,29 +253,4 @@ export function applyDedupe(
     visible: deadlines.filter((d) => !hidden.has(d.id)),
     extras: new Map(groups.map((g) => [g.primary.id, g.others])),
   };
-}
-
-/**
- * Pairs that might be one item but that the title rules can't settle, for Jev to judge. Skips
- * pairs that are both done (nothing would change) and any pair whose deadlines already belong to
- * one group. Each pair is listed once, in a stable order.
- */
-export function borderlinePairs(
-  deadlines: Deadline[],
-  ignoredPairs: string[],
-  courses: Course[]
-): [Deadline, Deadline][] {
-  const groups = findDuplicates(deadlines, [], ignoredPairs, courses);
-  const groupOf = new Map<string, number>();
-  groups.forEach((g, n) => [g.primary, ...g.others].forEach((d) => groupOf.set(d.id, n)));
-  const out: [Deadline, Deadline][] = [];
-  walkCandidatePairs(deadlines, ignoredPairs, courses, (i, j, verdict) => {
-    const a = deadlines[i];
-    const b = deadlines[j];
-    if (verdict !== "borderline" || (a.done && b.done)) return;
-    const ga = groupOf.get(a.id);
-    if (ga !== undefined && ga === groupOf.get(b.id)) return;
-    out.push(deadlineIdentity(a) < deadlineIdentity(b) ? [a, b] : [b, a]);
-  });
-  return out.sort((x, y) => pairKey(x[0], x[1]).localeCompare(pairKey(y[0], y[1])));
 }

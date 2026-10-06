@@ -44,7 +44,7 @@ const PURPOSES: Purpose[] = [
   {
     what: "Tanulmányi adatok",
     data:
-      "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, óránkénti jelenlét), hogy melyik összetevő melyik órádhoz, hetéhez vagy határidődhöz tartozik, a félév kezdete, határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
+      "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, hiányzások), határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)).",
     until:
       "A fiók törléséig, vagy amíg nem törlöd őket. A forrásokból letöltött naptárak és az előállított naptárfájlok átmeneti másolata 15 percig marad meg.",
@@ -59,23 +59,16 @@ const PURPOSES: Purpose[] = [
   {
     what: "E-mail-összefoglaló",
     data:
-      "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy, és a határidőid mellett felsorolja azokat az óráidat és számonkéréseidet is, amelyek eredményét még nem rögzítetted.",
+      "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy.",
     basis: "Hozzájárulás (6. cikk (1) a)). Bármikor visszavonhatod a beállításokban vagy a levél leiratkozó linkjével.",
     until: "Leiratkozásig vagy a fiók törléséig.",
   },
   {
     what: "Követelményrendszer beolvasása",
     data:
-      "Ha egy tárgy követelményrendszerét beilleszted vagy PDF-ként feltöltöd, és az Értelmezés gombot választod: a PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek; ha a szöveg megfogalmazását nem ismerjük fel, a pontozásról, a számonkérésekről és a hiányzásról szóló mondatait. A szöveget és a mondatokat nem tároljuk; a Jev válaszait a kérdés lenyomatához (hash) kötve, a fiókodtól függetlenül 30 napig megőrizzük, hogy ugyanazt ne kérdezzük újra; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
+      "Ha egy tárgy követelményrendszerét beilleszted és az Értelmezés gombot választod: a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek. A szöveget, a mondatokat és a válaszokat nem tároljuk; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)): a kérésedre végzett szolgáltatás.",
-    until: "A szöveg csak a kérés idejéig van nálunk. A Jev válaszai 30 napig, a kérésszámláló 24 óráig.",
-  },
-  {
-    what: "Tárgy-, összetevő- és ismétlődés-javaslatok",
-    data:
-      "Ha egy naptár- vagy órarend-tárgyat, illetve két egy napra eső határidőt a saját szabályaink nem tudnak egyértelműen eldönteni, a szerver a TypeSafe AI-nak (Jev) elküldi a tárgyneveket, illetve a két határidő címét, forrását és időpontját, és megkérdezi, melyik tárgyadhoz tartozik, vagy ugyanarról a feladatról van-e szó. Ha egy követelmény-összetevőhöz határidőt kötsz, és a saját szabályaink nem találnak hozzá illőt, a tárgy legutóbbi határidőinek címét és az összetevők nevét is elküldhetjük, hogy melyik határidő melyik összetevőhöz tartozik. A kérdés nem tartalmaz azonosítót, nevet vagy e-mail-címet. A válaszokat a kérdés visszafejthetetlen lenyomata alatt 30 napig tároljuk, és mindenki ugyanarra a kérdésre ezt kapja, így egy kérdést csak egyszer teszünk fel. Az ismétlődésnek ítélt párt az adataid között jelöljük meg; ezt a párosítás szétválasztásával felülírhatod.",
-    basis: "Jogos érdek (6. cikk (1) f)): a tárgyak és a kétszer szereplő határidők rendezése helyetted, a lehető legkevesebb adattal.",
-    until: "A válaszok 30 napig, a napi kérésszámláló 24 óráig; a megjelölt párok a fiókod adataival együtt.",
+    until: "A szöveg csak a kérés idejéig van nálunk. A kérésszámláló 24 óra után törlődik.",
   },
   {
     what: "Közös követelmény-sablonok",
@@ -112,7 +105,7 @@ const PROCESSORS = [
   },
   {
     name: "TypeSafe AI (Jev)",
-    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése, valamint tárgy-, összetevő- és ismétlődés-javaslatok (csak a mondatok, a tárgy- és összetevőnevek, valamint a határidők címe, forrása és időpontja, személyes adat nélkül).",
+    role: "A beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése (csak ezek a mondatok, személyes adat nélkül).",
     where: "A szolgáltató nem teszi közzé, hol fut; saját nyilatkozata szerint a kéréseket nem használja modelltanításra.",
   },
 ];
