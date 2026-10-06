@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
-import { dueNotifications } from "@/lib/notifications";
+import { catchUpNotification, dueNotifications } from "@/lib/notifications";
 import { applyDedupe } from "@/lib/ical/dedupe";
+import { linkedInstances, pendingInputs } from "@/lib/catchup";
+import { openCatchUp } from "@/lib/catchupEvents";
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -58,6 +60,32 @@ export function NotificationScheduler() {
         } catch {
           // Some mobile browsers throw on the constructor: treat as unsupported, stop here.
           break;
+        }
+      }
+      // After the day's last linked class: one reminder to record what happened.
+      const now = new Date();
+      const catchUpInput = {
+        courses,
+        rules: state.requirementRules,
+        results: state.requirementResults,
+        sessions: state.classSessions,
+        deadlines: state.deadlines,
+        semester: state.semester,
+        now,
+      };
+      const linked = linkedInstances(catchUpInput);
+      const notice = catchUpNotification(linked, pendingInputs(catchUpInput, linked), new Set(notifiedKeys), now);
+      if (notice) {
+        try {
+          const n = new Notification(notice.title, { body: notice.body, tag: notice.key, icon: "/favicon.ico" });
+          n.onclick = () => {
+            window.focus();
+            openCatchUp();
+            n.close();
+          };
+          sent.push(notice.key);
+        } catch {
+          // unsupported constructor: nothing to do
         }
       }
       if (sent.length > 0) markNotified(sent);

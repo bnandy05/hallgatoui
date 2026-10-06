@@ -44,7 +44,7 @@ const PURPOSES: Purpose[] = [
   {
     what: "Tanulmányi adatok",
     data:
-      "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, hiányzások), határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
+      "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, óránkénti jelenlét), hogy melyik összetevő melyik órádhoz, hetéhez vagy határidődhöz tartozik, a félév kezdete, határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)).",
     until:
       "A fiók törléséig, vagy amíg nem törlöd őket. A forrásokból letöltött naptárak és az előállított naptárfájlok átmeneti másolata 15 percig marad meg.",
@@ -59,7 +59,7 @@ const PURPOSES: Purpose[] = [
   {
     what: "E-mail-összefoglaló",
     data:
-      "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy.",
+      "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy, és a határidőid mellett felsorolja azokat az óráidat és számonkéréseidet is, amelyek eredményét még nem rögzítetted.",
     basis: "Hozzájárulás (6. cikk (1) a)). Bármikor visszavonhatod a beállításokban vagy a levél leiratkozó linkjével.",
     until: "Leiratkozásig vagy a fiók törléséig.",
   },

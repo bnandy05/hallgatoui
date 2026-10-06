@@ -298,3 +298,20 @@ test("merging with a document from before requirements existed keeps the local o
   assert.equal(merged.requirementResults.length, 1);
   assert.deepEqual(merged.requirementRules, []);
 });
+
+test("semester: the side that changed wins; catch-up time: the later of the two", () => {
+  const sem = (start: string, updatedAt: string) => ({ start, updatedAt });
+  const base = payload([], { semester: sem("2026-09-07", T0), catchUp: { promptedUntil: T0 } });
+  const local = payload([], { semester: sem("2026-09-14", T1), catchUp: { promptedUntil: T2 } });
+  const remote = payload([], { semester: sem("2026-09-07", T0), catchUp: { promptedUntil: T1 } });
+  const merged = mergeAppData(base, local, remote, NOW).data;
+  assert.equal(merged.semester?.start, "2026-09-14");
+  assert.equal(merged.catchUp?.promptedUntil, T2);
+  // Changed on both sides: the later edit.
+  const both = mergeAppData(base, local, payload([], { semester: sem("2026-09-21", T2) }), NOW).data;
+  assert.equal(both.semester?.start, "2026-09-21");
+  // Neither side has them: they stay absent.
+  const none = mergeAppData(payload(), payload(), payload(), NOW).data;
+  assert.equal("semester" in none, false);
+  assert.equal("catchUp" in none, false);
+});

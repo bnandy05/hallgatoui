@@ -1,4 +1,6 @@
 import type { ClassSession, Course, Deadline, IcalFeed } from "@/lib/types";
+import type { CatchUpGroup } from "@/lib/catchup";
+import { instanceLabel } from "@/lib/rules/instances";
 import { applyDedupe } from "@/lib/ical/dedupe";
 import { isCritical, isRecentlyChanged } from "@/lib/radar";
 import {
@@ -60,6 +62,27 @@ export interface DigestItem {
   changed: boolean;
 }
 
+/** One "Rögzítésre vár" line: a class, deadline or exam that ended without a result. */
+export interface DigestPending {
+  title: string; // "Programozáselmélet gyakorlat"
+  detail: string; // "okt. 1. (Cs) 08:00 · 4. hét: jelenlét, röpzh"
+  end: string; // ISO
+}
+
+/** The catch-up groups as digest lines, newest first (the mail lists the first few). */
+export function digestPendingFrom(groups: CatchUpGroup[], courses: Course[]): DigestPending[] {
+  const names = new Map(courses.map((c) => [c.id, c.name]));
+  return groups
+    .map((g) => {
+      const what = g.fields.map((f) => f.target.label.toLowerCase()).join(", ");
+      const course = names.get(g.courseId);
+      const title = g.deadline ? g.deadline.title : (course ?? g.session?.subject ?? g.fields[0].target.label);
+      const when = g.deadline ? (course ?? "") : instanceLabel(g.fields[0].instance);
+      return { title, detail: when ? `${when}: ${what}` : what, end: g.end };
+    })
+    .sort((a, b) => b.end.localeCompare(a.end));
+}
+
 export interface DigestContent {
   overdue: DigestItem[];
   upcoming: DigestItem[];
@@ -67,6 +90,9 @@ export interface DigestContent {
   classesToday: { session: ClassSession; course?: Course }[];
   /** Names of feeds that have been failing for more than a day. */
   failingFeeds: string[];
+  /** Requirement results still to record (newest first) and late "Még nincs eredmény" items. */
+  pending: DigestPending[];
+  awaitingLate: number;
   /** First day of the period (Budapest), today included. */
   from: YMD;
   /**
@@ -101,6 +127,9 @@ export interface DigestInput {
   failingFeeds?: string[];
   /** Timetable of the snapshot; only the daily digest uses it. */
   classSessions?: ClassSession[];
+  /** "Rögzítésre vár" lines (digestPendingFrom) and the number of late awaited results. */
+  pending?: DigestPending[];
+  awaitingLate?: number;
   now: Date;
 }
 
@@ -140,7 +169,16 @@ export function collectDigest(input: DigestInput): DigestContent {
           .sort((a, b) => a.start.localeCompare(b.start))
           .map((session) => ({ session, course: session.courseId ? courseById.get(session.courseId) : undefined }))
       : [];
-  return { overdue, upcoming, classesToday, failingFeeds: input.failingFeeds ?? [], from, to };
+  return {
+    overdue,
+    upcoming,
+    classesToday,
+    failingFeeds: input.failingFeeds ?? [],
+    pending: input.pending ?? [],
+    awaitingLate: input.awaitingLate ?? 0,
+    from,
+    to,
+  };
 }
 
 /** Upcoming items due on the given Budapest day. */
@@ -151,9 +189,12 @@ export function itemsOnDay(items: DigestItem[], day: YMD): DigestItem[] {
 
 /**
  * Whether a digest is worth a mail. Weekly and monthly ones always go out (an empty one still
- * tells you nothing is due); a daily one only when something is due today or tomorrow.
+ * tells you nothing is due); a daily one only when something is due today or tomorrow, or a
+ * class since yesterday morning is still waiting to be recorded (so a class day nags once).
  */
 export function shouldSendDigest(frequency: DigestFrequency, content: DigestContent): boolean {
   if (frequency !== "napi") return true;
-  return itemsOnDay(content.upcoming, content.from).length + itemsOnDay(content.upcoming, addDays(content.from, 1)).length > 0;
+  const due = itemsOnDay(content.upcoming, content.from).length + itemsOnDay(content.upcoming, addDays(content.from, 1)).length;
+  const since = budapestInstant(addDays(content.from, -1), 0, 0).getTime();
+  return due > 0 || content.pending.some((p) => Date.parse(p.end) >= since);
 }

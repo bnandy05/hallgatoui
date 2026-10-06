@@ -121,3 +121,28 @@ test("validateAppData caps and filters the ignored duplicate pairs", () => {
   assert.equal(data.ignoredDuplicatePairs.length, 2000);
   assert.ok(data.ignoredDuplicatePairs.every((p) => typeof p === "string"));
 });
+
+test("calendar links, semester and catch-up time survive parseAppData; bad ones are dropped", async () => {
+  const { parseAppData } = await import("@/lib/importData");
+  const { RULE_TEMPLATES } = await import("@/lib/rules/fixtures");
+  const course = { id: "c", name: "Prog", color: "#000000", links: [], resources: [], matchKeywords: [], createdAt: "2026-09-01T00:00:00.000Z" };
+  const rules = {
+    ...RULE_TEMPLATES[1].rules,
+    id: "rules:c",
+    courseId: "c",
+    source: "template",
+    calendarLinks: { jelen: { mode: "sessions", selector: { groups: ["6"] } }, zh1: { mode: "sessions", selector: {} } },
+  };
+  const data = parseAppData({
+    version: 1, courses: [course], deadlines: [], customPlatforms: [], feeds: [],
+    requirementRules: [rules],
+    semester: { start: "2026-09-09", updatedAt: "2026-10-01T00:00:00.000Z" },
+    catchUp: { promptedUntil: "2026-10-05T10:00:00.000Z" },
+  });
+  assert.deepEqual(data.requirementRules[0].calendarLinks, { jelen: { mode: "sessions", selector: { groups: ["6"] } } });
+  assert.deepEqual(data.semester, { start: "2026-09-07", updatedAt: "2026-10-01T00:00:00.000Z" });
+  assert.deepEqual(data.catchUp, { promptedUntil: "2026-10-05T10:00:00.000Z" });
+  const bad = parseAppData({ version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], semester: { start: "x" }, catchUp: { promptedUntil: 5 } });
+  assert.equal(bad.semester, undefined);
+  assert.equal(bad.catchUp, undefined);
+});
