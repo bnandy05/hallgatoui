@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { MAX_EXTRACT_CHARS } from "@/lib/rules/extract";
-import { buildSurveyRequest, readSurvey } from "@/lib/rules/extract/survey";
+import { buildSurveyRequest, FIELD_IDS, readSurvey } from "@/lib/rules/extract/survey";
 import { guarded, json, mutation, requireUser } from "@/lib/server/auth/http";
 import { isJevConfigured, systemOne } from "@/lib/server/jev";
 import { errorResponse } from "@/lib/server/subscription";
@@ -43,22 +43,23 @@ export function POST(req: Request) {
     if (code !== undefined && (typeof code !== "string" || code.length > MAX_COURSE_CODE)) return errorResponse("Érvénytelen tárgykód", 400);
 
     const kv = auth.deps.store.kv;
-    // Counted before the call, so a timeout still counts.
+    const { body, candidates, truncated } = buildSurveyRequest(text, { name: name.trim(), ...(code ? { code } : {}) });
+    const key = `jevs:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 40)}`;
+    const cached = await kv.get<unknown>(key);
+    if (cached) return json({ survey: readSurvey(cached, candidates), truncated });
+
+    // Only real calls count, before the call, so a timeout still counts.
     if (
       (await kv.incr(`rl:kov:h:${auth.user.id}`, 60 * 60)) > HOURLY_LIMIT ||
       (await kv.incr(`rl:kov:d:${auth.user.id}`, 24 * 60 * 60)) > DAILY_LIMIT
     ) {
       return errorResponse("Túl sok elemzés, próbáld újra később", 429);
     }
-
-    const { body, candidates, truncated } = buildSurveyRequest(text, { name: name.trim(), ...(code ? { code } : {}) });
-    const key = `jevs:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 40)}`;
-    let answers: unknown = await kv.get<unknown>(key);
-    if (!answers) {
-      answers = await systemOne(body, apiKey);
-      if (!answers) return errorResponse("A Jev most nem válaszolt, próbáld újra később", 502);
-      await kv.set(key, answers, CACHE_TTL_SECONDS);
-    }
-    return json({ survey: readSurvey(answers, candidates), truncated });
+    const answers = await systemOne(body, apiKey);
+    if (!answers) return errorResponse("A Jev most nem válaszolt, próbáld újra később", 502);
+    const survey = readSurvey(answers, candidates);
+    // A partial answer set is shown (the gaps are flagged) but not cached, so the next try asks again.
+    if (Object.keys(survey.raw).length === FIELD_IDS.length) await kv.set(key, answers, CACHE_TTL_SECONDS);
+    return json({ survey, truncated });
   });
 }

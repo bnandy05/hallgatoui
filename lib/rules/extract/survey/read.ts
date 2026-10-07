@@ -123,18 +123,18 @@ export function readSurvey(answers: unknown, candidates: Candidate[]): SurveyDra
     fields[id] = fieldOf(id, a ?? undefined, candidates);
   }
 
-  // Gates. A closed gate that is sure hides the detail and drops its answer; a closed gate that is
-  // itself in doubt keeps the answer and says so.
+  // Gates. A closed gate that is sure hides the detail and drops its answer. A gate that is itself
+  // in doubt, open or closed, keeps the answer and flags it: it is only as sure as its gate.
   const values = valuesOf(fields);
   for (const id of FIELD_IDS) {
     const g = GATES[id];
-    if (!g || gateOpen(id, values)) continue;
+    if (!g) continue;
     const f = fields[id];
-    if (!fields[g.gate].flagged) {
-      fields[id] = { value: null, flagged: false, reasons: [], hidden: true };
-    } else {
+    if (fields[g.gate].flagged) {
       f.flagged = true;
       f.reasons.push(`Attól függ, hogy ${g.phrase}.`);
+    } else if (!gateOpen(id, values)) {
+      fields[id] = { value: null, flagged: false, reasons: [], hidden: true };
     }
   }
 

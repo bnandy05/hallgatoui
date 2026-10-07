@@ -286,6 +286,20 @@ test("a closed gate in doubt keeps the answer and flags the detail", () => {
   }
 });
 
+test("an open gate in doubt flags its details too", () => {
+  const doubtful = (c: (typeof GATE_CASES)[number]) =>
+    (c.open as { type: string }).type === "noul" ? noul(0.6) : choice((c.open as { choice: string }).choice, 0.5);
+  for (const c of GATE_CASES) {
+    const d = read({ ...calmAnswers(), [c.gate]: doubtful(c) });
+    for (const dep of c.dependents) {
+      const f = d.fields[dep];
+      assert.equal(f.hidden, false, dep);
+      assert.equal(f.flagged, true, dep);
+      assert.ok(f.reasons.some((r) => /^Attól függ, hogy /.test(r)), `${dep}: ${f.reasons.join("|")}`);
+    }
+  }
+});
+
 test("every gated field is covered by a gate case", () => {
   const covered = new Set(GATE_CASES.flatMap((c) => c.dependents));
   for (const id of Object.keys(GATES)) assert.ok(covered.has(id as FieldId), id);

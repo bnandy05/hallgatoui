@@ -270,7 +270,7 @@ function FieldRow({
               {r}
             </p>
           ))}
-          {flagged && quote && <p className="line-clamp-3 text-[13px] italic text-muted">»{quote}«</p>}
+          {flagged && quote && <p className="line-clamp-3 text-[13px] text-muted">Ez a szám először itt szerepel: <span className="italic">»{quote}«</span></p>}
         </div>
       )}
       {flagged && !(meta.kind === "enum" && value === null) && (
