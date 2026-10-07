@@ -28,11 +28,11 @@ const TESTS = "main written tests (zárthelyi, zh, nagyzh, dolgozat; not röpzh,
 const NOUL: Partial<Record<FieldId, { instructions: string; criteria?: { true: string; false: string } }>> = {
   attendance_mandatory: {
     instructions:
-      "Does `document` make attendance at the classes of `course` compulsory, with a limit on absences beyond which the student fails or gets no grade?",
+      "Does `document` make attendance at the classes of `course` compulsory (all of them, a share of them, or all labs), or set a limit on absences beyond which the student fails or gets no grade?",
     criteria: {
-      true: "Yes: attendance is compulsory with a stated absence limit or minimum attendance (e.g. 'legfeljebb 3 hiányzás', 'a foglalkozások 70%-án részt kell venni').",
+      true: "Yes: attendance is compulsory, or an absence limit or minimum attendance is stated (e.g. 'legfeljebb 3 hiányzás', 'a foglalkozások 70%-án részt kell venni', 'részvétel az összes laboron').",
       false:
-        "No: attendance is not compulsory, the limit only applies to some special sessions such as certain labs, or the document says nothing about it.",
+        "No: the document only says how the classes are held, recommends attending, or says nothing about attendance.",
     },
   },
   has_quick_tests: {
@@ -45,7 +45,7 @@ const NOUL: Partial<Record<FieldId, { instructions: string; criteria?: { true: s
   },
   has_theory_test_in_semester: {
     instructions:
-      "During the teaching weeks of the semester, does `course` have a separate theory test (elméleti zh, elméleti teszt, definíciók és tételek számonkérése) that the student must pass, according to `document`? Answer no if theory is only tested as part of the final exam, kollokvium or szigorlat, even if that exam has a written theory part.",
+      "During the teaching weeks of the semester, does `course` have a separate theory test (elméleti zh, elméleti teszt, definíciók és tételek számonkérése) that the student must pass, according to `document`? Answer no if theory is only tested as part of the final exam, kollokvium or szigorlat, even if that exam has a written theory part, and answer no for short entry tests before labs or classes (beugró), which are short tests, not a theory test.",
   },
   has_retake: {
     instructions:

@@ -621,3 +621,12 @@ test("a pass/fail zh needs a pass for the grade", () => {
   assert.ok(r.flags.some((f) => /megfelelt/.test(f.message)));
   assert.equal(r.derived[0].expr, "ropzh", "a pass/fail zh adds no points");
 });
+
+test("a gate in doubt leaves a detail that says none alone", () => {
+  const d = read({ ...calmAnswers(), has_assignment: noul(0.4), assignment_count: choice("none"), assignment_points_on_time: choice("none") });
+  assert.equal(d.fields.has_assignment.flagged, true);
+  for (const id of ["assignment_count", "assignment_points_on_time"] as const) {
+    assert.equal(d.fields[id].value, null, id);
+    assert.ok(!d.fields[id].reasons.some((r) => /^Attól függ/.test(r)), `${id}: ${d.fields[id].reasons.join("|")}`);
+  }
+});

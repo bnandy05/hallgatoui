@@ -164,9 +164,11 @@ const QUICK: Gate = { gate: "has_quick_tests", open: isTrue, phrase: "vannak-e r
 const ASSIGN: Gate = { gate: "has_assignment", open: isTrue, phrase: "vannak-e beadandók" };
 const ZH_EXIST: Gate = { gate: "zh_scoring", open: (v) => v !== "no_zh", phrase: "van-e zárthelyi a félévben" };
 const ZH_POINTS: Gate = { gate: "zh_scoring", open: (v) => v === "points", phrase: "pontszámmal értékelik-e a zárthelyiket" };
+/** Both point methods end in point limits: raw points, or component grades counted as points. */
+export const POINT_BANDS = new Set<FieldValue>(["raw_points_to_bands", "component_grades_to_points"]);
 const BANDS: Gate = {
   gate: "grade_calculation",
-  open: (v) => v === "raw_points_to_bands",
+  open: (v) => POINT_BANDS.has(v),
   phrase: "ponthatárok adják-e a jegyet",
 };
 

@@ -27,3 +27,10 @@ here and a test.
 out (matek: the lowest limit for grade 2, analizis: the röpdolgozat total) is `"none"` and the
 student fills it in the form. Used by `test/rulesSurvey.test.ts` and as the input of
 `npm run jev:survey -- <source.txt> "<course>" <survey.json>`.
+
+**jev-valaszok/** (real Jev output): the answers `jev-latest` gave to the owner's survey prompt for
+five real documents (analizis, eva, szamelm, bjog2, bmehalo), converted to the app's labels (counts
+as `n<k>`, numbers as candidate ids), with only the picked candidates and the owner's expected
+values (every acceptable answer as a list). No document text is stored. `test/surveyRealAnswers.test.ts`
+reads them with `readSurvey`: no wrong field may reach the form unflagged. Add a document here
+whenever a live run (`npm run jev:survey`) shows a new failure.

@@ -124,13 +124,16 @@ export function readSurvey(answers: unknown, candidates: Candidate[]): SurveyDra
   }
 
   // Gates. A closed gate that is sure hides the detail and drops its answer. A gate that is itself
-  // in doubt, open or closed, keeps the answer and flags it: it is only as sure as its gate.
+  // in doubt, open or closed, flags the details that carry a value: they are only as sure as their
+  // gate. A detail that says "none" stays as it is; if the part does exist, the consistency check
+  // below (required values) or the rules builder asks for the missing value.
   const values = valuesOf(fields);
   for (const id of FIELD_IDS) {
     const g = GATES[id];
     if (!g) continue;
     const f = fields[id];
     if (fields[g.gate].flagged) {
+      if (f.value === null) continue;
       f.flagged = true;
       f.reasons.push(`Attól függ, hogy ${g.phrase}.`);
     } else if (!gateOpen(id, values)) {
@@ -220,8 +223,8 @@ export function consistency(values: SurveyValues): [FieldId, string][] {
     }
   }
 
-  // The components' points add up to the stated maximum.
-  if (total && !total.percent) {
+  // The components' points add up to the stated maximum (only when the grade adds up raw points).
+  if (total && !total.percent && values.grade_calculation === "raw_points_to_bands") {
     const parts = componentTotal(values);
     if (parts !== null && Math.abs(parts - total.value) > 1e-9) {
       add("final_total_max", `Az összetevők pontjai ${fmt(parts)} pontot adnak, a megadott maximum ${fmt(total.value)}.`);

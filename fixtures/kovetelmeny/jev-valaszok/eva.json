@@ -1,0 +1,243 @@
+{
+  "course": "Eseményvezérelt alkalmazások",
+  "candidates": [
+    {
+      "id": "c5",
+      "text": "3",
+      "value": 3,
+      "percent": false,
+      "context": "és elfogadott beadandó értékelése 3 pont. • • Ha a beadott megoldás"
+    },
+    {
+      "id": "c12",
+      "text": "15",
+      "value": 15,
+      "percent": false,
+      "context": "erc alatt. Értékelése ötfokozatú (15), az alábbi skála alapján: 27-30:"
+    },
+    {
+      "id": "c17",
+      "text": "26",
+      "value": 26,
+      "percent": false,
+      "context": "kála alapján: 27-30: jeles (5), 24-26: jó (4), 21-23: közepes (3), 18-"
+    },
+    {
+      "id": "c20",
+      "text": "21",
+      "value": 21,
+      "percent": false,
+      "context": "7-30: jeles (5), 24-26: jó (4), 21-23: közepes (3), 18-20: elégséges ("
+    },
+    {
+      "id": "c23",
+      "text": "18",
+      "value": 18,
+      "percent": false,
+      "context": "26: jó (4), 21-23: közepes (3), 18-20: elégséges (2), 0-17: elégtelen"
+    },
+    {
+      "id": "c27",
+      "text": "17",
+      "value": 17,
+      "percent": false,
+      "context": "zepes (3), 18-20: elégséges (2), 0-17: elégtelen (1). Az elméleti zárt"
+    },
+    {
+      "id": "c31",
+      "text": "12",
+      "value": 12,
+      "percent": false,
+      "context": "emjegy 0 – 11 elégtelen (1) 12 – 16 elégséges (2) 17 – 20 közepe"
+    },
+    {
+      "id": "c37",
+      "text": "31",
+      "value": 31,
+      "percent": false,
+      "context": "közepes (3) 21 – 25 jó (4) 26 – 31 jeles (5) Javítási lehetőség"
+    }
+  ],
+  "answers": {
+    "grade_types": {
+      "type": "choice",
+      "choice": "practice_grade_only",
+      "confidence": 0.97
+    },
+    "attendance_mandatory": {
+      "type": "noul",
+      "noul": 0.06
+    },
+    "has_quick_tests": {
+      "type": "noul",
+      "noul": 0.07
+    },
+    "has_assignment": {
+      "type": "noul",
+      "noul": 0.99
+    },
+    "has_theory_test_in_semester": {
+      "type": "noul",
+      "noul": 0.95
+    },
+    "has_retake": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_offered_exam_grade": {
+      "type": "noul",
+      "noul": 0.21
+    },
+    "zh_scoring": {
+      "type": "choice",
+      "choice": "grade_1_5",
+      "confidence": 1
+    },
+    "grade_calculation": {
+      "type": "choice",
+      "choice": "component_grades_to_points",
+      "confidence": 0.81
+    },
+    "zh_count": {
+      "type": "choice",
+      "choice": "n2",
+      "confidence": 0.99
+    },
+    "quick_test_count": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.79
+    },
+    "assignment_count": {
+      "type": "choice",
+      "choice": "n2",
+      "confidence": 1
+    },
+    "zh_max_points": {
+      "type": "choice",
+      "choice": "c12",
+      "confidence": 0.6
+    },
+    "zh_min_points": {
+      "type": "choice",
+      "choice": "c23",
+      "confidence": 0.37
+    },
+    "quick_test_total_max": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.63
+    },
+    "quick_test_min_points": {
+      "type": "choice",
+      "choice": "c23",
+      "confidence": 0.44
+    },
+    "assignment_points_on_time": {
+      "type": "choice",
+      "choice": "c5",
+      "confidence": 1
+    },
+    "theory_test_pass_threshold": {
+      "type": "choice",
+      "choice": "c23",
+      "confidence": 0.89
+    },
+    "final_total_max": {
+      "type": "choice",
+      "choice": "c37",
+      "confidence": 0.99
+    },
+    "grade2_min_points": {
+      "type": "choice",
+      "choice": "c31",
+      "confidence": 1
+    },
+    "grade3_min_points": {
+      "type": "choice",
+      "choice": "c27",
+      "confidence": 0.99
+    },
+    "grade4_min_points": {
+      "type": "choice",
+      "choice": "c20",
+      "confidence": 0.99
+    },
+    "grade5_min_points": {
+      "type": "choice",
+      "choice": "c17",
+      "confidence": 0.98
+    }
+  },
+  "expected": {
+    "grade_types": [
+      "practice_grade_only"
+    ],
+    "attendance_mandatory": [
+      false
+    ],
+    "has_quick_tests": [
+      false
+    ],
+    "has_assignment": [
+      true
+    ],
+    "has_theory_test_in_semester": [
+      true
+    ],
+    "has_retake": [
+      true
+    ],
+    "has_offered_exam_grade": [
+      false
+    ],
+    "zh_scoring": [
+      "grade_1_5"
+    ],
+    "grade_calculation": [
+      "component_grades_to_points"
+    ],
+    "zh_count": [
+      "2"
+    ],
+    "quick_test_count": [
+      "none"
+    ],
+    "assignment_count": [
+      "2"
+    ],
+    "zh_max_points": [
+      "none"
+    ],
+    "zh_min_points": [
+      "none"
+    ],
+    "quick_test_total_max": [
+      "none"
+    ],
+    "quick_test_min_points": [
+      "none"
+    ],
+    "assignment_points_on_time": [
+      "3"
+    ],
+    "theory_test_pass_threshold": [
+      "18"
+    ],
+    "final_total_max": [
+      "31"
+    ],
+    "grade2_min_points": [
+      "12"
+    ],
+    "grade3_min_points": [
+      "17"
+    ],
+    "grade4_min_points": [
+      "21"
+    ],
+    "grade5_min_points": [
+      "26"
+    ]
+  }
+}
