@@ -71,7 +71,9 @@ export function ExtractForm({
       setText((await readPdfText(file)).slice(0, MAX_EXTRACT_CHARS));
       setPdf({ name: file.name, reading: false });
     } catch (e) {
-      const error = e instanceof PdfTextError ? e.message : "A PDF beolvasása nem sikerült. Másold be a szöveget kézzel.";
+      console.error("[pdf]", e);
+      const detail = e instanceof Error && e.message ? ` (${e.message.slice(0, 120)})` : "";
+      const error = e instanceof PdfTextError ? e.message : `A PDF beolvasása nem sikerült. Másold be a szöveget kézzel.${detail}`;
       setPdf({ name: file.name, reading: false, error });
     }
   }
