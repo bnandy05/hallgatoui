@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ClipboardList, FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { MAX_REQUIREMENTS_CHARS } from "@/lib/importData";
 import { linkHost } from "@/lib/url";
@@ -10,7 +10,6 @@ import { ResourceForm } from "@/components/ResourceList";
 import { RulesPanel } from "@/components/requirements/RulesPanel";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 
@@ -71,96 +70,77 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
     </>
   );
 
-  if (!text && docs.length === 0) {
-    return (
-      <div className="flex flex-col gap-4">
-        <RulesPanel courseId={course.id} />
-        <EmptyState
-          icon={ClipboardList}
-          title="Még nincs leírás"
-          text="Írd le, mi kell a jegyhez (ZH-k, beadandók, hiányzás, pontozás), vagy linkeld a követelményrendszert."
-          action={
-            <>
-              <Button type="button" size="sm" onClick={() => setTextOpen(true)}>
-                <Pencil className="h-4 w-4" />
-                Követelmények leírása
-              </Button>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setEditingDoc("new")}>
-                <Plus className="h-4 w-4" />
-                Dokumentum linkelése
-              </Button>
-            </>
-          }
-        />
-        {dialogs}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <RulesPanel courseId={course.id} />
-      <div className="sheet-paper flex flex-col gap-3 px-5 py-4">
+      <div className="sheet-paper px-5 py-4 sm:px-6">
+        <h3 className="font-display text-[22px] text-heading">Leírás és dokumentumok</h3>
         {text ? (
-          <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+          <p className="mt-2 max-w-[70ch] whitespace-pre-wrap text-[14.5px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
             {text}
           </p>
         ) : (
-          <p className="text-[14px] text-muted">Még nincs leírás. Írd le röviden, mi kell a jegyhez.</p>
+          docs.length === 0 && (
+            <p className="mt-1 text-[13.5px] text-muted">
+              Jegyezd fel röviden, mi kell a jegyhez, és linkeld a hivatalos követelményrendszert.
+            </p>
+          )
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={() => setTextOpen(true)} className="self-start">
-          <Pencil className="h-4 w-4" />
-          {text ? "Leírás szerkesztése" : "Követelmények leírása"}
-        </Button>
-      </div>
 
-      <ul className="flex flex-col gap-2">
-        {docs.map((doc) => (
-          <li
-            key={doc.id}
-            className="flex min-w-0 items-center gap-3 rounded-[var(--radius)] border border-border bg-card px-3 py-2"
-          >
-            <FileText className="h-5 w-5 shrink-0 text-muted" />
-            <span className="min-w-0 flex-1">
-              <a
-                href={doc.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={doc.url}
-                className="block truncate text-[14px] font-semibold text-heading hover:underline"
-              >
-                {doc.title}
-              </a>
-              <span className="block truncate text-[12px] text-muted-dim">
-                {doc.note ? `${doc.note} · ` : ""}
-                {linkHost(doc.url)}
-              </span>
-            </span>
-            <button
-              type="button"
-              aria-label={`${doc.title} szerkesztése`}
-              title="Szerkesztés"
-              onClick={() => setEditingDoc(doc.id)}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label={`${doc.title} törlése`}
-              title="Törlés"
-              onClick={() => removeDoc(doc)}
-              className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <Button type="button" variant="secondary" size="sm" onClick={() => setEditingDoc("new")} className="self-start">
-        <Plus className="h-4 w-4" />
-        Dokumentum linkelése
-      </Button>
+        {docs.length > 0 && (
+          <ul className={`flex flex-col ${text ? "mt-3 border-t border-border" : "mt-2"}`}>
+            {docs.map((doc) => (
+              <li key={doc.id} className="flex min-w-0 items-center gap-3 border-b border-border py-2.5">
+                <FileText className="h-5 w-5 shrink-0 text-muted" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={doc.url}
+                    className="block truncate text-[14px] font-semibold text-heading hover:underline"
+                  >
+                    {doc.title}
+                  </a>
+                  <span className="block truncate text-[12px] text-muted-dim">
+                    {doc.note ? `${doc.note} · ` : ""}
+                    {linkHost(doc.url)}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${doc.title} szerkesztése`}
+                  title="Szerkesztés"
+                  onClick={() => setEditingDoc(doc.id)}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${doc.title} törlése`}
+                  title="Törlés"
+                  onClick={() => removeDoc(doc)}
+                  className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="-ml-3 mt-2 flex flex-wrap gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setTextOpen(true)}>
+            <Pencil className="h-4 w-4" aria-hidden />
+            {text ? "Leírás szerkesztése" : "Leírás írása"}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditingDoc("new")}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Dokumentum linkelése
+          </Button>
+        </div>
+      </div>
       {dialogs}
     </div>
   );

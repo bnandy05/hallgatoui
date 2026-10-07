@@ -411,9 +411,34 @@ dialog.sheet[open] .pin {
   }
 }
 
+/* Waiting for a reading: a short toner bar running along a hairline track. */
+.reading-bar {
+  position: relative;
+}
+.reading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: reading-run 1.6s var(--ease-out-expo) infinite;
+}
+@keyframes reading-run {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  .reading-bar::after {
+    animation: board-fade 1.2s linear infinite alternate;
   }
   .lift-sm:hover {
     transform: none !important;

@@ -66,6 +66,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
+  const [extractWide, setExtractWide] = useState(false);
   const [offer, setOffer] = useState<TemplateOffer | null>(null);
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const shared = useSharedTemplate(course);
@@ -88,7 +89,12 @@ export function RulesPanel({ courseId }: { courseId: string }) {
     </Dialog>
   );
   const extractDialog = (
-    <Dialog open={extractOpen} onClose={() => setExtractOpen(false)} title="Beolvasás a követelményrendszerből" size="lg">
+    <Dialog
+      open={extractOpen}
+      onClose={() => setExtractOpen(false)}
+      title={extractWide ? "A beolvasás átnézése" : "Beolvasás a követelményrendszerből"}
+      size={extractWide ? "xl" : "lg"}
+    >
       <ExtractForm
         course={{ name: course?.name ?? "Tárgy", ...(course?.code ? { code: course.code } : {}) }}
         replacing={!!rules}
@@ -103,6 +109,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
           setJsonOpen(true);
         }}
         onCancel={() => setExtractOpen(false)}
+        onWide={setExtractWide}
       />
     </Dialog>
   );
@@ -136,28 +143,41 @@ export function RulesPanel({ courseId }: { courseId: string }) {
 
   if (!rules) {
     return (
-      <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card px-4 py-3.5">
-        <div>
-          <p className="text-[14px] font-semibold text-heading">Pontozás és jegyszámítás</p>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Állítsd be a tárgy szabályait, és a rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez.
-          </p>
+      <div className="sheet-paper flex flex-col px-5 py-5 sm:px-6">
+        <h3 className="font-display text-[22px] text-heading">Pontozás és jegyszámítás</h3>
+        <p className="mt-1.5 max-w-[62ch] text-[14px] text-muted">
+          Állítsd be a tárgy szabályait, és a rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez.
+        </p>
+        {course && (
+          <div className="mt-4 empty:hidden">
+            <SharedTemplateOffer course={course} shared={shared} onReview={setOffer} />
+          </div>
+        )}
+        <div className="mt-4 flex flex-col">
+          <SetupRow
+            title="A követelményrendszerből"
+            text="Töltsd fel a PDF-et vagy illeszd be a szövegét. A Jev kitölt egy űrlapot, amit mentés előtt átnézel."
+          >
+            <Button type="button" onClick={() => setExtractOpen(true)}>
+              <FileText className="h-4 w-4" aria-hidden />
+              Beolvasás
+            </Button>
+          </SetupRow>
+          <SetupRow title="Sablonból" text="Egy már beállított tárgy szabályai, a sajátodhoz igazítva.">
+            <TemplatePicker
+              onPick={(id) => {
+                const template = ruleTemplate(id);
+                if (template) setRequirementRules(courseId, { ...template.rules, source: "template", templateId: id });
+              }}
+            />
+          </SetupRow>
+          <SetupRow title="Kézzel" text="A szabályok JSON-ban, haladóknak.">
+            <Button type="button" variant="secondary" onClick={() => setJsonOpen(true)}>
+              <Code className="h-4 w-4" aria-hidden />
+              Saját szabályok
+            </Button>
+          </SetupRow>
         </div>
-        {course && <SharedTemplateOffer course={course} shared={shared} onReview={setOffer} />}
-        <Button type="button" size="sm" onClick={() => setExtractOpen(true)} className="self-start">
-          <FileText className="h-4 w-4" />
-          Beolvasás a követelményrendszerből
-        </Button>
-        <TemplatePicker
-          onPick={(id) => {
-            const template = ruleTemplate(id);
-            if (template) setRequirementRules(courseId, { ...template.rules, source: "template", templateId: id });
-          }}
-        />
-        <Button type="button" variant="ghost" size="sm" onClick={() => setJsonOpen(true)} className="self-start">
-          <Code className="h-4 w-4" />
-          Saját szabályok (JSON)
-        </Button>
         {dialogs}
       </div>
     );
@@ -175,22 +195,37 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   );
 }
 
+/** One way to set the rules up: what it is on the left, its control on the right. */
+function SetupRow({ title, text, children }: { title: string; text: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border py-4 last:pb-0">
+      <div className="min-w-0 flex-1 basis-64">
+        <p className="text-[15px] font-semibold text-heading">{title}</p>
+        <p className="mt-0.5 text-[13px] text-muted">{text}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function TemplatePicker({ onPick }: { onPick: (id: string) => void }) {
   const [picked, setPicked] = useState(RULE_TEMPLATES[0]?.id ?? "");
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="min-w-0 flex-1">
-        <Label htmlFor="rules-template">Sablon</Label>
-        <Select id="rules-template" value={picked} onChange={(e) => setPicked(e.target.value)}>
-          {RULE_TEMPLATES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name} ({t.university})
-            </option>
-          ))}
-        </Select>
-      </div>
-      <Button type="button" size="sm" onClick={() => onPick(picked)} disabled={!picked}>
-        Sablon használata
+    <div className="flex w-full min-w-0 gap-2 sm:w-auto">
+      <Select
+        aria-label="Sablon"
+        value={picked}
+        onChange={(e) => setPicked(e.target.value)}
+        className="min-w-0 flex-1 sm:!w-64"
+      >
+        {RULE_TEMPLATES.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name} ({t.university})
+          </option>
+        ))}
+      </Select>
+      <Button type="button" variant="secondary" onClick={() => onPick(picked)} disabled={!picked}>
+        Használom
       </Button>
     </div>
   );
@@ -246,18 +281,22 @@ function RulesView({
       </div>
 
       {openFlags.length > 0 && (
-        <div className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
-          <p className="text-[14px] font-semibold text-heading">Ellenőrizd</p>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Ezeket a szabályokat feltételeztük. Vesd össze a követelményrendszerrel.
+        <div className="slip bg-canary px-4 py-3.5 sm:px-5">
+          <p className="flex items-center gap-2 text-[14.5px] font-semibold text-heading">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+            Ellenőrizd a követelményrendszerrel
           </p>
-          <ul className="mt-2 flex flex-col gap-2">
+          <p className="mt-0.5 text-[13px] text-heading/80">Ezeket a szabályokat feltételeztük.</p>
+          <ul className="mt-2 flex flex-col">
             {rules.flags.map((f, i) =>
               f.resolved ? null : (
-                <li key={`${f.field}-${i}`} className="flex items-start gap-2 text-[13.5px]">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <span className="min-w-0 flex-1 text-foreground">{f.message}</span>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => resolveFlag(i)}>
+                <li
+                  key={`${f.field}-${i}`}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-heading/15 py-2 text-[13.5px] first:border-t-0"
+                >
+                  <span className="min-w-0 flex-1 basis-60 text-heading">{f.message}</span>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => resolveFlag(i)}>
+                    <Check className="h-3.5 w-3.5" aria-hidden />
                     Rendben
                   </Button>
                 </li>
@@ -267,8 +306,10 @@ function RulesView({
         </div>
       )}
 
-      <div className="rounded-[var(--radius)] border border-border bg-card px-4 py-1.5">
-        <div className="divide-y divide-border">
+      <div className="sheet-paper px-5 pb-2 pt-4 sm:px-6">
+        <h3 className="font-display text-[22px] text-heading">Eredményeid</h3>
+        <p className="mt-1 text-[13px] text-muted">Írd be, amit már megkaptál; a jegyed ezekből számoljuk.</p>
+        <div className="mt-2 divide-y divide-border">
           {rules.components.map((c) => {
             const rs = resultsOf(c.id);
             let input: React.ReactNode = null;
@@ -351,7 +392,7 @@ function RulesView({
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onExtract}>
           <FileText className="h-4 w-4" />
-          Újraolvasás szövegből
+          Újraolvasás a dokumentumból
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={removeRules}>
           <Trash2 className="h-4 w-4" />
@@ -472,11 +513,11 @@ function Solver({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card px-4 py-3.5">
-      <p className="flex items-center gap-2 text-[14px] font-semibold text-heading">
-        <Calculator className="h-4 w-4 text-muted" aria-hidden />
+    <div className="sheet-paper flex flex-col gap-3 px-5 py-4 sm:px-6">
+      <h3 className="flex items-center gap-2 font-display text-[22px] text-heading">
+        <Calculator className="h-5 w-5 text-muted" aria-hidden />
         Mi kell a jegyhez?
-      </p>
+      </h3>
       <div className="grid gap-2 sm:grid-cols-3">
         <div>
           <Label htmlFor="solve-outcome">Jegy</Label>
@@ -517,7 +558,11 @@ function Solver({
           Ha a többi is jól megy
         </Pill>
       </div>
-      {text && <p className="text-[14px] text-foreground" aria-live="polite">{text}</p>}
+      {text && (
+        <p className="rounded-[var(--radius-slip)] bg-inset px-3 py-2.5 text-[14.5px] font-medium text-heading" aria-live="polite">
+          {text}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Check, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import Link from "next/link";
-import { describeRules } from "@/lib/rules/describe";
 import { universityName } from "@/lib/rules/shared";
 import type { SubjectRules } from "@/lib/rules/types";
 import type { Course } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
+import { RulesPreview } from "./RulesPreview";
 
 // Shared requirement templates: the rules another student at the same university already
 // confirmed for this subject code and term. Looked up before reading the document, so a subject
@@ -126,32 +126,9 @@ export function TemplateReview({
         {offer.confirmations} hallgató megerősítette{offer.previous ? " az előző félévben" : ""}. Vesd össze a tárgy
         követelményrendszerével; ha valami nem stimmel, jelezd, és olvasd be a saját példányodat.
       </p>
-      {describeRules(offer.rules).map((s) => (
-        <div key={s.title}>
-          <p className="text-[13px] font-semibold text-foreground">{s.title}</p>
-          <ul className="mt-1 flex flex-col gap-1 text-[13.5px] text-foreground">
-            {s.lines.map((l) => (
-              <li key={l} className="flex items-start gap-1.5">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
-                <span>{l}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {offer.rules.flags.length > 0 && (
-        <div>
-          <p className="text-[13px] font-semibold text-foreground">Ellenőrizd</p>
-          <ul className="mt-1 flex flex-col gap-1 text-[13.5px] text-foreground">
-            {offer.rules.flags.map((f) => (
-              <li key={f.field} className="flex items-start gap-1.5">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
-                <span>{f.message}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="rounded-[var(--radius-slip)] bg-inset px-4 py-4">
+        <RulesPreview rules={offer.rules} />
+      </div>
       <DialogActions>
         <Button type="button" variant="ghost" onClick={onReport} className="mr-auto">
           Hibás a sablon

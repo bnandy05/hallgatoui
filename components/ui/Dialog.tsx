@@ -8,7 +8,7 @@ export interface DialogProps {
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
-  size?: "md" | "lg";
+  size?: "md" | "lg" | "xl";
   /** Focus the first text field on touch screens too (search, where typing is the whole task). */
   focusFieldOnTouch?: boolean;
   /** Pin the sheet up: a pushpin head in this colour beside the title (a deadline's state). */
@@ -81,7 +81,11 @@ export function Dialog({
       ref={dialogRef}
       style={{ "--sheet": tone === "salmon" ? "var(--salmon)" : "var(--panel)" } as CSSProperties}
       className={`sheet top-[var(--visual-top,0px)] bottom-[var(--keyboard-inset,0px)] m-auto w-full scroll-pt-16 overflow-y-auto overscroll-contain has-[[data-dialog-actions]]:scroll-pb-20 rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[var(--shadow-dialog)] backdrop:bg-[var(--backdrop,rgba(40,48,54,0.45))] max-sm:mb-0 max-sm:max-h-[calc(var(--visual-height,100dvh)-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(var(--visual-height,100dvh)-3rem)] ${
-        size === "lg" ? "sm:max-w-[min(42rem,calc(100vw-3rem))]" : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
+        size === "xl"
+          ? "sm:max-w-[min(66rem,calc(100vw-3rem))]"
+          : size === "lg"
+            ? "sm:max-w-[min(42rem,calc(100vw-3rem))]"
+            : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
       }`}
     >
       <div
