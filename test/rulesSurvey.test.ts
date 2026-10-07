@@ -463,10 +463,10 @@ test("analizis: the survey writes the main numbers (a weighted formula it cannot
 });
 
 test("dotnet and progelm cannot be written from a survey, and say why", () => {
-  // dotnet: every component first gets its own grade, then they are weighted (2*gy1 + …).
+  // dotnet: the component grades are added as points, but its (outdated) answers have no limits.
   const dotnet = surveyRules(valuesOf("dotnet"));
   assert.equal(dotnet.rules, null);
-  assert.ok(dotnet.errors.includes(CANNOT_WRITE_GRADE), dotnet.errors.join("\n"));
+  assert.deepEqual(dotnet.errors, ["Add meg mind a négy ponthatárt (2-estől 5-ösig)."]);
   // progelm: +/- röpzh (no point total) and the grade is (zh1 + zh2 + bonus) div 20.
   const progelm = surveyRules(valuesOf("progelm"));
   assert.equal(progelm.rules, null);
@@ -526,9 +526,51 @@ test("average of grades: grade-scaled zh and the rounded mean", () => {
   assert.equal(bad.rules, null);
   const noGrades = surveyRules({ ...SIMPLE, grade_calculation: "average_of_grades" });
   assert.match(noGrades.errors[0], /jeggyel értékelt zárthelyik/);
-  for (const calc of ["component_grades_to_points", "other", "not_described"]) {
+  for (const calc of ["other", "not_described"]) {
     assert.deepEqual(surveyRules({ ...SIMPLE, grade_calculation: calc }).errors, [CANNOT_WRITE_GRADE]);
   }
+});
+
+test("component grades as points: weighted zh grades, the theory grade and assignment points (eva)", () => {
+  const eva: SurveyValues = {
+    ...SIMPLE,
+    zh_scoring: "grade_1_5",
+    zh_max_points: null,
+    grade_calculation: "component_grades_to_points",
+    has_assignment: true,
+    assignment_count: 2,
+    assignment_points_on_time: pt(3),
+    has_theory_test_in_semester: true,
+    theory_test_pass_threshold: pt(18),
+    final_total_max: pt(31),
+    grade2_min_points: pt(12),
+    grade3_min_points: pt(17),
+    grade4_min_points: pt(21),
+    grade5_min_points: pt(26),
+  };
+  const { rules: r, errors } = surveyRules(eva);
+  assert.deepEqual(errors, []);
+  assert.equal(r!.derived[0].expr, "2 * zh1 + 2 * zh2 + elmelet + beadando1 + beadando2");
+  assert.deepEqual(r!.tables[0].rows.map((x) => x.min), [0, 12, 17, 21, 26]);
+  assert.deepEqual(r!.outcomes[0].gates!.map((g) => g.test), ["zh1 >= 2", "zh2 >= 2", "elmelet >= 2", "count(failed, beadando1, beadando2) == 0"]);
+  assert.ok(r!.flags.some((f) => /2-szeres súllyal/.test(f.message)));
+  const rec = (componentId: string, value: object) => ({ id: `c|${componentId}|n:1`, courseId: "c", componentId, instanceKey: "n:1", state: "recorded" as const, value });
+  const res = (a: number, b: number, t: number) => [
+    rec("zh1", { kind: "grade", grade: a }),
+    rec("zh2", { kind: "grade", grade: b }),
+    rec("elmelet", { kind: "grade", grade: t }),
+    rec("beadando1", { kind: "assignment", outcome: "ok" }),
+    rec("beadando2", { kind: "assignment", outcome: "ok" }),
+  ] as Parameters<typeof evaluate>[1];
+  assert.equal(evaluate(r!, res(4, 3, 4), NOW).outcomes[0].worst, 4, "8 + 6 + 4 + 6 = 24");
+  assert.equal(evaluate(r!, res(2, 2, 2), NOW).outcomes[0].worst, 2, "4 + 4 + 2 + 6 = 16");
+  assert.equal(evaluate(r!, res(5, 1, 5), NOW).outcomes[0].worst, 1, "a failed zh fails the grade");
+  // without a stated total the zh grades count once, and the flag says so
+  const once = surveyRules({ ...eva, final_total_max: null });
+  assert.equal(once.rules!.derived[0].expr, "zh1 + zh2 + elmelet + beadando1 + beadando2");
+  assert.ok(once.rules!.flags.some((f) => /egyszeres súllyal/.test(f.message)));
+  // nothing graded: nothing to count as points
+  assert.match(surveyRules({ ...SIMPLE, grade_calculation: "component_grades_to_points" }).errors[0], /jeggyel értékelt/);
 });
 
 test("quick tests, assignments, theory test and attendance without a number", () => {

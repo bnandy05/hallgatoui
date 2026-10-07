@@ -19,7 +19,7 @@ import { semanticErrors } from "../semantic";
 import { GRADE_LIMIT_FIELDS, asCount, asNumber, asText, gatedValues, type FieldValue, type NumberValue, type SurveyValues } from "./fields";
 
 export const CANNOT_WRITE_GRADE =
-  "A jegy kiszámítását nem tudjuk felírni; válaszd a ponthatáros vagy az átlagos módot, vagy add meg a szabályokat kézzel.";
+  "Ezt a jegyszámítást nem tudjuk felírni; válaszd a ponthatáros, az átlagos vagy a jegyekből pontot számoló módot.";
 
 const fmt = (n: number) => String(Math.round(n * 1e4) / 1e4).replace(".", ",");
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -37,6 +37,35 @@ function points(b: Built, v: FieldValue, field: string, what: string): number | 
   if (!n) return null;
   if (n.percent) flag(b, field, `${what}: százalékként kaptuk (${fmt(n.value)}%), pontnak vettük.`);
   return n.value;
+}
+
+/**
+ * The grade by point limits over `terms`: the summed points become `ossz`, the four limits (points,
+ * or percents of the stated total, else of the sum) a table. Null with an error when it cannot.
+ */
+function pointBands(
+  b: Built,
+  v: SurveyValues,
+  terms: { expr: string; max: number }[],
+  derived: Derived[],
+  tables: SubjectRules["tables"]
+): string | null {
+  const sum = terms.reduce((s, t) => s + t.max, 0);
+  const limits = GRADE_LIMIT_FIELDS.map((f) => asNumber(v[f]));
+  if (limits.some((l) => l === null)) b.errors.push("Add meg mind a négy ponthatárt (2-estől 5-ösig).");
+  else if (limits.some((l) => l!.percent) && limits.some((l) => !l!.percent)) b.errors.push("A ponthatárok egy része százalék, másik része pont; add meg egységesen.");
+  else if (terms.length > 0) {
+    const stated = asNumber(v.final_total_max);
+    const total = stated && !stated.percent ? stated.value : sum;
+    const rows: { min: number; value: number }[] = [];
+    limits.forEach((l, i) => rows.push({ min: l!.percent ? round2((l!.value / 100) * total) : l!.value, value: i + 2 }));
+    // Below the lowest limit is 1; a lowest limit of 0 leaves nothing below it.
+    if (rows[0].min > 0) rows.unshift({ min: 0, value: 1 });
+    tables.push({ id: "jegy", rows });
+    derived.push({ id: "ossz", label: `Összpontszám (max ${fmt(sum)})`, expr: terms.map((t) => t.expr).join(" + ") });
+    return "table(jegy, ossz)";
+  }
+  return null;
 }
 
 /** A minimum given in points or as a percent of `of`. */
@@ -58,6 +87,8 @@ export function surveyRules(input: SurveyValues): { rules: SubjectRules | null; 
   if (!types) return { rules: null, errors: ["Add meg, milyen jegyet kap a hallgató."] };
   const calc = asText(v.grade_calculation);
   const examOnly = types === "exam_only";
+  // Grades counted as points: every 1–5 grade (zh, theory test) is added to the points.
+  const gradesAsPoints = !examOnly && calc === "component_grades_to_points";
 
   // ----- attendance -----
   if (v.attendance_mandatory === true) {
@@ -102,7 +133,9 @@ export function surveyRules(input: SurveyValues): { rules: SubjectRules | null; 
         if (scoring === "points") terms.push({ expr: id, max: max! });
         if (min !== null) zhGates.push({ id: `min_${id}`, label: `${labelOf(i)}: legalább ${fmt(min)} pont`, test: `${id} >= ${num(min)}`, onFail: "fail" });
         if (scoring === "pass_fail") zhGates.push({ id: `min_${id}`, label: `${labelOf(i)}: megfelelt`, test: `${id} >= 1`, onFail: "fail" });
+        if (gradeZh && gradesAsPoints) zhGates.push({ id: `min_${id}`, label: `${labelOf(i)}: legalább elégséges`, test: `${id} >= 2`, onFail: "fail" });
       }
+      if (gradeZh && gradesAsPoints && zhGates.length > 0) flag(b, "zh", "Feltételeztük, hogy minden zh-t legalább elégségesre kell teljesíteni.");
     }
   }
 
@@ -164,7 +197,21 @@ export function surveyRules(input: SurveyValues): { rules: SubjectRules | null; 
 
   // ----- theory test during the semester -----
   const theoryGates: Gate[] = [];
-  if (v.has_theory_test_in_semester === true) {
+  let theoryGrade = false;
+  if (v.has_theory_test_in_semester === true && gradesAsPoints) {
+    // Its 1–5 grade is what counts; the threshold in points is where the "elégséges" starts.
+    const t = asNumber(v.theory_test_pass_threshold);
+    components.push({ id: "elmelet", label: "Elméleti teszt", kind: "exam", scale: { kind: "grade" } });
+    theoryGrade = true;
+    theoryGates.push({ id: "elmelet", label: "Elméleti teszt: legalább elégséges", test: "elmelet >= 2", onFail: "fail" });
+    flag(
+      b,
+      "elmelet",
+      t
+        ? `Az elméleti teszt jegyét rögzíted; az elégségeshez ${fmt(t.value)}${t.percent ? "%" : " pont"} kell.`
+        : "Az elméleti teszt jegyét rögzíted; feltételeztük, hogy legalább elégséges kell."
+    );
+  } else if (v.has_theory_test_in_semester === true) {
     const t = asNumber(v.theory_test_pass_threshold);
     components.push({
       id: "elmelet",
@@ -203,23 +250,37 @@ export function surveyRules(input: SurveyValues): { rules: SubjectRules | null; 
     let grade: string | null = null;
     let label = "";
     if (calc === "raw_points_to_bands") {
-      if (gradeZh) b.errors.push("A zárthelyik jegyét nem lehet pontként összeadni; válaszd az átlagos módot.");
+      if (gradeZh) b.errors.push("A zárthelyik jegyét nem lehet pontként összeadni; válaszd az átlagos vagy a jegyekből pontot számoló módot.");
       if (terms.length === 0 && b.errors.length === 0) b.errors.push("Nincs pontozott összetevő, amelyből a ponthatárok szerinti jegy kiszámolható.");
-      const sum = terms.reduce((s, t) => s + t.max, 0);
-      const limits = GRADE_LIMIT_FIELDS.map((f) => asNumber(v[f]));
-      if (limits.some((l) => l === null)) b.errors.push("Add meg mind a négy ponthatárt (2-estől 5-ösig).");
-      else if (limits.some((l) => l!.percent) && limits.some((l) => !l!.percent)) b.errors.push("A ponthatárok egy része százalék, másik része pont; add meg egységesen.");
-      else if (terms.length > 0) {
+      grade = pointBands(b, v, terms, derived, tables);
+      label = "Pontszám alapján";
+    } else if (calc === "component_grades_to_points") {
+      const gradeZhIds = gradeZh ? zhIds : [];
+      if (gradeZhIds.length === 0 && !theoryGrade) {
+        b.errors.push("Nincs jeggyel értékelt összetevő; válaszd a ponthatáros módot.");
+      } else {
+        // A zh grade often counts more ("dupla pontszámmal"): the weight that makes the stated
+        // total come out, when there is a whole one, else 1.
+        const others = terms.reduce((s, t) => s + t.max, 0) + (theoryGrade ? 5 : 0);
         const stated = asNumber(v.final_total_max);
-        const total = stated && !stated.percent ? stated.value : sum;
-        const rows: { min: number; value: number }[] = [];
-        limits.forEach((l, i) => rows.push({ min: l!.percent ? round2((l!.value / 100) * total) : l!.value, value: i + 2 }));
-        // Below the lowest limit is 1; a lowest limit of 0 leaves nothing below it.
-        if (rows[0].min > 0) rows.unshift({ min: 0, value: 1 });
-        tables.push({ id: "jegy", rows });
-        derived.push({ id: "ossz", label: `Összpontszám (max ${fmt(sum)})`, expr: terms.map((t) => t.expr).join(" + ") });
-        grade = "table(jegy, ossz)";
-        label = "Pontszám alapján";
+        const zhMax = gradeZhIds.length * 5;
+        let weight = 1;
+        if (stated && !stated.percent && zhMax > 0) {
+          const w = (stated.value - others) / zhMax;
+          if (Number.isInteger(w) && w >= 1 && w <= 5) weight = w;
+        }
+        const gradeTerms = [
+          ...gradeZhIds.map((id) => ({ expr: weight === 1 ? id : `${weight} * ${id}`, max: 5 * weight })),
+          ...(theoryGrade ? [{ expr: "elmelet", max: 5 }] : []),
+        ];
+        const all = [...gradeTerms, ...terms];
+        const sum = all.reduce((s, t) => s + t.max, 0);
+        if (weight > 1) flag(b, "grade", `A zh-k jegyét ${weight}-szeres súllyal vettük, így jön ki a ${fmt(sum)} pontos maximum.`);
+        else if (stated && !stated.percent && stated.value !== sum)
+          flag(b, "grade", `Az összetevők összesen ${fmt(sum)} pontot adnak, a dokumentum ${fmt(stated.value)}-t ír; ellenőrizd a súlyokat.`);
+        else flag(b, "grade", "Az összetevők jegyét egyszeres súllyal adtuk össze.");
+        grade = pointBands(b, v, all, derived, tables);
+        label = "Jegyek pontként";
       }
     } else if (calc === "average_of_grades") {
       if (!gradeZh || zhIds.length === 0) b.errors.push("Az átlagos módhoz jeggyel értékelt zárthelyik kellenek.");
