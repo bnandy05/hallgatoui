@@ -7,6 +7,7 @@ import { getPlatform } from "@/lib/platforms";
 import type { TimetableSource } from "@/lib/types";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const day = (iso: string) => format(new Date(iso), "yyyy. MM. dd.");
 
@@ -19,6 +20,7 @@ export interface TimetableSourceItemProps {
 
 /** An imported Neptun timetable as a card on sky-blue timetable paper, taped flat like its classes. */
 export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }: TimetableSourceItemProps) {
+  const [confirmDialog, ask] = useConfirm();
   const sessions = useStore((s) => s.classSessions);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const removeTimetableSource = useStore((s) => s.removeTimetableSource);
@@ -29,8 +31,8 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
   const from = starts[0];
   const to = starts[starts.length - 1];
 
-  function handleDelete() {
-    if (confirm("Biztosan törlöd az órarendet? A tárgyaid és a határidőid megmaradnak.")) {
+  async function handleDelete() {
+    if (await ask({ title: "Törlöd az órarendet?", message: "A tárgyaid és a határidőid megmaradnak.", confirmLabel: "Törlés" })) {
       removeTimetableSource(source.id);
     }
   }
@@ -69,6 +71,7 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
           Törlés
         </Button>
       </div>
+      {confirmDialog}
     </li>
   );
 }

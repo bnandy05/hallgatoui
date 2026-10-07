@@ -7,19 +7,26 @@ import { useStore } from "@/lib/store";
 import { buildReminders } from "@/lib/reminders";
 import { formatRelative, urgencyOf } from "@/lib/radar";
 import { openCatchUp } from "@/lib/catchupEvents";
-import { instanceLabel, shortDayLabel } from "@/lib/rules/instances";
+import { instanceLabel, instanceSnapshot, shortDayLabel } from "@/lib/rules/instances";
+import { courseStanding } from "@/lib/rules/standing";
+import { resultId } from "@/lib/rules/types";
 import { budapestTime } from "@/lib/ical/budapest";
-import { RESULT_EXPECTED_DAYS, type CatchUpGroup } from "@/lib/catchup";
+import { canAwait, RESULT_EXPECTED_DAYS, type CatchUpField, type CatchUpGroup } from "@/lib/catchup";
 import { useCatchUpData } from "@/lib/useCatchUp";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import type { Deadline } from "@/lib/types";
 import { Popover } from "@/components/ui/Popover";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
+import { InstanceInput, type ResultPatch } from "@/components/requirements/InstanceInput";
 
-// The header's bell: what needs recording, results still to come, hot deadlines and exams known
-// from the rules. Everything is derived from the store on every render; nothing is stored.
+// The header's bell: what needs recording (a class or test with one or two fields is filled in
+// right here; "Még nincs" moves it to "Eredményre vár"), results still to come, courses at risk,
+// hot deadlines and exams known from the rules. Everything is derived from the store on every
+// render; nothing is stored.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Groups with at most this many fields are filled in inside the bell. */
+const INLINE_FIELDS = 2;
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -46,16 +53,45 @@ export function RemindersMenu() {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Deadline | null>(null);
   const courses = useStore((s) => s.courses);
+  const rules = useStore((s) => s.requirementRules);
+  const results = useStore((s) => s.requirementResults);
+  const setItems = useStore((s) => s.setRequirementResults);
   const { pending, awaiting, assessments, now } = useCatchUpData();
   const { visible } = useDedupedDeadlines();
-  const reminders = useMemo(
-    () => buildReminders({ pending, awaiting, deadlines: visible, assessments, now }),
-    [pending, awaiting, visible, assessments, now]
+  const risks = useMemo(
+    () =>
+      rules.flatMap((r) => {
+        const own = results.filter((x) => x.courseId === r.courseId);
+        const standing = own.some((x) => x.state === "recorded") ? courseStanding(r, own, now) : null;
+        return standing?.risk ? [{ courseId: r.courseId, text: standing.risk, danger: standing.danger }] : [];
+      }),
+    [rules, results, now]
   );
+  const reminders = useMemo(
+    () => buildReminders({ pending, awaiting, deadlines: visible, assessments, risks, now }),
+    [pending, awaiting, visible, assessments, risks, now]
+  );
+  const resultById = useMemo(() => new Map(results.map((r) => [r.id, r])), [results]);
+
+  function save(f: CatchUpField, patch: ResultPatch) {
+    setItems([
+      {
+        courseId: f.courseId,
+        componentId: f.target.id,
+        instanceKey: f.instance.key,
+        patch: patch && { ...patch, ...instanceSnapshot(f.instance) },
+      },
+    ]);
+  }
   const courseName = (id: string | null) => (id ? courses.find((c) => c.id === id)?.name : undefined);
   const close = useCallback((next: boolean) => setOpen(next), []);
   const empty =
-    reminders.pending.length + reminders.awaiting.length + reminders.deadlines.length + reminders.assessments.length === 0;
+    reminders.pending.length +
+      reminders.awaiting.length +
+      reminders.deadlines.length +
+      reminders.assessments.length +
+      reminders.risks.length ===
+    0;
   const urgent = reminders.awaiting.some((a) => a.overdue) || reminders.deadlines.some((d) => urgencyOf(d, now) === "overdue");
   const label = reminders.badge > 0 ? `Emlékeztetők (${reminders.badge})` : "Emlékeztetők";
 
@@ -110,25 +146,68 @@ export function RemindersMenu() {
           >
             {reminders.pending.slice(0, 6).map((g) => {
               const text = groupText(g, courseName(g.courseId));
+              const inline = g.fields.length <= INLINE_FIELDS;
               return (
-                <li key={g.key} className="flex items-center gap-2 py-1.5">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-semibold text-foreground">{text.title}</span>
-                    <span className="block truncate text-[12.5px] text-muted">{text.sub}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => fill(g.key)}
-                    className="h-8 shrink-0 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[12.5px] font-semibold text-heading hover:border-border-strong"
-                  >
-                    Kitöltés
-                  </button>
+                <li key={g.key} className="border-t border-border/60 py-2 first:border-t-0">
+                  <div className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-semibold text-foreground">{text.title}</span>
+                      <span className="block truncate text-[12.5px] text-muted">{text.sub}</span>
+                    </span>
+                    {!inline && (
+                      <button
+                        type="button"
+                        onClick={() => fill(g.key)}
+                        className="h-8 shrink-0 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[12.5px] font-semibold text-heading hover:border-border-strong"
+                      >
+                        Kitöltés
+                      </button>
+                    )}
+                  </div>
+                  {inline &&
+                    g.fields.map((f) => {
+                      const result = resultById.get(resultId(f.courseId, f.target.id, f.instance.key));
+                      return (
+                        <div key={f.target.id} className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                          {g.fields.length > 1 && <span className="w-full text-[12px] font-semibold text-muted">{f.target.label}</span>}
+                          <InstanceInput
+                            target={f.target}
+                            scale={f.scale}
+                            result={result}
+                            label={`${text.title}: ${f.target.label}`}
+                            onChange={(patch) => save(f, patch)}
+                          />
+                          {canAwait(f) && !result && (
+                            <button
+                              type="button"
+                              onClick={() => save(f, { state: "pending" })}
+                              className="h-9 rounded-[var(--radius)] px-2 text-[12.5px] text-muted hover:bg-wash/[0.05] hover:text-heading"
+                            >
+                              Még nincs
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                 </li>
               );
             })}
             {reminders.pending.length > 6 && (
               <li className="py-1 text-[12.5px] text-muted">és még {reminders.pending.length - 6}</li>
             )}
+          </Section>
+        )}
+
+        {reminders.risks.length > 0 && (
+          <Section title="Figyelem">
+            {reminders.risks.map((r) => (
+              <li key={r.courseId} className="py-1.5">
+                <Link href={`/targy/${r.courseId}`} onClick={() => setOpen(false)} className="block hover:underline">
+                  <span className="block truncate text-[13.5px] font-semibold text-foreground">{courseName(r.courseId)}</span>
+                  <span className={`block text-[12.5px] ${r.danger ? "font-semibold text-danger" : "text-warning"}`}>{r.text}</span>
+                </Link>
+              </li>
+            ))}
           </Section>
         )}
 

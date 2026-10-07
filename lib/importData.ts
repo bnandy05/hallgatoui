@@ -130,9 +130,12 @@ function requirementRulesFrom(value: unknown, courseIds: Set<string>): Requireme
     if (!checked.ok) continue;
     seen.add(o.courseId);
     const calendarLinks = linksFrom(o.calendarLinks, checked.rules);
+    const ids = new Set([...checked.rules.components.map((c) => c.id), ...checked.rules.retakes.map((r) => r.id)]);
+    const autoLinked = Array.isArray(o.autoLinked) ? [...new Set(o.autoLinked.filter((x): x is string => typeof x === "string" && ids.has(x)))] : [];
     out.push({
       ...checked.rules,
       ...(calendarLinks && { calendarLinks }),
+      ...(autoLinked.length > 0 && { autoLinked }),
       id: `rules:${o.courseId}`,
       courseId: o.courseId,
       source: o.source === "template" || o.source === "extracted" ? o.source : "manual",

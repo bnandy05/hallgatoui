@@ -2,11 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseIcs } from "@/lib/ical/parse";
 import { mergeTimetableImport, parseNeptunEvents } from "@/lib/ical/neptun";
-import { normalizeSemesterStart, proposeSemesterStart, semesterWeek, weekBounds } from "@/lib/timetable/semester";
+import { normalizeSemesterStart, proposeSemesterStart, proposeSemesterStartAt, semesterWeek, weekBounds } from "@/lib/timetable/semester";
 import { instanceLabel, instanceSnapshot, resolveInstances, SINGLE_KEY } from "@/lib/rules/instances";
-import { linkFrom, linksFrom, linkTargets, type ComponentLink } from "@/lib/rules/links";
+import { autoLinks, defaultDeadlineLinks, defaultLinks, linkFrom, linksFrom, linkTargets, type ComponentLink } from "@/lib/rules/links";
 import { awaitingResults, linkedInstances, pendingInputs, shouldPrompt, upcomingAssessments, type CatchUpInput } from "@/lib/catchup";
 import { buildReminders } from "@/lib/reminders";
+import { courseStanding } from "@/lib/rules/standing";
 import { resultId, type RequirementResult, type RequirementRules } from "@/lib/rules/types";
 import { deadlineIdentity } from "@/lib/ical/dedupe";
 import type { SemesterInfo, TimetableSource } from "@/lib/types";
@@ -210,4 +211,118 @@ test("in-tab notice: once a day, 30 minutes after the last linked class of the d
   assert.equal(notice?.key, "catchup:20261006");
   assert.equal(notice?.body, "Egy mai órád vár adatra.");
   assert.equal(at("2026-10-07T08:05:00Z"), null); // no class on Wednesday
+});
+
+test("röpzh is linked to the classes from week 2, attendance to every class, without asking", () => {
+  const ropzh = { id: "ropzh", label: "Röpzh-k", kind: "series" as const, item: "ropzh" as const, count: 3, scoring: { kind: "points" as const, max: 2 } };
+  const zh = { id: "zh1", label: "Zh", kind: "exam" as const, scale: { kind: "grade" as const } };
+  const own = sessions.filter((s) => s.courseId === "c");
+  const links = defaultLinks([ropzh, zh], new Set(), own, SINCE);
+  const expected: Record<string, ComponentLink> = { ropzh: { mode: "sessions", selector: { fromWeek: 2 }, since: SINCE } };
+  assert.deepEqual(links, expected);
+  // The first three classes from week 2 on; week 1 has none.
+  const items = resolveInstances(ropzh, links.ropzh, { courseId: "c", sessions, deadlines: [], semester, results: [] });
+  assert.deepEqual(items.map((i) => i.week), [2, 3, 4]);
+  // Not again for a component the rules already had (the user may have removed its link),
+  // not without classes, and not when the course mixes two Neptun groups.
+  assert.deepEqual(defaultLinks([ropzh], new Set(["ropzh"]), own, SINCE), {});
+  assert.deepEqual(defaultLinks([ropzh], new Set(), [], SINCE), {});
+  assert.deepEqual(defaultLinks([ropzh], new Set(), [{ kind: "ora", group: "1" }, { kind: "ora", group: "6" }], SINCE), {});
+  const attendance = { id: "jelen", label: "Jelenlét", kind: "attendance" as const };
+  assert.deepEqual(defaultLinks([attendance], new Set(), own, SINCE), { jelen: { mode: "sessions", selector: {}, since: SINCE } });
+  // Online quizzes are not written at the class.
+  assert.deepEqual(defaultLinks([{ ...ropzh, item: "quiz" as const }], new Set(), own, SINCE), {});
+});
+
+test("assignments, zh-s and quizzes are linked to their deadlines when it is clear", () => {
+  const dl = (id: string, title: string, due: string) =>
+    makeDeadline({ id, courseId: "c", title, due, source: "ical", feedId: "f", externalUid: id });
+  const ident = (d: ReturnType<typeof dl>) => ({ mode: "deadlines" as const, identities: [deadlineIdentity(d)], since: SINCE });
+  const assignment = (id: string, label: string) => ({ id, label, kind: "assignment" as const, outcomes: [{ id: "ok", label: "Elfogadva", points: 3, accepted: true }] });
+  const exam = (id: string, label: string) => ({ id, label, kind: "exam" as const, scale: { kind: "grade" as const } });
+  const b1 = assignment("beadando1", "1. beadandó");
+  const b2 = assignment("beadando2", "2. beadandó");
+  const zh1 = exam("zh1", "1. zh");
+  const zh2 = exam("zh2", "2. zh");
+  const theory = exam("elmelet", "Elméleti teszt");
+
+  // By number, whatever the due order; the course name's number does not confuse it.
+  const second = dl("a2", "Beadandó 2 – Avalonia", "2026-10-01T10:00:00Z");
+  const first = dl("a1", "Beadandó 1 – WinForms", "2026-12-01T10:00:00Z");
+  const z1 = dl("z1", "Analízis 2 ZH1", "2026-10-20T10:00:00Z");
+  const z2 = dl("z2", "Analízis 2 ZH2", "2026-12-10T10:00:00Z");
+  const pot = dl("p", "Analízis 2 pótZH", "2026-12-20T10:00:00Z");
+  const other = dl("o", "Konzultáció", "2026-11-20T10:00:00Z");
+  const all = [second, first, z1, z2, pot, other];
+  const links = defaultDeadlineLinks([b1, b2, zh1, zh2, theory], new Set(), "c", all, SINCE);
+  assert.deepEqual(links, { beadando1: ident(first), beadando2: ident(second), zh1: ident(z1), zh2: ident(z2) });
+
+  // Without numbers: in due order when the counts match, nothing when they do not.
+  const x = dl("x", "Beadandó", "2026-10-01T10:00:00Z");
+  const y = dl("y", "Beadandó (javított határidő nélkül)", "2026-11-01T10:00:00Z");
+  assert.deepEqual(defaultDeadlineLinks([b1, b2], new Set(), "c", [y, x], SINCE), { beadando1: ident(x), beadando2: ident(y) });
+  assert.deepEqual(defaultDeadlineLinks([b1, b2], new Set(), "c", [x], SINCE), {});
+  // A single "Zh" takes the only zh deadline; another course's deadlines are not looked at.
+  assert.deepEqual(defaultDeadlineLinks([exam("zh", "Zh")], new Set(), "c", [z1, { ...z2, courseId: "d" }], SINCE), { zh: ident(z1) });
+  // Components the rules already had keep what the user chose.
+  assert.deepEqual(defaultDeadlineLinks([b1, b2], new Set(["beadando1", "beadando2"]), "c", all, SINCE), {});
+
+  // A quiz series takes the quiz deadlines when there are exactly as many.
+  const quizzes = { id: "kviz", label: "Kvízek", kind: "series" as const, item: "quiz" as const, count: 2, scoring: { kind: "percent" as const, passAt: 50, onTimeOnly: true } };
+  assert.deepEqual(defaultDeadlineLinks([quizzes], new Set(), "c", [quiz2, quiz1], SINCE), {
+    kviz: { mode: "deadlines", identities: [deadlineIdentity(quiz1), deadlineIdentity(quiz2)], since: SINCE },
+  });
+  assert.deepEqual(defaultDeadlineLinks([{ ...quizzes, count: 3 }], new Set(), "c", [quiz1, quiz2], SINCE), {});
+});
+
+test("auto links: later data links what it makes clear, a decided component is never touched again", () => {
+  const ropzh = { id: "ropzh", label: "Röpzh-k", kind: "series" as const, item: "ropzh" as const, count: 3, scoring: { kind: "points" as const, max: 2 } };
+  const b1 = { id: "beadando1", label: "1. beadandó", kind: "assignment" as const, outcomes: [{ id: "ok", label: "Elfogadva", points: 3, accepted: true }] };
+  const rules = { courseId: "c", components: [ropzh, b1] };
+  const hw = makeDeadline({ id: "hw", courseId: "c", title: "Beadandó 1", due: "2026-10-20T10:00:00Z", source: "ical", feedId: "f", externalUid: "hw" });
+  // Rules saved before the timetable and the feed: nothing to link yet.
+  assert.deepEqual(autoLinks(rules, [], [], [], SINCE), {});
+  // The timetable arrives: the röpzh is linked; the feed arrives: the assignment too.
+  assert.deepEqual(Object.keys(autoLinks(rules, sessions, [], [], SINCE)), ["ropzh"]);
+  assert.deepEqual(Object.keys(autoLinks(rules, sessions, [hw], [], SINCE)).sort(), ["beadando1", "ropzh"]);
+  // Röpzh results already entered by number: a link would move them aside, so no link.
+  assert.deepEqual(Object.keys(autoLinks(rules, sessions, [hw], [rec("ropzh", "n:1")], SINCE)), ["beadando1"]);
+  // Linked already, or decided by the user (a removed link): left alone.
+  assert.deepEqual(autoLinks({ ...rules, calendarLinks: { ropzh: { mode: "weeks", weeks: [3] } }, autoLinked: ["beadando1"] }, sessions, [hw], [], SINCE), {});
+});
+
+test("the semester start is proposed from the whole export, an earlier semester left out", () => {
+  assert.equal(proposeSemesterStartAt(parsed, new Date("2026-10-07T12:00:00Z")), "2026-09-07");
+  // Before the term: the first upcoming class.
+  assert.equal(proposeSemesterStartAt(parsed, new Date("2026-08-20T12:00:00Z")), "2026-09-07");
+  // A spring class long before is another semester.
+  const spring = { kind: "ora" as const, start: "2026-03-02T08:00:00Z" };
+  assert.equal(proposeSemesterStartAt([spring, ...parsed], new Date("2026-10-07T12:00:00Z")), "2026-09-07");
+  assert.equal(proposeSemesterStartAt([], new Date()), null);
+});
+
+test("a course's standing: the grade range and the most pressing risk", () => {
+  const rules = {
+    schemaVersion: 1 as const,
+    components: [
+      { id: "jelen", label: "Jelenlét", kind: "attendance" as const, limit: { maxAbsences: 3, countExcused: true, onExceed: "none" as const } },
+      { id: "zh", label: "Zh", kind: "exam" as const, scale: { kind: "points" as const, max: 100 } },
+    ],
+    retakes: [],
+    derived: [],
+    tables: [{ id: "jegy", rows: [{ min: 0, value: 1 }, { min: 50, value: 2 }, { min: 60, value: 3 }, { min: 75, value: 4 }, { min: 90, value: 5 }] }],
+    outcomes: [{ id: "gyak", label: "Gyakorlati jegy", kind: "gyakorlat" as const, select: "first" as const, paths: [{ id: "alap", label: "Alap", grade: "table(jegy, zh)" }] }],
+    flags: [],
+  };
+  const absent = (i: number): RequirementResult => rec("jelen", `n:${i}`, { courseId: "c", value: { kind: "attendance", status: "unexcused" } });
+  const zh = (points: number): RequirementResult => rec("zh", "n:1", { value: { kind: "points", points } });
+  const now = new Date("2026-10-07T12:00:00Z");
+  assert.deepEqual(courseStanding(rules, [absent(1)], now), { grade: "1–5", label: "Gyakorlati jegy", final: false, risk: null, danger: false });
+  assert.equal(courseStanding(rules, [absent(1), absent(2)], now)!.risk, "Még 1 hiányzás fér bele");
+  const full = courseStanding(rules, [absent(1), absent(2), absent(3), zh(80)], now)!;
+  assert.deepEqual([full.grade, full.risk, full.danger], ["4", "Több hiányzás nem fér bele", true]);
+  assert.equal(courseStanding(rules, [1, 2, 3, 4].map(absent), now)!.risk, "Túllépted a hiányzási határt");
+  // In the bell, the severe ones come first and count in the badge.
+  const r = buildReminders({ pending: [], awaiting: [], deadlines: [], assessments: [], risks: [{ courseId: "a", text: "x", danger: false }, { courseId: "b", text: "y", danger: true }], now });
+  assert.deepEqual([r.risks.map((x) => x.courseId), r.badge], [["b", "a"], 1]);
 });

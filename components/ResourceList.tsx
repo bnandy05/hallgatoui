@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export interface ResourceListProps {
   courseId: string;
@@ -45,6 +46,7 @@ function fromResource(resource: Resource): ResourceFormState {
 }
 
 export function ResourceList({ courseId }: ResourceListProps) {
+  const [confirmDialog, ask] = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const addResource = useStore((s) => s.addResource);
   const updateResource = useStore((s) => s.updateResource);
@@ -67,9 +69,9 @@ export function ResourceList({ courseId }: ResourceListProps) {
     setEditing(null);
   }
 
-  function handleRemove(resource: Resource) {
+  async function handleRemove(resource: Resource) {
     if (!course) return;
-    if (confirm("Biztosan törlöd?")) {
+    if (await ask({ title: "Törlöd az anyagot?", confirmLabel: "Törlés" })) {
       removeResource(course.id, resource.id);
     }
   }
@@ -194,6 +196,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
         </li>
       </ul>
       {dialog}
+      {confirmDialog}
     </div>
   );
 }

@@ -19,10 +19,12 @@ import { Select } from "@/components/ui/Select";
 import { CopyField } from "@/components/ui/CopyField";
 import { Switch } from "@/components/ui/Switch";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Busy = "create" | "rotate" | "delete" | null;
 
 export function CalendarSubscriptionSettings() {
+  const [confirmDialog, ask] = useConfirm();
   const courses = useStore((s) => s.courses);
   const exportOptions = useStore((s) => s.exportOptions);
   const setExportOptions = useStore((s) => s.setExportOptions);
@@ -59,19 +61,25 @@ export function CalendarSubscriptionSettings() {
     setBusy(null);
   }
 
-  function handleRotate() {
-    if (
-      !confirm(
-        "Új linket kapsz, a régi megszűnik. Az Apple vagy a Google Naptárban újra hozzá kell adnod a naptárat. Folytatod?"
-      )
-    ) {
+  async function handleRotate() {
+    const ok = await ask({
+      title: "Új linket kérsz?",
+      message: "A régi link megszűnik. Az Apple vagy a Google Naptárban újra hozzá kell adnod a naptárat.",
+      confirmLabel: "Új link",
+    });
+    if (!ok) {
       return;
     }
     void run("rotate", rotateCalendarToken);
   }
 
-  function handleDisable() {
-    if (!confirm("Kikapcsolod? A feliratkozási link megszűnik, az adataid a fiókodban megmaradnak.")) {
+  async function handleDisable() {
+    const ok = await ask({
+      title: "Kikapcsolod a feliratkozást?",
+      message: "A feliratkozási link megszűnik, az adataid a fiókodban megmaradnak.",
+      confirmLabel: "Kikapcsolás",
+    });
+    if (!ok) {
       return;
     }
     void run("delete", async () => {
@@ -230,12 +238,6 @@ export function CalendarSubscriptionSettings() {
             label="Heti összefoglaló"
             description="Egész napos „Heti radar” esemény minden hétfőn."
           />
-          <Switch
-            checked={exportOptions.studyBlocks}
-            onChange={(v) => setExportOptions({ studyBlocks: v })}
-            label="Felkészülési idő"
-            description="Két egész napos blokk a kritikus határidők előtt."
-          />
         </div>
       </div>
 
@@ -261,6 +263,7 @@ export function CalendarSubscriptionSettings() {
           </Button>
         </div>
       )}
+      {confirmDialog}
     </section>
   );
 }

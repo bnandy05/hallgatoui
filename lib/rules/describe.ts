@@ -44,7 +44,8 @@ function componentLine(c: RuleComponent): string {
   }
 }
 
-export function describeRules(rules: SubjectRules): RulesSection[] {
+/** A readable name for every id a formula can use (components, parts, retakes, derived values, tables, outcomes). */
+export function ruleLabels(rules: SubjectRules): Record<string, string> {
   const labels: Record<string, string> = {};
   for (const c of rules.components) {
     labels[c.id] = c.label;
@@ -58,8 +59,33 @@ export function describeRules(rules: SubjectRules): RulesSection[] {
     labels[t.id] = t.id === "jegy" ? "a jegytáblázat" : owner ? `${owner.label} táblázata` : `a(z) ${t.id}`;
   }
   for (const o of rules.outcomes) labels[o.id] = o.label.toLowerCase().replace(/ jegy$/, "");
-  const f = (src: string) => describeFormula(src, labels).replace(/(táblázat|táblázata) táblázat szerint/g, "$1 szerint");
-  const post = (p: PostStep) => (p.kind === "cap" ? `legfeljebb ${p.max}` : `${p.delta > 0 ? "+" : "−"}${Math.abs(p.delta)} jegy, ha ${f(p.when)}`);
+  return labels;
+}
+
+/** A formula in Hungarian, with the rule set's names. */
+export function formulaDescriber(rules: SubjectRules): (src: string) => string {
+  const labels = ruleLabels(rules);
+  return (src) => describeFormula(src, labels).replace(/(táblázat|táblázata) táblázat szerint/g, "$1 szerint");
+}
+
+/** A table's name as a title ("Jegytáblázat", "Elméleti zh táblázata"). */
+export function tableTitle(rules: SubjectRules, tableId: string): string {
+  const name = (ruleLabels(rules)[tableId] ?? tableId).replace(/^a /, "");
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
+export const GATE_FAIL_TEXT = ON_FAIL;
+export const RETAKE_PICK_TEXT = PICK;
+
+/** A post step ("legfeljebb 4", "−1 jegy, ha …"). */
+export function postStepText(p: PostStep, f: (src: string) => string): string {
+  return p.kind === "cap" ? `legfeljebb ${p.max}` : `${p.delta > 0 ? "+" : "−"}${Math.abs(p.delta)} jegy, ha ${f(p.when)}`;
+}
+
+export function describeRules(rules: SubjectRules): RulesSection[] {
+  const labels = ruleLabels(rules);
+  const f = formulaDescriber(rules);
+  const post = (p: PostStep) => postStepText(p, f);
 
   const sections: RulesSection[] = [{ title: "Összetevők", lines: rules.components.map(componentLine) }];
   if (rules.retakes.length) {
@@ -73,11 +99,7 @@ export function describeRules(rules: SubjectRules): RulesSection[] {
   }
   const calc = [
     ...rules.derived.map((d) => `${d.label}: ${f(d.expr)}`),
-    ...rules.tables.map((t) => {
-      const rows = t.rows.map((row) => `≥ ${n(row.min)}: ${row.value}`);
-      const name = labels[t.id].replace(/^a /, "");
-      return `${name.charAt(0).toUpperCase()}${name.slice(1)}: ${rows.join(", ")}`;
-    }),
+    ...rules.tables.map((t) => `${tableTitle(rules, t.id)}: ${t.rows.map((row) => `≥ ${n(row.min)}: ${row.value}`).join(", ")}`),
   ];
   if (calc.length) sections.push({ title: "Számítás", lines: calc });
   for (const o of rules.outcomes) {

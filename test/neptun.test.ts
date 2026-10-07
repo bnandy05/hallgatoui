@@ -144,7 +144,7 @@ test("buildCalendar: orarend view and includeClasses", () => {
   assert.match(timetable, new RegExp(`UID:${sessionUid(sessions[0]).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 
   const deadlines = [{ id: "d", courseId: "c-an", title: "ZH", due: "2026-10-08T10:00:00.000Z", critical: false, done: false, source: "manual" as const }];
-  const base = { courses: [course], deadlines, classSessions: sessions, now, options: { weeklySummary: false, studyBlocks: false } };
+  const base = { courses: [course], deadlines, classSessions: sessions, now, options: { weeklySummary: false } };
   assert.equal(veventCount(buildCalendar(base)), 1, "classes are off by default");
   const withClasses = buildCalendar({ ...base, options: { ...base.options, includeClasses: true } });
   assert.equal(veventCount(withClasses), 1 + 149);

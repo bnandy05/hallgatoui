@@ -50,7 +50,7 @@ test("iCal UIDs derive from feedId + externalUid, not from the deadline id", () 
 
 test("views filter as documented", () => {
   const titlesFor = (param: string) =>
-    summaries(buildCalendar({ courses, deadlines, now, view: parseView(param, courses), options: { weeklySummary: false, studyBlocks: false } }));
+    summaries(buildCalendar({ courses, deadlines, now, view: parseView(param, courses), options: { weeklySummary: false } }));
   assert.equal(titlesFor("osszes").length, 3);
   assert.equal(titlesFor("kritikus").length, 1);
   assert.ok(titlesFor("kritikus")[0].includes("Beadandó 04"));
@@ -76,15 +76,14 @@ test("weekly summaries fall on Budapest Mondays", () => {
 
 test("a Sunday-night UTC deadline counts to the Budapest Monday week", () => {
   const late = makeDeadline({ id: "late", title: "Éjféli", due: "2026-10-11T22:30:00.000Z" }); // Mon 00:30 CEST
-  const ics = buildCalendar({ courses, deadlines: [late], now, options: { studyBlocks: false } });
+  const ics = buildCalendar({ courses, deadlines: [late], now });
   const uids = parseIcs(ics).map((e) => e.uid);
   assert.ok(uids.some((u) => u.startsWith("week-20261012@")));
   assert.ok(!uids.some((u) => u.startsWith("week-20261005@")));
 });
 
-test("study blocks cover the two days before a critical deadline", () => {
+test("no study blocks before critical deadlines (removed)", () => {
   const ics = buildCalendar({ courses, deadlines, now });
-  assert.match(ics, /UID:prep-a@hallgatoireteg/);
-  assert.match(ics, /DTSTART;VALUE=DATE:20261003/);
-  assert.match(ics, /DTEND;VALUE=DATE:20261005/);
+  assert.doesNotMatch(ics, /UID:prep-/);
+  assert.doesNotMatch(ics, /Készülés/);
 });

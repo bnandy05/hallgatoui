@@ -40,7 +40,6 @@ export function validateExportOptions(value: unknown): ExportOptions {
     includeDone: o.includeDone === true,
     alarms: o.alarms !== false,
     weeklySummary: o.weeklySummary !== false,
-    studyBlocks: o.studyBlocks !== false,
     dedupe: o.dedupe !== false,
     includeClasses: o.includeClasses === true,
   };

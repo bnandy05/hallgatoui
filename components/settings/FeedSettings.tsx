@@ -23,6 +23,7 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 import { TimetableSourceItem } from "@/components/settings/TimetableSourceItem";
 import { useTimetableImport } from "@/components/settings/useTimetableImport";
 import { SemesterField } from "@/components/settings/SemesterField";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const AUTO_COURSE = "";
 const DEFAULT_PLATFORM = "canvas";
@@ -57,6 +58,7 @@ function emptyForm(): FeedFormValues {
 }
 
 export function FeedSettings() {
+  const [confirmDialog, ask] = useConfirm();
   const feeds = useStore((s) => s.feeds);
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -110,8 +112,8 @@ export function FeedSettings() {
     ).length;
   }
 
-  function handleMarkPastDone(feedId: string, count: number) {
-    if (confirm(`${count} lejárt határidő késznek lesz jelölve. Folytatod?`)) {
+  async function handleMarkPastDone(feedId: string, count: number) {
+    if (await ask({ title: "Késznek jelölöd a lejártakat?", message: `${count} lejárt határidő késznek lesz jelölve.`, confirmLabel: "Késznek jelölés", tone: "primary" })) {
       markFeedPastDone(feedId);
     }
   }
@@ -292,8 +294,8 @@ export function FeedSettings() {
     setEditError(null);
   }
 
-  function handleDelete(feedId: string) {
-    if (confirm("Biztosan törlöd? A forrásból importált határidők is törlődnek.")) {
+  async function handleDelete(feedId: string) {
+    if (await ask({ title: "Törlöd a naptárat?", message: "A forrásból importált határidők is törlődnek.", confirmLabel: "Törlés" })) {
       removeFeed(feedId);
     }
   }
@@ -623,6 +625,7 @@ export function FeedSettings() {
 
       {timetable.dialogs}
       <DiscoveryDialog open={discoveryOpen} onClose={() => setDiscoveryOpen(false)} />
+      {confirmDialog}
     </section>
   );
 }

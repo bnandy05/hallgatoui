@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 /**
  * The course's requirements in one place: the rules as free text and links to the
  * requirement documents (resources of kind "kovetelmeny", kept out of "Anyagok").
  */
 export function RequirementsSection({ courseId }: { courseId: string }) {
+  const [confirmDialog, ask] = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const updateCourse = useStore((s) => s.updateCourse);
   const addResource = useStore((s) => s.addResource);
@@ -43,9 +45,9 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
     setEditingDoc(null);
   }
 
-  function removeDoc(doc: Resource) {
+  async function removeDoc(doc: Resource) {
     if (!course) return;
-    if (confirm("Biztosan törlöd a dokumentumot?")) removeResource(course.id, doc.id);
+    if (await ask({ title: "Törlöd a dokumentumot?", confirmLabel: "Törlés" })) removeResource(course.id, doc.id);
   }
 
   const dialogs = (
@@ -142,6 +144,7 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
         </div>
       </div>
       {dialogs}
+      {confirmDialog}
     </div>
   );
 }

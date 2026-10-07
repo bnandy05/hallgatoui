@@ -221,6 +221,8 @@ export interface AppStore extends AppData {
   ) => void;
   /** Ties a component (or retake slot) to classes, weeks or deadlines; null unlinks it. */
   setComponentLink: (courseId: string, componentId: string, link: ComponentLink | null) => void;
+  /** Links from `autoLinks` for components that still have none; remembered in `autoLinked`. */
+  applyAutoLinks: (courseId: string, links: Record<string, ComponentLink>) => void;
   /** Sets (or with null clears) week 1 of the semester; any date moves to its Monday. */
   setSemester: (start: string | null) => void;
   /** The catch-up popup was closed: it opens by itself again only for newer items. */
@@ -905,13 +907,23 @@ export const useStore = create<AppStore>()(
           const previous = state.requirementRules.find((r) => r.id === id);
           const rest = state.requirementRules.filter((r) => r.id !== id);
           if (!rules) return { requirementRules: rest };
-          const { updatedAt: _u, calendarLinks: _l, ...clean } = rules as RequirementRules;
+          const { updatedAt: _u, calendarLinks: _l, autoLinked: _a, ...clean } = rules as RequirementRules;
           void _u;
           void _l;
-          // Editing the rules keeps the calendar links of the components that are still there.
+          void _a;
+          // Editing the rules keeps the calendar links of the components that are still there, and
+          // what was decided about them (`autoLinked`); new components are linked by
+          // `RequirementAutoLink` once the data makes it clear.
           const ids = new Set([...clean.components.map((c) => c.id), ...clean.retakes.map((r) => r.id)]);
           const kept = Object.entries(previous?.calendarLinks ?? {}).filter(([cid]) => ids.has(cid));
-          const next: RequirementRules = { ...clean, id, courseId, ...(kept.length > 0 && { calendarLinks: Object.fromEntries(kept) }) };
+          const decided = (previous?.autoLinked ?? []).filter((cid) => ids.has(cid));
+          const next: RequirementRules = {
+            ...clean,
+            id,
+            courseId,
+            ...(kept.length > 0 && { calendarLinks: Object.fromEntries(kept) }),
+            ...(decided.length > 0 && { autoLinked: decided }),
+          };
           return { requirementRules: [...rest, next] };
         });
       },
@@ -951,7 +963,23 @@ export const useStore = create<AppStore>()(
           else delete links[componentId];
           const { calendarLinks: _old, ...rest } = rules;
           void _old;
-          const next: RequirementRules = { ...rest, ...(Object.keys(links).length > 0 && { calendarLinks: links }) };
+          // The user decided: the auto-linker never touches this component again.
+          const autoLinked = [...new Set([...(rules.autoLinked ?? []), componentId])];
+          const next: RequirementRules = { ...rest, autoLinked, ...(Object.keys(links).length > 0 && { calendarLinks: links }) };
+          return { requirementRules: state.requirementRules.map((r) => (r.id === rules.id ? next : r)) };
+        });
+      },
+      applyAutoLinks: (courseId, links) => {
+        set((state) => {
+          const rules = state.requirementRules.find((r) => r.courseId === courseId);
+          if (!rules) return state;
+          const fresh = Object.entries(links).filter(([cid]) => !rules.calendarLinks?.[cid] && !rules.autoLinked?.includes(cid));
+          if (fresh.length === 0) return state;
+          const next: RequirementRules = {
+            ...rules,
+            calendarLinks: { ...rules.calendarLinks, ...Object.fromEntries(fresh) },
+            autoLinked: [...(rules.autoLinked ?? []), ...fresh.map(([cid]) => cid)],
+          };
           return { requirementRules: state.requirementRules.map((r) => (r.id === rules.id ? next : r)) };
         });
       },

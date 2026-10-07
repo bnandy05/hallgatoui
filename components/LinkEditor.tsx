@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export interface LinkEditorProps {
   courseId: string;
@@ -27,6 +28,7 @@ function emptyForm(defaultPlatformId: string): LinkFormState {
 }
 
 export function LinkEditor({ courseId }: LinkEditorProps) {
+  const [confirmDialog, ask] = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const customPlatforms = useStore((s) => s.customPlatforms);
   const addLink = useStore((s) => s.addLink);
@@ -86,8 +88,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
     setEditingId(null);
   }
 
-  function handleRemove(linkId: string) {
-    if (confirm("Biztosan törlöd?")) {
+  async function handleRemove(linkId: string) {
+    if (await ask({ title: "Törlöd a linket?", confirmLabel: "Törlés" })) {
       removeLink(courseId, linkId);
     }
   }
@@ -258,6 +260,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           Új link
         </button>
       )}
+      {confirmDialog}
     </div>
   );
 }

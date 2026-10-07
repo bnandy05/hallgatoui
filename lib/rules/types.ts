@@ -160,6 +160,8 @@ export interface RequirementRules extends SubjectRules {
   templateId?: string;
   /** The student's calendar links per component or retake id (lib/rules/links.ts). */
   calendarLinks?: Record<string, ComponentLink>;
+  /** Components the auto-linker linked, or whose link the user set or removed: never auto-linked again. */
+  autoLinked?: string[];
   updatedAt?: string;
 }
 

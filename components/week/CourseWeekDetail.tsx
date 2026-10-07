@@ -27,6 +27,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ClassChip } from "@/components/week/ClassChip";
 import { DayAgenda } from "@/components/week/DayAgenda";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function BackLink() {
   return (
@@ -120,6 +121,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
 }
 
 export function CourseWeekDetail({ id }: { id: string }) {
+  const [confirmDialog, ask] = useConfirm();
   const hydrated = useDataReady();
   const course = useStore((s) => s.courses.find((c) => c.id === id));
   const deleteCourse = useStore((s) => s.deleteCourse);
@@ -173,9 +175,9 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const nextClass = nextSessionFor(course.id, courseSessions, now);
   const criticalCount = open.filter((d) => isCritical(d, now)).length;
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!course) return;
-    if (confirm("Biztosan törlöd a tárgyat? A kézzel felvett határidői és anyagai is törlődnek.")) {
+    if (await ask({ title: "Törlöd a tárgyat?", message: "A kézzel felvett határidői és anyagai is törlődnek.", confirmLabel: "Törlés" })) {
       setDeleting(true);
       router.push("/");
       deleteCourse(course.id);
@@ -362,6 +364,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <LinkEditor courseId={course.id} />
       </Dialog>
       <DeadlineDialog open={deadlineOpen} onClose={() => setDeadlineOpen(false)} defaultCourseId={course.id} />
+      {confirmDialog}
     </div>
   );
 }

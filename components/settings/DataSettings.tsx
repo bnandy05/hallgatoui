@@ -8,8 +8,10 @@ import { parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export function DataSettings() {
+  const [confirmDialog, ask] = useConfirm();
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
   const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
@@ -60,7 +62,7 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm("A mentés felülírja a fiókod jelenlegi adatait. Folytatod?")) {
+      if (!(await ask({ title: "Visszaállítod a mentést?", message: "A mentés felülírja a fiókod jelenlegi adatait.", confirmLabel: "Visszaállítás" }))) {
         return;
       }
 
@@ -78,8 +80,8 @@ export function DataSettings() {
     }
   }
 
-  function handleReset() {
-    if (confirm("Minden adat törlődik a fiókodból, minden eszközről. Biztosan folytatod?")) {
+  async function handleReset() {
+    if (await ask({ title: "Minden adatot törölsz?", message: "Minden adat törlődik a fiókodból, minden eszközről.", confirmLabel: "Minden törlése" })) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();
@@ -146,6 +148,7 @@ export function DataSettings() {
           Törlés
         </Button>
       </div>
+      {confirmDialog}
     </section>
   );
 }

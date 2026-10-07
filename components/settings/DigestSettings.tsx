@@ -9,6 +9,7 @@ import { deleteDigest, fetchDigest, saveDigest } from "@/lib/subscription/client
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Load =
   | { state: "loading" }
@@ -29,6 +30,7 @@ export function DigestSettings() {
 }
 
 function DigestForm() {
+  const [confirmDialog, ask] = useConfirm();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [frequency, setFrequency] = useState<DigestFrequency>("heti");
   const [busy, setBusy] = useState<"save" | "delete" | null>(null);
@@ -75,7 +77,7 @@ function DigestForm() {
   }
 
   async function remove() {
-    if (!confirm("Leiratkozol az e-mail-összefoglalóról?")) return;
+    if (!(await ask({ title: "Leiratkozol az összefoglalóról?", confirmLabel: "Leiratkozás" }))) return;
     setBusy("delete");
     setError(null);
     const result = await deleteDigest();
@@ -133,6 +135,7 @@ function DigestForm() {
           </Button>
         )}
       </div>
+      {confirmDialog}
     </form>
   );
 }

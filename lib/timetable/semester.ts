@@ -52,3 +52,30 @@ export function proposeSemesterStart(sessions: Pick<ClassSession, "kind" | "star
   for (const s of sessions) if (s.kind === "ora" && (earliest === null || s.start < earliest)) earliest = s.start;
   return earliest ? formatYmd(mondayOf(budapestDate(new Date(earliest)))) : null;
 }
+
+/** A break longer than this between two classes separates two semesters. */
+const SEMESTER_GAP_MS = 21 * DAY_MS;
+
+/**
+ * A guess for week 1 from a whole Neptun export (which may hold earlier semesters too): walking
+ * back from the last class before `now`, the first class after which there is no three-week break.
+ * Before a semester starts (the last class is long past), the first upcoming class.
+ */
+export function proposeSemesterStartAt(sessions: Pick<ClassSession, "kind" | "start">[], now: Date): string | null {
+  const classes = sessions
+    .filter((s) => s.kind === "ora")
+    .map((s) => Date.parse(s.start))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  if (classes.length === 0) return null;
+  const nowMs = now.getTime();
+  let i = -1;
+  for (let k = 0; k < classes.length && classes[k] <= nowMs; k++) i = k;
+  const monday = (ms: number) => formatYmd(mondayOf(budapestDate(new Date(ms))));
+  if (i === -1 || nowMs - classes[i] > SEMESTER_GAP_MS) {
+    const upcoming = classes.find((ms) => ms > nowMs);
+    return upcoming === undefined ? null : monday(upcoming);
+  }
+  while (i > 0 && classes[i] - classes[i - 1] < SEMESTER_GAP_MS) i--;
+  return monday(classes[i]);
+}

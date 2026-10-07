@@ -28,13 +28,11 @@ const HISTORY_DAYS = 60;
 const UID_DOMAIN = "hallgatoireteg";
 const TIME_ZONE = "Europe/Budapest";
 const SUMMARY_WEEKS = 4; // the current week and the next three
-const STUDY_BLOCK_DAYS = 2;
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   includeDone: false,
   alarms: true,
   weeklySummary: true,
-  studyBlocks: true,
   dedupe: true,
   includeClasses: false,
 };
@@ -225,22 +223,6 @@ function buildWeeklySummaries(
   return events;
 }
 
-/** All-day block covering the two Budapest days before a critical deadline. */
-function buildStudyBlock(
-  d: Deadline,
-  course: Course | undefined,
-  now: Date
-): ICAL.Component {
-  const due = new Date(d.due);
-  const dueDay = budapestDate(due);
-  const base = deadlineUid(d);
-  const event = allDayEvent(`prep-${base}`, addDays(dueDay, -STUDY_BLOCK_DAYS), dueDay, now);
-  const label = course ? course.code || course.name : "";
-  event.addPropertyWithValue("summary", `📚 Készülés: ${label ? `[${label}] ` : ""}${d.title}`);
-  event.addPropertyWithValue("description", `Határidő: ${formatBudapest(due)}`);
-  return event;
-}
-
 /** Sessions are identified like feed deadlines: by source and source UID, never by id. */
 export function sessionUid(s: ClassSession): string {
   return `class-${s.sourceId}-${shortHash(s.externalUid)}@${UID_DOMAIN}`;
@@ -355,9 +337,6 @@ export function buildCalendar(input: BuildCalendarInput): string {
     const course = d.courseId ? courseById.get(d.courseId) : undefined;
     cal.addSubcomponent(buildDeadlineEvent(d, course, options, now, appUrl, extras.get(d.id), feeds, customPlatforms)
     );
-    if (options.studyBlocks && d.critical && !d.done && dueMs > now.getTime()) {
-      cal.addSubcomponent(buildStudyBlock(d, course, now));
-    }
   }
 
   const sessions = input.classSessions ?? [];

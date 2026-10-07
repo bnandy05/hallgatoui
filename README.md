@@ -12,7 +12,7 @@ Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord�
 - **Összefésült naptár-előfizetés** – egy `.ics` link, ami minden forrást és a saját határidőidet is tartalmazza:
   - a kész elemek kimaradnak, a kritikusak 🔴 jelet és emlékeztetőt (1 nap és 1 óra előtte) kapnak;
   - **nézetek**: minden / csak kritikus / ZH-k / egy tárgy (`?nezet=…`), így tárgyanként külön színnel is feliratkozhatsz;
-  - hétfőnként **📋 Heti radar** összesítő, a kritikus határidők előtti két napon **📚 Készülés** blokk;
+  - hétfőnként **📋 Heti radar** összesítő;
   - ha egy forrás áthelyez egy határidőt, 48 óráig **(módosult)** jelzést kap;
   - a szerver magától is frissíti a forrásfeedeket, és szól, ha valamelyik több mint 24 órája nem elérhető.
 - **Órarend-import** – a Neptunból exportált `.ics` órarend (Naptár → Exportálás) a böngészőben dolgozódik fel, nem töltődik fel sehová. Egyszer hozzárendeled a tárgyakhoz az órákat, utána a heti menetrendben (halványabb, szaggatott keretű blokkokként), a tárgy oldalán és a naptár `?nezet=orarend` nézetében jelennek meg; a szünnapok külön jelölést kapnak.

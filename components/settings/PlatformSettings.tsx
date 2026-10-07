@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Input } from "@/components/ui/Input";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const DEFAULT_CUSTOM_COLOR = "#8b5cf6";
 
 export function PlatformSettings() {
+  const [confirmDialog, ask] = useConfirm();
   const customPlatforms = useStore((s) => s.customPlatforms);
   const addCustomPlatform = useStore((s) => s.addCustomPlatform);
   const updateCustomPlatform = useStore((s) => s.updateCustomPlatform);
@@ -29,12 +31,8 @@ export function PlatformSettings() {
     setNewColor(DEFAULT_CUSTOM_COLOR);
   }
 
-  function handleRemove(id: string) {
-    if (
-      confirm(
-        'Biztosan törlöd? Az ezt használó linkek „Egyéb” platformra kerülnek.'
-      )
-    ) {
+  async function handleRemove(id: string) {
+    if (await ask({ title: "Törlöd a platformot?", message: "Az ezt használó linkek „Egyéb” platformra kerülnek.", confirmLabel: "Törlés" })) {
       removeCustomPlatform(id);
     }
   }
@@ -113,6 +111,7 @@ export function PlatformSettings() {
           ))}
         </ul>
       </div>
+      {confirmDialog}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 export interface DialogProps {
@@ -15,6 +15,11 @@ export interface DialogProps {
   pinColor?: string;
   /** The paper the sheet is printed on: salmon for an overdue deadline. */
   tone?: "paper" | "salmon";
+  /**
+   * A dialog with steps: the name of the step on show. Changing it starts the new step at the
+   * top, and coming back to a step returns to where it was scrolled.
+   */
+  view?: string;
 }
 
 /**
@@ -32,8 +37,43 @@ export function Dialog({
   focusFieldOnTouch = false,
   pinColor,
   tone = "paper",
+  view,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const scrolls = useRef(new Map<string, number>());
+  const shownView = useRef(view);
+
+  // Each step's scroll position is kept as it goes (by the time a new step renders, the old one is
+  // already gone and the browser has clamped the position); the shown step is restored in layout,
+  // so it never flashes.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const remember = () => {
+      if (shownView.current !== undefined) scrolls.current.set(shownView.current, dialog.scrollTop);
+    };
+    // A step changes on a click or a key press inside the sheet: record the position before the
+    // handler runs too, since scroll events only arrive with the next frame.
+    dialog.addEventListener("scroll", remember, { passive: true });
+    dialog.addEventListener("click", remember, true);
+    dialog.addEventListener("keydown", remember, true);
+    return () => {
+      dialog.removeEventListener("scroll", remember);
+      dialog.removeEventListener("click", remember, true);
+      dialog.removeEventListener("keydown", remember, true);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || shownView.current === view) return;
+    shownView.current = view;
+    dialog.scrollTop = (view !== undefined && scrolls.current.get(view)) || 0;
+  }, [view]);
+
+  useEffect(() => {
+    if (!open) scrolls.current.clear();
+  }, [open]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -63,15 +103,22 @@ export function Dialog({
       event.preventDefault();
       onClose();
     };
+    // The backdrop closes the sheet only when the press started on it too: selecting text in a
+    // field and letting go past the sheet's edge must not throw the form away.
+    let pressedBackdrop = false;
+    const handlePointerDown = (event: PointerEvent) => {
+      pressedBackdrop = event.target === dialog;
+    };
     const handleClick = (event: MouseEvent) => {
-      if (event.target === dialog) {
-        onClose();
-      }
+      if (event.target === dialog && pressedBackdrop) onClose();
+      pressedBackdrop = false;
     };
     dialog.addEventListener("cancel", handleCancel);
+    dialog.addEventListener("pointerdown", handlePointerDown);
     dialog.addEventListener("click", handleClick);
     return () => {
       dialog.removeEventListener("cancel", handleCancel);
+      dialog.removeEventListener("pointerdown", handlePointerDown);
       dialog.removeEventListener("click", handleClick);
     };
   }, [onClose]);

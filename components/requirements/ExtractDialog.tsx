@@ -53,15 +53,19 @@ export function ExtractForm({
   onManual,
   onCancel,
   onWide,
+  onDirty,
 }: {
   course: { name: string; code?: string };
   replacing: boolean;
   canShare: boolean;
   onSave: (rules: SubjectRules, share: boolean) => void;
-  onManual: () => void;
+  /** Continue in the JSON, starting from the rules the review builds when it builds any. */
+  onManual: (rules?: SubjectRules) => void;
   onCancel: () => void;
   /** The review needs a wider sheet (form beside its preview). */
   onWide?: (wide: boolean) => void;
+  /** Closing now would throw away a reading (the form or the parser's answers). */
+  onDirty?: (dirty: boolean) => void;
 }) {
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>({ kind: "paste" });
@@ -72,6 +76,7 @@ export function ExtractForm({
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => onWide?.(step.kind === "survey"), [step.kind, onWide]);
+  useEffect(() => onDirty?.(step.kind === "survey" || step.kind === "parser"), [step.kind, onDirty]);
 
   async function handlePdf(file: File | undefined) {
     if (!file) return;
@@ -208,7 +213,7 @@ export function ExtractForm({
 
         <DialogActions>
           {chars > 0 && chars < MIN_CHARS && (
-            <p className="mr-auto self-center text-[13px] text-muted max-sm:basis-full max-sm:text-center">Ez még túl rövid.</p>
+            <p className="mr-auto self-center text-[13px] text-muted max-sm:!basis-full max-sm:text-center">Ez még túl rövid.</p>
           )}
           <Button type="button" variant="secondary" onClick={onCancel}>
             Mégse
@@ -236,7 +241,7 @@ export function ExtractForm({
           <Button type="button" variant="secondary" onClick={back}>
             Vissza
           </Button>
-          <Button type="button" onClick={onManual}>
+          <Button type="button" onClick={() => onManual()}>
             Kézi beállítás
           </Button>
         </DialogActions>
@@ -353,7 +358,7 @@ export function ExtractForm({
 
       <DialogActions>
         {open > 0 && (
-          <p className="mr-auto self-center text-[13px] text-muted max-sm:basis-full max-sm:text-center" aria-live="polite">
+          <p className="mr-auto self-center text-[13px] text-muted max-sm:!basis-full max-sm:text-center" aria-live="polite">
             Még {open} kérdés vár válaszra.
           </p>
         )}
@@ -361,7 +366,7 @@ export function ExtractForm({
           Vissza
         </Button>
         {!rules && open === 0 && (
-          <Button type="button" variant="secondary" onClick={onManual}>
+          <Button type="button" variant="secondary" onClick={() => onManual()}>
             Kézi beállítás
           </Button>
         )}

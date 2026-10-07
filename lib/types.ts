@@ -176,7 +176,6 @@ export interface ExportOptions {
   includeDone: boolean; // also list finished deadlines (prefixed with a check mark)
   alarms: boolean; // VALARMs for critical deadlines
   weeklySummary: boolean; // all-day "Heti radar" event on the Monday of the next 4 weeks
-  studyBlocks: boolean; // all-day study block for the 2 days before a critical deadline
   /**
    * Merge the same deadline from several sources into one. Governs the in-app lists too
    * (home, radar, course page, search, notifications), not only the calendar.

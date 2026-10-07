@@ -16,6 +16,7 @@ import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DuplicateSources } from "@/components/DuplicateSources";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -96,6 +97,7 @@ function DeadlineDetail({
   onClose: () => void;
   onEdit: () => void;
 }) {
+  const [confirmDialog, ask] = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -127,10 +129,10 @@ function DeadlineDetail({
   const seriesPosition = ordered ? ordered.findIndex((d) => d.id === deadline.id) + 1 : 0;
   const laterIds = ordered ? ordered.filter((d) => d.due >= deadline.due).map((d) => d.id) : [];
 
-  function handleDelete() {
+  async function handleDelete() {
     if (ordered) {
       setDeleteOpen(true);
-    } else if (confirm("Biztosan törlöd?")) {
+    } else if (await ask({ title: "Törlöd a határidőt?", confirmLabel: "Törlés" })) {
       onClose();
       removeDeadline(deadline.id);
     }
@@ -296,6 +298,7 @@ function DeadlineDetail({
           </Button>
         </DialogActions>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

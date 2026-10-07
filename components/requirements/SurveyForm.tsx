@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertTriangle, ArrowDown, Check } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowLeft, Check, Code } from "lucide-react";
 import {
   FIELD_META,
   SECTIONS,
@@ -67,7 +67,7 @@ export function SurveyForm({
   replacing: boolean;
   onSave: (rules: SubjectRules, share: boolean) => void;
   onBack: () => void;
-  onManual: () => void;
+  onManual: (rules?: SubjectRules) => void;
 }) {
   const [values, setValues] = useState<SurveyValues>(() => surveyValues(draft));
   const [confirmed, setConfirmed] = useState<ReadonlySet<FieldId>>(new Set());
@@ -195,9 +195,22 @@ export function SurveyForm({
         </div>
 
         <aside className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-inset px-4 py-4 lg:sticky lg:top-[5.5rem] lg:max-h-[calc(var(--visual-height,100dvh)-14rem)] lg:overflow-y-auto">
-          <div>
-            <h3 className="font-display text-[19px] text-heading">Ezt állítjuk be</h3>
-            <p className="mt-1 text-[12.5px] text-muted">Az űrlap minden módosításával frissül.</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-display text-[19px] text-heading">Ezt állítjuk be</h3>
+              <p className="mt-1 text-[12.5px] text-muted">Az űrlap minden módosításával frissül.</p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-mr-2 -mt-1 shrink-0"
+              title="A szabályok JSON-ban, az űrlap mostani állapotából"
+              onClick={() => onManual(built.rules ?? undefined)}
+            >
+              <Code className="h-3.5 w-3.5" aria-hidden />
+              JSON
+            </Button>
           </div>
           {built.rules ? (
             <RulesPreview rules={built.rules} />
@@ -225,18 +238,16 @@ export function SurveyForm({
       </div>
 
       <DialogActions>
-        <p className="mr-auto self-center text-[13px] text-muted max-sm:basis-full max-sm:text-center" aria-live="polite">
+        <p className="mr-auto self-center text-[13px] text-muted max-sm:!basis-full max-sm:text-center" aria-live="polite">
           {pending > 0
             ? `Még ${pending} mező vár átnézésre.`
             : built.rules
               ? "Minden átnézve, menthető."
               : "Az előnézet mutatja, mi hiányzik."}
         </p>
-        <Button type="button" variant="ghost" onClick={onBack}>
+        <Button type="button" variant="secondary" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" aria-hidden />
           Vissza
-        </Button>
-        <Button type="button" variant="secondary" onClick={onManual}>
-          Kézi beállítás
         </Button>
         <Button type="button" disabled={!canSave} onClick={() => built.rules && onSave(built.rules, canShare && share)}>
           Mentés

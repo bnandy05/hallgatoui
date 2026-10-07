@@ -14,6 +14,7 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DuplicateCheck } from "@/components/DuplicateCheck";
 import { RemindersMenu } from "@/components/RemindersMenu";
 import { CatchUpGate } from "@/components/catchup/CatchUpGate";
+import { RequirementAutoLink } from "@/components/RequirementAutoLink";
 import { KeyboardInset } from "@/components/KeyboardInset";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
@@ -121,6 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {hydrated && <ServiceWorkerRegister />}
       {dataReady && !bare && <NotificationScheduler />}
       {dataReady && !bare && <CatchUpGate />}
+      {dataReady && !bare && <RequirementAutoLink />}
       {dataReady && !bare && <DuplicateCheck />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">

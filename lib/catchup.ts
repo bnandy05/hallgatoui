@@ -72,6 +72,11 @@ export interface CatchUpField {
   scale?: Scale;
 }
 
+/** Fields whose result can come later ("Még nincs eredmény"); attendance and +/- are known at the class. */
+export function canAwait(f: Pick<CatchUpField, "target">): boolean {
+  return f.target.kind !== "attendance" && !(f.target.kind === "series" && f.target.scoring.kind === "plusMinus");
+}
+
 /** One slip of the catch-up: a class (attendance + röpzh together), a deadline, or one exam. */
 export interface CatchUpGroup {
   key: string;

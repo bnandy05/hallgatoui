@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useStore } from "@/lib/store";
-import type { CatchUpField, CatchUpGroup } from "@/lib/catchup";
+import { canAwait, type CatchUpField, type CatchUpGroup } from "@/lib/catchup";
 import { instanceLabel, instanceSnapshot, shortDayLabel } from "@/lib/rules/instances";
 import { resultId, type RequirementResult } from "@/lib/rules/types";
 import { budapestTime } from "@/lib/ical/budapest";
@@ -12,6 +12,9 @@ import { InstanceInput, type ResultPatch } from "@/components/requirements/Insta
 
 // "Mi történt az óráidon?": one slip per class (attendance and röpzh together), deadline or
 // exam that ended without a result. Every answer is saved at once, so closing loses nothing.
+// The quick path: the first score field has focus, Enter goes to the next empty one and, after
+// the last, finishes; "Kész" sends every score left empty on the pages seen to the reminders as
+// "Eredményre vár" (pending). Closing with X leaves them to record later.
 
 const PAGE_SIZE = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,6 +79,7 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
   const rules = useStore((s) => s.requirementRules);
   const setItems = useStore((s) => s.setRequirementResults);
   const [page, setPage] = useState(0);
+  const [seenPages, setSeenPages] = useState<Set<number>>(() => new Set([0]));
   const [showOld, setShowOld] = useState(false);
   // Children mount per open, so "now" is the time the dialog opened.
   const [openedAt] = useState(() => Date.now());
@@ -97,6 +101,31 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
     setItems([itemFor(field, patch)]);
   }
 
+  function goTo(next: number) {
+    setPage(next);
+    setSeenPages((prev) => new Set(prev).add(next));
+  }
+
+  /** Kész: every empty score on the pages seen waits for its result in the reminders. */
+  function finish() {
+    const recorded = new Map(useStore.getState().requirementResults.map((r) => [r.id, r]));
+    const seen = visible.filter((_, i) => seenPages.has(Math.floor(i / PAGE_SIZE)));
+    const items = seen.flatMap((g) => g.fields.filter((f) => canAwait(f) && !fieldHasResult(f, recorded)).map((f) => itemFor(f, { state: "pending" })));
+    if (items.length > 0) setItems(items);
+    onClose();
+  }
+
+  /** Enter in a score field: on to the next empty one, or finish after the last. */
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const input = event.target;
+    if (event.key !== "Enter" || !(input instanceof HTMLInputElement) || input.inputMode !== "decimal") return;
+    event.preventDefault();
+    const fields = [...event.currentTarget.querySelectorAll<HTMLInputElement>('input[inputmode="decimal"]')];
+    const next = fields.slice(fields.indexOf(input) + 1).find((f) => f.value === "");
+    if (next) next.focus();
+    else setTimeout(finish, 0); // after the field's own Enter has saved it
+  }
+
   function allPresent() {
     const items = slice.flatMap((g) =>
       g.fields
@@ -106,8 +135,10 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
     setItems(items);
   }
 
+  const emptyScores = open.some((g) => g.fields.some((f) => canAwait(f) && !fieldHasResult(f, byId)));
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" onKeyDown={onKeyDown}>
       <p className="text-[14px] text-muted">
         {open.length > 0 ? countLine(open) : "Mindent rögzítettél."} A válaszaidat azonnal mentjük.
       </p>
@@ -140,16 +171,20 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
 
       {pages > 1 && (
         <div className="flex items-center justify-between gap-2 text-[13px] text-muted">
-          <Button type="button" variant="ghost" size="sm" disabled={current === 0} onClick={() => setPage(current - 1)}>
+          <Button type="button" variant="ghost" size="sm" disabled={current === 0} onClick={() => goTo(current - 1)}>
             Vissza
           </Button>
           <span className="tabular-nums">
             {current + 1} / {pages}
           </span>
-          <Button type="button" variant="ghost" size="sm" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>
+          <Button type="button" variant="ghost" size="sm" disabled={current >= pages - 1} onClick={() => goTo(current + 1)}>
             Tovább
           </Button>
         </div>
+      )}
+
+      {emptyScores && (
+        <p className="text-[13px] text-muted">Amit üresen hagysz, az a csengőben vár az eredményre.</p>
       )}
 
       <DialogActions>
@@ -158,10 +193,7 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
             Mindenhol ott voltam
           </Button>
         )}
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Később
-        </Button>
-        <Button type="button" onClick={onClose}>
+        <Button type="button" onClick={finish}>
           Kész
         </Button>
       </DialogActions>
@@ -226,11 +258,11 @@ function CatchUpSlip({
           {group.fields.map((f) => {
             const result = byId.get(resultId(f.courseId, f.target.id, f.instance.key));
             const awaiting = result?.state === "pending";
-            const canAwait = f.target.kind !== "attendance" && !(f.target.kind === "series" && f.target.scoring.kind === "plusMinus");
             return (
               <div key={f.target.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
                 <span className="min-w-[7rem] text-[13.5px] font-semibold text-heading">{f.target.label}</span>
                 <span className="flex flex-1 flex-wrap items-center gap-2">
+                  {awaiting && <span className="rounded-[var(--radius)] bg-canary px-2 py-1 text-[12.5px] font-semibold text-heading">Eredményre vár</span>}
                   <InstanceInput
                     target={f.target}
                     scale={f.scale}
@@ -239,18 +271,6 @@ function CatchUpSlip({
                     onChange={(patch) => onSave(f, patch)}
                     labelOf={labelOf}
                   />
-                  {canAwait && (
-                    <button
-                      type="button"
-                      aria-pressed={awaiting}
-                      onClick={() => onSave(f, awaiting ? null : { state: "pending" })}
-                      className={`h-9 rounded-[var(--radius)] px-2.5 text-[13px] ${
-                        awaiting ? "bg-canary font-semibold text-heading" : "text-muted hover:bg-wash/[0.05] hover:text-heading"
-                      }`}
-                    >
-                      Még nincs eredmény
-                    </button>
-                  )}
                 </span>
               </div>
             );

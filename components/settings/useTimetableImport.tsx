@@ -10,9 +10,12 @@ import {
   type ParsedSession,
 } from "@/lib/ical/neptun";
 import { budapestInstant } from "@/lib/ical/budapest";
-import { parseYmd } from "@/lib/timetable/semester";
+import { normalizeSemesterStart, parseYmd, proposeSemesterStartAt } from "@/lib/timetable/semester";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
+import { Button } from "@/components/ui/Button";
+import { Dialog, DialogActions } from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
 
 const SOURCE_NAME = "Neptun órarend";
 
@@ -33,6 +36,13 @@ export interface TimetableImportOptions {
   url?: string;
 }
 
+/** The semester start is asked first, from the whole export, so this semester's past weeks come too. */
+interface SemesterQuestion {
+  events: IcalEventDTO[];
+  opts: TimetableImportOptions;
+  proposal: string;
+}
+
 export interface TimetableImport {
   /** Starts an import of Neptun events. Returns an error message, or null when it went (or is going) well. */
   importEvents: (events: IcalEventDTO[], opts?: TimetableImportOptions) => string | null;
@@ -50,6 +60,7 @@ export function useTimetableImport(): TimetableImport {
 
   const [pending, setPending] = useState<PendingImport | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [semesterQuestion, setSemesterQuestion] = useState<SemesterQuestion | null>(null);
 
   /** Subjects (and groups) the dialog has to ask about: all of them, or only the new ones on a re-import. */
   function subjectsToAsk(p: PendingImport) {
@@ -61,11 +72,18 @@ export function useTimetableImport(): TimetableImport {
     return (p.sourceId ? useStore.getState().timetableSources.find((s) => s.id === p.sourceId)?.subjectCourses : undefined) ?? {};
   }
 
-  function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}): string | null {
+  function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}, askSemester = true): string | null {
     const all = parseNeptunEvents(events);
     if (all.length === 0) return EMPTY_ERROR;
     // With a semester start, this semester's earlier classes come too (attendance refers to them).
     const semester = useStore.getState().semester;
+    if (!semester && askSemester) {
+      const proposal = proposeSemesterStartAt(all, new Date());
+      if (proposal) {
+        setSemesterQuestion({ events, opts, proposal });
+        return null;
+      }
+    }
     const start = semester ? parseYmd(semester.start) : null;
     const parsed = upcomingSessions(all, new Date(), start ? budapestInstant(start, 0, 0) : undefined);
     if (parsed.length === 0) return NO_UPCOMING_ERROR;
@@ -84,8 +102,19 @@ export function useTimetableImport(): TimetableImport {
     [sessions, editingId]
   );
 
+  function answerSemester(start: string | null) {
+    const question = semesterQuestion;
+    setSemesterQuestion(null);
+    if (!question) return;
+    if (start) useStore.getState().setSemester(start);
+    importEvents(question.events, question.opts, false);
+  }
+
   const dialogs = (
     <>
+      <Dialog open={semesterQuestion !== null} onClose={() => answerSemester(null)} title="Mikor kezdődött a félév?">
+        {semesterQuestion && <SemesterStep proposal={semesterQuestion.proposal} onAnswer={answerSemester} />}
+      </Dialog>
       <TimetableMappingDialog
         open={pending !== null}
         onClose={() => setPending(null)}
@@ -111,4 +140,30 @@ export function useTimetableImport(): TimetableImport {
   );
 
   return { importEvents, editMapping: setEditingId, dialogs };
+}
+
+/** Week 1 of the teaching period, proposed from the timetable; week numbers count from it. */
+function SemesterStep({ proposal, onAnswer }: { proposal: string; onAnswer: (start: string | null) => void }) {
+  const [draft, setDraft] = useState(proposal);
+  const normalized = draft ? normalizeSemesterStart(draft) : null;
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-[14px] text-muted">
+        Ettől számoljuk a heteket, például „röpzh a 2. héttől”. Az órarended alapján ezt javasoljuk; bármelyik napját
+        megadhatod, a hét hétfőjét vesszük.
+      </p>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[14px] font-semibold text-heading">A szorgalmi időszak első hete</span>
+        <Input type="date" value={draft} onChange={(e) => setDraft(e.target.value)} className="!w-auto" />
+      </label>
+      <DialogActions>
+        <Button type="button" variant="secondary" onClick={() => onAnswer(null)}>
+          Kihagyás
+        </Button>
+        <Button type="button" disabled={!normalized} onClick={() => onAnswer(normalized)}>
+          Mentés
+        </Button>
+      </DialogActions>
+    </div>
+  );
 }

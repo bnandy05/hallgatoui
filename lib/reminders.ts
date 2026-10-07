@@ -9,12 +9,20 @@ export const MAX_REMINDER_DEADLINES = 5;
 /** Older overdue deadlines are left to the Határidők page, as in the email digest. */
 const OVERDUE_LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000;
 
+/** A course's standing problem (`courseStanding().risk`): too many absences, a failed requirement. */
+export interface CourseRisk {
+  courseId: string;
+  text: string;
+  danger: boolean;
+}
+
 export interface Reminders {
   pending: CatchUpGroup[]; // Rögzítésre vár
   awaiting: AwaitingItem[]; // Eredményre vár
   deadlines: Deadline[]; // Közelgő határidők: overdue, critical, soon (at most 5)
   assessments: UpcomingAssessment[]; // Közelgő számonkérések
-  /** What needs the student now: pending groups, late awaiting results, overdue or critical deadlines. */
+  risks: CourseRisk[]; // Figyelem, the severe ones first
+  /** What needs the student now: pending groups, late awaiting results, overdue or critical deadlines, severe risks. */
   badge: number;
 }
 
@@ -25,8 +33,10 @@ export function buildReminders(input: {
   awaiting: AwaitingItem[];
   deadlines: Deadline[]; // deduplicated (useDedupedDeadlines().visible)
   assessments: UpcomingAssessment[];
+  risks?: CourseRisk[];
   now: Date;
 }): Reminders {
+  const risks = [...(input.risks ?? [])].sort((a, b) => Number(b.danger) - Number(a.danger));
   const ranked = input.deadlines
     .map((d) => ({ d, u: urgencyOf(d, input.now) }))
     .filter((x): x is { d: Deadline; u: keyof typeof ORDER } => x.u in ORDER)
@@ -38,6 +48,7 @@ export function buildReminders(input: {
     awaiting: input.awaiting,
     deadlines: ranked.slice(0, MAX_REMINDER_DEADLINES).map((x) => x.d),
     assessments: input.assessments,
-    badge: input.pending.length + input.awaiting.filter((a) => a.overdue).length + hot,
+    risks,
+    badge: input.pending.length + input.awaiting.filter((a) => a.overdue).length + hot + risks.filter((r) => r.danger).length,
   };
 }
