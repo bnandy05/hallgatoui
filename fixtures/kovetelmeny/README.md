@@ -29,8 +29,13 @@ student fills it in the form. Used by `test/rulesSurvey.test.ts` and as the inpu
 `npm run jev:survey -- <source.txt> "<course>" <survey.json>`.
 
 **jev-valaszok/** (real Jev output): the answers `jev-latest` gave to the owner's survey prompt for
-five real documents (analizis, eva, szamelm, bjog2, bmehalo), converted to the app's labels (counts
+five real documents (analizis, eva, szamelm, bjog2, bmehalo) as `<doc>.json`, and the answers the app itself got through the browser as `<doc>.app.json` (`"prompt": "app"`), converted to the app's labels (counts
 as `n<k>`, numbers as candidate ids), with only the picked candidates and the owner's expected
 values (every acceptable answer as a list). No document text is stored. `test/surveyRealAnswers.test.ts`
 reads them with `readSurvey`: no wrong field may reach the form unflagged. Add a document here
 whenever a live run (`npm run jev:survey`) shows a new failure.
+
+The `survey.json` files of the four rewritten documents predate two decisions and are partly out of
+date: dotnet is the same course as the real "eva", whose grade limits (31, 12, 17, 21, 26) now count,
+because component grades counted as points also end in point limits; analizis gives the röpdolgozat
+total (10 × 4 = 40) and the minimum per part (8), as the owner's real expected answers do.

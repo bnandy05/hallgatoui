@@ -14,6 +14,7 @@ import {
   emptySurvey,
   expectedValues,
   numberCandidates,
+  UP_TO_REASON,
   readSurvey,
   scoreSurvey,
   surveyRules,
@@ -87,12 +88,12 @@ test("the request has 24 questions, one per field, with the right shapes", () =>
   assert.equal(Object.keys(body.questions).length, 24);
   for (const id of FIELD_IDS) {
     const q = body.questions[id];
-    assert.match(q.instructions, /`course`/, id);
+    assert.match(q.instructions, /`document`/, id);
     const kind = FIELD_META[id].kind;
     assert.equal(q.type, kind === "yesno" ? "noul" : "choice", id);
     if (kind === "point") {
       assert.deepEqual(Object.keys(q.criteria!), ["none", ...candidates.map((c) => c.id)], id);
-      assert.equal(q.criteria!.none, "The document states no such number.");
+      assert.ok(typeof q.criteria!.none === "string" && q.criteria!.none.length > 10, `${id}: none says what it means`);
       for (const c of candidates) assert.equal(q.criteria![c.id], c.text);
     }
     if (kind === "count") {
@@ -629,4 +630,21 @@ test("a gate in doubt leaves a detail that says none alone", () => {
     assert.equal(d.fields[id].value, null, id);
     assert.ok(!d.fields[id].reasons.some((r) => /^Attól függ/.test(r)), `${id}: ${d.fields[id].reasons.join("|")}`);
   }
+});
+
+test("candidates: a number the text closes a range with ('…ig') is marked up-to", () => {
+  const c = numberCandidates("A jegy: 74 pontig elégséges (2), 75–98 pont: közepes, 45%-ig elégtelen, 60-ig, 80 pont felett jeles.");
+  const upTo = (t: string) => c.find((x) => x.text === t)!.upTo === true;
+  assert.deepEqual([upTo("74"), upTo("45%"), upTo("60"), upTo("80"), upTo("75")], [true, true, true, false, false]);
+});
+
+test("an up-to number picked as a lower end is flagged", () => {
+  const text = "A jegy: 74 pontig elégséges (2), 75–98 pont: közepes (3), 99–122 pont: jó (4), 123 ponttól jeles (5).";
+  const c = numberCandidates(text);
+  const id = (t: string) => c.find((x) => x.text === t)!.id;
+  const d = readSurvey({ grade2_min_points: choice(id("74"), 0.98), grade3_min_points: choice(id("75"), 0.98), zh_max_points: choice(id("74"), 0.98) }, c);
+  assert.equal(d.fields.grade2_min_points.flagged, true);
+  assert.ok(d.fields.grade2_min_points.reasons.includes(UP_TO_REASON));
+  assert.equal(d.fields.grade3_min_points.reasons.includes(UP_TO_REASON), false);
+  assert.equal(d.fields.zh_max_points.reasons.includes(UP_TO_REASON), false, "a maximum may well be an upper end");
 });

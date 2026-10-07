@@ -22,8 +22,23 @@ import {
 
 /** A choice answer is flagged for review below this confidence. */
 export const CHOICE_REVIEW_BELOW = 0.7;
-/** A Noul answer with P(yes) inside this open band is flagged for review. */
-export const NOUL_REVIEW_BAND: readonly [number, number] = [0.25, 0.75];
+/**
+ * A Noul answer with P(yes) inside this band (exclusive) is flagged for review. Wider on the yes
+ * side: a part that exists opens fields, and real wrong yeses came at 0.59–0.79 (October 2026).
+ */
+export const NOUL_REVIEW_BAND: readonly [number, number] = [0.25, 0.8];
+
+/** Fields that ask for a lower end: a number the text gives as an upper end ("74 pontig") is suspect. */
+const LOWER_ENDS = new Set<FieldId>([
+  "zh_min_points",
+  "quick_test_min_points",
+  "theory_test_pass_threshold",
+  "grade2_min_points",
+  "grade3_min_points",
+  "grade4_min_points",
+  "grade5_min_points",
+]);
+export const UP_TO_REASON = "A szövegben ez a szám felső határ („…ig”), nem alsó; nézd meg, mi a sáv alja.";
 
 export const MISSING_REASON = "Nem kaptunk választ, add meg te.";
 export const EMPTY_REASON = "Töltsd ki a dokumentum alapján.";
@@ -105,6 +120,11 @@ function fieldOf(id: FieldId, a: RawAnswer | undefined, candidates: Candidate[])
   if (a.confidence < CHOICE_REVIEW_BELOW) {
     flagged = true;
     reasons.push(`Bizonytalan válasz (${pct(a.confidence)}).`);
+  }
+  const picked = meta.kind === "point" ? candidates.find((c) => c.id === a.choice) : undefined;
+  if (picked?.upTo && LOWER_ENDS.has(id)) {
+    flagged = true;
+    reasons.push(UP_TO_REASON);
   }
   if (meta.kind === "enum" && a.choice in ALWAYS_FLAGGED) {
     flagged = true;

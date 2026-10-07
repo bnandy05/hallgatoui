@@ -1,0 +1,257 @@
+{
+  "course": "Analízis I",
+  "prompt": "app",
+  "candidates": [
+    {
+      "id": "c5",
+      "text": "40",
+      "value": 40,
+      "percent": false,
+      "context": "ell leírni (2 pont). Így összesen 40 pontot lehet elérni. Ez a rész si"
+    },
+    {
+      "id": "c6",
+      "text": "8",
+      "value": 8,
+      "percent": false,
+      "context": "i kérdések összpontszáma legalább 8 pont, és a gyakorlati példák összp"
+    },
+    {
+      "id": "c7",
+      "text": "11",
+      "value": 11,
+      "percent": false,
+      "context": "s a zh akkor sikeres, ha legalább 11 pontos. Z1, illetve Z2 jelöli az"
+    },
+    {
+      "id": "c8",
+      "text": "30",
+      "value": 30,
+      "percent": false,
+      "context": "orlati jegy: 1 elégséges (2), ha 30 ≤ Ö ≤ 45, közepes (3), ha 46 ≤ Ö"
+    },
+    {
+      "id": "c10",
+      "text": "46",
+      "value": 46,
+      "percent": false,
+      "context": ", ha 30 ≤ Ö ≤ 45, közepes (3), ha 46 ≤ Ö ≤ 60, jó (4), ha 61 ≤ Ö ≤ 80,"
+    },
+    {
+      "id": "c12",
+      "text": "61",
+      "value": 61,
+      "percent": false,
+      "context": "s (3), ha 46 ≤ Ö ≤ 60, jó (4), ha 61 ≤ Ö ≤ 80, jeles (5), ha 81 ≤ Ö ≤"
+    },
+    {
+      "id": "c15",
+      "text": "81",
+      "value": 81,
+      "percent": false,
+      "context": "4), ha 61 ≤ Ö ≤ 80, jeles (5), ha 81 ≤ Ö ≤ 100. iv) Elégtelen (1) gyak"
+    },
+    {
+      "id": "c16",
+      "text": "100",
+      "value": 100,
+      "percent": false,
+      "context": "≤ Ö ≤ 80, jeles (5), ha 81 ≤ Ö ≤ 100. iv) Elégtelen (1) gyakorlati jeg"
+    },
+    {
+      "id": "c30",
+      "text": "6",
+      "value": 6,
+      "percent": false,
+      "context": "ezők alapján: a) 5 pont: 2-es, b) 6 pont: 3-as, c) 7 pont: 4-es, d) 8"
+    }
+  ],
+  "answers": {
+    "grade_types": {
+      "type": "choice",
+      "choice": "practice_and_exam",
+      "confidence": 1
+    },
+    "attendance_mandatory": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_quick_tests": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_assignment": {
+      "type": "noul",
+      "noul": 0.38
+    },
+    "has_theory_test_in_semester": {
+      "type": "noul",
+      "noul": 0.22
+    },
+    "has_retake": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_offered_exam_grade": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "zh_scoring": {
+      "type": "choice",
+      "choice": "points",
+      "confidence": 1
+    },
+    "grade_calculation": {
+      "type": "choice",
+      "choice": "raw_points_to_bands",
+      "confidence": 1
+    },
+    "max_absences": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1
+    },
+    "zh_count": {
+      "type": "choice",
+      "choice": "n2",
+      "confidence": 1
+    },
+    "quick_test_count": {
+      "type": "choice",
+      "choice": "n10",
+      "confidence": 1
+    },
+    "assignment_count": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.45
+    },
+    "zh_max_points": {
+      "type": "choice",
+      "choice": "c5",
+      "confidence": 0.99
+    },
+    "zh_min_points": {
+      "type": "choice",
+      "choice": "c7",
+      "confidence": 1
+    },
+    "quick_test_total_max": {
+      "type": "choice",
+      "choice": "c5",
+      "confidence": 0.98
+    },
+    "quick_test_min_points": {
+      "type": "choice",
+      "choice": "c6",
+      "confidence": 1
+    },
+    "assignment_points_on_time": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.58
+    },
+    "theory_test_pass_threshold": {
+      "type": "choice",
+      "choice": "c30",
+      "confidence": 0.34
+    },
+    "final_total_max": {
+      "type": "choice",
+      "choice": "c16",
+      "confidence": 0.98
+    },
+    "grade2_min_points": {
+      "type": "choice",
+      "choice": "c8",
+      "confidence": 0.99
+    },
+    "grade3_min_points": {
+      "type": "choice",
+      "choice": "c10",
+      "confidence": 1
+    },
+    "grade4_min_points": {
+      "type": "choice",
+      "choice": "c12",
+      "confidence": 1
+    },
+    "grade5_min_points": {
+      "type": "choice",
+      "choice": "c15",
+      "confidence": 1
+    }
+  },
+  "expected": {
+    "grade_types": [
+      "practice_and_exam"
+    ],
+    "attendance_mandatory": [
+      true
+    ],
+    "has_quick_tests": [
+      true
+    ],
+    "has_assignment": [
+      false
+    ],
+    "has_theory_test_in_semester": [
+      false
+    ],
+    "has_retake": [
+      true
+    ],
+    "has_offered_exam_grade": [
+      true
+    ],
+    "zh_scoring": [
+      "points"
+    ],
+    "grade_calculation": [
+      "raw_points_to_bands"
+    ],
+    "zh_count": [
+      "2"
+    ],
+    "quick_test_count": [
+      "10"
+    ],
+    "assignment_count": [
+      "none"
+    ],
+    "zh_max_points": [
+      "40"
+    ],
+    "zh_min_points": [
+      "11"
+    ],
+    "quick_test_total_max": [
+      "40"
+    ],
+    "quick_test_min_points": [
+      "8"
+    ],
+    "assignment_points_on_time": [
+      "none"
+    ],
+    "theory_test_pass_threshold": [
+      "none",
+      "6"
+    ],
+    "final_total_max": [
+      "100"
+    ],
+    "grade2_min_points": [
+      "30"
+    ],
+    "grade3_min_points": [
+      "46"
+    ],
+    "grade4_min_points": [
+      "61"
+    ],
+    "grade5_min_points": [
+      "81"
+    ]
+  }
+}

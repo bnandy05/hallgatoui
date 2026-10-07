@@ -24,6 +24,7 @@ export { buildSurveyRequest, SURVEY_MAX_DOC_CHARS, SURVEY_MODEL, type SurveyBody
 export {
   CHOICE_REVIEW_BELOW,
   NOUL_REVIEW_BAND,
+  UP_TO_REASON,
   componentTotal,
   consistency,
   emptySurvey,

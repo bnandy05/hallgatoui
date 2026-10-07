@@ -1,0 +1,213 @@
+{
+  "course": "Büntető eljárásjog II.",
+  "prompt": "app",
+  "candidates": [
+    {
+      "id": "c0",
+      "text": "3",
+      "value": 3,
+      "percent": false,
+      "context": "Kötelező órai részvétel: maximum 3 hiányzás engedélyezett a félév sor"
+    },
+    {
+      "id": "c1",
+      "text": "50–60%",
+      "value": 50,
+      "upper": 60,
+      "percent": true,
+      "context": "rt minimum pontszám (jellemzően 50–60%) megléte. Pótlási lehetőség: a"
+    }
+  ],
+  "answers": {
+    "grade_types": {
+      "type": "choice",
+      "choice": "practice_and_exam",
+      "confidence": 1
+    },
+    "attendance_mandatory": {
+      "type": "noul",
+      "noul": 0.99
+    },
+    "has_quick_tests": {
+      "type": "noul",
+      "noul": 0.1
+    },
+    "has_assignment": {
+      "type": "noul",
+      "noul": 0.23
+    },
+    "has_theory_test_in_semester": {
+      "type": "noul",
+      "noul": 0.72
+    },
+    "has_retake": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_offered_exam_grade": {
+      "type": "noul",
+      "noul": 0.12
+    },
+    "zh_scoring": {
+      "type": "choice",
+      "choice": "points",
+      "confidence": 0.96
+    },
+    "grade_calculation": {
+      "type": "choice",
+      "choice": "not_described",
+      "confidence": 0.99
+    },
+    "max_absences": {
+      "type": "choice",
+      "choice": "c0",
+      "confidence": 1
+    },
+    "zh_count": {
+      "type": "choice",
+      "choice": "n3",
+      "confidence": 1
+    },
+    "quick_test_count": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.59
+    },
+    "assignment_count": {
+      "type": "choice",
+      "choice": "n3",
+      "confidence": 0.94
+    },
+    "zh_max_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.91
+    },
+    "zh_min_points": {
+      "type": "choice",
+      "choice": "c1",
+      "confidence": 0.85
+    },
+    "quick_test_total_max": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.89
+    },
+    "quick_test_min_points": {
+      "type": "choice",
+      "choice": "c1",
+      "confidence": 0.88
+    },
+    "assignment_points_on_time": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.63
+    },
+    "theory_test_pass_threshold": {
+      "type": "choice",
+      "choice": "c1",
+      "confidence": 0.94
+    },
+    "final_total_max": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.92
+    },
+    "grade2_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.63
+    },
+    "grade3_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.95
+    },
+    "grade4_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.99
+    },
+    "grade5_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1
+    }
+  },
+  "expected": {
+    "grade_types": [
+      "practice_and_exam"
+    ],
+    "attendance_mandatory": [
+      true
+    ],
+    "has_quick_tests": [
+      false
+    ],
+    "has_assignment": [
+      false
+    ],
+    "has_theory_test_in_semester": [
+      false
+    ],
+    "has_retake": [
+      true
+    ],
+    "has_offered_exam_grade": [
+      false
+    ],
+    "zh_scoring": [
+      "points",
+      "not_described"
+    ],
+    "grade_calculation": [
+      "not_described",
+      "other"
+    ],
+    "zh_count": [
+      "3"
+    ],
+    "quick_test_count": [
+      "none"
+    ],
+    "assignment_count": [
+      "none"
+    ],
+    "zh_max_points": [
+      "none"
+    ],
+    "zh_min_points": [
+      "50",
+      "50%",
+      "60%",
+      "none"
+    ],
+    "quick_test_total_max": [
+      "none"
+    ],
+    "quick_test_min_points": [
+      "none"
+    ],
+    "assignment_points_on_time": [
+      "none"
+    ],
+    "theory_test_pass_threshold": [
+      "none"
+    ],
+    "final_total_max": [
+      "none"
+    ],
+    "grade2_min_points": [
+      "none"
+    ],
+    "grade3_min_points": [
+      "none"
+    ],
+    "grade4_min_points": [
+      "none"
+    ],
+    "grade5_min_points": [
+      "none"
+    ]
+  }
+}

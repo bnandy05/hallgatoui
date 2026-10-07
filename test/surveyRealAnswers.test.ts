@@ -1,5 +1,6 @@
-// Real Jev answers (jev-latest, the owner's survey prompt, October 2026) for five documents, read by
-// the survey reader. The bar: nothing wrong may reach the form unflagged, and the flags stay few
+// Real Jev answers (jev-latest, October 2026) for five documents, read by the survey reader: one set
+// from the owner's prompt run outside the app (`<doc>.json`), one from the app itself through the
+// browser (`<doc>.app.json`, prompt "app"). The bar: nothing wrong may reach the form unflagged, and the flags stay few
 // enough that the student reads them. Fixtures: fixtures/kovetelmeny/jev-valaszok (only the
 // answers, the picked number candidates and the owner's expected values; no document text).
 
@@ -9,9 +10,14 @@ import { readFileSync, readdirSync } from "node:fs";
 import { FIELD_IDS, readSurvey, type Candidate, type FieldId } from "@/lib/rules/extract/survey";
 
 const DIR = "fixtures/kovetelmeny/jev-valaszok";
+// The app's own run (2026-10-07, after the prompt was aligned with the owner's).
+const RIGHT_APP = 109;
+const FLAGGED_APP = 27;
 
 interface Fixture {
   course: string;
+  /** "app" when the answers came from the app's own request. */
+  prompt?: string;
   candidates: Candidate[];
   answers: Record<string, unknown>;
   /** Every acceptable answer, as the owner writes them: true, "points", "40", "50%", "none". */
@@ -26,7 +32,7 @@ const fixtures = readdirSync(DIR)
   .map((f) => [f.replace(/\.json$/, ""), JSON.parse(readFileSync(`${DIR}/${f}`, "utf8")) as Fixture] as const);
 
 test("real answers: nothing wrong reaches the form unflagged", () => {
-  assert.equal(fixtures.length, 5);
+  assert.equal(fixtures.length, 10);
   for (const [name, fx] of fixtures) {
     const draft = readSurvey(fx.answers, fx.candidates);
     for (const id of FIELD_IDS) {
@@ -39,11 +45,11 @@ test("real answers: nothing wrong reaches the form unflagged", () => {
   }
 });
 
-test("real answers: most fields are right and few are flagged", () => {
+function tally(set: Fixture[]) {
   let right = 0;
   let total = 0;
   let flagged = 0;
-  for (const [, fx] of fixtures) {
+  for (const fx of set) {
     const draft = readSurvey(fx.answers, fx.candidates);
     for (const id of FIELD_IDS) {
       const ok = fx.expected[id];
@@ -54,13 +60,23 @@ test("real answers: most fields are right and few are flagged", () => {
       if (f.flagged) flagged++;
     }
   }
-  assert.equal(total, 115);
-  assert.ok(right >= 107, `right: ${right}/${total}`);
-  assert.ok(flagged <= 25, `flagged: ${flagged}/${total}`);
+  return { right, total, flagged };
+}
+
+test("real answers: most fields are right and few are flagged", () => {
+  const owner = tally(fixtures.filter(([, f]) => f.prompt !== "app").map(([, f]) => f));
+  assert.equal(owner.total, 115);
+  assert.ok(owner.right >= 107, `owner's prompt, right: ${owner.right}/${owner.total}`);
+  assert.ok(owner.flagged <= 25, `owner's prompt, flagged: ${owner.flagged}`);
+  const app = tally(fixtures.filter(([, f]) => f.prompt === "app").map(([, f]) => f));
+  assert.equal(app.total, 115);
+  assert.ok(app.right >= RIGHT_APP, `app, right: ${app.right}/${app.total}`);
+  assert.ok(app.flagged <= FLAGGED_APP, `app, flagged: ${app.flagged}`);
 });
 
 test("component grades counted as points still have point limits (eva)", () => {
   const fx = fixtures.find(([n]) => n === "eva")![1];
+  for (const [n, other] of fixtures) if (n === "eva.app") assert.equal(other.prompt, "app");
   const d = readSurvey(fx.answers, fx.candidates);
   assert.equal(d.fields.grade_calculation.value, "component_grades_to_points");
   assert.deepEqual(

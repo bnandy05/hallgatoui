@@ -23,108 +23,161 @@ export interface SurveyBody {
   questions: Record<string, SurveyQuestion>;
 }
 
-const TESTS = "main written tests (zárthelyi, zh, nagyzh, dolgozat; not röpzh, kvíz or other short tests)";
+// The wording is the owner's tested prompt (October 2026: 113/115 right on five real documents
+// before the app's reading rules). Change it only with a live run against the fixtures
+// (`npm run jev:survey`) and keep `test/surveyRealAnswers.test.ts` green.
 
-const NOUL: Partial<Record<FieldId, { instructions: string; criteria?: { true: string; false: string } }>> = {
+const NOUL: Partial<Record<FieldId, { instructions: string; criteria: { true: string; false: string } }>> = {
   attendance_mandatory: {
-    instructions:
-      "Does `document` make attendance at the classes of `course` compulsory (all of them, a share of them, or all labs), or set a limit on absences beyond which the student fails or gets no grade?",
+    instructions: "Does `document` state that attending classes is mandatory (a részvétel kötelező), or set a limit on absences?",
     criteria: {
-      true: "Yes: attendance is compulsory, or an absence limit or minimum attendance is stated (e.g. 'legfeljebb 3 hiányzás', 'a foglalkozások 70%-án részt kell venni', 'részvétel az összes laboron').",
-      false:
-        "No: the document only says how the classes are held, recommends attending, or says nothing about attendance.",
+      true: "Attendance is explicitly mandatory, or a maximum number of absences is given.",
+      false: "The document only says how classes are held (e.g. in person) without making attendance a requirement.",
     },
   },
   has_quick_tests: {
     instructions:
-      "Besides the main written tests, does `course` have a series of short tests during the semester (röpzh, röpdolgozat, kiszh, beugró, kvíz, short online tests) that count towards the result, according to `document`?",
+      "Does the course in `document` have short recurring tests at the start of classes (röpzh, röpdolgozat, kis zh, beugró)?",
+    criteria: {
+      true: "There are short recurring in-class tests.",
+      false: "There are no short recurring in-class tests; only larger zh-s, exams or assignments.",
+    },
   },
   has_assignment: {
-    instructions:
-      "Does `course` have assignments that the student submits and that count towards the result (beadandó, házi feladat, projekt, programozási feladat), according to `document`?",
+    instructions: "Does the course in `document` require submitting homework assignments or projects (beadandó, házi feladat)?",
+    criteria: {
+      true: "At least one assignment must be submitted and is evaluated.",
+      false: "No assignment to submit is part of the requirements.",
+    },
   },
   has_theory_test_in_semester: {
     instructions:
-      "During the teaching weeks of the semester, does `course` have a separate theory test (elméleti zh, elméleti teszt, definíciók és tételek számonkérése) that the student must pass, according to `document`? Answer no if theory is only tested as part of the final exam, kollokvium or szigorlat, even if that exam has a written theory part, and answer no for short entry tests before labs or classes (beugró), which are short tests, not a theory test.",
+      "Does every student of the course in `document` write a separate theory test (elméleti zh / elméleti dolgozat) during the semester or at its end, apart from the exam?",
+    criteria: {
+      true: "A theory test is part of the regular semester requirements for all students.",
+      false: "There is no such theory test, or it only applies to a special group of students.",
+    },
   },
   has_retake: {
-    instructions:
-      "According to `document`, can the student of `course` retake or improve the main written tests of the semester (pótzh, javító zh, pótló dolgozat)?",
+    instructions: "Does `document` offer a retake or make-up for a failed or missed zh (pótzh, javító zh, pótlás)?",
+    criteria: {
+      true: "A make-up or retake of a zh is offered.",
+      false: "No zh retake or make-up is described.",
+    },
   },
   has_offered_exam_grade: {
     instructions:
-      "According to `document`, can a student of `course` get an offered exam grade (megajánlott jegy) based on the semester's work, without taking the exam?",
+      "Can a student earn an offered exam grade (megajánlott jegy / megajánlott vizsgajegy) through semester work in `document`?",
+    criteria: {
+      true: "An offered exam grade is possible.",
+      false: "No offered exam grade is described.",
+    },
   },
 };
 
 const ENUM: Partial<Record<FieldId, { instructions: string; criteria: Criteria }>> = {
   grade_types: {
-    instructions: "According to `document`, which grades does a student of `course` receive?",
+    instructions: "Which final grades does a student have to earn in the course described in `document`?",
     criteria: {
-      practice_grade_only: "Only a term/practice grade (gyakorlati jegy, évközi jegy, folyamatos számonkérés); there is no exam.",
-      exam_only:
-        "Only an exam grade (kollokvium, vizsga, szigorlat); work during the semester at most qualifies the student for the exam.",
-      practice_and_exam: "Two separate grades: a practice grade for the semester's work and a separate exam grade.",
+      practice_grade_only: "Only a practical grade (gyakorlati jegy). No separate exam grade (vizsgajegy / kollokvium) is described.",
+      exam_only: "Only an exam grade (vizsgajegy / kollokvium). No practical grade.",
+      practice_and_exam: "Both a practical grade (gyakorlati jegy) and a separate exam grade (vizsgajegy).",
       unclear: "The document does not make this clear.",
     },
   },
   zh_scoring: {
-    instructions: `How are the ${TESTS} of \`course\` assessed in \`document\`?`,
+    instructions:
+      "How are the practical/midterm tests (zh, zárthelyi, gépes zh, dolgozat) of the course in `document` scored? Ignore the theory test and quick tests.",
     criteria: {
-      points: "Each test is scored in points (or percent).",
-      grade_1_5: "Each test gets a grade from 1 to 5.",
-      pass_fail: "Each test is only passed or failed (megfelelt / nem felelt meg).",
-      no_zh: "The course has no main written tests during the semester.",
-      not_described: "There are such tests but the document does not say how they are assessed.",
+      points: "Each zh earns a numeric point score, possibly with a minimum score to pass.",
+      grade_1_5: "Each zh gets a 1-5 grade (ötfokozatú skála) rather than a point score.",
+      pass_fail: "Each zh is only passed or failed, with no points or grade.",
+      no_zh: "The course has no zh.",
+      not_described: "The document does not say how zh-s are scored.",
     },
   },
   grade_calculation: {
-    instructions:
-      "How is the grade of `course` (the practice grade, or the exam grade if there is no practice grade) computed from the results in `document`?",
+    instructions: "How is the practical grade (gyakorlati jegy) calculated in `document`?",
     criteria: {
-      raw_points_to_bands: "The points of the components are added up and point or percentage limits give the grade.",
+      raw_points_to_bands:
+        "Points earned on tests are added up (possibly with a formula) and the total is converted to a grade with point ranges.",
       component_grades_to_points:
-        "Each component first gets its own grade, which is converted into points or weighted before the final grade is computed.",
-      average_of_grades: "Each component gets a grade from 1 to 5 and the final grade is their (possibly weighted) average.",
-      other: "Another method.",
-      not_described: "The document does not say.",
+        "Components first get their own 1-5 grades, these are counted as points (some with double weight), and the sum is converted to a grade with point ranges.",
+      average_of_grades: "The practical grade is a plain average of component grades.",
+      other: "Some other method.",
+      not_described: "The document does not describe how the practical grade is calculated.",
     },
   },
 };
 
-const COUNT: Partial<Record<FieldId, string>> = {
-  zh_count: `How many ${TESTS} does a student of \`course\` write during the semester according to \`document\`? Count each regular test once; do not count retakes (pótzh, javító zh). Choose 'none' if there are none.`,
-  quick_test_count:
-    "How many short tests (röpzh, röpdolgozat, kiszh, beugró, kvíz) does a student of `course` write during the semester according to `document`? Choose 'none' if their number is not stated or there are none.",
-  assignment_count:
-    "How many assignments (beadandó, házi feladat, projekt) must a student of `course` submit according to `document`? Choose 'none' if their number is not stated or there are none.",
+const COUNT: Partial<Record<FieldId, { instructions: string; none: string }>> = {
+  zh_count: {
+    instructions:
+      "How many practical/midterm tests (zh, zárthelyi, gépes zh, dolgozat) must students write during the semester in `document`? Do not count the theory test, retakes or quick tests.",
+    none: "The document does not say how many zh-s there are.",
+  },
+  quick_test_count: {
+    instructions: "How many short in-class quick tests (röpzh / röpdolgozat) are written during the semester in `document`?",
+    none: "There are no quick tests, or their number is not stated.",
+  },
+  assignment_count: {
+    instructions: "How many assignments (beadandó) must be submitted in `document`?",
+    none: "There are no assignments, or their number is not stated.",
+  },
 };
 
-const GRADE_NAMES: Record<number, string> = { 2: "elégséges = 2", 3: "közepes = 3", 4: "jó = 4", 5: "jeles = 5" };
-const gradeLimit = (g: number) =>
-  `What is the lowest total score or percentage that earns grade ${g} (${GRADE_NAMES[g]}) in \`course\` according to \`document\`? If the document gives a range for this grade, choose the range or its lower end.`;
-
-const POINT: Partial<Record<FieldId, string>> = {
-  max_absences:
-    "How many absences from the classes of `course` does `document` allow at most? Choose 'none' if no number of absences is stated (for example when only a minimum attendance percentage is given).",
-  zh_max_points:
-    "What is the maximum score of ONE main written test (zárthelyi, zh) of `course` in `document`? Not the total of all tests, and not a short test (röpzh, kvíz).",
-  zh_min_points:
-    "What minimum score must the student reach on EACH main written test (zárthelyi, zh) of `course` according to `document`? Choose 'none' if there is no per-test minimum.",
-  quick_test_total_max:
-    "What is the maximum total score of ALL short tests (röpzh, kvíz, kiszh) of `course` together, according to `document`?",
-  quick_test_min_points:
-    "What minimum total score must the student collect from the short tests (röpzh, kvíz, kiszh) of `course` according to `document`? Choose 'none' if there is no such minimum.",
-  assignment_points_on_time:
-    "How many points is ONE assignment (beadandó, házi feladat) of `course` worth when submitted on time, according to `document`?",
-  theory_test_pass_threshold:
-    "What score or percentage must the student reach to pass the theory test held during the semester (elméleti zh, elméleti teszt) of `course`, according to `document`? Choose 'none' if no such threshold is stated.",
-  final_total_max:
-    "What is the maximum total score from which the grade of `course` is computed, according to `document`?",
-  grade2_min_points: gradeLimit(2),
-  grade3_min_points: gradeLimit(3),
-  grade4_min_points: gradeLimit(4),
-  grade5_min_points: gradeLimit(5),
+const POINT: Partial<Record<FieldId, { instructions: string; none: string }>> = {
+  max_absences: {
+    instructions: "What is the maximum number of absences (hiányzás) allowed in `document`?",
+    none: "No maximum number of absences is given (for example only a minimum attendance percentage, or nothing).",
+  },
+  zh_max_points: {
+    instructions: "What is the maximum number of points a single zh is worth in `document`?",
+    none: "The zh-s are not scored in points (e.g. they get a 1-5 grade), or the maximum is not stated.",
+  },
+  zh_min_points: {
+    instructions: "What is the minimum number of points needed for a single zh to count as passed (sikeres) in `document`?",
+    none: "The pass condition of a zh is not given in points (e.g. it is a grade of at least 2), or it is not stated.",
+  },
+  quick_test_total_max: {
+    instructions:
+      "What is the maximum total number of points that can be collected on all quick tests (röpzh / röpdolgozat) together in `document`?",
+    none: "There are no quick tests, or this is not stated.",
+  },
+  quick_test_min_points: {
+    instructions:
+      "What is the minimum number of quick-test points (in each required part) needed for the quick-test part to be successful in `document`?",
+    none: "There are no quick tests, or no minimum is stated.",
+  },
+  assignment_points_on_time: {
+    instructions: "How many points is an assignment (beadandó) worth if it is submitted on time and accepted in `document`?",
+    none: "Assignments are not scored in points, or there are none.",
+  },
+  theory_test_pass_threshold: {
+    instructions:
+      "In the in-semester theory test (elméleti zh) of `document`, what is the minimum number of points or correct answers for a passing (elégséges) result?",
+    none: "There is no in-semester theory test, or its pass threshold is not stated.",
+  },
+  final_total_max: {
+    instructions: "What is the highest possible total score (the top of the jeles band) used to calculate the practical grade in `document`?",
+    none: "The practical grade is not based on a point total, or the maximum is not stated.",
+  },
+  grade2_min_points: {
+    instructions: "What is the minimum total score for an elégséges (2) practical grade in `document`?",
+    none: "No point range for elégséges (2) is given.",
+  },
+  grade3_min_points: {
+    instructions: "What is the minimum total score for a közepes (3) practical grade in `document`?",
+    none: "No point range for közepes (3) is given.",
+  },
+  grade4_min_points: {
+    instructions: "What is the minimum total score for a jó (4) practical grade in `document`?",
+    none: "No point range for jó (4) is given.",
+  },
+  grade5_min_points: {
+    instructions: "What is the minimum total score for a jeles (5) practical grade in `document`?",
+    none: "No point range for jeles (5) is given.",
+  },
 };
 
 const COUNT_WORDS = [
@@ -148,14 +201,14 @@ const COUNT_WORDS = [
 /** n1…n15, as the count questions' labels. */
 export const COUNT_LABELS = COUNT_WORDS.map((_, i) => `n${i + 1}`);
 
-export function countCriteria(): Criteria {
-  const out: Criteria = { none: "The document states no such count, or there are none." };
+export function countCriteria(none = "The document states no such count, or there are none."): Criteria {
+  const out: Criteria = { none };
   COUNT_WORDS.forEach((w, i) => (out[`n${i + 1}`] = `${i + 1} (${w})`));
   return out;
 }
 
-export function pointCriteria(candidates: Candidate[]): Criteria {
-  const out: Criteria = { none: "The document states no such number." };
+export function pointCriteria(candidates: Candidate[], none = "The document states no such number."): Criteria {
+  const out: Criteria = { none };
   for (const c of candidates) out[c.id] = c.text;
   return out;
 }
@@ -171,14 +224,16 @@ export function buildSurveyRequest(
     const kind = FIELD_META[id].kind;
     if (kind === "yesno") {
       const q = NOUL[id]!;
-      questions[id] = { type: "noul", instructions: q.instructions, ...(q.criteria && { criteria: q.criteria }) };
+      questions[id] = { type: "noul", instructions: q.instructions, criteria: q.criteria };
     } else if (kind === "enum") {
       const q = ENUM[id]!;
       questions[id] = { type: "choice", instructions: q.instructions, criteria: q.criteria };
     } else if (kind === "count") {
-      questions[id] = { type: "choice", instructions: COUNT[id]!, criteria: countCriteria() };
+      const q = COUNT[id]!;
+      questions[id] = { type: "choice", instructions: q.instructions, criteria: countCriteria(q.none) };
     } else {
-      questions[id] = { type: "choice", instructions: POINT[id]!, criteria: pointCriteria(candidates) };
+      const q = POINT[id]!;
+      questions[id] = { type: "choice", instructions: q.instructions, criteria: pointCriteria(candidates, q.none) };
     }
   }
   const name = course.code ? `${course.name} (${course.code})` : course.name;

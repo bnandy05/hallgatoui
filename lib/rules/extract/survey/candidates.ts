@@ -9,7 +9,12 @@ export interface Candidate {
   upper?: number; // the upper bound of a range
   percent: boolean;
   context: string; // about 70 characters around the first occurrence, whitespace collapsed
+  /** The text says "up to" this number ("74 pontig", "45%-ig"): an upper end, not a lower one. */
+  upTo?: true;
 }
+
+// "74 pontig", "74-ig", "45%-ig", "45 %-ig": the number closes a range from above.
+const UP_TO_RE = /^\s?(?:%|pont)?-?ig(?![\p{L}])/u;
 
 export const MAX_CANDIDATES = 150;
 const MAX_VALUE = 1000;
@@ -34,7 +39,15 @@ export function numberCandidates(text: string): Candidate[] {
   const seen = new Set<string>();
   const out: Candidate[] = [];
 
-  const add = (literal: string, value: number, upper: number | undefined, percent: boolean, at: number, length: number) => {
+  const add = (
+    literal: string,
+    value: number,
+    upper: number | undefined,
+    percent: boolean,
+    at: number,
+    length: number,
+    upTo = false
+  ) => {
     if (out.length >= MAX_CANDIDATES) return;
     if (!Number.isFinite(value) || value > MAX_VALUE || (upper !== undefined && upper > MAX_VALUE)) return;
     const key = normal(literal);
@@ -42,7 +55,7 @@ export function numberCandidates(text: string): Candidate[] {
     seen.add(key);
     const from = Math.max(0, at - Math.floor((CONTEXT_CHARS - length) / 2));
     const context = text.slice(from, at + length + Math.ceil((CONTEXT_CHARS - length) / 2)).replace(/\s+/g, " ").trim();
-    out.push({ id: `c${out.length}`, text: literal, value, ...(upper !== undefined && { upper }), percent, context });
+    out.push({ id: `c${out.length}`, text: literal, value, ...(upper !== undefined && { upper }), percent, context, ...(upTo && { upTo: true as const }) });
   };
 
   for (const m of scan.matchAll(NUMBER_RE)) {
@@ -51,7 +64,7 @@ export function numberCandidates(text: string): Candidate[] {
     const first = a + (pa ? "%" : "");
     if (b === undefined) {
       if (parse(a) >= 1900 && parse(a) <= 2100) continue;
-      add(first, parse(a), undefined, !!pa, at, whole.length);
+      add(first, parse(a), undefined, !!pa, at, whole.length, UP_TO_RE.test(scan.slice(at + whole.length, at + whole.length + 8)));
       continue;
     }
     const percent = !!(pa || pb);
