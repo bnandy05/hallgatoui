@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, FileText, Upload } from "lucide-react";
 import { describeRules } from "@/lib/rules/describe";
-import { extractRules, MAX_EXTRACT_CHARS, NO_MENTION, type Answers } from "@/lib/rules/extract";
+import { extractRules, MAX_EXTRACT_CHARS, type Answers } from "@/lib/rules/extract";
+import { emptySurvey, type SurveyDraft } from "@/lib/rules/extract/survey";
 import type { SubjectRules } from "@/lib/rules/types";
 import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
@@ -13,30 +14,40 @@ import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { Textarea } from "@/components/ui/Textarea";
 import { PdfTextError, readPdfText } from "./pdfText";
+import { SurveyForm } from "./SurveyForm";
 
-// Setup from the requirements document (pasted, or a PDF read in the browser): the parser runs
-// here, Jev (through our server) answers the questions it can answer confidently, the student
-// answers the rest, and only a result that passes every check can be saved. When the Hungarian
-// patterns don't understand the text, a guided questionnaire reads it instead (mode "guided"):
-// its rules exist only once the questions are answered. A rejected result offers the manual setup.
+// Setup from the requirements document (pasted, or a PDF read in the browser). The server has Jev
+// read the whole text once (a survey of typed questions) and the student confirms every flagged
+// field in a prefilled form (SurveyForm). When Jev is not available, the Hungarian-pattern parser
+// runs here instead: if it understands the text, the student answers its open questions and
+// checks the preview; if not, the form starts empty. Only a result that passes every check can be
+// saved, and a rejected one offers the manual setup.
 
 /** More options than this show as a dropdown instead of pills. */
 const MAX_PILLS = 8;
 
-interface JevAnswer {
-  option: string;
-  confidence: number;
+const UNAVAILABLE = "Az automatikus értelmezés most nem érhető el, töltsd ki a dokumentum alapján.";
+
+type Step =
+  | { kind: "paste" }
+  | { kind: "loading" }
+  | { kind: "survey"; draft: SurveyDraft; truncated: boolean; notice?: string }
+  | { kind: "parser" };
+
+/** Does the server's answer look like a survey draft? (Only the shape the form relies on.) */
+function isDraft(v: unknown): v is SurveyDraft {
+  return typeof v === "object" && v !== null && typeof (v as SurveyDraft).fields === "object" && (v as SurveyDraft).fields !== null;
 }
 
-type JevState = "idle" | "loading" | "done" | "unavailable";
-
 export function ExtractForm({
+  course,
   replacing,
   canShare,
   onSave,
   onManual,
   onCancel,
 }: {
+  course: { name: string; code?: string };
   replacing: boolean;
   canShare: boolean;
   onSave: (rules: SubjectRules, share: boolean) => void;
@@ -44,13 +55,14 @@ export function ExtractForm({
   onCancel: () => void;
 }) {
   const [text, setText] = useState("");
-  const [step, setStep] = useState<"paste" | "review">("paste");
-  const [jev, setJev] = useState<Record<string, JevAnswer>>({});
-  const [jevState, setJevState] = useState<JevState>("idle");
+  const [step, setStep] = useState<Step>({ kind: "paste" });
   const [mine, setMine] = useState<Answers>({});
   const [share, setShare] = useState(true);
   const [pdf, setPdf] = useState<{ name: string; reading: boolean; error?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const request = useRef<AbortController | null>(null);
+
+  useEffect(() => () => request.current?.abort(), []);
 
   async function handlePdf(file: File | undefined) {
     if (!file) return;
@@ -64,39 +76,72 @@ export function ExtractForm({
     }
   }
 
-  const answers = useMemo(() => {
-    const out: Answers = {};
-    for (const [id, a] of Object.entries(jev)) out[id] = a.option;
-    return { ...out, ...mine };
-  }, [jev, mine]);
-  const result = useMemo(() => (step === "review" ? extractRules(text, answers) : null), [step, text, answers]);
+  const result = useMemo(() => (step.kind === "parser" ? extractRules(text, mine) : null), [step.kind, text, mine]);
+
+  /** Jev is unavailable: the parser reads the text here, or the form starts empty. */
+  function fallback() {
+    setMine({});
+    if (extractRules(text).ok) setStep({ kind: "parser" });
+    else setStep({ kind: "survey", draft: emptySurvey(), truncated: false, notice: UNAVAILABLE });
+  }
 
   async function analyse() {
-    const first = extractRules(text);
-    setMine({});
-    setJev({});
-    setStep("review");
-    if (!first.ok || first.questions.length === 0) return;
-    setJevState("loading");
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    setStep({ kind: "loading" });
     try {
       const res = await fetch("/api/kovetelmeny/elemzes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, course: { name: course.name, ...(course.code ? { code: course.code } : {}) } }),
+        signal: controller.signal,
       });
-      if (!res.ok) {
-        setJevState("unavailable");
-        return;
-      }
-      const data = (await res.json()) as { answers?: Record<string, JevAnswer> };
-      setJev(data.answers ?? {});
-      setJevState("done");
+      const data = res.ok ? ((await res.json()) as { survey?: unknown; truncated?: boolean }) : null;
+      if (controller.signal.aborted) return;
+      if (data && isDraft(data.survey)) setStep({ kind: "survey", draft: data.survey, truncated: data.truncated === true });
+      else fallback();
     } catch {
-      setJevState("unavailable");
+      if (!controller.signal.aborted) fallback();
     }
   }
 
-  if (step === "paste") {
+  function back() {
+    request.current?.abort();
+    setStep({ kind: "paste" });
+  }
+
+  if (step.kind === "loading") {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-[14px] text-foreground" role="status">
+          A Jev olvassa a dokumentumot…
+        </p>
+        <DialogActions>
+          <Button type="button" variant="secondary" onClick={back}>
+            Mégse
+          </Button>
+        </DialogActions>
+      </div>
+    );
+  }
+
+  if (step.kind === "survey") {
+    return (
+      <SurveyForm
+        draft={step.draft}
+        truncated={step.truncated}
+        notice={step.notice}
+        canShare={canShare}
+        replacing={replacing}
+        onSave={onSave}
+        onBack={back}
+        onManual={onManual}
+      />
+    );
+  }
+
+  if (step.kind === "paste") {
     return (
       <form
         onSubmit={(e) => {
@@ -139,8 +184,7 @@ export function ExtractForm({
             placeholder="Töltsd fel a PDF-et, vagy másold ide a tárgy követelményrendszerét (például a Canvas oldaláról)."
           />
           <p className="mt-1.5 text-[12.5px] text-muted">
-            A PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget sem tároljuk. A nem egyértelmű mondatokat a Jev (TypeSafe AI) értelmezi; ne illessz be személyes
-            adatot.
+            A PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk. A szöveget a Jev (TypeSafe AI) olvassa el, mi nem tároljuk; ne illessz be személyes adatot.
             {replacing && " A mentés lecseréli a tárgy mostani szabályait, az eredményeid megmaradnak."}
           </p>
         </div>
@@ -177,7 +221,7 @@ export function ExtractForm({
         </div>
         <Unrecognised lines={result.unrecognised} />
         <DialogActions>
-          <Button type="button" variant="secondary" onClick={() => setStep("paste")}>
+          <Button type="button" variant="secondary" onClick={back}>
             Vissza
           </Button>
           <Button type="button" onClick={onManual}>
@@ -189,52 +233,24 @@ export function ExtractForm({
   }
 
   const open = result.open.length;
-  const guided = result.mode === "guided";
   const rules = result.rules;
   return (
     <div className="flex flex-col gap-4">
-      {guided && (
-        <div className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
-          <p className="text-[14px] font-semibold text-heading">Kérdésenként olvassuk ki</p>
-          <p className="mt-1 text-[13px] text-muted">
-            A szöveg nem a szokásos megfogalmazásokat használja, ezért a fontos részeit egyenként kérdezzük meg.
-            {jevState === "done" || jevState === "loading" ? " A Jev a dokumentum alapján előre válaszol, de minden választ nézz át." : ""}
-          </p>
-          {result.notes.length > 0 && (
-            <details className="mt-1.5 text-[12.5px] text-muted">
-              <summary className="cursor-pointer">Miért?</summary>
-              <ul className="mt-1 flex flex-col gap-1">
-                {result.notes.slice(0, 6).map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
-
       {result.questions.length > 0 && (
         <section className="flex flex-col gap-3">
           <div>
             <p className="text-[14px] font-semibold text-heading">Kérdések</p>
             <p className="mt-0.5 text-[13px] text-muted">
-              {jevState === "loading"
-                ? "A Jev értelmezi a szöveget…"
-                : jevState === "unavailable"
-                  ? "Az automatikus értelmezés most nem érhető el, válaszolj te."
-                  : guided
-                    ? "Válaszolj a dokumentum alapján. Egy válasz újabb kérdést nyithat."
-                    : "Ezt a szöveg nem mondja ki egyértelműen. Döntsd el a mondat alapján."}
+              Az automatikus értelmezés most nem érhető el. Ezt a szöveg nem mondja ki egyértelműen, döntsd el a mondat alapján.
             </p>
           </div>
           {result.questions.map((q) => {
-            const chosen = answers[q.id];
-            const suggestion = jev[q.id];
+            const chosen = mine[q.id];
             const pick = (id: string) => setMine((m) => ({ ...m, [q.id]: id }));
             return (
               <div key={q.id} className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
                 <p className="text-[14px] text-foreground">{q.prompt}</p>
-                {q.quote !== NO_MENTION && <p className="mt-1 line-clamp-3 text-[13px] italic text-muted">»{q.quote}«</p>}
+                {q.quote && <p className="mt-1 line-clamp-3 text-[13px] italic text-muted">»{q.quote}«</p>}
                 {q.options.length > MAX_PILLS ? (
                   <Select
                     aria-label={q.prompt}
@@ -259,11 +275,6 @@ export function ExtractForm({
                       </Pill>
                     ))}
                   </div>
-                )}
-                {suggestion && !(q.id in mine) && (
-                  <p className="mt-1.5 text-[12.5px] text-muted">
-                    A Jev javaslata ({Math.round(suggestion.confidence * 100)}% biztos). Ha nem stimmel, válassz mást.
-                  </p>
                 )}
               </div>
             );
@@ -356,7 +367,7 @@ export function ExtractForm({
 
       <DialogActions>
         {open > 0 && <p className="mr-auto self-center text-[13px] text-muted">Még {open} kérdés vár válaszra.</p>}
-        <Button type="button" variant="secondary" onClick={() => setStep("paste")}>
+        <Button type="button" variant="secondary" onClick={back}>
           Vissza
         </Button>
         {!rules && open === 0 && (
@@ -364,7 +375,7 @@ export function ExtractForm({
             Kézi beállítás
           </Button>
         )}
-        <Button type="button" disabled={!rules || open > 0 || jevState === "loading"} onClick={() => rules && onSave(rules, canShare && share)}>
+        <Button type="button" disabled={!rules || open > 0} onClick={() => rules && onSave(rules, canShare && share)}>
           Mentés
         </Button>
       </DialogActions>

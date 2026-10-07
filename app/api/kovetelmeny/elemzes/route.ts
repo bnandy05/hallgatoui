@@ -1,28 +1,30 @@
-import { extractRules, MAX_EXTRACT_CHARS } from "@/lib/rules/extract";
+import { createHash } from "node:crypto";
+import { MAX_EXTRACT_CHARS } from "@/lib/rules/extract";
+import { buildSurveyRequest, readSurvey } from "@/lib/rules/extract/survey";
 import { guarded, json, mutation, requireUser } from "@/lib/server/auth/http";
-import { isJevConfigured, JEV_MAX_QUESTIONS, type JevAnswer } from "@/lib/server/jev";
-import { suggestWithJev } from "@/lib/server/jevSuggest";
+import { isJevConfigured, systemOne } from "@/lib/server/jev";
 import { errorResponse } from "@/lib/server/subscription";
 
-// Jev's answers to the questions the rule extraction leaves open. The parser runs in the browser
-// too; here it runs again on the same text so the questions sent to Jev are the server's own,
-// never the client's. Nothing is stored or logged: the text lives for one request, and Jev only
-// gets the sentences the questions are about. Answers can open new questions (the guided
-// reading asks "how many" only after "is there"), so Jev gets up to three rounds. Its answers
-// are cached for everyone under a hash of the question, like the other suggestions.
+// The requirements survey: Jev reads the whole pasted document once, 24 typed questions in
+// parallel (lib/rules/extract/survey), and code reads the answers (gates, review flags). The text
+// is never stored or logged: it lives for one request. Jev's raw answers (labels, confidences and
+// choices among numbers, no text) are cached for everyone under a hash of the request, so the
+// same document and course cost nothing the second time. The browser shows every flagged field
+// for the student to confirm.
 
 export const maxDuration = 60;
-const MAX_ROUNDS = 3;
-const ROUND_BUDGET_MS = 35_000;
 
 const HOURLY_LIMIT = 10;
 const DAILY_LIMIT = 30;
+const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+const MAX_COURSE_NAME = 200;
+const MAX_COURSE_CODE = 50;
 
 export function GET() {
   return json({ enabled: isJevConfigured() });
 }
 
-/** Body: `{ text }`. Returns `{ answers: { [questionId]: { option, confidence } } }`. */
+/** Body: `{ text, course: { name, code? } }`. Returns `{ survey, truncated }`. */
 export function POST(req: Request) {
   return guarded(async () => {
     const m = await mutation(req, MAX_EXTRACT_CHARS * 4);
@@ -32,9 +34,13 @@ export function POST(req: Request) {
     const apiKey = process.env.JEV_API_KEY;
     if (!apiKey) return errorResponse("Az automatikus értelmezés nincs beállítva a szerveren", 503);
     if (!auth.user.emailVerifiedAt) return errorResponse("Előbb erősítsd meg az e-mail-címed", 403);
-    const { text } = m.body;
+    const { text, course } = m.body;
     if (typeof text !== "string" || text.trim() === "") return errorResponse("Hiányzik a szöveg", 400);
     if (text.length > MAX_EXTRACT_CHARS) return errorResponse("Túl hosszú szöveg", 413);
+    if (typeof course !== "object" || course === null || Array.isArray(course)) return errorResponse("Hiányzik a tárgy", 400);
+    const { name, code } = course as { name?: unknown; code?: unknown };
+    if (typeof name !== "string" || name.trim() === "" || name.length > MAX_COURSE_NAME) return errorResponse("Érvénytelen tárgynév", 400);
+    if (code !== undefined && (typeof code !== "string" || code.length > MAX_COURSE_CODE)) return errorResponse("Érvénytelen tárgykód", 400);
 
     const kv = auth.deps.store.kv;
     // Counted before the call, so a timeout still counts.
@@ -44,21 +50,15 @@ export function POST(req: Request) {
     ) {
       return errorResponse("Túl sok elemzés, próbáld újra később", 429);
     }
-    const started = Date.now();
-    const answers: Record<string, JevAnswer> = {};
-    const asked = new Set<string>();
-    for (let round = 0; round < MAX_ROUNDS && Date.now() - started < ROUND_BUDGET_MS; round++) {
-      const chosen = Object.fromEntries(Object.entries(answers).map(([id, a]) => [id, a.option]));
-      const fresh = extractRules(text, chosen).questions.filter((q) => !asked.has(q.id));
-      if (fresh.length === 0) break;
-      for (const q of fresh) asked.add(q.id);
-      // Jev takes at most JEV_MAX_QUESTIONS per call.
-      for (let i = 0; i < fresh.length; i += JEV_MAX_QUESTIONS) {
-        const got = await suggestWithJev(kv, auth.user.id, fresh.slice(i, i + JEV_MAX_QUESTIONS), apiKey);
-        Object.assign(answers, got.answers);
-        if (got.limited) return json({ answers });
-      }
+
+    const { body, candidates, truncated } = buildSurveyRequest(text, { name: name.trim(), ...(code ? { code } : {}) });
+    const key = `jevs:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 40)}`;
+    let answers: unknown = await kv.get<unknown>(key);
+    if (!answers) {
+      answers = await systemOne(body, apiKey);
+      if (!answers) return errorResponse("A Jev most nem válaszolt, próbáld újra később", 502);
+      await kv.set(key, answers, CACHE_TTL_SECONDS);
     }
-    return json({ answers });
+    return json({ survey: readSurvey(answers, candidates), truncated });
   });
 }

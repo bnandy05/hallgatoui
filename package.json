@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "jev:survey": "node --import ./test/alias-loader.mjs scripts/jevSurvey.ts",
     "test": "TZ=UTC node --import ./test/alias-loader.mjs --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\""
   },
   "dependencies": {

@@ -66,9 +66,9 @@ const PURPOSES: Purpose[] = [
   {
     what: "Követelményrendszer beolvasása",
     data:
-      "Ha egy tárgy követelményrendszerét beilleszted vagy PDF-ként feltöltöd, és az Értelmezés gombot választod: a PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a szöveget a szerver egyszer feldolgozza, és csak azokat a mondatait küldi tovább a TypeSafe AI-nak (Jev), amelyek nem egyértelműek; ha a szöveg megfogalmazását nem ismerjük fel, a pontozásról, a számonkérésekről és a hiányzásról szóló mondatait. A szöveget és a mondatokat nem tároljuk; a Jev válaszait a kérdés lenyomatához (hash) kötve, a fiókodtól függetlenül 30 napig megőrizzük, hogy ugyanazt ne kérdezzük újra; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
+      "Ha egy tárgy követelményrendszerét beilleszted vagy PDF-ként feltöltöd, és az Értelmezés gombot választod: a PDF-et a böngésződ olvassa be, a fájl nem kerül hozzánk; a beillesztett szöveget (legfeljebb 40 000 karakter) és a tárgy nevét és kódját a szerver egyetlen kérésben elküldi a TypeSafe AI-nak (Jev). A szöveget nem tároljuk. A Jev válaszait (választások és számok, szöveg nélkül) a kérés lenyomatához (hash) kötve, a fiókodtól függetlenül 30 napig megőrizzük, hogy ugyanazt ne kérdezzük újra; a nevedet, az e-mail-címedet és az eredményeidet nem küldjük el. A kérések számát a fiókodhoz kötve számoljuk.",
     basis: "Szerződés teljesítése (6. cikk (1) b)): a kérésedre végzett szolgáltatás.",
-    until: "A szöveg csak a kérés idejéig van nálunk. A Jev válaszai 30 napig, a kérésszámláló 24 óráig.",
+    until: "A szöveg csak a kérés idejéig van nálunk. A Jev válaszai (szöveg nélkül) 30 napig, a kérésszámláló 24 óráig.",
   },
   {
     what: "Tárgy-, összetevő- és ismétlődés-javaslatok",

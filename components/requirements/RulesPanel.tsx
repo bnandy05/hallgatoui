@@ -90,6 +90,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const extractDialog = (
     <Dialog open={extractOpen} onClose={() => setExtractOpen(false)} title="Beolvasás a követelményrendszerből" size="lg">
       <ExtractForm
+        course={{ name: course?.name ?? "Tárgy", ...(course?.code ? { code: course.code } : {}) }}
         replacing={!!rules}
         canShare={shared.canShare}
         onSave={(next, share) => {

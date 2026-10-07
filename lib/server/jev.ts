@@ -1,8 +1,9 @@
-// Jev (TypeSafe AI) answers multiple-choice questions: the rule extraction's, and the
-// suggestions in lib/server/jevSuggest.ts. It only ever sees a question's state (the sentence, the
-// titles or names it is about), never the whole document or the student. Plain fetch, no SDK.
-// Env JEV_API_KEY. An answer below the confidence threshold is dropped, so the student decides it
-// instead (the plan's "never guess" rule). Server-only.
+// Jev (TypeSafe AI) answers typed questions. Two uses, with different privacy: the requirements
+// survey (`systemOne`, lib/rules/extract/survey) sends the whole pasted document and the course
+// name in one request; the suggestions (`askJev`, lib/server/jevSuggest.ts) send only their
+// question's state (the sentence, the titles or names it is about), never the document or the
+// student. Plain fetch, no SDK. Env JEV_API_KEY. A suggestion below the confidence threshold is
+// dropped, so the student decides it instead (the plan's "never guess" rule). Server-only.
 
 /** What Jev needs of a question; the extraction's `Question` has this shape too. */
 export interface JevQuestion {
@@ -100,4 +101,30 @@ export async function askJev(
   fetchImpl: typeof fetch = fetch
 ): Promise<Record<string, JevAnswer>> {
   return confidentOnly(await askJevRaw(questions, apiKey, fetchImpl));
+}
+
+const SYSTEM_ONE_TIMEOUT_MS = 30_000;
+
+/**
+ * One POST to System One with a ready body; returns its `answers` object, or null on any failure.
+ * Logs only the status or the error name, never the request or the answers.
+ */
+export async function systemOne(body: unknown, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<unknown | null> {
+  try {
+    const res = await fetchImpl(JEV_URL, {
+      method: "POST",
+      headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(SYSTEM_ONE_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.error(`[jev] ${res.status}`);
+      return null;
+    }
+    const data = (await res.json()) as { answers?: unknown };
+    return typeof data.answers === "object" && data.answers !== null ? data.answers : null;
+  } catch (err) {
+    console.error("[jev] request failed", err instanceof Error ? err.name : "unknown");
+    return null;
+  }
 }
