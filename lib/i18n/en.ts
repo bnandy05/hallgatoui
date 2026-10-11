@@ -576,6 +576,89 @@ export const en: Messages = {
       data: "Backup, restore, delete",
     },
   },
+  demo: {
+    banner: "Demo: you are looking around a sample semester. Nothing is sent to the server, and everything is gone when you close the tab.",
+    bannerShort: "Demo with sample data",
+    tour: "Guide",
+    register: "Register",
+    exit: "Leave the demo",
+    exitShort: "Leave",
+    reset: "Reset sample data",
+    signInTitle: "Want to look around first?",
+    signInText: "Try it without registering, with a sample semester. Nothing is saved, and you can leave at any time.",
+    start: "Start the demo",
+    needsAccount: "Needs an account",
+    locked: {
+      account: {
+        title: "Account and sync",
+        text: "With an account your data is on the server: the same on every device, available offline, and you can install the site as an app. The demo's data only lives in this tab.",
+      },
+      subscription: {
+        text: "With an account you get your own .ics link to add to Google or Apple Calendar: deadlines, the weekly radar and study days update by themselves, and the source calendars are fetched again every 15 minutes.",
+        download: "You can download the demo's calendar as a one-off .ics file.",
+      },
+      digest: {
+        title: "Email digest",
+        text: "With an account you can get a daily, weekly or monthly email about upcoming and overdue deadlines; the daily one also lists today's classes.",
+      },
+    },
+    tourLabel: "Demo guide",
+    step: (i: number, n: number) => `${i} / ${n}`,
+    back: "Back",
+    next: "Next",
+    close: "Close the guide",
+    keepExploring: "Keep exploring",
+    steps: {
+      welcome: {
+        title: "Welcome to Hallgatói réteg",
+        body: "This is a sample semester with four courses. Click, tick off and add anything: it all lives in this tab only and nothing reaches the server. Features marked Needs an account work once you register.",
+      },
+      board: {
+        title: "The week board",
+        body: "This week's deadlines are pinned slips. The pin has the course's colour and turns red when a deadline is urgent or critical; ticking one off takes it down. The blue strips come from the Neptun timetable and can be hidden with the Classes toggle above.",
+      },
+      courses: {
+        title: "Courses",
+        body: "Every course is an index card: open deadlines, the next class and its links. Open one for the details.",
+      },
+      course: {
+        title: "A course page",
+        body: "The Teams, Canvas, TMS or Discord links, the course's deadlines and classes, and notes or past midterms, all in one place.",
+      },
+      newDeadline: {
+        title: "New deadline",
+        body: "Add a deadline once, on several dates or repeating, for example a weekly quiz. Link it to a course and a platform, and mark it critical.",
+      },
+      search: {
+        title: "Search and quick add",
+        body: "Ctrl K (⌘K on a Mac) searches courses, deadlines and links. You can also type a deadline here to add it, for example “Calculus midterm Friday 10:00”.",
+      },
+      radar: {
+        title: "Deadlines",
+        body: "Every deadline by day, filtered by course, platform or state. A deadline that comes from several sources shows once with “+1 source”, and moved due dates are marked.",
+      },
+      reminders: {
+        title: "Reminders",
+        body: "The bell lists overdue, critical and upcoming deadlines. Browser notifications can be turned on under Settings → Notifications; that works in the demo too.",
+      },
+      feeds: {
+        title: "Connecting calendars",
+        body: "A Canvas, Moodle or Neptun calendar link, or a Neptun timetable file: deadlines and classes land in their courses by themselves. The sample Canvas calendar doesn't refresh; you can try your own link or file here.",
+      },
+      subscription: {
+        title: "Calendar subscription",
+        body: "One link for Google or Apple Calendar that updates by itself. It needs an account, because the server builds the calendar.",
+      },
+      digest: {
+        title: "Email digest",
+        body: "A daily, weekly or monthly email about your deadlines. It needs an account with a confirmed email address.",
+      },
+      finish: {
+        title: "That's the tour",
+        body: "With an account your data is on every device, offline too, and you get the calendar subscription and the email digest. Registering is free and only needs an email address. We don't send any promotional emails.",
+      },
+    },
+  },
   auth: {
     signIn: "Sign in",
     register: "Register",

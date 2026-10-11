@@ -248,7 +248,7 @@ export default function WeekRadarPage() {
             </DialogActions>
           </Dialog>
 
-          <div className="min-w-0">
+          <div data-tour="deadline-list" className="min-w-0">
             {overdue.length === 0 && weeks.length === 0 ? (
               <p className="text-[15px] text-muted">
                 {filtersActive ? t.radar.noneMatch : t.radar.noneToShow}

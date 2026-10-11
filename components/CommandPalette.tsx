@@ -16,6 +16,7 @@ import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
+import { DEADLINE_ANCHOR_EVENT } from "@/components/DeadlineAnchorScroll";
 import { getPlatform } from "@/lib/platforms";
 import { syncAllFeeds } from "@/lib/ical/client";
 import {
@@ -69,6 +70,7 @@ export function CommandPalette() {
       <button
         type="button"
         aria-label={t.palette.search}
+        data-tour="search"
         onClick={() => setOpen(true)}
         disabled={!hydrated}
         className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[13.5px] md:h-8 font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
@@ -154,7 +156,11 @@ function PaletteContent({
     }
     if (!item.href) return;
     if (item.external) window.open(item.href, "_blank", "noopener,noreferrer");
-    else router.push(item.href);
+    else {
+      router.push(item.href);
+      // A deadline on the page that is already open: DeadlineAnchorScroll looks for it again.
+      if (item.kind === "deadline") window.dispatchEvent(new Event(DEADLINE_ANCHOR_EVENT));
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {

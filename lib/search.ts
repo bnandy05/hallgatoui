@@ -37,6 +37,11 @@ const KIND_WEIGHT: Record<SearchKind, number> = {
   resource: 1,
 };
 
+/** The element id of a deadline's slip on a page, so a link can point at it (`#hatarido-<id>`). */
+export function deadlineAnchorId(deadlineId: string): string {
+  return `hatarido-${deadlineId}`;
+}
+
 export function buildSearchItems(input: SearchInput): SearchItem[] {
   const { courses, deadlines, customPlatforms, feeds, locale = "hu" } = input;
   const t = getMessages(locale);
@@ -104,7 +109,7 @@ export function buildSearchItems(input: SearchInput): SearchItem[] {
       kind: "deadline",
       title: deadline.title,
       subtitle: course ? `${course.name} · ${due}` : due,
-      href: deadline.url ?? (course ? `/targy/${course.id}` : "/radar"),
+      href: deadline.url ?? `${course ? `/targy/${course.id}` : "/radar"}#${deadlineAnchorId(deadline.id)}`,
       external: Boolean(deadline.url),
       color: course?.color,
       platformId: deadline.platformId,

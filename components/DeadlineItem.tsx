@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { Check, ExternalLink, Flame, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -100,8 +100,11 @@ function DeadlineDetail({
   const updateDeadline = useStore((s) => s.updateDeadline);
   const removeDeadline = useStore((s) => s.removeDeadline);
   const removeDeadlines = useStore((s) => s.removeDeadlines);
-  const siblings = useStore((s) =>
-    deadline.seriesId ? s.deadlines.filter((d) => d.seriesId === deadline.seriesId) : null
+  // Filtered outside the selector: a selector that returns a new array every time loops forever.
+  const deadlines = useStore((s) => s.deadlines);
+  const siblings = useMemo(
+    () => (deadline.seriesId ? deadlines.filter((d) => d.seriesId === deadline.seriesId) : null),
+    [deadlines, deadline.seriesId]
   );
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [now] = useState(() => new Date());

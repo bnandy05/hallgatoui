@@ -94,7 +94,7 @@ const HU: PrivacyContent = {
   },
   cookies: {
     title: "Süti és helyi tárolás",
-    text: "Két sütit használunk. A hr_session belépve tart (a munkamenet-azonosítót tartalmazza, kilépésig vagy 90 napig él). A hr_lang a választott nyelvet jegyzi meg (csak a „hu” vagy az „en” értéket tartalmazza, 1 évig él, azonosítót nem hordoz). Mindkettő a kért szolgáltatás működéséhez szükséges, ezért nem kér hozzájárulást. A böngésződ helyi tárolójában a fiókod adatainak egy másolata és az eszközbeállításaid (például a téma) maradnak, hogy az oldal gyorsan betöltsön; kilépéskor ezt a másolatot töröljük. Elemző, követő vagy hirdetési sütit nem használunk, a betűtípust is a saját szerverünkről töltjük.",
+    text: "Három sütit használunk. A hr_session belépve tart (a munkamenet-azonosítót tartalmazza, kilépésig vagy 90 napig él). A hr_lang a választott nyelvet jegyzi meg (csak a „hu” vagy az „en” értéket tartalmazza, 1 évig él, azonosítót nem hordoz). A hr_demo csak akkor jön létre, ha regisztráció nélkül kipróbálod az oldalt: azt jelzi, hogy a bemutatóban vagy (értéke „1”, a böngésző bezárásáig vagy a bemutatóból való kilépésig él). Mindhárom a kért szolgáltatás működéséhez szükséges, ezért nem kér hozzájárulást. A bemutató mintaadatai és a bennük tett változtatások csak az adott böngészőlap tárolójában vannak, a szerverre nem kerülnek, és a lap bezárásával törlődnek. A böngésződ helyi tárolójában a fiókod adatainak egy másolata és az eszközbeállításaid (például a téma) maradnak, hogy az oldal gyorsan betöltsön; kilépéskor ezt a másolatot töröljük. Elemző, követő vagy hirdetési sütit nem használunk, a betűtípust is a saját szerverünkről töltjük.",
   },
   processors: {
     title: "Adatfeldolgozók",
@@ -205,7 +205,7 @@ const EN: PrivacyContent = {
   },
   cookies: {
     title: "Cookies and local storage",
-    text: "We use two cookies. hr_session keeps you signed in (it holds the session identifier and lasts until you sign out or 90 days). hr_lang remembers the language you chose (it only contains “hu” or “en”, lasts 1 year and carries no identifier). Both are strictly necessary for the service you asked for, so they do not ask for consent. Your browser's local storage keeps a copy of your account's data and your device settings (such as the theme) so that the page loads quickly; we delete that copy when you sign out. We use no analytics, tracking or advertising cookies, and the font is loaded from our own server.",
+    text: "We use three cookies. hr_session keeps you signed in (it holds the session identifier and lasts until you sign out or 90 days). hr_lang remembers the language you chose (it only contains “hu” or “en”, lasts 1 year and carries no identifier). hr_demo is only set if you try the site without registering: it marks that you are in the demo (its value is “1”, and it lasts until you close the browser or leave the demo). All three are strictly necessary for the service you asked for, so they do not ask for consent. The demo's sample data and your changes to it stay in that browser tab's storage only, are never sent to the server, and are deleted when you close the tab. Your browser's local storage keeps a copy of your account's data and your device settings (such as the theme) so that the page loads quickly; we delete that copy when you sign out. We use no analytics, tracking or advertising cookies, and the font is loaded from our own server.",
   },
   processors: {
     title: "Processors",

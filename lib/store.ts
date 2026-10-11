@@ -26,7 +26,8 @@ import {
 import { autoLinkContexts, keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
-import { buildDemoData } from "@/lib/demo";
+import { buildDemoData, buildShowcaseData } from "@/lib/demo";
+import { DEMO_CACHE_KEY, DEMO_USER_ID, isDemoMode } from "@/lib/demoMode";
 import type { ThemePref } from "@/lib/theme";
 import type { Locale } from "@/lib/i18n/locales";
 import type { SyncPayload } from "@/lib/sync/merge";
@@ -79,6 +80,8 @@ export function selectPayload(s: AppData & { exportOptions: ExportOptions }): Sy
  */
 const cacheStorage = {
   getItem: (name: string) => {
+    // The demo keeps its own copy in this tab only, so it never touches an account's cache.
+    if (isDemoMode()) return sessionStorage.getItem(DEMO_CACHE_KEY);
     let value = localStorage.getItem(name);
     if (value === null && name === CACHE_KEY) {
       const legacy = localStorage.getItem(LEGACY_CACHE_KEY);
@@ -90,8 +93,9 @@ const cacheStorage = {
     }
     return value;
   },
-  setItem: (name: string, value: string) => localStorage.setItem(name, value),
-  removeItem: (name: string) => localStorage.removeItem(name),
+  setItem: (name: string, value: string) =>
+    isDemoMode() ? sessionStorage.setItem(DEMO_CACHE_KEY, value) : localStorage.setItem(name, value),
+  removeItem: (name: string) => (isDemoMode() ? sessionStorage.removeItem(DEMO_CACHE_KEY) : localStorage.removeItem(name)),
 };
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -214,6 +218,8 @@ export interface AppStore extends AppData {
   importData: (data: AppData) => void;
   resetAll: () => void;
   loadDemo: (locale?: Locale) => void;
+  /** Demo mode: replaces everything with fresh sample data owned by the demo user (never synced). */
+  startDemo: (locale?: Locale) => void;
 }
 
 /**
@@ -817,6 +823,21 @@ export const useStore = create<AppStore>()(
       },
       resetAll: () => {
         set(() => ({ ...emptyAppData(), notifiedKeys: [] }));
+      },
+      startDemo: (locale) => {
+        rawSet({
+          ...emptyAppData(),
+          ...buildShowcaseData(new Date(), locale),
+          tombstones: {},
+          exportOptions: DEFAULT_EXPORT_OPTIONS,
+          notifiedKeys: [],
+          account: { userId: DEMO_USER_ID, email: "" },
+          ownerUserId: DEMO_USER_ID,
+          syncedVersion: 0,
+          syncBase: null,
+          syncStatus: "idle",
+          syncError: undefined,
+        });
       },
       loadDemo: (locale) => {
         const demo = buildDemoData(new Date(), locale);

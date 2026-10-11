@@ -1,14 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicPath } from "@/lib/account/path";
+import { DEMO_COOKIE } from "@/lib/demoMode";
 import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, pickLocale } from "@/lib/i18n/locales";
 
 // Two jobs. Language: a visitor without a valid hr_lang cookie gets one from Accept-Language (on
 // public pages too). Gate: app pages need a session cookie, otherwise the visitor goes to /belepes.
 // It only checks that the cookie exists; the API is the real gate (401), and the client handles that.
+// The demo (hr_demo, lib/demoMode.ts) opens the app pages too; it never calls the API. Signing in ends
+// it (dropForeignCache); a leftover session cookie must not, since it may be long expired.
 export function proxy(request: NextRequest) {
   const needsLocale = !isLocale(request.cookies.get(LOCALE_COOKIE)?.value);
+  const inDemo = request.cookies.get(DEMO_COOKIE)?.value === "1";
   let response: NextResponse;
-  if (request.cookies.has("hr_session") || isPublicPath(request.nextUrl.pathname)) {
+  if (request.cookies.has("hr_session") || inDemo || isPublicPath(request.nextUrl.pathname)) {
     response = NextResponse.next();
   } else {
     const url = request.nextUrl.clone();

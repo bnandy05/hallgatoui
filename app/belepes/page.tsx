@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getT } from "@/lib/i18n/server";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { DemoEntry } from "@/components/demo/DemoEntry";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -14,6 +15,7 @@ export default function LoginPage() {
       <Suspense fallback={<div className="h-80 rounded-[var(--radius-slip)] bg-strip/80" />}>
         <AuthForm />
       </Suspense>
+      <DemoEntry />
     </div>
   );
 }

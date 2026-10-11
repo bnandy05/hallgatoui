@@ -6,6 +6,7 @@ import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, type Locale } from "@/lib/i18n";
 import { setAccountLanguage } from "@/lib/account/client";
 import { useStore } from "@/lib/store";
 import { clearOfflineCache } from "@/lib/sw";
+import { isDemoMode } from "@/lib/demoMode";
 
 /**
  * The one place a language switch happens: sets the cookie, saves the choice on the account when
@@ -20,7 +21,8 @@ export function useSetLanguage(): (locale: Locale) => Promise<void> {
     async (locale: Locale) => {
       document.cookie = `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=${LOCALE_COOKIE_MAX_AGE}; SameSite=Lax`;
       clearOfflineCache();
-      if (signedIn) await setAccountLanguage(locale); // best effort: the cookie already switched this browser
+      if (isDemoMode()) useStore.getState().startDemo(locale); // fresh sample data in the new language
+      else if (signedIn) await setAccountLanguage(locale); // best effort: the cookie already switched this browser
       router.refresh();
     },
     [router, signedIn],

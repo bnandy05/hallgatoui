@@ -21,6 +21,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonClasses } from "@/components/ui/Button";
 import { syncAllFeeds } from "@/lib/ical/client";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { useDemoMode } from "@/lib/useDemoMode";
+import { DemoBar } from "@/components/demo/DemoBar";
+import { DemoTour } from "@/components/demo/DemoTour";
+import { DeadlineAnchorScroll } from "@/components/DeadlineAnchorScroll";
 
 const NAV_LINKS = [
   { href: "/", key: "week", icon: CalendarDays },
@@ -90,6 +94,7 @@ function NewDeadlineButton() {
         disabled={!hydrated}
         onClick={() => setOpen(true)}
         aria-label={t.shell.newDeadline}
+        data-tour="new-deadline"
         className={buttonClasses({ size: "sm", className: "max-md:!h-9 !px-2.5 sm:!px-3" })}
       >
         <Plus className="h-4 w-4" />
@@ -106,6 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hydrated = useHydrated();
   const dataReady = useDataReady();
   const bare = isPublicPath(pathname);
+  const demo = useDemoMode() && !bare;
   const didAutoSync = useRef(false);
 
   useEffect(() => {
@@ -123,6 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {hydrated && <AccountSync />}
       {hydrated && <ServiceWorkerRegister />}
       {dataReady && !bare && <NotificationScheduler />}
+      {dataReady && !bare && <DeadlineAnchorScroll />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">
           <Wordmark />
@@ -156,12 +163,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+      {hydrated && demo && <DemoBar />}
       <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {children}
       </main>
       <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-[13px] text-muted-dim md:pb-6">
         <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 sm:px-6">
-          <span>{t.shell.footerData}</span>
+          <span>{demo ? t.demo.bannerShort : t.shell.footerData}</span>
           <span className="flex flex-wrap gap-x-6 gap-y-1">
             <span>{t.shell.footerIndependent}</span>
             <Link href="/adatvedelem" className="underline underline-offset-2 hover:text-muted">
@@ -171,6 +179,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </footer>
       {!bare && <TabBar pathname={pathname} />}
+      {hydrated && demo && <DemoTour />}
     </div>
   );
 }

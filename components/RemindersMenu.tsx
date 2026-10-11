@@ -53,6 +53,7 @@ export function RemindersMenu() {
             {...props}
             aria-label={label}
             title={label}
+            data-tour="reminders"
             className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors duration-150 hover:bg-card/60 hover:text-heading md:h-8 md:w-8"
           >
             <Bell className="h-[18px] w-[18px]" />
