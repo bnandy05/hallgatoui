@@ -10,8 +10,8 @@ import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
-import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Select } from "@/components/ui/Select";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
@@ -115,19 +115,17 @@ export default function WeekRadarPage() {
   // The non-course filters: in the sidebar from lg, in a bottom sheet below it.
   const toggles = (
     <>
-      <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} className="self-start">
-        <Flame className="h-3.5 w-3.5" />
-        {t.radar.criticalOnly}
-      </Pill>
-      <label className="flex items-center gap-2 text-[14px] text-foreground">
-        <input
-          type="checkbox"
-          checked={showDone}
-          onChange={(e) => setShowDone(e.target.checked)}
-          className="h-4 w-4 accent-accent"
-        />
-        {t.radar.showDone}
-      </label>
+      <Checkbox
+        checked={criticalOnly}
+        onChange={(e) => setCriticalOnly(e.target.checked)}
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            <Flame className="h-3.5 w-3.5 text-danger" />
+            {t.radar.criticalOnly}
+          </span>
+        }
+      />
+      <Checkbox checked={showDone} onChange={(e) => setShowDone(e.target.checked)} label={t.radar.showDone} />
       <Select
         value={platformFilter}
         onChange={(e) => setPlatformFilter(e.target.value)}
@@ -190,7 +188,7 @@ export default function WeekRadarPage() {
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13.5px] font-semibold lg:hidden ${
+                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-small font-semibold lg:hidden ${
                   toggleCount > 0 ? "border-accent bg-accent text-accent-ink" : "border-border-strong bg-card text-heading"
                 }`}
               >
@@ -206,7 +204,7 @@ export default function WeekRadarPage() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => toggleCourse(chip.id)}
-                    className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-[13.5px] font-medium transition-colors duration-150 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-[14px] ${
+                    className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-small font-medium transition-colors duration-150 lg:w-full lg:rounded-[var(--radius)] lg:border-transparent lg:px-2.5 lg:text-left lg:text-body ${
                       active
                         ? "border-accent bg-accent text-accent-ink hover:bg-accent-hover"
                         : "border-border bg-card text-muted hover:border-border-strong hover:text-heading lg:bg-transparent lg:hover:bg-wash/[0.05]"
@@ -223,13 +221,13 @@ export default function WeekRadarPage() {
               })}
             </div>
             <p
-              className={`flex flex-wrap items-center gap-x-2 text-[13px] tabular-nums text-muted lg:flex lg:border-t lg:border-border lg:pt-3 ${
+              className={`flex flex-wrap items-center gap-x-2 text-small tabular-nums text-muted lg:flex lg:border-t lg:border-border lg:pt-3 ${
                 filtersActive ? "" : "hidden"
               }`}
             >
               {t.radar.results(filtered.length)}
               {filtersActive && (
-                <button type="button" onClick={clearFilters} className="ml-auto font-semibold text-heading underline">
+                <button type="button" onClick={clearFilters} className="link-text ml-auto">
                   {t.radar.clearFilters}
                 </button>
               )}
@@ -250,7 +248,7 @@ export default function WeekRadarPage() {
 
           <div data-tour="deadline-list" className="min-w-0">
             {overdue.length === 0 && weeks.length === 0 ? (
-              <p className="text-[15px] text-muted">
+              <p className="text-body text-muted">
                 {filtersActive ? t.radar.noneMatch : t.radar.noneToShow}
               </p>
             ) : (
@@ -261,8 +259,8 @@ export default function WeekRadarPage() {
                     className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 sm:px-4"
                   >
                     <h2 id="overdue-heading" className="flex items-baseline gap-2">
-                      <span className="font-display text-[24px] text-danger">{t.radar.overdue}</span>
-                      <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
+                      <span className="font-display text-subhead text-danger">{t.radar.overdue}</span>
+                      <span className="text-small font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
                       {overdue.map((d, i) => (
@@ -280,13 +278,13 @@ export default function WeekRadarPage() {
                     style={{ "--seq": wi + 1 } as CSSProperties}
                   >
                     <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="font-display text-[clamp(22px,2.6vw,28px)] text-heading">
+                      <span className="font-display text-headline text-heading">
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
                       </span>
                       {!/\d/.test(week.label) && (
-                        <span className="text-[14px] text-muted">{weekRangeLabel(week.weekStart, dateLocale(locale), t.formats.weekRange)}</span>
+                        <span className="text-body text-muted">{weekRangeLabel(week.weekStart, dateLocale(locale), t.formats.weekRange)}</span>
                       )}
-                      <span className="text-[13px] tabular-nums text-muted-dim">{t.radar.weekCount(week.items.length)}</span>
+                      <span className="text-small tabular-nums text-muted-dim">{t.radar.weekCount(week.items.length)}</span>
                     </h2>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} />
                   </section>

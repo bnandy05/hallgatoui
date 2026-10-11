@@ -57,7 +57,7 @@ typography:
     fontVariation: "\"wdth\" 72"
   body:
     fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "14.5px"
+    fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.55
   label:
@@ -67,12 +67,12 @@ typography:
     lineHeight: 1.4
   slip-title:
     fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "13.5px"
+    fontSize: "13px"
     fontWeight: 600
     lineHeight: 1.375
   mono:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-    fontSize: "12.5px"
+    fontSize: "12px"
     fontWeight: 400
 rounded:
   slip: "2px"
@@ -231,13 +231,16 @@ The same board under the corridor's night lighting, not a different product. `da
 **Character:** one grotesk family doing two jobs: a printed-notice voice when condensed and heavy, a plain working voice at normal width. Times and counts use tabular figures.
 
 ### Hierarchy
+The ramp is a closed set, defined once as `--text-*` theme tokens in `app/globals.css` (`text-fine` 12, `text-small` 13, `text-body` 14, `text-lead` 16, `text-title` 19, `text-subhead` 22, plus fluid `text-headline`, `text-display-sm`, `text-display`). Components use the utilities and never a literal pixel size; a new size means a new token here first.
+
 - **Display** (800, clamp(34px, 5.2vw, 52px), 1.02): the page h1, such as the week range.
-- **Headline** (800, clamp(24px, 3vw, 30px), 1.02): section h2s ("Tárgyak"), dialog titles and empty-state titles at 24px.
+- **Headline** (800, clamp(24px, 3vw, 30px), 1.02): section h2s ("Tárgyak"); dialog and empty-state titles use the subhead.
 - **Subhead** (800 condensed, 22px): headings inside a page section ("Mi kerüljön bele", "Lejárt" on the course page, week names in agendas) and notice titles on sheets.
 - **Card title** (700, 16px): the name on a course card, feed card or deadline-sheet field; 16px is also every text field on touch screens.
-- **Title** (800 condensed, 19px): day-strip headings and the "Lejárt" gutter heading; the "Következő" relative time at 22px.
-- **Body** (400, 14.5px, 1.55): UI text, fields, buttons; subtitles under headings at 15px, capped at 62ch.
-- **Slip title** (600, 13.5px, snug): a deadline's title on its slip; metadata under it at 12px.
+- **Title** (800 condensed, 19px): day-strip headings and the "Lejárt" gutter heading; the "Következő" relative time uses the subhead.
+- **Lead** (16px): reading text outside the working UI (the privacy notice, the line under a page heading, capped at 62ch).
+- **Body** (400, 14px, 1.55): UI text, fields, buttons.
+- **Slip title** (600, 13px, snug): a deadline's title on its slip; metadata under it at 12px (`text-fine`).
 - **Label** (600, 13px): form labels and the inline "Következő" label.
 
 ### Named Rules
@@ -285,7 +288,7 @@ Cut-paper corners. Slips, sheets, day strips and dialogs use 2px; controls, inpu
 
 ### Buttons
 Toner-black, firm, small-radius.
-- **Shape:** gently cut corners (4px), 40px tall (32px small), 16px / 12px horizontal padding, 14.5px / 13.5px text.
+- **Shape:** gently cut corners (4px), 40px tall (32px small), 16px / 12px horizontal padding, 14px / 13px text.
 - **Primary:** Toner Ink fill and border, Copy Paper text, semibold, a 1px toner shadow. Hover a slightly lighter toner grey; active presses down 1px.
 - **Secondary:** Copy Paper with a Paper Edge border; hover strengthens the border and adds the paper shadow.
 - **Ghost:** transparent; hover a 5% `--wash` tint.
@@ -306,13 +309,13 @@ Toner-black, firm, small-radius.
 - **Internal Padding:** 20px, 24px from sm.
 
 ### Inputs / Fields
-- **Style:** Copy Paper, 1px Paper Edge border, 4px corners, 8px 12px padding, 14.5px text, a faint inset shadow; Muted Dim placeholders; the caret is Pushpin Red.
+- **Style:** Copy Paper, 1px Paper Edge border, 4px corners, 8px 12px padding, 14px text, a faint inset shadow; Muted Dim placeholders; the caret is Pushpin Red.
 - **Touch:** on coarse pointers every text field, select and textarea is 16px (iOS zooms into anything smaller and stays zoomed), and checkboxes are 18px.
 - **Focus:** border and a 2px outline in Toner Ink.
 - **Disabled:** Paper Inset fill, Muted Ink text.
 
 ### Navigation
-Top-bar links are 36px tall, 14.5px semibold, Muted Ink; hover a 60% paper wash; the active route becomes a Copy Paper tab with the paper shadow. Tabs underline the active item with a 2px Toner Ink border; counts sit in a round chip (Toner Ink when active). Focus everywhere is a 2px Toner Ink outline offset by 2px.
+Top-bar links are 36px tall, 14px semibold, Muted Ink; hover a 60% paper wash; the active route becomes a Copy Paper tab with the paper shadow. Tabs underline the active item with a 2px Toner Ink border; counts sit in a round chip (Toner Ink when active). Focus everywhere is a 2px Toner Ink outline offset by 2px.
 
 ### Deadline Slip (signature)
 A Copy Paper slip with 2px corners and the paper shadow, hung from a pin near its top-left. The pin carries state: the course colour while open, Pushpin Red when overdue or critical, removed when done. An open overdue slip is printed on Salmon. A 2px bar along the bottom edge is as long as the time left within the coming week (red-tinted when hot). Ticking it off draws a strike through the title, pops the pin up and away, and lets the slip hang loose: tilted -2.2deg, 2px lower, at 72% opacity.

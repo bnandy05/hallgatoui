@@ -110,7 +110,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
           onChange={(e) => setMatchKeywords(e.target.value)}
           placeholder={t.courseForm.keywordsPlaceholder}
         />
-        <p className="mt-1 text-[12.5px] text-muted">
+        <p className="mt-1 text-fine text-muted">
           {t.courseForm.keywordsHelp}
         </p>
       </div>

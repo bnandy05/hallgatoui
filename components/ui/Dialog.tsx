@@ -98,7 +98,7 @@ export function Dialog({
             style={{ "--pin-color": pinColor } as CSSProperties}
           />
         )}
-        <h2 className="font-display min-w-0 self-center py-1.5 text-[24px] text-heading [overflow-wrap:anywhere]">{title}</h2>
+        <h2 className="font-display min-w-0 self-center py-1.5 text-subhead text-heading [overflow-wrap:anywhere]">{title}</h2>
         <button
           type="button"
           aria-label={t.ui.close}

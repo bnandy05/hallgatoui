@@ -93,13 +93,13 @@ export function LinkAction() {
             onChange={(e) => setPassword(e.target.value)}
             aria-describedby="link-password-hint"
           />
-          <p id="link-password-hint" className="mt-1.5 text-[13px] text-muted">
+          <p id="link-password-hint" className="mt-1.5 text-small text-muted">
             {t.auth.passwordHint}
           </p>
         </div>
       )}
       {error && (
-        <p role="alert" className="text-[14px] font-semibold text-danger">
+        <p role="alert" className="text-body font-semibold text-danger">
           {error}
         </p>
       )}

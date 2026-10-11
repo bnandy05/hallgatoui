@@ -3,7 +3,6 @@ import {
   differenceInMilliseconds,
   endOfWeek,
   format,
-  formatDistance,
   isBefore,
   startOfWeek,
 } from "date-fns";
@@ -116,8 +115,17 @@ export function nextDeadlineFor(
     .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime())[0];
 }
 
-export function formatRelative(due: Date, now: Date, locale: Locale = hu): string {
-  return formatDistance(due, now, { locale, addSuffix: true });
+/** A short distance from `now` ("6 óra múlva", "in 2 days", "5 perc ezelőtt"): the largest whole unit, rounded. */
+export function formatRelative(due: Date, now: Date, locale: AppLocale = "hu"): string {
+  const r = getMessages(locale).relative;
+  const diff = due.getTime() - now.getTime();
+  const minutes = Math.round(Math.abs(diff) / 60000);
+  if (minutes < 1) return r.now;
+  const hours = Math.round(minutes / 60);
+  const days = Math.round(hours / 24);
+  const amount =
+    minutes < 60 ? r.minutes(minutes) : hours < 24 ? r.hours(hours) : days < 45 ? r.days(days) : r.months(Math.round(days / 30));
+  return diff > 0 ? r.in(amount) : r.ago(amount);
 }
 
 export interface DayBucket {

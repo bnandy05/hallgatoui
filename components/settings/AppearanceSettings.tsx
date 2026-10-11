@@ -78,8 +78,8 @@ export function AppearanceSettings() {
               )}
               <span className="flex items-start gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[14.5px] font-semibold text-heading">{t.appearance.themes[pref].label}</span>
-                  <span className="mt-0.5 block text-[13px] text-muted">{t.appearance.themes[pref].description}</span>
+                  <span className="block text-body font-semibold text-heading">{t.appearance.themes[pref].label}</span>
+                  <span className="mt-0.5 block text-small text-muted">{t.appearance.themes[pref].description}</span>
                 </span>
                 <span
                   aria-hidden="true"
@@ -96,8 +96,8 @@ export function AppearanceSettings() {
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="font-display text-[20px] text-heading">{t.language.label}</legend>
-        <p className="text-[13.5px] text-muted">{t.language.hint}</p>
+        <legend className="font-display text-title text-heading">{t.language.label}</legend>
+        <p className="text-small text-muted">{t.language.hint}</p>
         <div className="grid gap-3 sm:max-w-md sm:grid-cols-2">
           {LOCALES.map((code) => {
             const checked = locale === code;
@@ -117,7 +117,7 @@ export function AppearanceSettings() {
                   onChange={() => setLanguage(code)}
                   className="sr-only"
                 />
-                <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-heading">{t.language[code]}</span>
+                <span className="min-w-0 flex-1 text-body font-semibold text-heading">{t.language[code]}</span>
                 <span
                   aria-hidden="true"
                   className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${

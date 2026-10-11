@@ -62,6 +62,7 @@
   --radius: 4px;
   --radius-lg: 6px;
   --radius-slip: 2px;
+  --radius-badge: 3px;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }

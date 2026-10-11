@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { buildReminders } from "@/lib/reminders";
 import { formatRelative, urgencyOf } from "@/lib/radar";
@@ -60,7 +59,7 @@ export function RemindersMenu() {
             {reminders.badge > 0 && (
               <span
                 aria-hidden="true"
-                className={`absolute -right-0.5 -top-0.5 inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full px-1 text-[10.5px] font-bold tabular-nums text-accent-ink ${
+                className={`absolute -right-0.5 -top-0.5 inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full px-1 text-fine font-bold tabular-nums text-accent-ink ${
                   urgent ? "bg-danger" : "bg-pin"
                 }`}
               >
@@ -71,27 +70,27 @@ export function RemindersMenu() {
         )}
       >
         <div className="flex items-baseline justify-between gap-2 px-4 pb-2 pt-3">
-          <p className="font-display text-[20px] text-heading">{t.reminders.title}</p>
+          <h2 className="font-display text-title text-heading">{t.reminders.title}</h2>
           {reminders.deadlines.length > 0 && (
-            <Link href="/radar" onClick={() => setOpen(false)} className="text-[12.5px] font-semibold text-heading underline underline-offset-2">
+            <Link href="/radar" onClick={() => setOpen(false)} className="link-text text-fine">
               {t.reminders.allDeadlines}
             </Link>
           )}
         </div>
         {reminders.deadlines.length === 0 ? (
-          <p className="px-4 pb-4 text-[14px] text-muted">{t.reminders.none}</p>
+          <p className="px-4 pb-4 text-body text-muted">{t.reminders.none}</p>
         ) : (
           <section className="border-t border-border px-4 py-3">
-            <h3 className="mb-1.5 text-[13px] font-bold text-heading">{t.reminders.upcoming}</h3>
+            <h3 className="mb-1.5 text-small font-bold text-heading">{t.reminders.upcoming}</h3>
             <ul className="flex flex-col">
               {reminders.deadlines.map((d) => {
                 const u = urgencyOf(d, now);
                 return (
                   <li key={d.id}>
                     <button type="button" onClick={() => setDetail(d)} className="block w-full py-1.5 text-left hover:underline">
-                      <span className="block truncate text-[13.5px] font-semibold text-foreground">{d.title}</span>
-                      <span className={`block truncate text-[12.5px] ${u === "soon" ? "text-muted" : "font-semibold text-danger"}`}>
-                        {u === "overdue" ? t.reminders.overdue : t.reminders.dueIn(formatRelative(new Date(d.due), now, dateLocale(locale)))}
+                      <span className="block truncate text-small font-semibold text-foreground">{d.title}</span>
+                      <span className={`block truncate text-fine ${u === "soon" ? "text-muted" : "font-semibold text-danger"}`}>
+                        {u === "overdue" ? t.reminders.overdue : t.reminders.dueIn(formatRelative(new Date(d.due), now, locale))}
                         {courseName(d.courseId) && <span className="font-normal text-muted"> · {courseName(d.courseId)}</span>}
                       </span>
                     </button>

@@ -9,7 +9,7 @@ export function NeedsAccountStamp({ className = "" }: { className?: string }) {
   const t = useT();
   return (
     <span
-      className={`inline-flex w-fit items-center gap-1 rounded-[3px] bg-canary px-1.5 py-px text-[11.5px] font-semibold text-heading ${className}`}
+      className={`inline-flex w-fit items-center gap-1 rounded-[var(--radius-badge)] bg-canary px-1.5 py-px text-fine font-semibold text-heading ${className}`}
     >
       <Lock className="h-3 w-3" aria-hidden="true" />
       {t.demo.needsAccount}
@@ -24,8 +24,8 @@ export function DemoLocked({ title, text, children, tour }: { title?: string; te
     <section data-tour={tour} className="slip flex flex-col gap-3 bg-card px-5 pb-5 pt-6">
       <span aria-hidden="true" className="pin -top-[4px] left-5" style={{ "--pin-color": "var(--pin-neutral)" } as CSSProperties} />
       <NeedsAccountStamp />
-      {title && <h2 className="font-display text-[24px] text-heading">{title}</h2>}
-      <p className="max-w-[62ch] text-[14.5px] text-muted">{text}</p>
+      {title && <h2 className="font-display text-subhead text-heading">{title}</h2>}
+      <p className="max-w-[62ch] text-body text-muted">{text}</p>
       {children}
     </section>
   );

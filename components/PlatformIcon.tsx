@@ -25,8 +25,8 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 const SIZE_CLASSES: Record<"sm" | "md", string> = {
-  sm: "h-5 w-5 rounded-[3px] border",
-  md: "h-7 w-7 rounded-[4px] border-[1.5px]",
+  sm: "h-5 w-5 rounded-[var(--radius-badge)] border",
+  md: "h-7 w-7 rounded-[var(--radius)] border-[1.5px]",
 };
 
 const ICON_SIZE: Record<"sm" | "md", string> = {
@@ -57,7 +57,7 @@ export function PlatformIcon({ platform, size = "sm" }: PlatformIconProps) {
       {Icon ? (
         <Icon className={ICON_SIZE[size]} strokeWidth={size === "sm" ? 2.25 : 2} />
       ) : (
-        <span className={size === "sm" ? "text-[11px]" : "text-[14px]"}>
+        <span className={size === "sm" ? "text-fine" : "text-body"}>
           {platform.name.charAt(0).toUpperCase()}
         </span>
       )}

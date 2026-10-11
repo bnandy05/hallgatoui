@@ -27,7 +27,7 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
   return (
     <p
       role="status"
-      className={`inline-flex items-center gap-1.5 text-[13px] ${sync.tone === "bad" ? "font-semibold text-danger" : "text-muted"}`}
+      className={`inline-flex items-center gap-1.5 text-small ${sync.tone === "bad" ? "font-semibold text-danger" : "text-muted"}`}
     >
       <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[sync.tone]}`} />
       <span className={compact ? "max-w-[9rem] truncate sm:max-w-[16rem]" : ""} title={sync.title ?? sync.label}>

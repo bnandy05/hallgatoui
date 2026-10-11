@@ -16,6 +16,7 @@ import { CourseDialog } from "@/components/CourseDialog";
 import { LinkEditor } from "@/components/LinkEditor";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { Dialog } from "@/components/ui/Dialog";
+import { IconButton } from "@/components/ui/IconButton";
 
 const URGENCY_TEXT_CLASS: Record<Urgency, string> = {
   overdue: "text-danger",
@@ -69,46 +70,41 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
         <div className="min-w-0 flex-1">
           <Link
             href={`/targy/${course.id}`}
-            className="line-clamp-2 text-[16px] font-bold leading-snug text-heading [overflow-wrap:anywhere] hover:underline"
+            className="line-clamp-2 text-lead font-bold leading-snug text-heading [overflow-wrap:anywhere] hover:underline"
           >
             {course.name}
           </Link>
-          {meta && <p className="mt-0.5 truncate text-[12.5px] tabular-nums text-muted-dim">{meta}</p>}
+          {meta && <p className="mt-0.5 truncate text-fine tabular-nums text-muted-dim">{meta}</p>}
         </div>
         <span
           title={t.courseCard.openDeadlines}
           aria-label={t.courseCard.openDeadlinesAria(open)}
-          className={`mt-0.5 min-w-[1.6rem] shrink-0 rounded-full px-1.5 py-0.5 text-center text-[12px] font-semibold tabular-nums ${
+          className={`mt-0.5 min-w-[1.6rem] shrink-0 rounded-full px-1.5 py-0.5 text-center text-fine font-semibold tabular-nums ${
             open > 0 ? "bg-canary text-heading" : "text-muted-dim"
           }`}
         >
           {open}
         </span>
-        <button
-          type="button"
-          onClick={() => setEditOpen(true)}
-          aria-label={t.courseCard.edit(course.name)}
-          className="-mr-1.5 -mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.06] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
-        >
+        <IconButton onClick={() => setEditOpen(true)} aria-label={t.courseCard.edit(course.name)} className="-mr-1.5 -mt-1">
           <Pencil className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
 
-      <div className="mt-3 min-w-0 border-t border-border/70 pt-3 text-[14px]">
+      <div className="mt-3 min-w-0 border-t border-border/70 pt-3 text-body">
         {next ? (
           <>
             <p className="truncate font-medium text-foreground" title={next.title}>
               {next.title}
             </p>
-            <p className={`text-[12.5px] font-semibold ${URGENCY_TEXT_CLASS[urgencyOf(next, now)]}`}>
-              {formatRelative(new Date(next.due), now, dateLocale(locale))}
+            <p className={`text-fine font-semibold ${URGENCY_TEXT_CLASS[urgencyOf(next, now)]}`}>
+              {formatRelative(new Date(next.due), now, locale)}
             </p>
           </>
         ) : (
-          <p className="text-[13px] text-muted-dim">{t.courseCard.noUpcoming}</p>
+          <p className="text-small text-muted-dim">{t.courseCard.noUpcoming}</p>
         )}
         {nextClass && (
-          <p className="mt-1 truncate text-[12px] text-muted-dim">
+          <p className="mt-1 truncate text-fine text-muted-dim">
             {t.courseCard.classLabel}: {format(new Date(nextClass.start), "EEE HH:mm", { locale: dateLocale(locale) })}
             {nextClass.room && ` · ${nextClass.room}`}
           </p>
@@ -123,7 +119,7 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
           <Link
             href={`/targy/${course.id}`}
             aria-label={t.courseCard.moreLinks(extra, course.name)}
-            className="inline-flex h-7 items-center rounded-[var(--radius)] border border-border px-1.5 text-[12px] font-semibold text-muted hover:border-border-strong hover:text-heading"
+            className="inline-flex h-7 items-center rounded-[var(--radius)] border border-border px-1.5 text-fine font-semibold text-muted hover:border-border-strong hover:text-heading"
           >
             +{extra}
           </Link>
@@ -133,7 +129,7 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
           onClick={() => setLinksOpen(true)}
           aria-label={course.links.length > 0 ? t.courseCard.editLinksFor(course.name) : t.courseCard.addLinkFor(course.name)}
           title={course.links.length > 0 ? t.courseCard.editLinks : t.courseCard.addLink}
-          className="ml-0.5 inline-flex h-7 items-center gap-1 rounded-[var(--radius)] border border-dashed border-border-strong px-1.5 text-[12px] font-medium text-muted transition-colors hover:border-accent hover:text-heading pointer-coarse:h-9 pointer-coarse:px-2.5"
+          className="ml-0.5 inline-flex h-7 items-center gap-1 rounded-[var(--radius)] border border-dashed border-border-strong px-1.5 text-fine font-medium text-muted transition-colors hover:border-accent hover:text-heading pointer-coarse:h-9 pointer-coarse:px-2.5"
         >
           {course.links.length > 0 ? <Link2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           {course.links.length === 0 && t.courseCard.link}

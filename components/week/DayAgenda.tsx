@@ -43,10 +43,10 @@ export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayA
           >
             {today && <span aria-hidden="true" className="pin -top-[5px] left-[22px]" />}
             <header className="flex flex-col">
-              <span className={`font-display text-[19px] capitalize ${past ? "text-muted" : "text-heading"}`}>
+              <span className={`font-display text-title capitalize ${past ? "text-muted" : "text-heading"}`}>
                 {format(day.date, "EEEE", { locale: dl })}
               </span>
-              <span className={`text-[12px] tabular-nums ${today ? "font-semibold text-heading" : "text-muted"}`}>
+              <span className={`text-fine tabular-nums ${today ? "font-semibold text-heading" : "text-muted"}`}>
                 {today ? t.week.today : format(day.date, t.formats.monthDay, { locale: dl })}
               </span>
             </header>

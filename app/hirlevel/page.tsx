@@ -25,18 +25,18 @@ export default async function Page(props: PageProps<"/hirlevel">) {
 
   let body;
   if (result === "ok") {
-    body = <p className="text-[15px] text-foreground">{t.unsubscribe.done}</p>;
+    body = <p className="text-lead text-foreground">{t.unsubscribe.done}</p>;
   } else if (result) {
-    body = <p className="text-[15px] font-semibold text-danger">{t.unsubscribe.invalid}</p>;
+    body = <p className="text-lead font-semibold text-danger">{t.unsubscribe.invalid}</p>;
   } else if (!userId || !key) {
-    body = <p className="text-[15px] font-semibold text-danger">{t.unsubscribe.invalid}</p>;
+    body = <p className="text-lead font-semibold text-danger">{t.unsubscribe.invalid}</p>;
   } else {
     body = (
       <form method="post" action="/api/hirlevel" className="flex flex-col items-start gap-4">
         <input type="hidden" name="m" value="leiratkozas" />
         <input type="hidden" name="u" value={userId} />
         <input type="hidden" name="k" value={key} />
-        <p className="text-[15px] text-foreground">{t.unsubscribe.prompt}</p>
+        <p className="text-lead text-foreground">{t.unsubscribe.prompt}</p>
         <Button type="submit" variant="danger">
           {t.unsubscribe.button}
         </Button>

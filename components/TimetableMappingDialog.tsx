@@ -76,11 +76,11 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[14px] text-muted">
+      <p className="text-body text-muted">
         {t.mapping.intro}
       </p>
 
-      {subjects.length === 0 && <p className="text-[14px] text-muted">{t.mapping.none}</p>}
+      {subjects.length === 0 && <p className="text-body text-muted">{t.mapping.none}</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {subjects.map((s) => {
@@ -88,8 +88,8 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
           if (!choice) return null;
           return (
             <li key={s.subjectKey} className="px-5 py-4">
-              <p className="text-[14px] font-medium text-foreground">{s.subject}</p>
-              <p className="mb-2 text-[12.5px] text-muted">
+              <p className="text-body font-medium text-foreground">{s.subject}</p>
+              <p className="mb-2 text-fine text-muted">
                 {t.mapping.classCount(s.count)}
                 {s.groups.length > 0 && t.mapping.groups(s.groups.join(", "))}
               </p>

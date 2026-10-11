@@ -17,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card className="flex flex-col gap-3 text-[15px] leading-relaxed text-foreground">
-      <h2 className="font-display text-[22px] text-heading">{title}</h2>
+    <Card className="flex flex-col gap-3 text-lead leading-relaxed text-foreground">
+      <h2 className="font-display text-subhead text-heading">{title}</h2>
       {children}
     </Card>
   );
@@ -28,7 +28,7 @@ export default async function PrivacyPage() {
   const locale = await getLocale();
   const c = privacyContent(locale);
   const mail = (
-    <a href={`mailto:${CONTROLLER.email}`} className="font-semibold text-heading underline underline-offset-2">
+    <a href={`mailto:${CONTROLLER.email}`} className="link-text">
       {CONTROLLER.email}
     </a>
   );
@@ -36,7 +36,7 @@ export default async function PrivacyPage() {
   return (
     <div className="flex max-w-[760px] flex-col gap-6" lang={locale}>
       <SectionHeading as="h1" title={c.title} sub={c.sub} />
-      {c.translationNote && <p className="text-[14px] font-semibold text-muted">{c.translationNote}</p>}
+      {c.translationNote && <p className="text-body font-semibold text-muted">{c.translationNote}</p>}
 
       <Section title={c.controller.title}>
         <p>

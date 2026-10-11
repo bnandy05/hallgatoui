@@ -41,11 +41,11 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
       <div className="flex items-start gap-3">
         <PlatformIcon platform={getPlatform("neptun", customPlatforms)} size="md" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-bold text-heading">{source.name}</p>
-          <p className="text-[12.5px] text-muted">{t.timetable.meta(day(source.importedAt))}</p>
+          <p className="truncate text-lead font-bold text-heading">{source.name}</p>
+          <p className="text-fine text-muted">{t.timetable.meta(day(source.importedAt))}</p>
         </div>
       </div>
-      <p className="text-[13.5px] text-muted">
+      <p className="text-small text-muted">
         {t.timetable.classCount(classes)}
         {from && to && ` · ${day(from)} – ${day(to)}`}
       </p>

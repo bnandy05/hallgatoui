@@ -139,7 +139,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
         placeholder="https://…"
         inputMode="url"
       />
-      {form.error && <p className="text-[13px] font-semibold text-danger">{form.error}</p>}
+      {form.error && <p className="text-small font-semibold text-danger">{form.error}</p>}
     </>
   );
 
@@ -180,8 +180,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                   title={link.url}
                   className="min-w-0 flex-1 hover:underline"
                 >
-                  <span className="block truncate text-[14.5px] font-semibold text-heading">{name}</span>
-                  <span className="block truncate text-[12.5px] text-muted-dim">{linkHost(link.url)}</span>
+                  <span className="block truncate text-body font-semibold text-heading">{name}</span>
+                  <span className="block truncate text-fine text-muted-dim">{linkHost(link.url)}</span>
                 </a>
                 <div className="flex shrink-0 items-center">
                   <button
@@ -237,7 +237,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           }}
           className="flex flex-col gap-2 rounded-[var(--radius)] bg-inset p-3"
         >
-          <p className="text-[14px] font-bold text-heading">{t.linkEditor.newLink}</p>
+          <p className="text-body font-bold text-heading">{t.linkEditor.newLink}</p>
           {linkFields(addForm, setAddForm)}
           <div className="flex justify-end gap-2">
             {course.links.length > 0 && (
@@ -254,7 +254,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-[14px] font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
+          className="flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-body font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
         >
           <Plus className="h-4 w-4" />
           {t.linkEditor.newLink}

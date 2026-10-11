@@ -57,9 +57,9 @@ export function NotificationSettings() {
 
       <div className="sheet-paper flex flex-col px-5 py-1">
         {permission === "unsupported" ? (
-          <p className="py-4 text-[14px] text-muted">{t.notifications.unsupported}</p>
+          <p className="py-4 text-body text-muted">{t.notifications.unsupported}</p>
         ) : permission === "denied" ? (
-          <p className="py-4 text-[14px] text-muted">
+          <p className="py-4 text-body text-muted">
             {t.notifications.denied}
           </p>
         ) : (
@@ -74,7 +74,7 @@ export function NotificationSettings() {
         {active && (
           <>
             <div className="border-t border-border/70 py-4">
-              <p className="mb-2.5 text-[14.5px] font-medium text-heading">{t.notifications.timing}</p>
+              <p className="mb-2.5 text-body font-medium text-heading">{t.notifications.timing}</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label={t.notifications.leadGroup}>
                 {LEAD_OPTIONS.map((opt) => (
                   <Pill

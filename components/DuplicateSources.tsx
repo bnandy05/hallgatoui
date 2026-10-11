@@ -33,7 +33,7 @@ export function DuplicateSources({ deadline, small = false }: { deadline: Deadli
         expanded={open}
         controls={listId}
         title={t.duplicates.pillTitle}
-        className={small ? "!px-1.5 !py-0 !text-[10.5px]" : "!px-2 !py-0 !text-[11px]"}
+        className={small ? "!px-1.5 !py-0 !text-fine" : "!px-2 !py-0 !text-fine"}
       >
         {t.duplicates.pill(copies.length)}
       </Pill>
@@ -48,7 +48,7 @@ export function DuplicateSources({ deadline, small = false }: { deadline: Deadli
             const platform = getPlatform(feed?.platformId ?? copy.platformId, customPlatforms);
             const name = copy.source === "manual" ? t.duplicates.manual : platformName(platform, t.platforms.other);
             return (
-              <li key={copy.id} className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+              <li key={copy.id} className="flex flex-wrap items-center gap-1.5 text-fine text-muted">
                 <PlatformIcon platform={platform} size="sm" />
                 <span className="font-medium text-foreground">{name}</span>
                 {copy.url && (
@@ -65,7 +65,7 @@ export function DuplicateSources({ deadline, small = false }: { deadline: Deadli
                 <button
                   type="button"
                   onClick={() => ignoreDuplicate(deadline.id, copy.id)}
-                  className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted hover:border-border-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+                  className="ml-auto rounded border border-border px-1.5 py-0.5 text-fine text-muted hover:border-border-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
                 >
                   {t.duplicates.notDuplicate}
                 </button>

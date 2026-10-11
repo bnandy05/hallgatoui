@@ -74,7 +74,7 @@ export function Tabs({
             aria-controls={panelId(item.id)}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(item.id)}
-            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-[14.5px] font-semibold transition-colors duration-150 ${
+            className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-body font-semibold transition-colors duration-150 ${
               active
                 ? "border-accent text-heading"
                 : "border-transparent text-muted hover:text-heading"
@@ -89,7 +89,7 @@ export function Tabs({
             {item.label}
             {item.count !== undefined && (
               <span
-                className={`min-w-[1.4rem] rounded-full px-1.5 text-center text-[11.5px] tabular-nums ${
+                className={`min-w-[1.4rem] rounded-full px-1.5 text-center text-fine tabular-nums ${
                   active ? "bg-accent text-accent-ink" : "bg-wash/[0.06] text-muted"
                 }`}
               >

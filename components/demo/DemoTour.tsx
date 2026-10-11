@@ -7,6 +7,7 @@ import { DEMO_TOUR_KEY, registerFromDemo } from "@/lib/demoMode";
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { NeedsAccountStamp } from "@/components/demo/NeedsAccount";
 
 type StepKey = keyof ReturnType<typeof useT>["demo"]["steps"];
@@ -151,20 +152,14 @@ export function DemoTour() {
       className="sheet-paper fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 p-5 md:inset-x-auto md:bottom-6 md:right-6 md:w-[380px]"
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[12.5px] font-semibold tabular-nums text-muted">{t.demo.step(step + 1, STEPS.length)}</span>
-        <button
-          type="button"
-          onClick={() => writeStep(null)}
-          aria-label={t.demo.close}
-          title={t.demo.close}
-          className="-mr-2 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading"
-        >
+        <span className="text-fine font-semibold tabular-nums text-muted">{t.demo.step(step + 1, STEPS.length)}</span>
+        <IconButton onClick={() => writeStep(null)} aria-label={t.demo.close} title={t.demo.close} className="-mr-2 -mt-1">
           <X className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
       {current.locked && <NeedsAccountStamp />}
-      <h2 className="font-display text-[24px] leading-tight text-heading">{copy.title}</h2>
-      <p className="text-[14.5px] text-foreground">{copy.body}</p>
+      <h2 className="font-display text-subhead leading-tight text-heading">{copy.title}</h2>
+      <p className="text-body text-foreground">{copy.body}</p>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
         {step > 0 ? (
           <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>

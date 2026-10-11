@@ -135,7 +135,7 @@ export default function WeekSettingsPage() {
           <button
             type="button"
             onClick={backToIndex}
-            className="-mb-4 inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading lg:hidden"
+            className="-mb-4 inline-flex w-fit items-center gap-1.5 text-body font-semibold text-muted hover:text-heading lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
             {t.settings.title}
@@ -161,8 +161,8 @@ export default function WeekSettingsPage() {
                       className="flex w-full items-center gap-3 px-5 py-4 text-left"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[16px] font-semibold text-heading">{section.label}</span>
-                        <span className="mt-0.5 flex items-center gap-1.5 text-[13.5px] text-muted">
+                        <span className="block text-lead font-semibold text-heading">{section.label}</span>
+                        <span className="mt-0.5 flex items-center gap-1.5 text-small text-muted">
                           {section.on !== undefined && status(section.on)}
                           {section.summary}
                         </span>

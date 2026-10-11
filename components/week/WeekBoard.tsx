@@ -110,8 +110,8 @@ export function WeekBoard({
           className="board-col relative grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 lg:flex lg:flex-col lg:gap-3 lg:px-2.5"
         >
           <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between lg:px-0.5">
-            <span className="font-display text-[19px] text-danger">{t.week.overdue}</span>
-            <span className="text-[12px] font-semibold tabular-nums text-danger">{overdue.length}</span>
+            <span className="font-display text-title text-danger">{t.week.overdue}</span>
+            <span className="text-fine font-semibold tabular-nums text-danger">{overdue.length}</span>
           </header>
           <div className="flex min-w-0 flex-col gap-3 pt-1">
             {overdue.map((d) => (
@@ -122,7 +122,7 @@ export function WeekBoard({
       )}
 
       {narrowEmpty && (
-        <p className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-4 py-4 text-center text-[14px] text-muted lg:hidden">{emptyDay}</p>
+        <p className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-4 py-4 text-center text-body text-muted lg:hidden">{emptyDay}</p>
       )}
 
       {days.map((day, i) => {
@@ -155,27 +155,27 @@ export function WeekBoard({
             )}
             <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between lg:gap-2 lg:px-0.5">
               <span
-                className={`font-display text-[19px] capitalize ${
+                className={`font-display text-title capitalize ${
                   past ? "text-muted" : "text-heading"
                 }`}
               >
                 {format(day.date, "EEEE", { locale: dl })}
               </span>
               <span
-                className={`text-[12px] tabular-nums ${
+                className={`text-fine tabular-nums ${
                   today ? "font-semibold text-heading" : "text-muted"
                 }`}
               >
                 {today ? t.week.todayAt(format(now, "HH:mm")) : format(day.date, t.formats.monthDay, { locale: dl })}
               </span>
               {holiday && (
-                <span className="mt-0.5 text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:hidden">
+                <span className="mt-0.5 text-fine font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:hidden">
                   {t.week.holiday(holiday.subject)}
                 </span>
               )}
             </header>
             {holiday && (
-              <span className="hidden text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:block lg:px-0.5">
+              <span className="hidden text-fine font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:block lg:px-0.5">
                 {t.week.holiday(holiday.subject)}
               </span>
             )}
@@ -186,7 +186,7 @@ export function WeekBoard({
               {day.items.map((d) => (
                 <DeadlineChip key={d.id} deadline={d} now={now} showCourse={showCourse} />
               ))}
-              {empty && <span className="text-[13px] text-muted-dim lg:hidden">{emptyDay}</span>}
+              {empty && <span className="text-small text-muted-dim lg:hidden">{emptyDay}</span>}
             </div>
           </section>
         );

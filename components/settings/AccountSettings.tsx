@@ -19,7 +19,7 @@ type Notice = { tone: "ok" | "bad"; text: string } | null;
 function NoticeLine({ notice }: { notice: Notice }) {
   if (!notice) return null;
   return (
-    <p role={notice.tone === "bad" ? "alert" : "status"} className={`text-[14px] ${notice.tone === "bad" ? "font-semibold text-danger" : "text-muted"}`}>
+    <p role={notice.tone === "bad" ? "alert" : "status"} className={`text-body ${notice.tone === "bad" ? "font-semibold text-danger" : "text-muted"}`}>
       {notice.text}
     </p>
   );
@@ -48,8 +48,8 @@ export function AccountSettings() {
         <SectionHeading title={t.account.title} sub={t.account.sub} />
         <Card className="flex flex-col gap-4">
           <div>
-            <p className="text-[13px] font-semibold text-heading">{t.account.email}</p>
-            <p className="mt-0.5 break-all text-[15px] text-foreground">{account.email}</p>
+            <p className="text-small font-semibold text-heading">{t.account.email}</p>
+            <p className="mt-0.5 break-all text-body text-foreground">{account.email}</p>
           </div>
           <SyncStatus />
         </Card>
@@ -169,7 +169,7 @@ function PasswordForm({ hasPassword, onSet }: { hasPassword: boolean | null; onS
             onChange={(e) => setNext(e.target.value)}
             aria-describedby="account-password-hint"
           />
-          <p id="account-password-hint" className="mt-1.5 text-[13px] text-muted">
+          <p id="account-password-hint" className="mt-1.5 text-small text-muted">
             {t.account.passwordHint}
           </p>
         </div>
@@ -212,7 +212,7 @@ function SignOutButtons() {
         </Button>
       </div>
       {error && (
-        <p role="alert" className="text-[14px] font-semibold text-danger">
+        <p role="alert" className="text-body font-semibold text-danger">
           {error}
         </p>
       )}
@@ -260,7 +260,7 @@ function DeleteForm({ email, onCancel }: { email: string; onCancel: () => void }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="text-[14.5px] text-muted">
+      <p className="text-body text-muted">
         {t.account.deleteText}<strong className="break-all text-heading">{email}</strong>
       </p>
       <div>
@@ -274,7 +274,7 @@ function DeleteForm({ email, onCancel }: { email: string; onCancel: () => void }
         />
       </div>
       {error && (
-        <p role="alert" className="text-[14px] font-semibold text-danger">
+        <p role="alert" className="text-body font-semibold text-danger">
           {error}
         </p>
       )}

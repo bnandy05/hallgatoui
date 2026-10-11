@@ -25,7 +25,7 @@ export function DemoBar() {
   return (
     <div className="border-b border-felt-dark bg-canary-soft">
       <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
-        <p className="min-w-0 flex-1 text-[13.5px] text-foreground">
+        <p className="min-w-0 basis-full text-small text-foreground sm:flex-1 sm:basis-0">
           <span className="font-semibold text-heading md:hidden">{t.demo.bannerShort}</span>
           <span className="hidden md:inline">{t.demo.banner}</span>
         </p>

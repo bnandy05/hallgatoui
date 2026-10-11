@@ -73,11 +73,11 @@ export function CommandPalette() {
         data-tour="search"
         onClick={() => setOpen(true)}
         disabled={!hydrated}
-        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[13.5px] md:h-8 font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
+        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2.5 text-small md:h-8 font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
       >
         <Search className="h-4 w-4" />
         <span className="hidden lg:inline">{t.palette.search}</span>
-        <kbd className="hidden rounded-[3px] bg-inset px-1.5 font-sans text-[11px] font-semibold text-muted lg:inline">
+        <kbd className="hidden rounded-[var(--radius-badge)] bg-inset px-1.5 font-sans text-fine font-semibold text-muted lg:inline">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
@@ -203,7 +203,7 @@ function PaletteContent({
       </div>
 
       {results.length === 0 ? (
-        <p className="py-6 text-center text-[14px] text-muted">{t.palette.noResults}</p>
+        <p className="py-6 text-center text-body text-muted">{t.palette.noResults}</p>
       ) : (
         <ul
           id="palette-results"
@@ -214,7 +214,7 @@ function PaletteContent({
           {results.map((item, index) => (
             <li key={item.id} role="presentation">
               {(index === 0 || results[index - 1].kind !== item.kind) && (
-                <p className="px-2 pb-1 pt-3 text-[12.5px] font-semibold text-muted-dim">
+                <p className="px-2 pb-1 pt-3 text-fine font-semibold text-muted-dim">
                   {t.palette.kinds[item.kind]}
                 </p>
               )}
@@ -225,14 +225,14 @@ function PaletteContent({
                 data-index={index}
                 onMouseMove={() => setActive(index)}
                 onClick={() => activate(item)}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-[var(--radius)] px-2 py-2 text-[14px] ${
+                className={`flex cursor-pointer items-center gap-2.5 rounded-[var(--radius)] px-2 py-2 text-body ${
                   index === active ? "bg-canary" : ""
                 }`}
               >
                 <ItemIcon item={item} customPlatforms={customPlatforms} />
                 <span className="min-w-0 truncate font-medium text-foreground">{item.title}</span>
                 {item.subtitle && (
-                  <span className="min-w-0 truncate text-[12.5px] text-muted">{item.subtitle}</span>
+                  <span className="min-w-0 truncate text-fine text-muted">{item.subtitle}</span>
                 )}
                 {item.external && (
                   <ExternalLink className="ml-auto h-3.5 w-3.5 shrink-0 text-muted" />

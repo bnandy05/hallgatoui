@@ -100,8 +100,8 @@ export function DataSettings() {
       <div className="sheet-paper divide-y divide-border/70 px-5">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">{t.data.backup}</p>
-            <p className="text-[13px] text-muted">{t.data.backupHint}</p>
+            <p className="text-body font-medium text-heading">{t.data.backup}</p>
+            <p className="text-small text-muted">{t.data.backupHint}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
@@ -121,13 +121,13 @@ export function DataSettings() {
               aria-label={t.data.fileAria}
             />
           </div>
-          {importError && <p className="basis-full text-[13px] font-semibold text-danger">{importError}</p>}
-          {importSuccess && <p className="basis-full text-[13px] font-semibold text-success">{importSuccess}</p>}
+          {importError && <p className="basis-full text-small font-semibold text-danger">{importError}</p>}
+          {importSuccess && <p className="basis-full text-small font-semibold text-success">{importSuccess}</p>}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">{t.data.demo}</p>
-            <p className="text-[13px] text-muted">{t.data.demoHint}</p>
+            <p className="text-body font-medium text-heading">{t.data.demo}</p>
+            <p className="text-small text-muted">{t.data.demoHint}</p>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
             <Sparkles className="h-4 w-4" />
@@ -138,8 +138,8 @@ export function DataSettings() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-dashed border-danger/40 px-5 py-4">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-medium text-danger">{t.data.deleteAll}</p>
-          <p className="text-[13px] text-muted">{t.data.deleteAllHint}</p>
+          <p className="text-body font-medium text-danger">{t.data.deleteAll}</p>
+          <p className="text-small text-muted">{t.data.deleteAllHint}</p>
         </div>
         <Button type="button" variant="danger" size="sm" onClick={handleReset}>
           <Trash2 className="h-4 w-4" />

@@ -6,7 +6,7 @@ import { collectDigest } from "@/lib/digest";
 import { formatDigestDue, renderDigestEmail } from "@/lib/digestEmail";
 import { renderAuthEmail } from "@/lib/authEmail";
 import { parseQuickDeadline } from "@/lib/quickAdd";
-import { groupByWeek } from "@/lib/radar";
+import { formatRelative, groupByWeek } from "@/lib/radar";
 import { dueNotifications } from "@/lib/notifications";
 import { buildSearchItems } from "@/lib/search";
 import { pickLocale } from "@/lib/i18n";
@@ -290,4 +290,21 @@ test("the privacy notice exists in both languages and names the language data an
   }
   assert.ok(en.purposes.items.some((p) => p.what === "Language preference"));
   assert.ok(hu.purposes.items.some((p) => p.what === "Nyelvbeállítás"));
+});
+
+test("formatRelative gives the largest whole unit, short, in both languages", () => {
+  const now = new Date("2026-10-11T12:00:00Z");
+  const at = (ms: number) => new Date(now.getTime() + ms);
+  const MIN = 60_000;
+  const H = 60 * MIN;
+  const D = 24 * H;
+  assert.equal(formatRelative(at(20_000), now, "hu"), "most");
+  assert.equal(formatRelative(at(25 * MIN), now, "hu"), "25 perc múlva");
+  assert.equal(formatRelative(at(6 * H + 10 * MIN), now, "hu"), "6 óra múlva");
+  assert.equal(formatRelative(at(2 * D), now, "hu"), "2 nap múlva");
+  assert.equal(formatRelative(at(-3 * H), now, "hu"), "3 óra ezelőtt");
+  assert.equal(formatRelative(at(6 * H), now, "en"), "in 6 h");
+  assert.equal(formatRelative(at(1 * D), now, "en"), "in 1 day");
+  assert.equal(formatRelative(at(-2 * D), now, "en"), "2 days ago");
+  assert.equal(formatRelative(at(90 * D), now, "en"), "in 3 months");
 });

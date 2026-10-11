@@ -117,6 +117,15 @@ export const en: Messages = {
     video: "Video",
     egyeb: "Other",
   },
+  relative: {
+    now: "now",
+    in: (amount) => `in ${amount}`,
+    ago: (amount) => `${amount} ago`,
+    minutes: (n) => `${n} min`,
+    hours: (n) => `${n} h`,
+    days: (n) => `${n} ${plural(n, "day", "days")}`,
+    months: (n) => `${n} ${plural(n, "month", "months")}`,
+  },
   counts: {
     deadlines: (n) => `${n} ${plural(n, "deadline", "deadlines")}`,
     openDeadlines: (n) => `${n} open ${plural(n, "deadline", "deadlines")}`,

@@ -19,7 +19,7 @@ export function LanguageToggle() {
           aria-pressed={locale === code}
           title={t.language[code]}
           onClick={() => locale !== code && setLanguage(code)}
-          className={`h-7 rounded-[calc(var(--radius)-2px)] px-2 text-[12.5px] font-semibold uppercase transition-colors duration-150 ${
+          className={`h-7 rounded-[calc(var(--radius)-2px)] px-2 text-fine font-semibold uppercase transition-colors duration-150 ${
             locale === code ? "bg-card text-heading shadow-[var(--shadow-paper)]" : "text-muted hover:text-heading"
           }`}
         >

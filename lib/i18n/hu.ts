@@ -117,6 +117,15 @@ export const hu = {
     video: "Videó",
     egyeb: "Egyéb",
   },
+  relative: {
+    now: "most",
+    in: (amount: string) => `${amount} múlva`,
+    ago: (amount: string) => `${amount} ezelőtt`,
+    minutes: (n: number) => `${n} perc`,
+    hours: (n: number) => `${n} óra`,
+    days: (n: number) => `${n} nap`,
+    months: (n: number) => `${n} hónap`,
+  },
   counts: {
     deadlines: (n: number) => `${n} határidő`,
     openDeadlines: (n: number) => `${n} nyitott határidő`,
