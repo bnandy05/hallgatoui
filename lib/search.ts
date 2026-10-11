@@ -1,6 +1,6 @@
 import { format } from "date-fns";
-import { hu } from "date-fns/locale";
-import { getPlatform, RESOURCE_KIND_LABELS } from "@/lib/platforms";
+import { dateLocale, getMessages, type Locale } from "@/lib/i18n";
+import { getPlatform, platformName } from "@/lib/platforms";
 import { normalizeSearch } from "@/lib/text";
 import type { Course, Deadline, IcalFeed, Platform } from "@/lib/types";
 
@@ -24,6 +24,8 @@ export interface SearchInput {
   deadlines: Deadline[];
   customPlatforms: Platform[];
   feeds: IcalFeed[];
+  /** Language of the built-in titles; Hungarian when omitted. */
+  locale?: Locale;
 }
 
 const KIND_WEIGHT: Record<SearchKind, number> = {
@@ -36,18 +38,20 @@ const KIND_WEIGHT: Record<SearchKind, number> = {
 };
 
 export function buildSearchItems(input: SearchInput): SearchItem[] {
-  const { courses, deadlines, customPlatforms, feeds } = input;
+  const { courses, deadlines, customPlatforms, feeds, locale = "hu" } = input;
+  const t = getMessages(locale);
+  const dl = dateLocale(locale);
   const items: SearchItem[] = [
-    { id: "page:/", kind: "page", title: "Hét", subtitle: "Heti nézet és tárgyak", href: "/" },
-    { id: "page:/radar", kind: "page", title: "Határidők", href: "/radar" },
-    { id: "page:/beallitasok", kind: "page", title: "Beállítások", href: "/beallitasok" },
-    { id: "action:new-deadline", kind: "action", title: "Új határidő", actionId: "new-deadline" },
+    { id: "page:/", kind: "page", title: t.search.week, subtitle: t.search.weekSub, href: "/" },
+    { id: "page:/radar", kind: "page", title: t.search.deadlines, href: "/radar" },
+    { id: "page:/beallitasok", kind: "page", title: t.search.settings, href: "/beallitasok" },
+    { id: "action:new-deadline", kind: "action", title: t.search.newDeadline, actionId: "new-deadline" },
   ];
   if (feeds.length > 0) {
     items.push({
       id: "action:sync-feeds",
       kind: "action",
-      title: "Naptárak frissítése",
+      title: t.search.syncFeeds,
       actionId: "sync-feeds",
     });
   }
@@ -66,11 +70,12 @@ export function buildSearchItems(input: SearchInput): SearchItem[] {
 
     for (const link of course.links) {
       const platform = getPlatform(link.platformId, customPlatforms);
+      const platformLabel = platformName(platform, t.platforms.other);
       items.push({
         id: `link:${course.id}:${link.id}`,
         kind: "link",
-        title: link.label || platform.name,
-        subtitle: link.label ? `${course.name} · ${platform.name}` : course.name,
+        title: link.label || platformLabel,
+        subtitle: link.label ? `${course.name} · ${platformLabel}` : course.name,
         href: link.url,
         external: true,
         platformId: link.platformId,
@@ -82,7 +87,7 @@ export function buildSearchItems(input: SearchInput): SearchItem[] {
         id: `resource:${course.id}:${resource.id}`,
         kind: "resource",
         title: resource.title,
-        subtitle: `${course.name} · ${RESOURCE_KIND_LABELS[resource.kind]}`,
+        subtitle: `${course.name} · ${t.resourceKinds[resource.kind]}`,
         href: resource.url,
         external: true,
         color: course.color,
@@ -93,7 +98,7 @@ export function buildSearchItems(input: SearchInput): SearchItem[] {
   for (const deadline of deadlines) {
     if (deadline.done) continue;
     const course = deadline.courseId ? courseById.get(deadline.courseId) : undefined;
-    const due = format(new Date(deadline.due), "MMM d. HH:mm", { locale: hu });
+    const due = format(new Date(deadline.due), t.formats.monthDayTime, { locale: dl });
     items.push({
       id: `deadline:${deadline.id}`,
       kind: "deadline",

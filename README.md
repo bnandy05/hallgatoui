@@ -24,6 +24,7 @@ Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord�
 - **Duplikátumok összevonása** – ha ugyanaz a határidő több forrásból (Canvas, Moodle, Neptun, kézi) is megjön, egyszer látszik, "+N forrás" jelzéssel; a "Nem duplikátum" gombbal kivételt tehetsz. Az alkalmazásban és a naptárban is, kikapcsolható.
 - **Keresés és gyors felvétel** – `Ctrl K`, ékezetfüggetlen keresés.
 - **Értesítések** – böngészőértesítés a közelgő határidőkről, amíg nyitva van egy lap.
+- **Magyarul és angolul** – az oldal, a levelek és a naptár is mindkét nyelven elérhető (English version available). A nyelvet a böngésződ nyelve alapján választja, a Beállítások → Megjelenés alatt váltható, és a fiókodhoz tartozik.
 
 ## Adatvédelem
 

@@ -1,3 +1,5 @@
+import { getMessages } from "@/lib/i18n";
+import { requestLocale } from "@/lib/server/locale";
 import { getAccountStore } from "@/lib/server/account/store";
 import { unsubscribeDigest, type LinkResult } from "@/lib/server/digest";
 
@@ -29,7 +31,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     form = await req.formData();
   } catch {
-    return new Response("Hibás kérés", { status: 400 });
+    return new Response(getMessages(requestLocale(req)).errors.bad_request, { status: 400 });
   }
   const result = await handle(String(form.get("m") ?? ""), String(form.get("u") ?? ""), String(form.get("k") ?? ""));
   const back = new URL("/hirlevel", url.origin);

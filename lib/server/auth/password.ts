@@ -1,3 +1,4 @@
+import { getMessages } from "@/lib/i18n";
 import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
 // Password hashing on node:crypto scrypt: `scrypt$N$r$p$salt$hash` (base64url). Server-only.
@@ -12,12 +13,18 @@ const MAX_MEMORY = 128 * N * R * 2; // scrypt needs 128*N*r bytes; the default c
 export const MIN_PASSWORD = 10;
 export const MAX_PASSWORD = 200;
 
+/** The error code (see errors.* in the dictionaries) for an unacceptable password, or null. */
+export function passwordPolicyCode(pw: unknown): "password_required" | "password_short" | "password_long" | null {
+  if (typeof pw !== "string") return "password_required";
+  if (pw.length < MIN_PASSWORD) return "password_short";
+  if (pw.length > MAX_PASSWORD) return "password_long";
+  return null;
+}
+
 /** A Hungarian error message, or null when the password is acceptable. */
 export function checkPasswordPolicy(pw: unknown): string | null {
-  if (typeof pw !== "string") return "Add meg a jelszót";
-  if (pw.length < MIN_PASSWORD) return `A jelszó legalább ${MIN_PASSWORD} karakter legyen`;
-  if (pw.length > MAX_PASSWORD) return `A jelszó legfeljebb ${MAX_PASSWORD} karakter lehet`;
-  return null;
+  const code = passwordPolicyCode(pw);
+  return code ? getMessages("hu").errors[code] : null;
 }
 
 function derive(pw: string, salt: Buffer, n: number, r: number, p: number, length: number): Promise<Buffer> {

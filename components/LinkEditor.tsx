@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { BUILT_IN_PLATFORMS, getPlatform } from "@/lib/platforms";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
 import type { CourseLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -27,6 +28,7 @@ function emptyForm(defaultPlatformId: string): LinkFormState {
 }
 
 export function LinkEditor({ courseId }: LinkEditorProps) {
+  const t = useT();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const customPlatforms = useStore((s) => s.customPlatforms);
   const addLink = useStore((s) => s.addLink);
@@ -46,7 +48,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
   function handleAdd() {
     const normalized = normalizeLinkUrl(addForm.url);
     if (!normalized) {
-      setAddForm((f) => ({ ...f, error: "Érvénytelen link" }));
+      setAddForm((f) => ({ ...f, error: t.linkEditor.invalidLink }));
       return;
     }
     addLink(courseId, {
@@ -75,7 +77,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
   function handleSaveEdit(linkId: string) {
     const normalized = normalizeLinkUrl(editForm.url);
     if (!normalized) {
-      setEditForm((f) => ({ ...f, error: "Érvénytelen link" }));
+      setEditForm((f) => ({ ...f, error: t.linkEditor.invalidLink }));
       return;
     }
     updateLink(courseId, linkId, {
@@ -87,22 +89,22 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
   }
 
   function handleRemove(linkId: string) {
-    if (confirm("Biztosan törlöd?")) {
+    if (confirm(t.linkEditor.confirmDelete)) {
       removeLink(courseId, linkId);
     }
   }
 
   const platformOptions = (
     <>
-      <optgroup label="Beépített">
+      <optgroup label={t.linkEditor.builtIn}>
         {BUILT_IN_PLATFORMS.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.name}
+            {platformName(p, t.platforms.other)}
           </option>
         ))}
       </optgroup>
       {customPlatforms.length > 0 && (
-        <optgroup label="Saját">
+        <optgroup label={t.linkEditor.custom}>
           {customPlatforms.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -117,21 +119,21 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
     <>
       <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
         <Select
-          aria-label="Platform"
+          aria-label={t.linkEditor.platform}
           value={form.platformId}
           onChange={(e) => setForm((f) => ({ ...f, platformId: e.target.value }))}
         >
           {platformOptions}
         </Select>
         <Input
-          aria-label="Felirat"
+          aria-label={t.linkEditor.label}
           value={form.label}
           onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-          placeholder="Felirat (nem kötelező)"
+          placeholder={t.linkEditor.labelPlaceholder}
         />
       </div>
       <Input
-        aria-label="Link"
+        aria-label={t.linkEditor.link}
         value={form.url}
         onChange={(e) => setForm((f) => ({ ...f, url: e.target.value, error: null }))}
         placeholder="https://…"
@@ -150,7 +152,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
         <ul className="-mx-1 divide-y divide-border/70">
           {course.links.map((link, index) => {
             const platform = getPlatform(link.platformId, customPlatforms);
-            const name = link.label || platform.name;
+            const name = link.label || platformName(platform, t.platforms.other);
 
             if (editingId === link.id) {
               return (
@@ -158,10 +160,10 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                   {linkFields(editForm, setEditForm)}
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={cancelEdit}>
-                      Mégse
+                      {t.common.cancel}
                     </Button>
                     <Button type="button" size="sm" onClick={() => handleSaveEdit(link.id)}>
-                      Mentés
+                      {t.common.save}
                     </Button>
                   </div>
                 </li>
@@ -184,8 +186,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                 <div className="flex shrink-0 items-center">
                   <button
                     type="button"
-                    aria-label={`${name} feljebb`}
-                    title="Feljebb"
+                    aria-label={t.linkEditor.moveUpAria(name)}
+                    title={t.linkEditor.moveUp}
                     disabled={index === 0}
                     onClick={() => moveLink(courseId, link.id, -1)}
                     className={iconButton}
@@ -194,8 +196,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                   </button>
                   <button
                     type="button"
-                    aria-label={`${name} lejjebb`}
-                    title="Lejjebb"
+                    aria-label={t.linkEditor.moveDownAria(name)}
+                    title={t.linkEditor.moveDown}
                     disabled={index === course.links.length - 1}
                     onClick={() => moveLink(courseId, link.id, 1)}
                     className={iconButton}
@@ -204,8 +206,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                   </button>
                   <button
                     type="button"
-                    aria-label={`${name} szerkesztése`}
-                    title="Szerkesztés"
+                    aria-label={t.linkEditor.editAria(name)}
+                    title={t.common.edit}
                     onClick={() => startEdit(link)}
                     className={iconButton}
                   >
@@ -213,8 +215,8 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
                   </button>
                   <button
                     type="button"
-                    aria-label={`${name} törlése`}
-                    title="Törlés"
+                    aria-label={t.linkEditor.deleteAria(name)}
+                    title={t.common.delete}
                     onClick={() => handleRemove(link.id)}
                     className={`${iconButton} hover:!text-danger`}
                   >
@@ -235,16 +237,16 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           }}
           className="flex flex-col gap-2 rounded-[var(--radius)] bg-inset p-3"
         >
-          <p className="text-[14px] font-bold text-heading">Új link</p>
+          <p className="text-[14px] font-bold text-heading">{t.linkEditor.newLink}</p>
           {linkFields(addForm, setAddForm)}
           <div className="flex justify-end gap-2">
             {course.links.length > 0 && (
               <Button type="button" variant="secondary" size="sm" onClick={() => setAdding(false)}>
-                Mégse
+                {t.common.cancel}
               </Button>
             )}
             <Button type="submit" size="sm">
-              Hozzáadás
+              {t.linkEditor.add}
             </Button>
           </div>
         </form>
@@ -255,7 +257,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           className="flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-[14px] font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
         >
           <Plus className="h-4 w-4" />
-          Új link
+          {t.linkEditor.newLink}
         </button>
       )}
     </div>

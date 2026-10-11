@@ -2,49 +2,53 @@ import { getAccountStore, type StoredUser } from "@/lib/server/account/store";
 import { sendEmail } from "@/lib/server/email";
 import { publicAppUrl } from "@/lib/server/appUrl";
 import { clientIp, errorResponse, storageErrorResponse } from "@/lib/server/subscription";
+import { requestLocale, userLocale } from "@/lib/server/locale";
 import { SESSION_TTL_SECONDS } from "@/lib/server/auth/tokens";
+import type { Locale } from "@/lib/i18n/locales";
 import { sessionUser, type AuthDeps, type AuthError } from "@/lib/server/auth/service";
 
 // Request plumbing shared by the /api/fiok* and /api/adatok routes. Server-only.
 
 export const SESSION_COOKIE = "hr_session";
-export const NOT_CONFIGURED = "A fiókok nincsenek beállítva a szerveren";
 
 /** Dependencies for the auth service, or a 503 response when the server has no storage. */
 export function authDeps(req: Request): AuthDeps | Response {
   const store = getAccountStore();
-  if (!store) return errorResponse(NOT_CONFIGURED, 503);
-  return { store, send: sendEmail, now: () => new Date(), appUrl: publicAppUrl(req), ip: clientIp(req) };
+  const locale = requestLocale(req);
+  if (!store) return errorResponse(locale, "not_configured", 503);
+  return { store, send: sendEmail, now: () => new Date(), appUrl: publicAppUrl(req), ip: clientIp(req), locale };
 }
 
 /** CSRF defence on top of SameSite: a present Origin must be this site. */
 export function checkOrigin(req: Request): Response | null {
   const origin = req.headers.get("origin");
   if (origin === null) return null;
+  const invalid = () => errorResponse(requestLocale(req), "invalid_request", 403);
   let host: string;
   try {
     host = new URL(origin).host;
   } catch {
-    return errorResponse("Érvénytelen kérés", 403);
+    return invalid();
   }
   const own = [req.headers.get("x-forwarded-host"), req.headers.get("host"), new URL(req.url).host];
-  return own.some((h) => h && h.split(",")[0].trim() === host) ? null : errorResponse("Érvénytelen kérés", 403);
+  return own.some((h) => h && h.split(",")[0].trim() === host) ? null : invalid();
 }
 
 /** Parses a JSON body of at most maxBytes, or returns the error response to send. */
 export async function readJson(req: Request, maxBytes: number): Promise<unknown | Response> {
-  if (Number(req.headers.get("content-length")) > maxBytes) return errorResponse("Túl nagy kérés", 413);
+  const locale = requestLocale(req);
+  if (Number(req.headers.get("content-length")) > maxBytes) return errorResponse(locale, "too_large", 413);
   let text: string;
   try {
     text = await req.text();
   } catch {
-    return errorResponse("Hibás kérés", 400);
+    return errorResponse(locale, "bad_request", 400);
   }
-  if (Buffer.byteLength(text) > maxBytes) return errorResponse("Túl nagy kérés", 413);
+  if (Buffer.byteLength(text) > maxBytes) return errorResponse(locale, "too_large", 413);
   try {
     return JSON.parse(text);
   } catch {
-    return errorResponse("Hibás kérés", 400);
+    return errorResponse(locale, "bad_request", 400);
   }
 }
 
@@ -56,7 +60,7 @@ export function sessionTokenOf(req: Request): string | undefined {
   return undefined;
 }
 
-/** The signed-in user, or a 401 / 503 response. */
+/** The signed-in user (with `deps.locale` set to their account language), or a 401 / 503 response. */
 export async function requireUser(
   req: Request
 ): Promise<{ deps: AuthDeps; user: StoredUser; sessionToken: string } | Response> {
@@ -64,8 +68,8 @@ export async function requireUser(
   if (deps instanceof Response) return deps;
   const sessionToken = sessionTokenOf(req);
   const user = await sessionUser(deps, sessionToken);
-  if (!user || !sessionToken) return errorResponse("Nincs bejelentkezve", 401);
-  return { deps, user, sessionToken };
+  if (!user || !sessionToken) return errorResponse(deps.locale ?? "hu", "not_signed_in", 401);
+  return { deps: { ...deps, locale: userLocale(user) }, user, sessionToken };
 }
 
 const secure = () => (process.env.NODE_ENV === "production" ? "; Secure" : "");
@@ -80,24 +84,25 @@ export function clearedSessionCookie(): string {
   return `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure()}`;
 }
 
-export function authErrorResponse({ error, status }: AuthError): Response {
-  return errorResponse(error, status);
+/** The service's error in the given language (by its code; the Hungarian text is only a fallback). */
+export function authErrorResponse({ error, status, code }: AuthError, locale: Locale = "hu"): Response {
+  return code ? errorResponse(locale, code, status) : Response.json({ error }, { status });
 }
 
-/** JSON response that is never cached, optionally setting or clearing the session cookie. */
-export function json(body: unknown, cookie?: string, status = 200): Response {
+/** JSON response that is never cached, optionally setting or clearing cookies. */
+export function json(body: unknown, cookie?: string | string[], status = 200): Response {
   const headers = new Headers({ "cache-control": "no-store" });
-  if (cookie) headers.append("set-cookie", cookie);
+  for (const c of cookie === undefined ? [] : Array.isArray(cookie) ? cookie : [cookie]) headers.append("set-cookie", c);
   return Response.json(body, { status, headers });
 }
 
 /** Turns an unexpected storage failure into a 503 instead of an unhandled 500. */
-export async function guarded(run: () => Promise<Response>): Promise<Response> {
+export async function guarded(req: Request, run: () => Promise<Response>): Promise<Response> {
   try {
     return await run();
   } catch (err) {
     console.error("[fiok] storage or server error", err instanceof Error ? err.name : "unknown");
-    return storageErrorResponse();
+    return storageErrorResponse(requestLocale(req));
   }
 }
 

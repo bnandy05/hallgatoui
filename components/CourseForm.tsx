@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { COURSE_COLORS } from "@/lib/colors";
 import type { Course } from "@/lib/types";
 
@@ -24,6 +25,7 @@ export interface CourseFormProps {
 }
 
 export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: CourseFormProps) {
+  const t = useT();
   const [name, setName] = useState(initial?.name ?? "");
   const [code, setCode] = useState(initial?.code ?? "");
   const [semester, setSemester] = useState(initial?.semester ?? "");
@@ -52,7 +54,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <Label htmlFor="course-name">Név</Label>
+        <Label htmlFor="course-name">{t.courseForm.name}</Label>
         <Input
           id="course-name"
           value={name}
@@ -64,7 +66,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor="course-code">Kód</Label>
+          <Label htmlFor="course-code">{t.courseForm.code}</Label>
           <Input
             id="course-code"
             value={code}
@@ -72,7 +74,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
           />
         </div>
         <div>
-          <Label htmlFor="course-semester">Félév</Label>
+          <Label htmlFor="course-semester">{t.courseForm.semester}</Label>
           <Input
             id="course-semester"
             value={semester}
@@ -83,13 +85,13 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
       </div>
 
       <div>
-        <Label>Szín</Label>
+        <Label>{t.courseForm.color}</Label>
         <div className="flex flex-wrap gap-2">
           {COURSE_COLORS.map((swatch) => (
             <button
               key={swatch}
               type="button"
-              aria-label={`Szín kiválasztása: ${swatch}`}
+              aria-label={t.courseForm.pickColor(swatch)}
               onClick={() => setColor(swatch)}
               className={`h-7 w-7 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 color === swatch ? "ring-2 ring-offset-2 ring-foreground" : ""
@@ -101,23 +103,23 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
       </div>
 
       <div>
-        <Label htmlFor="course-keywords">Kulcsszavak</Label>
+        <Label htmlFor="course-keywords">{t.courseForm.keywords}</Label>
         <Input
           id="course-keywords"
           value={matchKeywords}
           onChange={(e) => setMatchKeywords(e.target.value)}
-          placeholder="pl. progeg, ip-18progeg"
+          placeholder={t.courseForm.keywordsPlaceholder}
         />
         <p className="mt-1 text-[12.5px] text-muted">
-          iCal eseményekhez: ha a cím tartalmazza, ide kerül. A Canvas kurzuskódok automatikusan kitöltődnek, ha a tárgyat a naptárból veszed fel.
+          {t.courseForm.keywordsHelp}
         </p>
       </div>
 
       <DialogActions>
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Mégse
+          {t.common.cancel}
         </Button>
-        <Button type="submit">Mentés</Button>
+        <Button type="submit">{t.common.save}</Button>
       </DialogActions>
     </form>
   );

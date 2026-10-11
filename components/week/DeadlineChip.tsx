@@ -2,9 +2,10 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { format } from "date-fns";
-import { hu } from "date-fns/locale";
 import { Flame } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
@@ -29,6 +30,8 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * bottom edge is as long as the time left in the coming week.
  */
 export function DeadlineChip({ deadline, now, showCourse = true, showDate = false, index }: DeadlineChipProps) {
+  const t = useT();
+  const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const toggleDone = useStore((s) => s.toggleDone);
   const [open, setOpen] = useState(false);
@@ -75,7 +78,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
           type="checkbox"
           checked={deadline.done}
           onChange={() => toggleDone(deadline.id)}
-          aria-label={`${deadline.title}: ${deadline.done ? "megjelölés nem késznek" : "megjelölés késznek"}`}
+          aria-label={deadline.done ? t.week.markNotDone(deadline.title) : t.week.markDone(deadline.title)}
           className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-accent"
         />
         <div className="min-w-0 flex-1">
@@ -92,12 +95,12 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
           </button>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
             <span className={`shrink-0 tabular-nums ${hot && !deadline.done ? "font-semibold text-danger" : ""}`}>
-              {format(due, showDate ? "MMM d. HH:mm" : "HH:mm", { locale: hu })}
+              {format(due, showDate ? t.formats.monthDayTime : "HH:mm", { locale: dateLocale(locale) })}
             </span>
             {deadline.critical && !deadline.done && (
-              <Flame className="h-3.5 w-3.5 shrink-0 text-danger" aria-label="Kritikus" />
+              <Flame className="h-3.5 w-3.5 shrink-0 text-danger" aria-label={t.common.critical} />
             )}
-            {changed && <span className="shrink-0 font-semibold text-warning">módosult</span>}
+            {changed && <span className="shrink-0 font-semibold text-warning">{t.week.changed}</span>}
             {showCourse && course && (
               <span className="min-w-0 basis-full truncate text-muted" title={course.name}>
                 {course.name}

@@ -1,5 +1,6 @@
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import type { AppData } from "@/lib/types";
+import { requestLocale } from "@/lib/server/locale";
 import { errorResponse } from "@/lib/server/subscription";
 import { checkOrigin, guarded, json, readJson, requireUser } from "@/lib/server/auth/http";
 import { withoutRequirementData } from "@/lib/legacyRequirements";
@@ -20,7 +21,7 @@ const EMPTY: AppData = {
 };
 
 export function GET(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const auth = await requireUser(req);
     if (auth instanceof Response) return auth;
     const { store } = auth.deps;
@@ -39,7 +40,7 @@ export function GET(req: Request) {
 }
 
 export function PUT(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const bad = checkOrigin(req);
     if (bad) return bad;
     const auth = await requireUser(req);
@@ -49,13 +50,13 @@ export function PUT(req: Request) {
     if (body instanceof Response) return body;
     const { baseVersion, data, exportOptions } = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
     if (typeof baseVersion !== "number" || !Number.isInteger(baseVersion) || baseVersion < 0) {
-      return errorResponse("Hibás vagy hiányos adatok", 400);
+      return errorResponse(requestLocale(req), "bad_data", 400);
     }
     const validData = validateAppData(data);
-    if (!validData) return errorResponse("Hibás vagy hiányos adatok", 400);
+    if (!validData) return errorResponse(requestLocale(req), "bad_data", 400);
     const options = validateExportOptions(exportOptions);
     if (Buffer.byteLength(JSON.stringify({ data: validData, exportOptions: options })) > MAX_DATA_BYTES) {
-      return errorResponse("Túl sok adat (legfeljebb 900 KB)", 413);
+      return errorResponse(requestLocale(req), "data_too_large", 413);
     }
 
     const result = await saveData(auth.deps.store, auth.user.id, baseVersion, validData, options, auth.deps.now());

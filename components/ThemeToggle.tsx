@@ -4,15 +4,17 @@ import { Moon, Sun } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { systemTheme } from "@/lib/theme";
 import { useActiveTheme } from "@/lib/useActiveTheme";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { useHydrated } from "@/lib/useHydrated";
 
 /** Header switch between the two lightings. Picking the system's own theme goes back to following it. */
 export function ThemeToggle() {
   const hydrated = useHydrated();
+  const t = useT();
   const active = useActiveTheme();
   const setTheme = useStore((s) => s.setTheme);
   const next = active === "dark" ? "light" : "dark";
-  const label = next === "dark" ? "Sötét téma" : "Világos téma";
+  const label = next === "dark" ? t.theme.toDark : t.theme.toLight;
 
   return (
     <button

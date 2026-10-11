@@ -2,7 +2,8 @@
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { format, isSameDay, startOfDay } from "date-fns";
-import { hu } from "date-fns/locale";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { bucketSessionsByDay, bucketWeekByDay, urgencyOf } from "@/lib/radar";
 import type { ClassSession, Deadline } from "@/lib/types";
 import { ClassChip } from "@/components/week/ClassChip";
@@ -14,7 +15,7 @@ export interface WeekBoardProps {
   /** Timetable entries to show (classes above the deadlines of each day, holidays in the header). */
   sessions?: ClassSession[];
   now: Date;
-  /** Pull every overdue item (any week) into a "Lejárt" gutter left of Monday. */
+  /** Pull every overdue item (any week) into an "Overdue" gutter left of Monday. */
   gutter?: boolean;
   showCourse?: boolean;
   label: string;
@@ -49,6 +50,8 @@ export function WeekBoard({
   dense = false,
   intro = false,
 }: WeekBoardProps) {
+  const t = useT();
+  const dl = dateLocale(useLocale());
   // Which way the week moved, derived during render (no ref, no effect): the columns re-key
   // on the week, so their entrance animation replays with the matching direction.
   const week = weekStart.getTime();
@@ -102,12 +105,12 @@ export function WeekBoard({
       {showGutter && (
         <section
           key={`gutter-${week}`}
-          aria-label={`Lejárt, ${overdue.length} elem`}
+          aria-label={t.week.overdueAria(overdue.length)}
           style={colIndex(0)}
           className="board-col relative grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 lg:flex lg:flex-col lg:gap-3 lg:px-2.5"
         >
           <header className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between lg:px-0.5">
-            <span className="font-display text-[19px] text-danger">Lejárt</span>
+            <span className="font-display text-[19px] text-danger">{t.week.overdue}</span>
             <span className="text-[12px] font-semibold tabular-nums text-danger">{overdue.length}</span>
           </header>
           <div className="flex min-w-0 flex-col gap-3 pt-1">
@@ -133,7 +136,7 @@ export function WeekBoard({
           <section
             key={day.date.toISOString()}
             style={colIndex(i + (showGutter ? 1 : 0))}
-            aria-label={`${format(day.date, "EEEE, MMM d.", { locale: hu })}${today ? " (ma)" : ""}`}
+            aria-label={`${format(day.date, t.formats.weekdayMonthDay, { locale: dl })}${today ? t.week.todaySuffix : ""}`}
             aria-current={today ? "date" : undefined}
             className={`board-col relative grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] px-3 pb-4 pt-3 lg:flex lg:flex-col lg:gap-3 lg:px-2.5 ${
               dense ? "lg:min-h-[8rem]" : "lg:min-h-[15rem]"
@@ -156,24 +159,24 @@ export function WeekBoard({
                   past ? "text-muted" : "text-heading"
                 }`}
               >
-                {format(day.date, "EEEE", { locale: hu })}
+                {format(day.date, "EEEE", { locale: dl })}
               </span>
               <span
                 className={`text-[12px] tabular-nums ${
                   today ? "font-semibold text-heading" : "text-muted"
                 }`}
               >
-                {today ? `ma, ${format(now, "HH:mm")}` : format(day.date, "MMM d.", { locale: hu })}
+                {today ? t.week.todayAt(format(now, "HH:mm")) : format(day.date, t.formats.monthDay, { locale: dl })}
               </span>
               {holiday && (
                 <span className="mt-0.5 text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:hidden">
-                  Szünnap · {holiday.subject}
+                  {t.week.holiday(holiday.subject)}
                 </span>
               )}
             </header>
             {holiday && (
               <span className="hidden text-[12px] font-semibold leading-snug text-accent-2 [overflow-wrap:anywhere] lg:block lg:px-0.5">
-                Szünnap · {holiday.subject}
+                {t.week.holiday(holiday.subject)}
               </span>
             )}
             <div className="flex min-w-0 flex-col gap-3 pt-1">

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, FileQuestion, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 import { addDays, format, isSameDay, startOfDay } from "date-fns";
-import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
-import { getPlatform } from "@/lib/platforms";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { getPlatform, platformName } from "@/lib/platforms";
 import { linkHost } from "@/lib/url";
 import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, groupByWeek, isCritical, nextDeadlineFor, urgencyOf, weekRangeLabel } from "@/lib/radar";
@@ -28,10 +29,11 @@ import { DayAgenda } from "@/components/week/DayAgenda";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
 
 function BackLink() {
+  const t = useT();
   return (
     <Link href="/" className="inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading">
       <ArrowLeft className="h-4 w-4" />
-      Vissza a héthez
+      {t.course.back}
     </Link>
   );
 }
@@ -50,9 +52,10 @@ function DetailSkeleton() {
 
 /** A course link as a launch tile: the platform's mark, its name and where it goes. */
 function LaunchTile({ link }: { link: CourseLink }) {
+  const t = useT();
   const customPlatforms = useStore((s) => s.customPlatforms);
   const platform = getPlatform(link.platformId, customPlatforms);
-  const name = link.label || platform.name;
+  const name = link.label || platformName(platform, t.platforms.other);
   return (
     <a
       href={link.url}
@@ -93,13 +96,15 @@ function Section({
 
 /** The course's classes in the coming seven days, one line per day, taped flat. */
 function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Date }) {
+  const t = useT();
+  const dl = dateLocale(useLocale());
   const from = startOfDay(now);
   const to = addDays(from, 7);
   const upcoming = sessions
     .filter((s) => new Date(s.end) >= now && new Date(s.start) < to)
     .sort((a, b) => a.start.localeCompare(b.start));
   if (upcoming.length === 0) {
-    return <p className="text-[14px] text-muted">A következő hét napban nincs órája.</p>;
+    return <p className="text-[14px] text-muted">{t.course.noClassesNext7}</p>;
   }
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
@@ -108,7 +113,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
         return (
           <li key={s.id} className="flex flex-col gap-1">
             <span className="text-[12.5px] font-semibold text-muted first-letter:uppercase">
-              {isSameDay(start, now) ? "Ma" : format(start, "EEEE, MMM d.", { locale: hu })}
+              {isSameDay(start, now) ? t.course.todayCapital : format(start, t.formats.weekdayMonthDay, { locale: dl })}
             </span>
             <ClassChip session={s} showCourse={false} />
           </li>
@@ -119,6 +124,9 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
 }
 
 export function CourseWeekDetail({ id }: { id: string }) {
+  const t = useT();
+  const locale = useLocale();
+  const dl = dateLocale(locale);
   const hydrated = useDataReady();
   const course = useStore((s) => s.courses.find((c) => c.id === id));
   const deleteCourse = useStore((s) => s.deleteCourse);
@@ -143,9 +151,9 @@ export function CourseWeekDetail({ id }: { id: string }) {
     const isOverdue = (d: (typeof open)[number]) => urgencyOf(d, now) === "overdue";
     return {
       overdue: open.filter(isOverdue).sort((a, b) => a.due.localeCompare(b.due)),
-      weeks: groupByWeek(open.filter((d) => !isOverdue(d)), now),
+      weeks: groupByWeek(open.filter((d) => !isOverdue(d)), now, locale),
     };
-  }, [open, now]);
+  }, [open, now, locale]);
 
   if (!hydrated || deleting) return <DetailSkeleton />;
 
@@ -155,11 +163,11 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <BackLink />
         <EmptyState
           icon={FileQuestion}
-          title="A tárgy nem található"
-          text="Lehet, hogy törölted, vagy hibás a link."
+          title={t.course.notFound}
+          text={t.course.notFoundText}
           action={
             <Link href="/" className={buttonClasses({ variant: "secondary" })}>
-              Vissza a héthez
+              {t.course.back}
             </Link>
           }
         />
@@ -174,7 +182,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
 
   function handleDelete() {
     if (!course) return;
-    if (confirm("Biztosan törlöd a tárgyat? A kézzel felvett határidői és anyagai is törlődnek.")) {
+    if (confirm(t.course.confirmDelete)) {
       setDeleting(true);
       router.push("/");
       deleteCourse(course.id);
@@ -203,34 +211,35 @@ export function CourseWeekDetail({ id }: { id: string }) {
 
             <dl className="flex flex-col gap-2 border-t border-border/70 pt-4 text-[14px]">
               <div>
-                <dt className="sr-only">Nyitott határidők</dt>
+                <dt className="sr-only">{t.course.openDeadlines}</dt>
                 <dd className="text-foreground">
-                  {open.length === 0 ? "Nincs nyitott határidő" : `${open.length} nyitott határidő`}
+                  {open.length === 0 ? t.course.noOpenDeadlines : t.counts.openDeadlines(open.length)}
                   {criticalCount > 0 && (
                     <>
-                      , ebből <span className="font-semibold text-danger">{criticalCount} kritikus</span>
+                      {t.course.ofWhich}
+                      <span className="font-semibold text-danger">{t.course.criticalCount(criticalCount)}</span>
                     </>
                   )}
                 </dd>
               </div>
               {next && (
                 <div>
-                  <dt className="text-[12.5px] text-muted">Következő határidő</dt>
+                  <dt className="text-[12.5px] text-muted">{t.course.nextDeadline}</dt>
                   <dd className="font-semibold text-heading">
                     {next.title}
                     <span
                       className={`block text-[13px] ${isCritical(next, now) ? "text-danger" : "font-normal text-muted"}`}
                     >
-                      {formatRelative(new Date(next.due), now)}
+                      {formatRelative(new Date(next.due), now, dl)}
                     </span>
                   </dd>
                 </div>
               )}
               {nextClass && (
                 <div>
-                  <dt className="text-[12.5px] text-muted">Következő óra</dt>
+                  <dt className="text-[12.5px] text-muted">{t.course.nextClass}</dt>
                   <dd className="font-semibold text-heading first-letter:uppercase">
-                    {format(new Date(nextClass.start), "EEEE HH:mm", { locale: hu })}
+                    {format(new Date(nextClass.start), "EEEE HH:mm", { locale: dl })}
                     {nextClass.room && <span className="font-normal text-muted">, {nextClass.room}</span>}
                   </dd>
                 </div>
@@ -245,18 +254,18 @@ export function CourseWeekDetail({ id }: { id: string }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-[14px] text-muted">Még nincs link. Add hozzá a Canvas, Teams vagy Moodle oldalát.</p>
+                <p className="text-[14px] text-muted">{t.course.noLinks}</p>
               )}
               <Button type="button" variant="ghost" size="sm" onClick={() => setLinksOpen(true)} className="self-start">
                 {course.links.length > 0 ? <Link2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                {course.links.length > 0 ? "Linkek szerkesztése" : "Link hozzáadása"}
+                {course.links.length > 0 ? t.course.editLinks : t.course.addLink}
               </Button>
             </div>
 
             <div className="flex items-center gap-2 border-t border-border/70 pt-4">
               <Button type="button" variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4" />
-                Tárgy szerkesztése
+                {t.course.editCourse}
               </Button>
               <Button
                 type="button"
@@ -266,7 +275,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
                 className="ml-auto text-danger hover:!bg-danger/10"
               >
                 <Trash2 className="h-4 w-4" />
-                Törlés
+                {t.common.delete}
               </Button>
             </div>
           </div>
@@ -275,17 +284,17 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <div className="flex min-w-0 flex-col gap-14">
           <Section
             id="course-deadlines"
-            title="Határidők"
+            title={t.course.deadlines}
             actions={
               <Button type="button" size="sm" onClick={() => setDeadlineOpen(true)}>
                 <Plus className="h-4 w-4" />
-                Új határidő
+                {t.course.newDeadline}
               </Button>
             }
           >
             {open.length === 0 ? (
               <div className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-5 py-8 text-center text-[14.5px] text-muted">
-                {done.length > 0 ? "Minden határidő kész." : "Ehhez a tárgyhoz még nincs határidő."}
+                {done.length > 0 ? t.course.allDone : t.course.noDeadlines}
               </div>
             ) : (
               <div className="flex flex-col gap-8">
@@ -295,7 +304,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
                     className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 sm:px-4"
                   >
                     <h3 id="course-overdue" className="flex items-baseline gap-2">
-                      <span className="font-display text-[22px] text-danger">Lejárt</span>
+                      <span className="font-display text-[22px] text-danger">{t.course.overdue}</span>
                       <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h3>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
@@ -317,7 +326,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
                       </span>
                       {!/\d/.test(week.label) && (
-                        <span className="text-[13.5px] text-muted">{weekRangeLabel(week.weekStart)}</span>
+                        <span className="text-[13.5px] text-muted">{weekRangeLabel(week.weekStart, dl, t.formats.weekRange)}</span>
                       )}
                     </h3>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} showCourse={false} />
@@ -329,7 +338,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
               <details className="group rounded-[var(--radius-slip)] bg-strip px-3 py-2.5">
                 <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[14px] font-semibold text-heading [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
-                  Kész ({done.length})
+                  {t.course.doneCount(done.length)}
                 </summary>
                 <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-4 pb-2">
                   {done.map((d) => (
@@ -341,19 +350,19 @@ export function CourseWeekDetail({ id }: { id: string }) {
           </Section>
 
           {courseSessions.length > 0 && (
-            <Section id="course-classes" title="Órák">
+            <Section id="course-classes" title={t.course.classes}>
               <UpcomingClasses sessions={courseSessions} now={now} />
             </Section>
           )}
 
-          <Section id="course-resources" title="Anyagok">
+          <Section id="course-resources" title={t.course.resources}>
             <ResourceList courseId={course.id} />
           </Section>
         </div>
       </div>
 
       <CourseDialog open={editOpen} onClose={() => setEditOpen(false)} course={course} />
-      <Dialog open={linksOpen} onClose={() => setLinksOpen(false)} title={`Linkek – ${course.name}`}>
+      <Dialog open={linksOpen} onClose={() => setLinksOpen(false)} title={t.courseCard.linksTitle(course.name)}>
         <LinkEditor courseId={course.id} />
       </Dialog>
       <DeadlineDialog open={deadlineOpen} onClose={() => setDeadlineOpen(false)} defaultCourseId={course.id} />

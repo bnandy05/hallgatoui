@@ -2,6 +2,7 @@
 
 import { BellRing } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { LEAD_OPTIONS } from "@/lib/notifications";
 import {
   refreshNotificationPermission,
@@ -13,6 +14,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Switch } from "@/components/ui/Switch";
 
 export function NotificationSettings() {
+  const t = useT();
   const prefs = useStore((s) => s.notificationPrefs);
   const setNotificationPrefs = useStore((s) => s.setNotificationPrefs);
   const permission = useNotificationPermission();
@@ -38,8 +40,8 @@ export function NotificationSettings() {
 
   function sendTest() {
     try {
-      new Notification("Hallgatói réteg", {
-        body: "Így fog kinézni egy emlékeztető.",
+      new Notification(t.shell.brand, {
+        body: t.notifications.testBody,
         icon: "/favicon.ico",
       });
     } catch {
@@ -51,36 +53,36 @@ export function NotificationSettings() {
 
   return (
     <section id="ertesitesek" className="flex flex-col gap-6">
-      <SectionHeading title="Értesítések" sub="Böngészőértesítés a határidők lejárta előtt." />
+      <SectionHeading title={t.notifications.title} sub={t.notifications.sub} />
 
       <div className="sheet-paper flex flex-col px-5 py-1">
         {permission === "unsupported" ? (
-          <p className="py-4 text-[14px] text-muted">Ez a böngésző nem támogatja az értesítéseket.</p>
+          <p className="py-4 text-[14px] text-muted">{t.notifications.unsupported}</p>
         ) : permission === "denied" ? (
           <p className="py-4 text-[14px] text-muted">
-            Az értesítések le vannak tiltva a böngészőben. A címsor melletti lakat ikonnál engedélyezheted őket.
+            {t.notifications.denied}
           </p>
         ) : (
           <Switch
             checked={active}
             onChange={(on) => (on ? void enable() : setNotificationPrefs({ enabled: false }))}
-            label="Böngészőértesítések"
-            description="Csak akkor érkezik értesítés, ha az oldal nyitva van egy böngészőlapon."
+            label={t.notifications.browser}
+            description={t.notifications.browserHint}
           />
         )}
 
         {active && (
           <>
             <div className="border-t border-border/70 py-4">
-              <p className="mb-2.5 text-[14.5px] font-medium text-heading">Időzítés</p>
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Emlékeztető időpontok">
+              <p className="mb-2.5 text-[14.5px] font-medium text-heading">{t.notifications.timing}</p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t.notifications.leadGroup}>
                 {LEAD_OPTIONS.map((opt) => (
                   <Pill
                     key={opt.minutes}
                     active={prefs.leadMinutes.includes(opt.minutes)}
                     onClick={() => toggleLead(opt.minutes)}
                   >
-                    {opt.label}
+                    {t.notifications.lead(opt.minutes)}
                   </Pill>
                 ))}
               </div>
@@ -89,13 +91,13 @@ export function NotificationSettings() {
               <Switch
                 checked={prefs.criticalOnly}
                 onChange={(v) => setNotificationPrefs({ criticalOnly: v })}
-                label="Csak a kritikus határidőknél"
+                label={t.notifications.criticalOnly}
               />
             </div>
             <div className="border-t border-border/70 py-3">
               <Button type="button" variant="secondary" size="sm" onClick={sendTest}>
                 <BellRing className="h-4 w-4" />
-                Próbaértesítés küldése
+                {t.notifications.sendTest}
               </Button>
             </div>
           </>

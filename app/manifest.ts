@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next";
+import { getT, getLocale } from "@/lib/i18n/server";
 import { THEME_COLOR } from "@/lib/theme";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const [locale, t] = await Promise.all([getLocale(), getT()]);
   return {
-    name: "Hallgatói réteg",
+    name: t.shell.brand,
     short_name: "Hallgatói",
-    description: "Tárgyak, határidők és linkek egy helyen.",
-    lang: "hu",
+    description: t.meta.manifestDescription,
+    lang: locale,
     start_url: "/",
     scope: "/",
     display: "standalone",

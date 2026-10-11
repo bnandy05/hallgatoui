@@ -3,6 +3,7 @@
 import { Dialog } from "@/components/ui/Dialog";
 import { DeadlineForm, type DeadlineFormValues } from "@/components/DeadlineForm";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/I18nProvider";
 import type { Deadline } from "@/lib/types";
 
 export interface DeadlineDialogProps {
@@ -20,6 +21,7 @@ export function DeadlineDialog({
   defaultCourseId,
   initialQuickText,
 }: DeadlineDialogProps) {
+  const t = useT();
   const addDeadlines = useStore((s) => s.addDeadlines);
   const updateDeadline = useStore((s) => s.updateDeadline);
 
@@ -36,7 +38,7 @@ export function DeadlineDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={deadline ? "Határidő szerkesztése" : "Új határidő"}
+      title={deadline ? t.deadlineDetail.editTitle : t.deadlineDetail.newTitle}
     >
       <DeadlineForm
         initial={deadline}

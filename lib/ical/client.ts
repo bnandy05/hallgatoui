@@ -1,3 +1,4 @@
+import { currentMessages } from "@/lib/i18n/clientLocale";
 import { useStore } from "@/lib/store";
 import type { IcalEventDTO } from "@/lib/ical/types";
 
@@ -23,7 +24,7 @@ const isOffline = () => typeof navigator !== "undefined" && navigator.onLine ===
 
 /** Fetches and parses a feed via the server-side /api/ical route (CORS proxy). */
 export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
-  if (isOffline()) throw new NetworkError("Nincs kapcsolat");
+  if (isOffline()) throw new NetworkError(currentMessages().errors.no_connection);
   let res: Response;
   try {
     res = await fetch("/api/ical", {
@@ -32,15 +33,15 @@ export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
       body: JSON.stringify({ url }),
     });
   } catch {
-    throw new NetworkError("Nincs kapcsolat");
+    throw new NetworkError(currentMessages().errors.no_connection);
   }
   const json = await parseJsonSafe(res);
 
   if (!res.ok) {
-    throw new Error(json.error ?? "A naptár nem érhető el");
+    throw new Error(json.error ?? currentMessages().errors.ical_unreachable);
   }
   if (!Array.isArray(json.events)) {
-    throw new Error("Hibás válasz a szervertől");
+    throw new Error(currentMessages().errors.bad_response);
   }
   return json.events;
 }
@@ -60,7 +61,7 @@ export async function syncFeed(feedId: string): Promise<void> {
   } catch (err) {
     // No connection says nothing about the feed (and lastError is a synced change): skip quietly.
     if (err instanceof NetworkError) return;
-    const message = err instanceof Error ? err.message : "A naptár nem érhető el";
+    const message = err instanceof Error ? err.message : currentMessages().errors.ical_unreachable;
     updateFeed(feedId, { lastError: message });
   }
 }

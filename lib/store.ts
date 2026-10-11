@@ -28,6 +28,7 @@ import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData } from "@/lib/demo";
 import type { ThemePref } from "@/lib/theme";
+import type { Locale } from "@/lib/i18n/locales";
 import type { SyncPayload } from "@/lib/sync/merge";
 import { setServerOffset, syncNow } from "@/lib/sync/clock";
 import { coursesWithoutRequirements, withoutRequirementData } from "@/lib/legacyRequirements";
@@ -212,7 +213,7 @@ export interface AppStore extends AppData {
   // data
   importData: (data: AppData) => void;
   resetAll: () => void;
-  loadDemo: () => void;
+  loadDemo: (locale?: Locale) => void;
 }
 
 /**
@@ -751,7 +752,8 @@ export const useStore = create<AppStore>()(
           const previous = state.timetableSources.find((s) => s.id === sourceId);
           const source: TimetableSource = {
             id: sourceId,
-            name: meta.name,
+            // A re-import keeps the stored name; only a new source gets the caller's (locale-default) one.
+            name: previous?.name ?? meta.name,
             url: meta.url ?? previous?.url,
             importedAt: new Date().toISOString(),
             // A re-import reuses the earlier mapping; only new subjects were asked about.
@@ -816,8 +818,8 @@ export const useStore = create<AppStore>()(
       resetAll: () => {
         set(() => ({ ...emptyAppData(), notifiedKeys: [] }));
       },
-      loadDemo: () => {
-        const demo = buildDemoData(new Date());
+      loadDemo: (locale) => {
+        const demo = buildDemoData(new Date(), locale);
         set((state) => ({
           courses: [
             ...state.courses,

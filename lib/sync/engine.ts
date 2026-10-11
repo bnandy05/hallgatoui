@@ -1,3 +1,4 @@
+import { currentMessages } from "@/lib/i18n/clientLocale";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { hardNavigate } from "@/lib/account/path";
 import { fetchMe, pullData, pushData } from "@/lib/account/client";
@@ -112,7 +113,7 @@ export function startSync(): () => void {
           return;
         }
       }
-      store.getState().setSyncStatus("error", "Nem sikerült menteni, újra próbáljuk");
+      store.getState().setSyncStatus("error", currentMessages().errors.sync_retrying);
       scheduleRetry();
     } finally {
       inFlight = false;

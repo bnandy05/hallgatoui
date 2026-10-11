@@ -1,8 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getT } from "@/lib/i18n/server";
 import { LinkAction } from "@/components/auth/LinkAction";
 
-export const metadata: Metadata = { title: "Fiók" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t.meta.account };
+}
 
 export default function AccountLinkPage() {
   return (

@@ -8,6 +8,7 @@ import {
 } from "@/lib/digest";
 import { renderDigestEmail } from "@/lib/digestEmail";
 import type { AccountStore } from "@/lib/server/account/store";
+import { userLocale } from "@/lib/server/locale";
 import { loadLiveDeadlines } from "@/lib/server/calendar";
 import { calendarInput } from "@/lib/server/calendarInput";
 import { sendEmail, type OutgoingEmail } from "@/lib/server/email";
@@ -107,7 +108,8 @@ export async function runDigest(
   const doc = await store.getData(userId);
   if (!doc) return "skipped";
   const input = calendarInput(doc);
-  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now);
+  const locale = userLocale(user);
+  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now, locale);
   const content = collectDigest({
     frequency: digest.frequency,
     courses: input.courses,
@@ -129,7 +131,7 @@ export async function runDigest(
   const unsubscribe = unsubscribeUrl(appUrl, userId, digest.unsubscribeKey);
   const sent = await send({
     to: user.email,
-    ...renderDigestEmail({ frequency: digest.frequency, content, now, appUrl, unsubscribeUrl: unsubscribe }),
+    ...renderDigestEmail({ frequency: digest.frequency, content, now, appUrl, unsubscribeUrl: unsubscribe, locale }),
     headers: {
       "List-Unsubscribe": `<${oneClickUrl(appUrl, userId, digest.unsubscribeKey)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

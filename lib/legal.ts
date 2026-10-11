@@ -9,7 +9,9 @@ export const CONTROLLER = {
 };
 
 /** Date of the last change to the notice, shown on it (YYYY-MM-DD). */
-export const PRIVACY_UPDATED = "2026-10-05";
+export const PRIVACY_UPDATED = "2026-10-11";
 
 /** Region of the Upstash Redis database, as the notice names it. */
 export const DATABASE_REGION = "az Európai Unió (Frankfurt)";
+/** The same, for the English notice. */
+export const DATABASE_REGION_EN = "the European Union (Frankfurt)";

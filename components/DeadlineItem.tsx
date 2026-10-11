@@ -2,10 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { format } from "date-fns";
-import { hu } from "date-fns/locale";
 import { Check, ExternalLink, Flame, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { getPlatform } from "@/lib/platforms";
+import { getPlatform, platformName } from "@/lib/platforms";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { cleanCanvasTitle } from "@/lib/ical/canvas";
 import { formatRelative, isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
@@ -18,12 +19,6 @@ import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DuplicateSources } from "@/components/DuplicateSources";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-const URGENCY_LABEL: Partial<Record<string, string>> = {
-  overdue: "Lejárt",
-  critical: "Kritikus",
-  soon: "Hamarosan",
-};
 
 const URGENCY_COLOR: Partial<Record<string, string>> = {
   overdue: "var(--danger)",
@@ -96,6 +91,8 @@ function DeadlineDetail({
   onClose: () => void;
   onEdit: () => void;
 }) {
+  const t = useT();
+  const dl = dateLocale(useLocale());
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -113,7 +110,7 @@ function DeadlineDetail({
   const urgency = urgencyOf(deadline, now);
   const hot = urgency === "overdue" || urgency === "critical";
   const platform = deadline.platformId ? getPlatform(deadline.platformId, customPlatforms) : null;
-  const badgeLabel = URGENCY_LABEL[urgency];
+  const badgeLabel = { overdue: t.week.overdue, critical: t.common.critical, soon: t.deadlineDetail.soon }[urgency as "overdue" | "critical" | "soon"];
   const badgeColor = URGENCY_COLOR[urgency];
   const changed = deadline.previousDue && isRecentlyChanged(deadline, now);
   const left = due.getTime() - now.getTime();
@@ -130,7 +127,7 @@ function DeadlineDetail({
   function handleDelete() {
     if (ordered) {
       setDeleteOpen(true);
-    } else if (confirm("Biztosan törlöd?")) {
+    } else if (confirm(t.deadlineDetail.confirmDelete)) {
       onClose();
       removeDeadline(deadline.id);
     }
@@ -146,10 +143,10 @@ function DeadlineDetail({
     <div className="flex flex-col">
       <div className="flex flex-col gap-1 pb-4">
         <p className="text-[17px] font-semibold tabular-nums text-heading first-letter:uppercase">
-          {format(due, "EEEE, MMM d. HH:mm", { locale: hu })}
+          {format(due, t.formats.weekdayMonthDayTime, { locale: dl })}
         </p>
         <p className={`text-[14.5px] ${hot && !deadline.done ? "font-semibold text-danger" : "text-muted"}`}>
-          {deadline.done ? "Kész" : formatRelative(due, now)}
+          {deadline.done ? t.common.done : formatRelative(due, now, dl)}
         </p>
         {share > 0 && (
           <span aria-hidden="true" className="mt-2 block h-[3px] w-full rounded-full bg-wash/[0.07]">
@@ -161,7 +158,7 @@ function DeadlineDetail({
         )}
         {ordered && seriesPosition > 0 && (
           <p className="text-[13px] tabular-nums text-muted">
-            Sorozat: {seriesPosition}/{ordered.length}
+            {t.deadlineDetail.series(seriesPosition, ordered.length)}
           </p>
         )}
         {(badgeLabel || changed || !manual) && (
@@ -169,18 +166,18 @@ function DeadlineDetail({
             {badgeLabel && badgeColor && !deadline.done && <Badge color={badgeColor}>{badgeLabel}</Badge>}
             {changed && deadline.previousDue && (
               <span
-                title={`Korábbi határidő: ${format(new Date(deadline.previousDue), "yyyy. MMM d. HH:mm", { locale: hu })}`}
+                title={t.deadlineDetail.previousDue(format(new Date(deadline.previousDue), t.formats.yearMonthDayTime, { locale: dl }))}
               >
-                <Badge color="var(--warning)">módosult</Badge>
+                <Badge color="var(--warning)">{t.week.changed}</Badge>
               </span>
             )}
-            {!manual && <Badge color="var(--muted)">Naptárból</Badge>}
+            {!manual && <Badge color="var(--muted)">{t.deadlineDetail.fromCalendar}</Badge>}
           </div>
         )}
       </div>
 
       <dl>
-        <Row label="Tárgy">
+        <Row label={t.deadlineDetail.course}>
           {course ? (
             <span className="inline-flex min-w-0 items-center gap-2 font-medium text-heading">
               <span
@@ -192,7 +189,7 @@ function DeadlineDetail({
             </span>
           ) : !manual ? (
             <Select
-              aria-label="Tárgy hozzárendelése"
+              aria-label={t.deadlineDetail.assignCourse}
               value=""
               onChange={(e) =>
                 updateDeadline(deadline.id, {
@@ -202,7 +199,7 @@ function DeadlineDetail({
               }
               className="!w-auto max-w-full !py-1.5"
             >
-              <option value="">Nincs tárgy</option>
+              <option value="">{t.deadlineDetail.noCourse}</option>
               {courses.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -210,15 +207,15 @@ function DeadlineDetail({
               ))}
             </Select>
           ) : (
-            <span className="text-muted">Nincs tárgy</span>
+            <span className="text-muted">{t.deadlineDetail.noCourse}</span>
           )}
         </Row>
         {(platform || deadline.url) && (
-          <Row label="Platform">
+          <Row label={t.deadlineDetail.platform}>
             {platform && (
               <span className="inline-flex items-center gap-2">
                 <PlatformIcon platform={platform} size="sm" />
-                {platform.name}
+                {platformName(platform, t.platforms.other)}
               </span>
             )}
             {deadline.url && (
@@ -228,7 +225,7 @@ function DeadlineDetail({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 font-semibold text-heading underline"
               >
-                Megnyitás
+                {t.common.open}
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             )}
@@ -236,7 +233,7 @@ function DeadlineDetail({
         )}
         <DuplicateRow deadline={deadline} />
         {deadline.note && (
-          <Row label="Megjegyzés">
+          <Row label={t.deadlineDetail.note}>
             <p className={`text-foreground ${!manual ? "line-clamp-6" : ""} whitespace-pre-line`}>{deadline.note}</p>
           </Row>
         )}
@@ -246,13 +243,13 @@ function DeadlineDetail({
         {manual && (
           <Button type="button" variant="ghost" onClick={handleDelete} className="text-danger hover:!bg-danger/10 sm:mr-auto">
             <Trash2 className="h-4 w-4" />
-            Törlés
+            {t.common.delete}
           </Button>
         )}
         {manual && (
           <Button type="button" variant="secondary" onClick={onEdit}>
             <Pencil className="h-4 w-4" />
-            Szerkesztés
+            {t.common.edit}
           </Button>
         )}
         <Button
@@ -263,7 +260,7 @@ function DeadlineDetail({
           className={deadline.critical ? "!border-danger text-danger" : ""}
         >
           <Flame className="h-4 w-4" />
-          {deadline.critical ? "Kritikus" : "Megjelölés kritikusként"}
+          {deadline.critical ? t.common.critical : t.deadlineDetail.markCritical}
         </Button>
         <Button
           type="button"
@@ -271,20 +268,20 @@ function DeadlineDetail({
           onClick={() => toggleDone(deadline.id)}
         >
           {deadline.done ? <RotateCcw className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-          {deadline.done ? "Mégsem kész" : "Kész"}
+          {deadline.done ? t.deadlineDetail.notDone : t.common.done}
         </Button>
       </DialogActions>
 
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Törlés a sorozatból">
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} title={t.deadlineDetail.deleteSeriesTitle}>
         <p className="text-[14.5px] text-foreground">
-          Ez a határidő egy sorozat tagja ({ordered?.length} határidő). Mit törölsz?
+          {t.deadlineDetail.deleteSeriesText(ordered?.length ?? 0)}
         </p>
         <DialogActions>
           <Button type="button" variant="secondary" onClick={() => setDeleteOpen(false)}>
-            Mégse
+            {t.common.cancel}
           </Button>
           <Button type="button" variant="secondary" onClick={() => deleteWith([deadline.id])}>
-            Csak ezt
+            {t.deadlineDetail.onlyThis}
           </Button>
           <Button
             type="button"
@@ -292,7 +289,7 @@ function DeadlineDetail({
             onClick={() => deleteWith(laterIds)}
             disabled={laterIds.length < 2}
           >
-            Ezt és a későbbieket ({laterIds.length})
+            {t.deadlineDetail.thisAndLater(laterIds.length)}
           </Button>
         </DialogActions>
       </Dialog>
@@ -300,11 +297,12 @@ function DeadlineDetail({
   );
 }
 
-/** "Források" row, only when other sources report the same deadline. */
+/** "Sources" row, only when other sources report the same deadline. */
 function DuplicateRow({ deadline }: { deadline: Deadline }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-[14px] [&:not(:has(button))]:hidden">
-      <dt className="text-[13px] text-muted">Források</dt>
+      <dt className="text-[13px] text-muted">{t.deadlineDetail.sources}</dt>
       <dd className="flex min-w-0 flex-wrap items-center gap-2">
         <DuplicateSources deadline={deadline} />
       </dd>

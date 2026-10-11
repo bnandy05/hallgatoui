@@ -1,15 +1,35 @@
 import { parseIcs } from "@/lib/ical/parse";
-import { fetchIcs, normalizeUrl, readBodyWithLimit, TooLargeError } from "@/lib/ical/fetch";
-import { SsrfBlockedError } from "@/lib/ical/ssrf";
+import { fetchIcs, normalizeUrl, readBodyWithLimit } from "@/lib/ical/fetch";
+import { IcalError } from "@/lib/ical/errors";
+import { getMessages, type Locale } from "@/lib/i18n";
+import { requestLocale } from "@/lib/server/locale";
 
 // POST route handlers are never cached, so there's nothing to opt out of.
 
+/** An IcalError code as the response status and the code used in the dictionaries. */
+const STATUS: Record<IcalError["code"], number> = {
+  bad_url: 400,
+  blocked: 400,
+  unreachable: 502,
+  http: 502,
+  too_large: 413,
+  format: 422,
+  redirects: 502,
+};
+
+function fail(locale: Locale, error: IcalError): Response {
+  const base = getMessages(locale).errors[`ical_${error.code}` as const];
+  const message = error.code === "http" && error.status ? `${base} (HTTP ${error.status})` : base;
+  return Response.json({ error: message, code: `ical_${error.code}` }, { status: STATUS[error.code] });
+}
+
 export async function POST(req: Request): Promise<Response> {
+  const locale = requestLocale(req);
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Hiányzó vagy hibás URL" }, { status: 400 });
+    return fail(locale, new IcalError("bad_url"));
   }
 
   const rawUrl =
@@ -17,46 +37,29 @@ export async function POST(req: Request): Promise<Response> {
       ? (body as { url: string }).url
       : null;
 
-  if (!rawUrl) {
-    return Response.json({ error: "Hiányzó vagy hibás URL" }, { status: 400 });
-  }
-
-  const url = normalizeUrl(rawUrl);
-  if (!url) {
-    return Response.json({ error: "Hiányzó vagy hibás URL" }, { status: 400 });
-  }
+  const url = rawUrl ? normalizeUrl(rawUrl) : null;
+  if (!url) return fail(locale, new IcalError("bad_url"));
 
   let res: Response;
   try {
     res = await fetchIcs(url);
   } catch (err) {
-    if (err instanceof SsrfBlockedError) {
-      return Response.json({ error: "Nem engedélyezett cím" }, { status: 400 });
-    }
-    return Response.json({ error: "A naptár nem érhető el" }, { status: 502 });
+    return fail(locale, err instanceof IcalError ? err : new IcalError("unreachable"));
   }
 
-  if (!res.ok) {
-    return Response.json(
-      { error: `A naptár nem tölthető le (HTTP ${res.status})` },
-      { status: 502 }
-    );
-  }
+  if (!res.ok) return fail(locale, new IcalError("http", res.status));
 
   let text: string;
   try {
     text = await readBodyWithLimit(res);
   } catch (err) {
-    if (err instanceof TooLargeError) {
-      return Response.json({ error: "Túl nagy naptárfájl" }, { status: 413 });
-    }
-    return Response.json({ error: "A naptár nem érhető el" }, { status: 502 });
+    return fail(locale, err instanceof IcalError ? err : new IcalError("unreachable"));
   }
 
   try {
-    const events = parseIcs(text);
+    const events = parseIcs(text, getMessages(locale).labels.untitled);
     return Response.json({ events });
   } catch {
-    return Response.json({ error: "Hibás iCal formátum" }, { status: 422 });
+    return fail(locale, new IcalError("format"));
   }
 }

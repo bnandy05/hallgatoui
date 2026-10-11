@@ -1,6 +1,7 @@
 import { publicAppUrl } from "@/lib/server/appUrl";
 import { runDigest, type SendOutcome } from "@/lib/server/digest";
 import { getAccountStore } from "@/lib/server/account/store";
+import { requestLocale } from "@/lib/server/locale";
 import { DIGEST_INDEX_KEY, errorResponse, storageErrorResponse } from "@/lib/server/subscription";
 
 // Daily digest run, called by Vercel Cron (vercel.json) with `Authorization: Bearer $CRON_SECRET`.
@@ -11,20 +12,21 @@ export const maxDuration = 60;
 const CONCURRENCY = 5;
 
 export async function GET(req: Request): Promise<Response> {
+  const locale = requestLocale(req);
   const secret = process.env.CRON_SECRET;
   if (secret) {
-    if (req.headers.get("authorization") !== `Bearer ${secret}`) return errorResponse("Nincs jogosultság", 401);
+    if (req.headers.get("authorization") !== `Bearer ${secret}`) return errorResponse(locale, "unauthorized", 401);
   } else if (process.env.NODE_ENV === "production") {
-    return errorResponse("A CRON_SECRET nincs beállítva", 503);
+    return errorResponse(locale, "cron_secret_missing", 503);
   }
   const store = getAccountStore();
-  if (!store) return errorResponse("A fiókok nincsenek beállítva a szerveren", 503);
+  if (!store) return errorResponse(locale, "not_configured", 503);
 
   let userIds: string[];
   try {
     userIds = await store.kv.smembers(DIGEST_INDEX_KEY);
   } catch {
-    return storageErrorResponse();
+    return storageErrorResponse(locale);
   }
 
   const now = new Date();

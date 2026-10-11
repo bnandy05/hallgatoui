@@ -5,7 +5,9 @@ import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
-import { getPlatform } from "@/lib/platforms";
+import { getPlatform, platformName } from "@/lib/platforms";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
@@ -28,6 +30,8 @@ function RadarSkeleton() {
 }
 
 export default function WeekRadarPage() {
+  const t = useT();
+  const locale = useLocale();
   const hydrated = useDataReady();
   const courses = useStore((s) => s.courses);
   const { visible: deadlines } = useDedupedDeadlines();
@@ -43,10 +47,10 @@ export default function WeekRadarPage() {
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));
     if (deadlines.some((d) => d.courseId === null)) {
-      chips.push({ id: NO_COURSE, name: "Tárgy nélkül", color: "var(--pin-neutral)" });
+      chips.push({ id: NO_COURSE, name: t.radar.noCourse, color: "var(--pin-neutral)" });
     }
     return chips;
-  }, [courses, deadlines]);
+  }, [courses, deadlines, t]);
 
   const platformsInUse = useMemo(() => {
     const ids = new Set(
@@ -93,9 +97,9 @@ export default function WeekRadarPage() {
       overdue: filtered
         .filter(isOverdue)
         .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime()),
-      weeks: groupByWeek(filtered.filter((d) => !isOverdue(d)), now),
+      weeks: groupByWeek(filtered.filter((d) => !isOverdue(d)), now, locale),
     };
-  }, [filtered, now]);
+  }, [filtered, now, locale]);
 
   const filtersActive =
     selectedCourses.size > 0 || showDone || criticalOnly || platformFilter !== "";
@@ -113,7 +117,7 @@ export default function WeekRadarPage() {
     <>
       <Pill active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} className="self-start">
         <Flame className="h-3.5 w-3.5" />
-        Csak kritikus
+        {t.radar.criticalOnly}
       </Pill>
       <label className="flex items-center gap-2 text-[14px] text-foreground">
         <input
@@ -122,18 +126,18 @@ export default function WeekRadarPage() {
           onChange={(e) => setShowDone(e.target.checked)}
           className="h-4 w-4 accent-accent"
         />
-        Készek is
+        {t.radar.showDone}
       </label>
       <Select
         value={platformFilter}
         onChange={(e) => setPlatformFilter(e.target.value)}
         className="!py-1.5"
-        aria-label="Platform"
+        aria-label={t.radar.platform}
       >
-        <option value="">Minden platform</option>
+        <option value="">{t.radar.allPlatforms}</option>
         {platformsInUse.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.name}
+            {platformName(p, t.platforms.other)}
           </option>
         ))}
       </Select>
@@ -144,23 +148,26 @@ export default function WeekRadarPage() {
     <div className="flex flex-col gap-8 sm:gap-10">
       <SectionHeading
         as="h1"
-        title="Határidők"
+        title={t.radar.title}
         sub={
           !hydrated ? (
             "\u00a0"
           ) : horizon.open === 0 ? (
-            "Nincs nyitott határidőd."
+            t.radar.noOpen
           ) : (
             <>
-              {horizon.open} nyitott határidő
+              {t.radar.openCount(horizon.open)}
               {horizon.critical > 0 && (
                 <>
-                  , ebből <span className="font-semibold text-danger">{horizon.critical} kritikus</span>
+                  {t.radar.ofWhich}
+                  <span className="font-semibold text-danger">{t.radar.criticalCount(horizon.critical)}</span>
                 </>
               )}
               {horizon.changed > 0 && (
                 <>
-                  ; <span className="font-semibold text-warning">{horizon.changed} módosult</span> az elmúlt 48 órában
+                  {t.radar.changedPrefix}
+                  <span className="font-semibold text-warning">{t.radar.changedCount(horizon.changed)}</span>
+                  {t.radar.changedSuffix}
                 </>
               )}
               .
@@ -175,7 +182,7 @@ export default function WeekRadarPage() {
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10">
           <div
             role="search"
-            aria-label="Szűrők"
+            aria-label={t.radar.filters}
             className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-[88px] lg:gap-4 lg:self-start lg:rounded-[var(--radius-slip)] lg:bg-card lg:px-4 lg:py-4 lg:shadow-[var(--shadow-sheet)]"
           >
             <div className="hidden lg:flex lg:flex-col lg:gap-3">{toggles}</div>
@@ -188,7 +195,7 @@ export default function WeekRadarPage() {
                 }`}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                Szűrők
+                {t.radar.filters}
                 {toggleCount > 0 && <span className="tabular-nums">· {toggleCount}</span>}
               </button>
               {courseChips.map((chip) => {
@@ -220,23 +227,23 @@ export default function WeekRadarPage() {
                 filtersActive ? "" : "hidden"
               }`}
             >
-              {filtered.length} találat
+              {t.radar.results(filtered.length)}
               {filtersActive && (
                 <button type="button" onClick={clearFilters} className="ml-auto font-semibold text-heading underline">
-                  Szűrők törlése
+                  {t.radar.clearFilters}
                 </button>
               )}
             </p>
           </div>
 
-          <Dialog open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Szűrők">
+          <Dialog open={filtersOpen} onClose={() => setFiltersOpen(false)} title={t.radar.filters}>
             <div className="flex flex-col gap-4">{toggles}</div>
             <DialogActions>
               <Button type="button" variant="secondary" onClick={clearFilters} disabled={!filtersActive}>
-                Szűrők törlése
+                {t.radar.clearFilters}
               </Button>
               <Button type="button" onClick={() => setFiltersOpen(false)}>
-                {filtered.length} találat mutatása
+                {t.radar.showResults(filtered.length)}
               </Button>
             </DialogActions>
           </Dialog>
@@ -244,7 +251,7 @@ export default function WeekRadarPage() {
           <div className="min-w-0">
             {overdue.length === 0 && weeks.length === 0 ? (
               <p className="text-[15px] text-muted">
-                {filtersActive ? "A szűrőknek egy határidő sem felel meg." : "Nincs megjeleníthető határidő."}
+                {filtersActive ? t.radar.noneMatch : t.radar.noneToShow}
               </p>
             ) : (
               <div className="flex flex-col gap-10">
@@ -254,7 +261,7 @@ export default function WeekRadarPage() {
                     className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 sm:px-4"
                   >
                     <h2 id="overdue-heading" className="flex items-baseline gap-2">
-                      <span className="font-display text-[24px] text-danger">Lejárt</span>
+                      <span className="font-display text-[24px] text-danger">{t.radar.overdue}</span>
                       <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
@@ -277,9 +284,9 @@ export default function WeekRadarPage() {
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
                       </span>
                       {!/\d/.test(week.label) && (
-                        <span className="text-[14px] text-muted">{weekRangeLabel(week.weekStart)}</span>
+                        <span className="text-[14px] text-muted">{weekRangeLabel(week.weekStart, dateLocale(locale), t.formats.weekRange)}</span>
                       )}
-                      <span className="text-[13px] tabular-nums text-muted-dim">{week.items.length} határidő</span>
+                      <span className="text-[13px] tabular-nums text-muted-dim">{t.radar.weekCount(week.items.length)}</span>
                     </h2>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} />
                   </section>

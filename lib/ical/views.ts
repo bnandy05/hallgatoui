@@ -1,5 +1,6 @@
 import type { Course, Deadline } from "@/lib/types";
 import { normalizeSearch } from "@/lib/text";
+import { getMessages, type Locale } from "@/lib/i18n";
 
 // Filtered views of the same calendar, selected with `?nezet=` on the subscription URL.
 
@@ -74,20 +75,20 @@ export function filterDeadlinesForView(deadlines: Deadline[], view: CalendarView
 }
 
 /** X-WR-CALNAME of the view. */
-export function viewCalendarName(view: CalendarView, courses: Course[]): string {
-  const base = "Hallgatói réteg";
+export function viewCalendarName(view: CalendarView, courses: Course[], locale: Locale = "hu"): string {
+  const names = getMessages(locale).ics.calendarName;
   switch (view.kind) {
     case "critical":
-      return `${base} – Kritikus`;
+      return names.critical;
     case "exams":
-      return `${base} – ZH-k és vizsgák`;
+      return names.exams;
     case "timetable":
-      return `${base} – Órarend`;
+      return names.timetable;
     case "course": {
       const course = courses.find((c) => c.id === view.courseId);
-      return course ? `${base} – ${course.name}` : base;
+      return course ? names.course(course.name) : names.all;
     }
     default:
-      return base;
+      return names.all;
   }
 }

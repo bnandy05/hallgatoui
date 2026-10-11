@@ -19,7 +19,10 @@ interface Token {
 }
 
 // Words that are never used for fuzzy course matching.
-const COMMON_WORDS = new Set(["zh", "hf", "beadando", "kviz", "vizsga", "pzh", "ea", "gy"]);
+const COMMON_WORDS = new Set([
+  "zh", "hf", "beadando", "kviz", "vizsga", "pzh", "ea", "gy",
+  "midterm", "exam", "quiz", "homework", "hw", "lab", "essay", "report", "assignment", "project",
+]);
 
 const WEEKDAYS: Record<string, number> = {
   hetfo: 1, hetfon: 1,
@@ -29,6 +32,14 @@ const WEEKDAYS: Record<string, number> = {
   pentek: 5, penteken: 5,
   szombat: 6, szombaton: 6,
   vasarnap: 0, vasarnapon: 0,
+  // English
+  monday: 1, mon: 1,
+  tuesday: 2, tue: 2, tues: 2,
+  wednesday: 3, wed: 3,
+  thursday: 4, thu: 4, thur: 4, thurs: 4,
+  friday: 5, fri: 5,
+  saturday: 6, sat: 6,
+  sunday: 0, sun: 0,
 };
 
 const MONTHS: Record<string, number> = {
@@ -44,10 +55,14 @@ const MONTHS: Record<string, number> = {
   okt: 10, oktober: 10,
   nov: 11, november: 11,
   dec: 12, december: 12,
+  // English (the Hungarian forms above already cover jan, feb, apr, jun, jul, aug, nov, dec)
+  january: 1, february: 2, mar: 3, march: 3, april: 4, may: 5, june: 6, july: 7,
+  sep: 9, sept: 9, oct: 10, october: 10,
 };
 
 const NUMBER_WORDS: Record<string, number> = {
   egy: 1, ket: 2, harom: 3, negy: 4, ot: 5, hat: 6, nyolc: 8, kilenc: 9, tiz: 10,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
 };
 
 function tokenize(text: string): Token[] {
@@ -86,14 +101,26 @@ function dateAt(tokens: Token[], i: number, now: Date): DateMatch | null {
   if (t.c === "ma") return { date: today, indices: [i] };
   if (t.c === "holnap") return { date: addDays(today, 1), indices: [i] };
   if (t.c === "holnaputan") return { date: addDays(today, 2), indices: [i] };
+  // English: today / tomorrow / day after tomorrow
+  if (t.c === "today") return { date: today, indices: [i] };
+  if (t.c === "tomorrow" || t.c === "tmrw") return { date: addDays(today, 1), indices: [i] };
+  if (t.c === "day" && next && !next.used && next.c === "after") {
+    const third = tokens[i + 2];
+    if (third && !third.used && (third.c === "tomorrow" || third.c === "tmrw")) {
+      return { date: addDays(today, 2), indices: [i, i + 1, i + 2] };
+    }
+  }
 
   if (t.c in WEEKDAYS) {
     const weekday = WEEKDAYS[t.c];
     const prev = tokens[i - 1];
     const prev2 = tokens[i - 2];
     let nextWeekIndices: number[] | null = null;
-    if (prev && !prev.used && prev.c === "jovo") nextWeekIndices = [i - 1];
-    else if (prev && !prev.used && prev.c === "heten" && prev2 && !prev2.used && prev2.c === "jovo") {
+    if (prev && !prev.used && (prev.c === "jovo" || prev.c === "next")) nextWeekIndices = [i - 1];
+    else if (
+      prev && !prev.used && (prev.c === "heten" || prev.c === "week") &&
+      prev2 && !prev2.used && (prev2.c === "jovo" || prev2.c === "next")
+    ) {
       nextWeekIndices = [i - 2, i - 1];
     }
     if (nextWeekIndices) {
@@ -115,6 +142,15 @@ function dateAt(tokens: Token[], i: number, now: Date): DateMatch | null {
     }
   }
 
+  // English "in N days/weeks"
+  if (t.c === "in" && next && !next.used) {
+    const n = /^\d{1,3}$/.test(next.c) ? Number(next.c) : NUMBER_WORDS[next.c];
+    const unit = tokens[i + 2];
+    if (n && unit && !unit.used && /^(days?|weeks?)$/.test(unit.c)) {
+      return { date: addDays(today, unit.c.startsWith("week") ? n * 7 : n), indices: [i, i + 1, i + 2] };
+    }
+  }
+
   // 2026.10.15. / 10.15. / 10.15 / 10/15
   const withYear = t.n.match(/^(\d{4})[./](\d{1,2})[./](\d{1,2})\.?$/);
   if (withYear) {
@@ -127,9 +163,16 @@ function dateAt(tokens: Token[], i: number, now: Date): DateMatch | null {
     if (date) return { date, indices: [i] };
   }
 
-  // okt 15 / október 15. / okt. 15-ig
+  // English "15 oct" / "15th october"
+  const ordinalDay = t.n.match(/^(\d{1,2})(?:st|nd|rd|th)?$/);
+  if (ordinalDay && next && !next.used && next.c in MONTHS) {
+    const date = resolveYearless(MONTHS[next.c], Number(ordinalDay[1]), now);
+    if (date) return { date, indices: [i, i + 1] };
+  }
+
+  // okt 15 / október 15. / okt. 15-ig / oct 15th
   if (t.c in MONTHS && next && !next.used) {
-    const day = next.n.match(/^(\d{1,2})(?:\.|-en|-ig|-ra|-re|-e)?$/);
+    const day = next.n.match(/^(\d{1,2})(?:\.|-en|-ig|-ra|-re|-e|st|nd|rd|th)?$/);
     if (day) {
       const date = resolveYearless(MONTHS[t.c], Number(day[1]), now);
       if (date) return { date, indices: [i, i + 1] };
@@ -152,6 +195,13 @@ function timeAt(tokens: Token[], i: number): TimeMatch | null {
 
   const hourSuffix = t.n.match(/^([01]?\d|2[0-3])(?:h|-kor|-ig)$/);
   if (hourSuffix) return { hours: Number(hourSuffix[1]), minutes: 0, indices: [i] };
+
+  // English 12-hour clock: 10am, 3pm, 10:30pm
+  const meridiem = t.n.match(/^(1[0-2]|0?[1-9])(?::([0-5]\d))?(am|pm)$/);
+  if (meridiem) {
+    const base = Number(meridiem[1]) % 12;
+    return { hours: base + (meridiem[3] === "pm" ? 12 : 0), minutes: Number(meridiem[2] ?? 0), indices: [i] };
+  }
 
   const bare = t.n.match(/^([01]?\d|2[0-3])$/);
   const next = tokens[i + 1];
@@ -223,10 +273,10 @@ export function parseQuickDeadline(text: string, courses: Course[], now: Date): 
   const tokens = tokenize(text);
   const result: QuickDeadline = { title: "", critical: false, tokens: {} };
 
-  // Critical: "!", "!!", "kritikus", or a trailing "!" on another word.
+  // Critical: "!", "!!", "kritikus"/"critical", or a trailing "!" on another word.
   const criticalFragments: string[] = [];
   for (const t of tokens) {
-    if (/^!+$/.test(t.n) || t.n === "kritikus") {
+    if (/^!+$/.test(t.n) || t.n === "kritikus" || t.n === "critical") {
       criticalFragments.push(t.raw);
       t.used = true;
     } else if (/!+$/.test(t.n)) {
@@ -259,6 +309,9 @@ export function parseQuickDeadline(text: string, courses: Course[], now: Date): 
     const match = timeAt(tokens, i);
     if (match) {
       time = match;
+      // English "at 10:00": the word belongs to the time.
+      const before = tokens[match.indices[0] - 1];
+      if (before && !before.used && before.c === "at") match.indices.unshift(match.indices[0] - 1);
       result.tokens.time = consume(tokens, match.indices);
     }
   }

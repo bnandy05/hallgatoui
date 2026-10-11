@@ -2,11 +2,14 @@ import ICAL from "ical.js";
 import { budapestInstant } from "@/lib/ical/budapest";
 import type { IcalEventDTO } from "@/lib/ical/types";
 
+/** Title of an event without a SUMMARY (Hungarian; callers may pass their locale's wording). */
+export const UNTITLED = "(névtelen)";
+
 /**
  * Parses raw iCalendar (.ics) text into a flat list of event DTOs.
  * Pure function: no network access, no store access.
  */
-export function parseIcs(text: string): IcalEventDTO[] {
+export function parseIcs(text: string, untitled: string = UNTITLED): IcalEventDTO[] {
   const jcal = ICAL.parse(text);
   const comp = new ICAL.Component(jcal);
   const vevents = comp.getAllSubcomponents("vevent");
@@ -34,10 +37,11 @@ export function parseIcs(text: string): IcalEventDTO[] {
     const end = !startDate.isDate && endDate ? endDate.toJSDate().toISOString() : start;
     const location = event.location?.trim() || undefined;
 
-    const summary = event.summary || "(névtelen)";
+    const summary = event.summary || untitled;
     // Recurrence overrides share their master's UID; qualify them so every
     // event has a unique key, and drop exact duplicates.
-    const baseUid = event.uid || `${summary}|${start}`;
+    // The fallback title is fixed here (not `untitled`), so the key never depends on the language.
+    const baseUid = event.uid || `${event.summary || UNTITLED}|${start}`;
     const recurrenceId = vevent.getFirstPropertyValue("recurrence-id");
     const uid = recurrenceId ? `${baseUid}|${String(recurrenceId)}` : baseUid;
     if (seenUids.has(uid)) continue;

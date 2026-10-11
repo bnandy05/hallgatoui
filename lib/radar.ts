@@ -8,6 +8,8 @@ import {
   startOfWeek,
 } from "date-fns";
 import { hu } from "date-fns/locale";
+import type { Locale } from "date-fns";
+import { dateLocale, getMessages, type Locale as AppLocale } from "@/lib/i18n";
 import type { ClassSession, Deadline } from "@/lib/types";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -46,7 +48,9 @@ export interface WeekGroup {
   items: Deadline[];
 }
 
-export function groupByWeek(deadlines: Deadline[], now: Date): WeekGroup[] {
+export function groupByWeek(deadlines: Deadline[], now: Date, locale: AppLocale = "hu"): WeekGroup[] {
+  const t = getMessages(locale);
+  const dl = dateLocale(locale);
   const nowWeekStart = startOfWeek(now, { weekStartsOn: 1 });
   const nextWeekStart = new Date(nowWeekStart.getTime() + 7 * DAY_MS);
   const prevWeekStart = new Date(nowWeekStart.getTime() - 7 * DAY_MS);
@@ -71,14 +75,14 @@ export function groupByWeek(deadlines: Deadline[], now: Date): WeekGroup[] {
 
     let label: string;
     if (key === nowWeekStart.getTime()) {
-      label = "Ez a hét";
+      label = t.week.thisWeek;
     } else if (key === nextWeekStart.getTime()) {
-      label = "Jövő hét";
+      label = t.labels.nextWeek;
     } else if (key === prevWeekStart.getTime()) {
-      label = "Múlt hét";
+      label = t.labels.lastWeek;
     } else {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      label = `${format(weekStart, "MMM d.", { locale: hu })} – ${format(weekEnd, "MMM d.", { locale: hu })}`;
+      label = `${format(weekStart, t.formats.monthDay, { locale: dl })} – ${format(weekEnd, t.formats.monthDay, { locale: dl })}`;
     }
 
     return { weekStart, label, items: sortedItems };
@@ -112,8 +116,8 @@ export function nextDeadlineFor(
     .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime())[0];
 }
 
-export function formatRelative(due: Date, now: Date): string {
-  return formatDistance(due, now, { locale: hu, addSuffix: true });
+export function formatRelative(due: Date, now: Date, locale: Locale = hu): string {
+  return formatDistance(due, now, { locale, addSuffix: true });
 }
 
 export interface DayBucket {
@@ -173,12 +177,22 @@ export function bucketSessionsByDay(sessions: ClassSession[], weekStart: Date): 
   return days;
 }
 
-export function weekRangeLabel(weekStart: Date): string {
+/** date-fns formats for the two ends of a week range, with the shorter forms used inside one month. */
+export interface WeekRangeFormats {
+  first: string;
+  firstSameMonth: string;
+  last: string;
+  lastSameMonth: string;
+}
+
+const HU_WEEK_RANGE: WeekRangeFormats = { first: "MMM d.", firstSameMonth: "MMM d.", last: "MMM d.", lastSameMonth: "d." };
+
+export function weekRangeLabel(weekStart: Date, locale: Locale = hu, formats: WeekRangeFormats = HU_WEEK_RANGE): string {
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
   const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
-  return `${format(weekStart, "MMM d.", { locale: hu })} – ${format(
+  return `${format(weekStart, sameMonth ? formats.firstSameMonth : formats.first, { locale })} – ${format(
     weekEnd,
-    sameMonth ? "d." : "MMM d.",
-    { locale: hu }
+    sameMonth ? formats.lastSameMonth : formats.last,
+    { locale }
   )}`;
 }

@@ -2,14 +2,15 @@
 
 import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { hu } from "date-fns/locale";
 import { ChevronRight, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { fetchFeed, syncAllFeeds, syncFeed } from "@/lib/ical/client";
 import { parseIcs } from "@/lib/ical/parse";
 import { isNeptunCalendar } from "@/lib/ical/neptun";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
-import { BUILT_IN_PLATFORMS, getPlatform } from "@/lib/platforms";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
 import type { IcalFeed, TimetableSource } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
@@ -25,8 +26,6 @@ import { useTimetableImport } from "@/components/settings/useTimetableImport";
 
 const AUTO_COURSE = "";
 const DEFAULT_PLATFORM = "canvas";
-const NOT_NEPTUN_ERROR =
-  "Ez nem Neptun órarend. Canvas vagy Moodle naptárat linkkel adj hozzá, hogy frissülni tudjon.";
 
 function normalizeFeedUrl(input: string): string | null {
   const trimmed = input.trim();
@@ -56,6 +55,8 @@ function emptyForm(): FeedFormValues {
 }
 
 export function FeedSettings() {
+  const t = useT();
+  const locale = useLocale();
   const feeds = useStore((s) => s.feeds);
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -110,7 +111,7 @@ export function FeedSettings() {
   }
 
   function handleMarkPastDone(feedId: string, count: number) {
-    if (confirm(`${count} lejárt határidő késznek lesz jelölve. Folytatod?`)) {
+    if (confirm(t.feeds.confirmMarkPastDone(count))) {
       markFeedPastDone(feedId);
     }
   }
@@ -143,7 +144,7 @@ export function FeedSettings() {
     event.preventDefault();
     const normalizedUrl = normalizeFeedUrl(addForm.url);
     if (!normalizedUrl) {
-      setAddError("Érvénytelen link");
+      setAddError(t.feeds.invalidLink);
       return;
     }
 
@@ -154,7 +155,7 @@ export function FeedSettings() {
     try {
       events = await fetchFeed(normalizedUrl);
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : "A naptár nem érhető el");
+      setAddError(err instanceof Error ? err.message : t.feeds.unreachable);
       setAdding(false);
       return;
     }
@@ -171,7 +172,7 @@ export function FeedSettings() {
     } else {
       const trimmedName =
         addForm.name.trim() ||
-        `${getPlatform(addForm.platformId, customPlatforms).name} naptár`;
+        t.feeds.defaultName(platformName(getPlatform(addForm.platformId, customPlatforms), t.platforms.other));
       const newId = addFeed({
         name: trimmedName,
         url: normalizedUrl,
@@ -199,7 +200,7 @@ export function FeedSettings() {
       const text = await file.text();
       const events = parseIcs(text);
       if (!isNeptunCalendar(events, text)) {
-        setError(NOT_NEPTUN_ERROR);
+        setError(t.feeds.notNeptun);
         return;
       }
       const source = sourceId ? timetableSources.find((s) => s.id === sourceId) : undefined;
@@ -207,7 +208,7 @@ export function FeedSettings() {
       setError(error);
       if (!error && !sourceId) setAddOpen(false);
     } catch {
-      setError("Nem sikerült beolvasni a fájlt.");
+      setError(t.feeds.fileUnreadable);
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -224,12 +225,12 @@ export function FeedSettings() {
     try {
       const events = await fetchFeed(source.url);
       if (!isNeptunCalendar(events)) {
-        setListError(NOT_NEPTUN_ERROR);
+        setListError(t.feeds.notNeptun);
         return;
       }
       setListError(timetable.importEvents(events, { sourceId: source.id, url: source.url }));
     } catch (err) {
-      setListError(err instanceof Error ? err.message : "A naptár nem érhető el");
+      setListError(err instanceof Error ? err.message : t.feeds.unreachable);
     } finally {
       setReimportingIds((prev) => {
         const next = new Set(prev);
@@ -277,7 +278,7 @@ export function FeedSettings() {
 
     const normalizedUrl = normalizeFeedUrl(editForm.url);
     if (!normalizedUrl) {
-      setEditError("Érvénytelen link");
+      setEditError(t.feeds.invalidLink);
       return;
     }
 
@@ -292,7 +293,7 @@ export function FeedSettings() {
   }
 
   function handleDelete(feedId: string) {
-    if (confirm("Biztosan törlöd? A forrásból importált határidők is törlődnek.")) {
+    if (confirm(t.feeds.confirmDelete)) {
       removeFeed(feedId);
     }
   }
@@ -300,15 +301,15 @@ export function FeedSettings() {
   function platformOptions() {
     return (
       <>
-        <optgroup label="Beépített">
+        <optgroup label={t.feeds.builtIn}>
           {BUILT_IN_PLATFORMS.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {platformName(p, t.platforms.other)}
             </option>
           ))}
         </optgroup>
         {customPlatforms.length > 0 && (
-          <optgroup label="Saját">
+          <optgroup label={t.feeds.custom}>
             {customPlatforms.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -323,7 +324,7 @@ export function FeedSettings() {
   function courseOptions() {
     return (
       <>
-        <option value={AUTO_COURSE}>Automatikus (kulcsszó alapján)</option>
+        <option value={AUTO_COURSE}>{t.feeds.autoCourse}</option>
         {courses.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -343,27 +344,27 @@ export function FeedSettings() {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Label htmlFor={`${prefix}-url`}>Naptárlink</Label>
+          <Label htmlFor={`${prefix}-url`}>{t.feeds.calendarLink}</Label>
           <Input
             id={`${prefix}-url`}
             value={form.url}
             onChange={(e) => (onUrlChange ? onUrlChange(e.target.value) : setForm((f) => ({ ...f, url: e.target.value })))}
-            placeholder="https:// vagy webcal://…"
+            placeholder={t.feeds.linkPlaceholder}
             inputMode="url"
           />
           {error && <p className="mt-1 text-[13px] font-semibold text-danger">{error}</p>}
         </div>
         <div className="sm:col-span-2">
-          <Label htmlFor={`${prefix}-name`}>Név</Label>
+          <Label htmlFor={`${prefix}-name`}>{t.feeds.name}</Label>
           <Input
             id={`${prefix}-name`}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="Nem kötelező, pl. Canvas"
+            placeholder={t.feeds.namePlaceholder}
           />
         </div>
         <div>
-          <Label htmlFor={`${prefix}-platform`}>Platform</Label>
+          <Label htmlFor={`${prefix}-platform`}>{t.feeds.platform}</Label>
           <Select
             id={`${prefix}-platform`}
             value={form.platformId}
@@ -376,7 +377,7 @@ export function FeedSettings() {
           </Select>
         </div>
         <div>
-          <Label htmlFor={`${prefix}-course`}>Tárgy</Label>
+          <Label htmlFor={`${prefix}-course`}>{t.feeds.course}</Label>
           <Select
             id={`${prefix}-course`}
             value={form.courseId}
@@ -395,13 +396,13 @@ export function FeedSettings() {
   return (
     <section id="naptarak" className="flex flex-col gap-6">
       <SectionHeading
-        title="Naptárforrások"
-        sub="Canvas- és Moodle-határidők linkről, Neptun-órarend linkről vagy fájlból. A rendszer felismeri, melyik melyik."
+        title={t.feeds.title}
+        sub={t.feeds.sub}
         actions={
           feeds.length > 0 ? (
             <Button type="button" variant="secondary" size="sm" onClick={handleSyncAll} disabled={syncingAll}>
               {syncingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Összes frissítése
+              {t.feeds.refreshAll}
             </Button>
           ) : undefined
         }
@@ -441,7 +442,7 @@ export function FeedSettings() {
                 </div>
               </div>
               <p className="text-[13.5px] text-muted">
-                {course ? course.name : "Tárgy kulcsszó alapján"} · {deadlineCount(feed.id)} határidő
+                {course ? course.name : t.feeds.courseByKeyword} · {t.feeds.deadlineCount(deadlineCount(feed.id))}
               </p>
               <p className={`text-[13px] ${feed.lastError ? "font-semibold text-danger" : "text-muted"}`}>
                 {feed.lastError ? (
@@ -449,22 +450,22 @@ export function FeedSettings() {
                 ) : feed.lastSyncedAt ? (
                   <>
                     <span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full bg-success align-middle" />
-                    Frissítve {formatDistanceToNow(new Date(feed.lastSyncedAt), { locale: hu, addSuffix: true })}
+                    {t.feeds.updated(formatDistanceToNow(new Date(feed.lastSyncedAt), { locale: dateLocale(locale), addSuffix: true }))}
                   </>
                 ) : (
-                  "Még nem frissült"
+                  t.feeds.neverUpdated
                 )}
               </p>
               {(pending > 0 || pastOpen > 0) && (
                 <div className="flex flex-wrap gap-2">
                   {pending > 0 && (
                     <Button type="button" size="sm" onClick={() => setDiscoveryOpen(true)}>
-                      {pending} új tárgy felvétele
+                      {t.feeds.addCourses(pending)}
                     </Button>
                   )}
                   {pastOpen > 0 && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => handleMarkPastDone(feed.id, pastOpen)}>
-                      {pastOpen} lejárt késznek jelölése
+                      {t.feeds.markPastDone(pastOpen)}
                     </Button>
                   )}
                 </div>
@@ -472,22 +473,22 @@ export function FeedSettings() {
               <div className="-mx-1.5 mt-auto flex flex-wrap items-center gap-1 border-t border-border/70 pt-2">
                 <Button type="button" variant="ghost" size="sm" onClick={() => handleSyncOne(feed.id)} disabled={isSyncing}>
                   {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Frissítés
+                  {t.feeds.refresh}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => startEdit(feed)}>
                   <Pencil className="h-4 w-4" />
-                  Szerkesztés
+                  {t.common.edit}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDelete(feed.id)}
-                  aria-label={`${feed.name} törlése`}
+                  aria-label={t.feeds.deleteAria(feed.name)}
                   className="ml-auto text-danger hover:!bg-danger/10"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Törlés
+                  {t.common.delete}
                 </Button>
               </div>
             </li>
@@ -513,10 +514,10 @@ export function FeedSettings() {
           >
             <span className="inline-flex items-center gap-2 text-[15px] font-semibold text-heading">
               <Plus className="h-4 w-4" />
-              {hasSources ? "Új naptár" : "Naptár hozzáadása"}
+              {hasSources ? t.feeds.newCalendar : t.feeds.addCalendar}
             </span>
             {!hasSources && (
-              <span className="max-w-sm text-[13.5px]">Canvas- vagy Moodle-link, Neptun-órarend linkről vagy fájlból.</span>
+              <span className="max-w-sm text-[13.5px]">{t.feeds.addHint}</span>
             )}
           </button>
         </li>
@@ -528,11 +529,11 @@ export function FeedSettings() {
         accept=".ics,text/calendar"
         onChange={(e) => void handleFile(e)}
         className="sr-only"
-        aria-label="Neptun órarend (.ics) kiválasztása"
+        aria-label={t.feeds.fileAria}
         tabIndex={-1}
       />
 
-      <Dialog open={addOpen} onClose={() => setAddOpen(false)} title="Új naptár">
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)} title={t.feeds.newCalendar}>
         <form onSubmit={(e) => void handleAdd(e)} className="flex flex-col gap-4">
           {feedFields(addForm, setAddForm, "feed-add", addError, handleAddUrlChange)}
           <label className="flex items-start gap-2 text-[14px] text-foreground">
@@ -543,12 +544,12 @@ export function FeedSettings() {
               className="mt-0.5 h-4 w-4 accent-accent"
             />
             <span>
-              A már lejárt határidők legyenek készek
-              <span className="block text-[12.5px] text-muted">Így a régi feladatok nem jelennek meg lejártként.</span>
+              {t.feeds.markPastDoneLabel}
+              <span className="block text-[12.5px] text-muted">{t.feeds.markPastDoneHint}</span>
             </span>
           </label>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius)] bg-inset px-3 py-2.5 text-[13.5px] text-muted">
-            <span className="min-w-0 flex-1">Neptun-órarendet fájlból is felvehetsz.</span>
+            <span className="min-w-0 flex-1">{t.feeds.fileNote}</span>
             <Button
               type="button"
               variant="secondary"
@@ -559,42 +560,42 @@ export function FeedSettings() {
               }}
             >
               <Upload className="h-4 w-4" />
-              Fájl feltöltése (.ics)
+              {t.feeds.uploadFile}
             </Button>
           </div>
           <details className="group text-[13.5px] text-muted">
             <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold text-heading [&::-webkit-details-marker]:hidden">
               <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
-              Hol találom a naptárlinket?
+              {t.feeds.whereLink}
             </summary>
             <ul className="mt-2 space-y-1.5 pl-5">
               <li>
-                <span className="font-semibold text-foreground">Canvas:</span> Naptár → az oldal alján „Naptár feed”.
+                <span className="font-semibold text-foreground">{t.feeds.canvasName}</span>{t.feeds.canvasHow}
               </li>
               <li>
-                <span className="font-semibold text-foreground">Moodle:</span> Naptár → Exportálás → „Naptár URL lekérése”.
+                <span className="font-semibold text-foreground">{t.feeds.moodleName}</span>{t.feeds.moodleHow}
               </li>
               <li>
-                <span className="font-semibold text-foreground">Neptun:</span> Naptár → Exportálás, a letöltött .ics fájlt töltsd fel. Csak az aktuális és a jövőbeli órák kerülnek be; a fájl a böngésződben marad.
+                <span className="font-semibold text-foreground">{t.feeds.neptunName}</span>{t.feeds.neptunHow}
               </li>
               <li>
-                <span className="font-semibold text-foreground">Más rendszer:</span> ha nincs naptárlink, vedd fel kézzel a határidőket.
+                <span className="font-semibold text-foreground">{t.feeds.otherName}</span>{t.feeds.otherHow}
               </li>
             </ul>
           </details>
           <DialogActions>
             <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>
-              Mégse
+              {t.common.cancel}
             </Button>
             <Button type="submit" disabled={adding || addForm.url.trim().length === 0}>
               {adding && <Loader2 className="h-4 w-4 animate-spin" />}
-              Hozzáadás
+              {t.feeds.add}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
 
-      <Dialog open={editingFeed !== undefined} onClose={cancelEdit} title="Naptár szerkesztése">
+      <Dialog open={editingFeed !== undefined} onClose={cancelEdit} title={t.feeds.editTitle}>
         {editingFeed && (
           <form
             onSubmit={(e) => {
@@ -606,9 +607,9 @@ export function FeedSettings() {
             {feedFields(editForm, setEditForm, "feed-edit", editError)}
             <DialogActions>
               <Button type="button" variant="secondary" onClick={cancelEdit}>
-                Mégse
+                {t.common.cancel}
               </Button>
-              <Button type="submit">Mentés</Button>
+              <Button type="submit">{t.common.save}</Button>
             </DialogActions>
           </form>
         )}

@@ -2,7 +2,8 @@
 
 import type { CSSProperties } from "react";
 import { format, isSameDay, startOfDay } from "date-fns";
-import { hu } from "date-fns/locale";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { bucketWeekByDay } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
@@ -20,6 +21,8 @@ export interface DayAgendaProps {
  * seven-column board would be mostly empty felt.
  */
 export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayAgendaProps) {
+  const t = useT();
+  const dl = dateLocale(useLocale());
   const todayStart = startOfDay(now);
   const days = bucketWeekByDay(deadlines, weekStart).filter((day) => day.items.length > 0);
 
@@ -31,7 +34,7 @@ export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayA
         return (
           <section
             key={day.date.toISOString()}
-            aria-label={`${format(day.date, "EEEE, MMM d.", { locale: hu })}${today ? " (ma)" : ""}`}
+            aria-label={`${format(day.date, t.formats.weekdayMonthDay, { locale: dl })}${today ? t.week.todaySuffix : ""}`}
             aria-current={today ? "date" : undefined}
             style={{ "--i": i } as CSSProperties}
             className={`relative grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] px-3 pb-4 pt-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4 ${
@@ -41,10 +44,10 @@ export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayA
             {today && <span aria-hidden="true" className="pin -top-[5px] left-[22px]" />}
             <header className="flex flex-col">
               <span className={`font-display text-[19px] capitalize ${past ? "text-muted" : "text-heading"}`}>
-                {format(day.date, "EEEE", { locale: hu })}
+                {format(day.date, "EEEE", { locale: dl })}
               </span>
               <span className={`text-[12px] tabular-nums ${today ? "font-semibold text-heading" : "text-muted"}`}>
-                {today ? "ma" : format(day.date, "MMM d.", { locale: hu })}
+                {today ? t.week.today : format(day.date, t.formats.monthDay, { locale: dl })}
               </span>
             </header>
             <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3 pt-1">

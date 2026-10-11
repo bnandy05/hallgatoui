@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { useDataReady } from "@/lib/useDataReady";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform } from "@/lib/platforms";
@@ -31,15 +32,6 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 
 const KIND_ORDER: SearchKind[] = ["page", "action", "course", "link", "deadline", "resource"];
 
-const KIND_HEADINGS: Record<SearchKind, string> = {
-  page: "Oldalak",
-  action: "Műveletek",
-  course: "Tárgyak",
-  link: "Linkek",
-  deadline: "Határidők",
-  resource: "Anyagok",
-};
-
 const KIND_ICONS: Record<SearchKind, LucideIcon> = {
   page: LayoutGrid,
   action: Zap,
@@ -53,6 +45,7 @@ const subscribeNever = () => () => {};
 const getIsMac = () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 
 export function CommandPalette() {
+  const t = useT();
   const hydrated = useDataReady();
   const [open, setOpen] = useState(false);
   const [newDeadlineOpen, setNewDeadlineOpen] = useState(false);
@@ -75,19 +68,19 @@ export function CommandPalette() {
     <>
       <button
         type="button"
-        aria-label="Keresés"
+        aria-label={t.palette.search}
         onClick={() => setOpen(true)}
         disabled={!hydrated}
         className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-2.5 text-[13.5px] md:h-8 font-medium text-muted transition-colors hover:border-border-strong hover:text-heading sm:px-2.5"
       >
         <Search className="h-4 w-4" />
-        <span className="hidden lg:inline">Keresés</span>
+        <span className="hidden lg:inline">{t.palette.search}</span>
         <kbd className="hidden rounded-[3px] bg-inset px-1.5 font-sans text-[11px] font-semibold text-muted lg:inline">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title="Keresés" size="lg" focusFieldOnTouch>
+      <Dialog open={open} onClose={() => setOpen(false)} title={t.palette.search} size="lg" focusFieldOnTouch>
         <PaletteContent
           onClose={() => setOpen(false)}
           onNewDeadline={(text) => {
@@ -112,6 +105,8 @@ function PaletteContent({
   onClose: () => void;
   onNewDeadline: (quickText: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const courses = useStore((s) => s.courses);
   const { visible: deadlines } = useDedupedDeadlines();
@@ -123,8 +118,8 @@ function PaletteContent({
   const listRef = useRef<HTMLUListElement>(null);
 
   const allItems = useMemo(
-    () => buildSearchItems({ courses, deadlines, customPlatforms, feeds }),
-    [courses, deadlines, customPlatforms, feeds]
+    () => buildSearchItems({ courses, deadlines, customPlatforms, feeds, locale }),
+    [courses, deadlines, customPlatforms, feeds, locale]
   );
 
   // Grouped by kind in a fixed order; the flat list drives keyboard navigation.
@@ -137,12 +132,12 @@ function PaletteContent({
       found.push({
         id: "action:new-deadline",
         kind: "action",
-        title: `Új határidő: „${text}”`,
+        title: t.palette.newDeadline(text),
         actionId: "new-deadline",
       });
     }
     return KIND_ORDER.flatMap((kind) => found.filter((i) => i.kind === kind));
-  }, [allItems, query]);
+  }, [allItems, query, t]);
 
   useEffect(() => {
     listRef.current
@@ -197,12 +192,12 @@ function PaletteContent({
           setActive(0);
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Keress tárgyra, linkre, határidőre vagy anyagra"
+        placeholder={t.palette.placeholder}
         />
       </div>
 
       {results.length === 0 ? (
-        <p className="py-6 text-center text-[14px] text-muted">Nincs találat.</p>
+        <p className="py-6 text-center text-[14px] text-muted">{t.palette.noResults}</p>
       ) : (
         <ul
           id="palette-results"
@@ -214,7 +209,7 @@ function PaletteContent({
             <li key={item.id} role="presentation">
               {(index === 0 || results[index - 1].kind !== item.kind) && (
                 <p className="px-2 pb-1 pt-3 text-[12.5px] font-semibold text-muted-dim">
-                  {KIND_HEADINGS[item.kind]}
+                  {t.palette.kinds[item.kind]}
                 </p>
               )}
               <div

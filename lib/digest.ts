@@ -15,11 +15,8 @@ import {
 
 export type DigestFrequency = "napi" | "heti" | "havi";
 
-export const DIGEST_FREQUENCIES: { id: DigestFrequency; label: string }[] = [
-  { id: "napi", label: "Napi" },
-  { id: "heti", label: "Heti (hétfő)" },
-  { id: "havi", label: "Havi (1-jén)" },
-];
+/** The choices in the settings; their labels are in the dictionaries (digest.frequencies). */
+export const DIGEST_FREQUENCIES: { id: DigestFrequency }[] = [{ id: "napi" }, { id: "heti" }, { id: "havi" }];
 
 /** What the browser sees about its own digest. */
 export interface DigestStatus {
