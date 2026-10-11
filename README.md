@@ -107,49 +107,49 @@ Without a key in development, emails are written to the server log, and the cron
   <img src="docs/brand/readme-header-light.svg" alt="Hallgatói réteg – minden tárgyad, határidőd és órád egy helyen" width="100%">
 </picture>
 
-Órarend a Neptunban, beadandók a Canvasban, a tárgyak másik fele Moodle-ön, közben Teams és Discord. A **Hallgatói réteg** mindezek fölött ül: minden tárgyad linkjei, anyagai és határidői egy táblán, plusz **egyetlen összefésült naptár**, amire Apple és Google Naptárból is feliratkozhatsz.
+Az órarend a Neptunban van, a beadandók a Canvasban, a tárgyak fele Moodle-ön, a többi meg valahol Teamsen vagy Discordon. A **Hallgatói réteg** ezek fölé kerül: egy helyen látod minden tárgyad linkjeit, anyagait és határidőit, ráadásul kapsz egy **közös naptárt** is, amit egy linkkel hozzáadhatsz az Apple vagy a Google Naptárhoz.
 
-Élő oldal: <https://hallgatoireteg.hu>
+Élő oldal: <https://hallgatoui.vercel.app>
 
 ## Mit tud?
 
 ### Tárgyak
-Minden tárgynak saját oldala van a platformlinkekkel (Neptun, Canvas, Teams, Moodle vagy bármilyen saját platform), az anyagokkal (jegyzet, ZH, megoldás, videó), a határidőkkel és a heti órákkal. Egy kattintással ott vagy, ahol lenned kell.
+Minden tárgynak külön oldala van: itt vannak a linkjei (Neptun, Canvas, Teams, Moodle, vagy bármi, amit te veszel fel), az anyagai (jegyzet, régi ZH, megoldás, videó), a határidői és a heti órái. Nem kell többé öt helyen keresgélni.
 
 ### Naptár-import
-Adj hozzá egy Canvas, Moodle vagy bármilyen iCal feedet, és a határidők automatikusan a megfelelő tárgyhoz kerülnek. A feedben talált Canvas-kurzusokból tárgy is létrehozható, a Canvas-linkjük pedig magától felkerül. Ha félév közben kötsz be egy feedet, a már lejárt határidők egy lépésben késznek jelölhetők. A feedek a háttérben frissülnek, a saját pipáid és jelöléseid minden szinkron után megmaradnak.
+Elég megadni a Canvas, a Moodle vagy bármilyen más iCal feed linkjét, a határidők maguktól a megfelelő tárgyhoz kerülnek. Ha a feedben olyan Canvas-kurzus van, ami még nincs meg, tárgyat is csinálhatsz belőle, a Canvas-linkje pedig automatikusan bekerül. Ha félév közben kötöd be, a már lejárt határidőket egy pipával kipipálhatod. A feedek a háttérben frissülnek, a pipáid és a kritikus jelöléseid közben nem vesznek el.
 
 ### Órarend-import
-A Neptunból exportált órarendet (Naptár → Exportálás) linkként vagy `.ics` fájlként importálhatod; a fájl a böngésződben dolgozódik fel. A tantárgyakat egyszer rendeled hozzá a tárgyaidhoz, ez újraimportálás után is megmarad. Az órák ezután a heti nézetben, a tárgy oldalán és a naptár-előfizetésben is megjelennek. Csak az aktuális héttől kezdve importálunk, így a múlt félév nem zavar be.
+A Neptunból exportált órarendet (Naptár → Exportálás) linkként vagy `.ics` fájlként is behúzhatod; a fájlt a böngésző olvassa be, nem megy fel sehova. A Neptunos tantárgyneveket egyszer kell párosítani a tárgyaiddal, ezt az app megjegyzi, újraimportálás után sem kell újra megcsinálni. Utána az órák megjelennek a heti nézetben, a tárgy oldalán és a naptárban is. Csak az aktuális héttől importál, a múlt félév órái nem keverednek bele.
 
 ### Határidő-radar
-Hetekre bontva, sürgősség szerint: lejárt, kritikus (48 órán belül vagy általad megjelölve), egy héten belül, később. Heti összesítővel. A feedből érkező határidők nem szerkeszthetők, csak késznek vagy kritikusnak jelölhetők, így a tábla mindig a forrást tükrözi.
+Hetekre bontva, sürgősség szerint látod, mi vár rád: mi járt le, mi kritikus (48 órán belül esedékes, vagy te jelölted meg), mi jön egy héten belül, és mi ráér. Hetente összesítőt is kapsz. A feedből jövő határidőket nem lehet szerkeszteni, csak késznek vagy kritikusnak jelölni, így mindig az van ott, ami a forrásban.
 
-### Összefésült naptár-előfizetés
-Egyetlen `.ics` link minden forrással és a saját határidőiddel. A szerver a fiókodból állítja elő, így a módosítások azonnal látszanak:
-- a kész elemek kimaradnak, a kritikusak 🔴 jelet és emlékeztetőt kapnak (1 nappal és 1 órával előtte);
-- **nézetek**: minden, csak kritikus, ZH-k, órarend vagy egy tárgy (`?nezet=…`), így tárgyanként külön színnel is feliratkozhatsz;
-- hétfőnként **📋 Heti radar** összesítő, a kritikus határidők előtti két napon **📚 Készülés** blokk;
-- ha egy forrás áthelyez egy határidőt, 48 óráig **(módosult)** jelzést kap;
-- a szerver maga frissíti a forrásfeedeket, és szól, ha valamelyik több mint 24 órája nem érhető el.
+### Közös naptár-előfizetés
+Egyetlen `.ics` link, benne minden forrással és a saját határidőiddel. A szerver mindig a fiókod aktuális adataiból rakja össze, így amit átírsz, az azonnal látszik:
+- ami kész, az kimarad; a kritikusak 🔴 jelet és emlékeztetőt kapnak (előtte 1 nappal és 1 órával);
+- **nézetek**: minden, csak a kritikusak, ZH-k, órarend vagy egyetlen tárgy (`?nezet=…`), úgyhogy minden tárgyra külön, saját színnel is feliratkozhatsz;
+- hétfőnként **📋 Heti radar** összefoglaló, a kritikus határidők előtti két napon pedig **📚 Készülés** blokk;
+- ha egy forrásban elcsúszik egy határidő, 48 óráig **(módosult)** címkét kap;
+- a forrásfeedeket a szerver is frissíti, és szól, ha valamelyik több mint 24 órája nem érhető el.
 
-### Duplikátumok összevonása
-Ugyanaz a ZH a Canvasban, a Moodle-ön és a Neptunban is: egyszer látszik, „+N forrás” jelzéssel. Ha tévesen vont össze kettőt, a „Nem duplikátum” gombbal kivételt tehetsz. Az alkalmazásban és a naptárban is érvényes, kikapcsolható.
+### Duplikátumok
+Ha ugyanazt a ZH-t a Canvas, a Moodle és a Neptun is kiírja, csak egyszer jelenik meg, „+N forrás” jelöléssel. Ha két különböző dolgot vont össze, a „Nem duplikátum” gombbal szétszedheted. Az appban és a naptárban is működik, és ki is kapcsolható.
 
 ### Határidők felvétele
-Egyszeri határidő, több időpont egyszerre vagy ismétlődő sorozat (pl. heti kvízek, automatikus sorszámmal). Gyors rögzítéshez a `Ctrl K` / `⌘K` keresőt és gyorsfelvételt nyit, amely érti a magyar dátumokat és a tárgyneveket: az `analízis zh péntek 10:00 !` például kritikus határidőt vesz fel az Analízis tárgyhoz péntek 10:00-ra. A keresés ékezetfüggetlen.
+Felvehetsz egyszeri határidőt, egyszerre több időpontot vagy ismétlődő sorozatot (például heti kvízeket, amiket automatikusan megszámoz). Ha gyorsan kell, a `Ctrl K` / `⌘K` megnyitja a keresőt, ahová egy sorban is beírhatod: az `analízis zh péntek 10:00 !` például péntek 10:00-ra felvesz egy kritikus határidőt az Analízis tárgyhoz. A keresésnél az ékezet nem számít.
 
 ### Emlékeztetők
-- A fejléc csengője mutatja, mi járt le, mi kritikus és mi jön hamarosan.
-- Böngészőértesítés a közelgő határidőkről, amíg nyitva van egy lap.
-- Opcionális **e-mail-összefoglaló** (napi, heti vagy havi) a fiókod címére. A napi levél csak akkor megy ki, ha aznap vagy másnap van határidő, és a napi órákat is felsorolja.
+- A fejlécben lévő csengőnél látod, mi járt le, mi kritikus és mi jön hamarosan.
+- Amíg nyitva van egy lap, a böngésző értesít a közelgő határidőkről.
+- Kérhetsz **e-mailes összefoglalót** is (naponta, hetente vagy havonta) a fiókod címére. A napi levél csak akkor jön, ha aznap vagy másnap van valami, és benne vannak a napi óráid is.
 
-### Bármelyik eszközön
-Az adataid a fiókodhoz tartoznak, és minden eszközön szinkronban vannak. Ha két eszközön egyszerre módosítasz, a változások mezőnként fésülődnek össze, nem írják felül egymást. Az alkalmazás offline is megnyílik, telepíthető (PWA), és van világos és sötét témája.
+### Mindenhol ugyanaz
+Az adataid a fiókodhoz tartoznak, így a laptopon és a telefonon is ugyanazt látod. Ha két eszközön egyszerre szerkesztesz, a módosítások nem írják felül egymást, az app összefésüli őket. Netkapcsolat nélkül is megnyílik, telepítheted alkalmazásként (PWA), és van világos és sötét témája.
 
 ## Adatvédelem
 
-Belépés e-mail-címmel és jelszóval vagy belépő linkkel (a címet meg kell erősíteni). Az adataid a szerveren, a fiókodhoz kötve tárolódnak, a böngésző csak gyorsítótárat tart. A naptár-előfizetési link csak olvasni enged, és a Beállításokban bármikor lecserélhető vagy kikapcsolható. A fiók törlésekor minden adatod törlődik. Előfizetés nélkül `.ics` fájlként is letöltheted a naptárat. A teljes adatkezelési tájékoztató az `/adatvedelem` oldalon olvasható.
+Belépni e-mail-címmel és jelszóval vagy belépő linkkel lehet, a címet előbb meg kell erősíteni. Az adataid a szerveren, a fiókodhoz kötve vannak tárolva, a böngésző csak egy helyi másolatot tart. A naptár-előfizetési linkkel csak olvasni lehet, és a Beállításokban bármikor lecserélheted vagy kikapcsolhatod. Ha törlöd a fiókodat, minden adatod vele együtt törlődik. Ha nem akarsz előfizetni, a naptárat `.ics` fájlként is letöltheted. A teljes adatkezelési tájékoztató az `/adatvedelem` oldalon van.
 
 ## Fejlesztés
 
@@ -158,40 +158,40 @@ npm install
 npm run dev     # http://localhost:3000
 npm run lint
 npm run build
-npm test        # node:test, TZ=UTC, valódi iCal-fixture-ökkel (fixtures/ical)
+npm test        # node:test, TZ=UTC, valódi iCal-mintafájlokkal (fixtures/ical)
 ```
 
-Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, date-fns, lucide-react. A projekt konvenciói (felépítés, design-tokenek, iCal-szabályok) a [`CLAUDE.md`](CLAUDE.md)-ben, az ütemterv a [`docs/PLAN.md`](docs/PLAN.md)-ben található.
+Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, date-fns, lucide-react. A projekt szabályai (mappaszerkezet, design-tokenek, iCal) a [`CLAUDE.md`](CLAUDE.md)-ben vannak, a tervek és a következő lépések a [`docs/PLAN.md`](docs/PLAN.md)-ben.
 
-### Felépítés
+### Mappaszerkezet
 
-| Hely | Tartalom |
+| Hely | Mi van benne |
 | --- | --- |
-| `app/` | Oldalak (`/`, `/targy/[id]`, `/radar`, `/beallitasok`, `/belepes`, `/adatvedelem`) és API-útvonalak |
-| `app/api/fiok`, `app/api/adatok` | Fiókkezelés és a felhasználónkénti adatdokumentum szinkronja |
-| `app/api/ical` | CORS-proxy az iCal feedekhez (SSRF-védelemmel) |
+| `app/` | Oldalak (`/`, `/targy/[id]`, `/radar`, `/beallitasok`, `/belepes`, `/adatvedelem`) és API-végpontok |
+| `app/api/fiok`, `app/api/adatok` | Fiókok, és a felhasználók adatainak szinkronizálása |
+| `app/api/ical` | CORS-proxy az iCal feedekhez (SSRF elleni védelemmel) |
 | `app/api/naptar` | A nyilvános `.ics` végpont |
-| `app/api/hirlevel`, `app/api/cron` | E-mail-összefoglaló: leiratkozás és a napi cron |
-| `components/` | UI; `components/ui/` az alapelemek, `components/settings/` a beállítások szekciói |
-| `lib/` | Tiszta logika: radar, keresés, gyorsfelvétel, iCal-feldolgozás és -export, duplikátumszűrés, szinkron |
+| `app/api/hirlevel`, `app/api/cron` | E-mailes összefoglaló: leiratkozás és a napi cron |
+| `components/` | Felület; `components/ui/` az alapelemek, `components/settings/` a beállítások részei |
+| `lib/` | Tiszta logika: radar, keresés, gyors felvétel, iCal beolvasás és export, duplikátumszűrés, szinkron |
 | `app/tokens.css` | A „Hirdetőtábla” téma design-tokenjei, világos és sötét változatban |
 
-### Telepítés
+### Élesítés
 
-A fiókokhoz, az adatokhoz és az összefésült naptárhoz (`/api/naptar/<token>`) szerveroldali tároló kell (Upstash Redis), a regisztrációs és belépő levelekhez pedig Resend. Vercelen: Project → Storage → Upstash Redis hozzáadása. Bármelyik változópár megfelel:
+A fiókokhoz, az adatokhoz és a közös naptárhoz (`/api/naptar/<token>`) szerveroldali tárhely kell (Upstash Redis), a regisztrációs és belépő levelekhez pedig Resend. Vercelen: Project → Storage → Upstash Redis. Az alábbi két változópár közül bármelyik jó:
 
 - `UPSTASH_REDIS_REST_URL` és `UPSTASH_REDIS_REST_TOKEN`, vagy
 - `KV_REST_API_URL` és `KV_REST_API_TOKEN`.
 
-Fejlesztésben (`npm run dev`) egyik sem kell, memóriabeli tároló működik. Éles környezetben nélkülük a végpontok 503-at adnak.
+Fejlesztés közben (`npm run dev`) egyik sem kell, ilyenkor minden a memóriában van. Élesben ezek nélkül a végpontok 503-as hibát adnak.
 
 ### E-mail (belépés és összefoglaló)
 
-Az összefoglaló a Beállítások → Értesítések alatt kapcsolható be: napi, heti (hétfő) vagy havi (1-je) levél a fiók megerősített címére, leiratkozó linkkel. A küldést a `vercel.json` napi cronja indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
+Az összefoglalót a Beállítások → Értesítések alatt lehet bekapcsolni: naponta, hetente (hétfőn) vagy havonta (1-jén) megy ki a fiók megerősített címére, leiratkozó linkkel. A küldést a `vercel.json`-ban beállított napi cron indítja (`/api/cron/hirlevel`, 04:00 UTC). Környezeti változók:
 
 - `RESEND_API_KEY`: [Resend](https://resend.com) API-kulcs;
-- `DIGEST_FROM`: feladó egy Resendben ellenőrzött domainről, pl. `Hallgatói réteg <hirlevel@example.hu>`;
-- `CRON_SECRET`: a Vercel ezt küldi a cronnal (`Authorization: Bearer …`), élesben kötelező;
-- `APP_URL` (nem kötelező): a levelekben szereplő linkek alapcíme; alapértelmezés: `VERCEL_PROJECT_PRODUCTION_URL`.
+- `DIGEST_FROM`: a feladó, egy Resendben ellenőrzött domainről, pl. `Hallgatói réteg <hirlevel@example.hu>`;
+- `CRON_SECRET`: ezt küldi a Vercel a cronnal (`Authorization: Bearer …`), élesben kötelező;
+- `APP_URL` (nem kötelező): a levelekben lévő linkek alapcíme; ha nincs megadva, a `VERCEL_PROJECT_PRODUCTION_URL`.
 
-Fejlesztésben kulcs nélkül a levelek a szerver naplójába kerülnek, a cron pedig kézzel is hívható: `curl localhost:3000/api/cron/hirlevel`.
+Fejlesztés közben, API-kulcs nélkül a levelek a szerver naplójába kerülnek, a cront pedig kézzel is meghívhatod: `curl localhost:3000/api/cron/hirlevel`.
