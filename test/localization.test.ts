@@ -210,10 +210,10 @@ test("auth errors are answered in the request language with a stable code", asyn
   const result = await login(s.deps(), "nobody@x.hu", PW);
   assert.ok(isAuthError(result));
   if (!isAuthError(result)) return;
-  assert.equal(result.error, "Hibás e-mail-cím vagy jelszó"); // service text stays Hungarian
+  assert.equal(result.error, "Hibás email cím vagy jelszó"); // service text stays Hungarian
   const en = await authErrorResponse(result, "en").json();
-  assert.deepEqual(en, { error: "Wrong email address or password", code: "bad_credentials" });
-  assert.equal((await authErrorResponse(result, "hu").json()).error, "Hibás e-mail-cím vagy jelszó");
+  assert.deepEqual(en, { error: "Incorrect email address or password", code: "bad_credentials" });
+  assert.equal((await authErrorResponse(result, "hu").json()).error, "Hibás email cím vagy jelszó");
 });
 
 // ---- pure libs ----
