@@ -1,5 +1,10 @@
 # Hallgatói réteg
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/readme-header-dark.svg">
+  <img src="docs/brand/readme-header-light.svg" alt="Hallgatói réteg" width="100%">
+</picture>
+
 Egy réteg az egyetemi rendszerek (Neptun, Canvas, Moodle, Teams, TMS, Discord…) fölött: minden tárgyad linkjei, anyagai és határidői egy helyen, plusz **egyetlen összefésült naptár**, amire Apple és Google Naptárból is fel tudsz iratkozni.
 
 Élő oldal: <https://hallgatoui.vercel.app>
