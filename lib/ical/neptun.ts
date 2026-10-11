@@ -5,6 +5,7 @@ import { normalizeCourseName } from "@/lib/ical/canvas";
 import { matchCourseInText } from "@/lib/ical/match";
 import { normalizeSearch } from "@/lib/text";
 import { budapestDate, budapestInstant, mondayOf } from "@/lib/ical/budapest";
+import { SEMESTER_GAP_MS, parseYmd, proposeSemesterStartAt } from "@/lib/timetable/semester";
 
 // Neptun timetable export: a static .ics, one VEVENT per class meeting, no RRULE, UTC times,
 // SUMMARY "<subject> ( - <group>) - <teachers ;-separated> - <type>". Pure, no store.
@@ -109,18 +110,52 @@ export function isNeptunCalendar(events: IcalEventDTO[], text?: string): boolean
   return recognised / events.length >= 0.6;
 }
 
-/** Monday 00:00 Budapest time of the week containing `now`: older sessions are not imported. */
+/** Monday 00:00 Budapest time of the week containing `now` (the "tracked since" date of catch-up). */
 export function timetableCutoff(now: Date): Date {
   return budapestInstant(mondayOf(budapestDate(now)), 0, 0);
 }
 
+function ymdInstant(ymd: string): Date | null {
+  const parsed = parseYmd(ymd);
+  return parsed ? budapestInstant(parsed, 0, 0) : null;
+}
+
 /**
- * Current-week and future sessions only (holidays follow the same rule). With `from` (the
- * semester start, when it is earlier), this semester's earlier weeks are kept too.
+ * Where an import starts: the whole current semester, never an earlier term. The semester's
+ * first week is detected from the export (a break of three weeks separates terms); a stored
+ * semester start counts only when it belongs to the same term (in the exam period, when the
+ * export only points at the next term, it counts as is). Never later than this week's Monday
+ * (this week's exams still come in) and never more than half a year back.
+ */
+export function importFloor(parsed: Pick<ParsedSession, "kind" | "start">[], now: Date, storedStart?: string | null): Date {
+  const weekStart = timetableCutoff(now).getTime();
+  const detectedYmd = proposeSemesterStartAt(parsed, now);
+  const detected = detectedYmd ? ymdInstant(detectedYmd) : null;
+  const stored = storedStart ? ymdInstant(storedStart) : null;
+  // A detected start after this week is the next term (exam period or break): it says nothing about the stored one.
+  const current = detected && detected.getTime() <= weekStart ? detected.getTime() : null;
+  let floor = weekStart;
+  if (current !== null) floor = current;
+  if (stored && stored.getTime() <= weekStart && (current === null || stored.getTime() >= current - SEMESTER_GAP_MS)) {
+    floor = Math.min(floor, stored.getTime());
+  }
+  return new Date(Math.max(floor, now.getTime() - KEEP_PAST_MS));
+}
+
+/** The stored semester start (a Monday) belongs to a previous term: it is over a gap before the detected one. */
+export function isStaleSemester(storedStart: string, detected: string): boolean {
+  const stored = ymdInstant(storedStart);
+  const found = ymdInstant(detected);
+  return !!stored && !!found && stored.getTime() < found.getTime() - SEMESTER_GAP_MS;
+}
+
+/**
+ * Sessions that end at or after `from` (default: this week's Monday), holidays included.
+ * `from` comes from `importFloor`.
  */
 export function upcomingSessions(parsed: ParsedSession[], now: Date, from?: Date): ParsedSession[] {
   const weekStart = timetableCutoff(now).getTime();
-  const cutoff = from && from.getTime() < weekStart && weekStart - from.getTime() < KEEP_PAST_MS ? from.getTime() : weekStart;
+  const cutoff = from && from.getTime() < weekStart ? from.getTime() : weekStart;
   return parsed.filter((s) => new Date(s.end).getTime() >= cutoff);
 }
 
@@ -210,7 +245,7 @@ export interface MergeTimetableOptions {
  * Replaces the sessions of `source` with the freshly parsed ones (upsert by externalUid, so
  * ids stay stable) and takes each session's course from the source's mapping. Sessions of
  * other sources are kept as they are. With `opts`, stored sessions of this source that ended
- * before this week (the import only brings this week and later) are kept back to the semester
+ * before this week (the import brings the whole current semester) are kept back to the semester
  * start, or half a year without one: attendance and results refer to them.
  */
 export function mergeTimetableImport(

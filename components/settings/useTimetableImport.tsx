@@ -6,11 +6,13 @@ import {
   mappedCourse,
   parseNeptunEvents,
   summarizeSubjects,
+  importFloor,
+  isStaleSemester,
+  timetableCutoff,
   upcomingSessions,
   type ParsedSession,
 } from "@/lib/ical/neptun";
-import { budapestInstant } from "@/lib/ical/budapest";
-import { normalizeSemesterStart, parseYmd, proposeSemesterStartAt } from "@/lib/timetable/semester";
+import { normalizeSemesterStart, proposeSemesterStartAt } from "@/lib/timetable/semester";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
 import { Button } from "@/components/ui/Button";
@@ -18,13 +20,16 @@ import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 
 const SOURCE_NAME = "Neptun órarend";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const NO_UPCOMING_ERROR =
-  "A naptárban nincs aktuális vagy jövőbeli óra (a korábbi félévek órái nem kerülnek be).";
+  "A naptárban nincs a mostani félévhez tartozó óra (a korábbi félévek órái nem kerülnek be).";
 const EMPTY_ERROR = "A naptárban nincs egyetlen esemény sem";
 
 interface PendingImport {
   parsed: ParsedSession[];
+  /** Import floor (ISO). */
+  from: string;
   sourceId?: string;
   url?: string;
 }
@@ -51,7 +56,7 @@ export interface TimetableImport {
   dialogs: ReactNode;
 }
 
-/** Timetable import orchestration: future-only filter, subject mapping dialog, store import. */
+/** Timetable import orchestration: current-semester filter, subject mapping dialog, store import. */
 export function useTimetableImport(): TimetableImport {
   const sessions = useStore((s) => s.classSessions);
   const sources = useStore((s) => s.timetableSources);
@@ -75,21 +80,24 @@ export function useTimetableImport(): TimetableImport {
   function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}, askSemester = true): string | null {
     const all = parseNeptunEvents(events);
     if (all.length === 0) return EMPTY_ERROR;
-    // With a semester start, this semester's earlier classes come too (attendance refers to them).
+    // The whole current semester comes (attendance refers to its past weeks), never an earlier term.
+    const now = new Date();
     const semester = useStore.getState().semester;
-    if (!semester && askSemester) {
-      const proposal = proposeSemesterStartAt(all, new Date());
-      if (proposal) {
+    if (askSemester) {
+      const proposal = proposeSemesterStartAt(all, now);
+      // A proposal after this week is the next term (exam period): only asked when nothing is stored.
+      const current = proposal !== null && Date.parse(proposal) <= timetableCutoff(now).getTime() + DAY_MS;
+      if (proposal && (!semester || (current && isStaleSemester(semester.start, proposal)))) {
         setSemesterQuestion({ events, opts, proposal });
         return null;
       }
     }
-    const start = semester ? parseYmd(semester.start) : null;
-    const parsed = upcomingSessions(all, new Date(), start ? budapestInstant(start, 0, 0) : undefined);
+    const floor = importFloor(all, now, semester?.start);
+    const parsed = upcomingSessions(all, now, floor);
     if (parsed.length === 0) return NO_UPCOMING_ERROR;
-    const next: PendingImport = { parsed, sourceId: opts.sourceId, url: opts.url };
+    const next: PendingImport = { parsed, from: floor.toISOString(), sourceId: opts.sourceId, url: opts.url };
     if (subjectsToAsk(next).length === 0) {
-      importTimetable({ sourceId: next.sourceId, name: SOURCE_NAME, url: next.url }, next.parsed, {});
+      importTimetable({ sourceId: next.sourceId, name: SOURCE_NAME, url: next.url, from: next.from }, next.parsed, {});
     } else {
       setPending(next);
     }
@@ -123,7 +131,7 @@ export function useTimetableImport(): TimetableImport {
         initial={pending ? knownMapping(pending) : {}}
         onConfirm={(decisions: Record<string, SubjectDecision>) => {
           if (!pending) return;
-          importTimetable({ sourceId: pending.sourceId, name: SOURCE_NAME, url: pending.url }, pending.parsed, decisions);
+          importTimetable({ sourceId: pending.sourceId, name: SOURCE_NAME, url: pending.url, from: pending.from }, pending.parsed, decisions);
         }}
       />
       <TimetableMappingDialog

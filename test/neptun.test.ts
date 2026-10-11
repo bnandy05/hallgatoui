@@ -13,6 +13,8 @@ import {
   parseNeptunEvents,
   summarizeSubjects,
   timetableCutoff,
+  importFloor,
+  isStaleSemester,
   upcomingSessions,
   suggestCourseForSubject,
   unmappedSubjects,
@@ -242,4 +244,73 @@ test("Ea and Gy of one subject can map to two courses", () => {
   );
   // A new group on a re-import is added next to the existing ones.
   assert.deepEqual(applyMappingDecisions(split.subjectCourses, { "analysis i|9": null }), { ...split.subjectCourses, "analysis i|9": null });
+});
+
+const SEPT_MONDAY = "2026-09-06T22:00:00.000Z"; // Monday 7 Sept 00:00 Budapest
+
+test("importFloor mid-semester is week 1, even with no stored start", () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+  const floor = importFloor(parsed, now);
+  assert.equal(floor.toISOString(), SEPT_MONDAY);
+  const kept = upcomingSessions(parsed, now, floor);
+  assert.equal(kept.length, parsed.length);
+  assert.ok(kept.some((s) => s.start < "2026-09-14"));
+});
+
+test("importFloor before term and in the exam period is this week's Monday", () => {
+  for (const iso of ["2026-08-20T12:00:00Z", "2027-01-20T12:00:00Z"]) {
+    const now = new Date(iso);
+    assert.equal(importFloor(parsed, now).toISOString(), timetableCutoff(now).toISOString());
+  }
+});
+
+test("importFloor in the exam period keeps a stored start when the export already has the next term", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const next = parsed.map((s) => ({
+    ...s,
+    externalUid: `next-${s.externalUid}`,
+    start: new Date(new Date(s.start).getTime() + 154 * DAY).toISOString(),
+    end: new Date(new Date(s.end).getTime() + 154 * DAY).toISOString(),
+  }));
+  const all = [...parsed, ...next];
+  const now = new Date("2027-01-20T12:00:00Z");
+  assert.equal(importFloor(all, now, "2026-09-07").toISOString(), SEPT_MONDAY);
+  assert.equal(importFloor(all, now).toISOString(), timetableCutoff(now).toISOString());
+});
+
+test("importFloor takes a same-term stored start and ignores one from a previous term", () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+  assert.equal(importFloor(parsed, now, "2026-08-31").toISOString(), "2026-08-30T22:00:00.000Z");
+  assert.equal(importFloor(parsed, now, "2026-02-09").toISOString(), SEPT_MONDAY);
+  assert.equal(importFloor(parsed, now, "2026-09-21").toISOString(), SEPT_MONDAY);
+  assert.equal(isStaleSemester("2026-02-09", "2026-09-07"), true);
+  assert.equal(isStaleSemester("2026-09-07", "2026-09-07"), false);
+  assert.equal(isStaleSemester("2026-08-31", "2026-09-07"), false);
+});
+
+test("an export with an earlier semester does not bring the earlier semester in", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const spring = parsed.map((s) => ({
+    ...s,
+    externalUid: `spring-${s.externalUid}`,
+    start: new Date(new Date(s.start).getTime() - 203 * DAY).toISOString(),
+    end: new Date(new Date(s.end).getTime() - 203 * DAY).toISOString(),
+  }));
+  const all = [...spring, ...parsed];
+  const now = new Date("2026-10-07T12:00:00Z");
+  const kept = upcomingSessions(all, now, importFloor(all, now, "2026-02-09"));
+  assert.equal(kept.length, parsed.length);
+  assert.ok(kept.every((s) => !s.externalUid.startsWith("spring-")));
+});
+
+test("a re-import with the import floor keeps this semester's stored sessions and drops older terms", () => {
+  const mapped = { ...source, subjectCourses: { "analysis i": "c-an" } };
+  const now = new Date("2026-10-07T12:00:00Z");
+  const old = { ...parsed[0], externalUid: "old-term", start: "2026-02-10T08:00:00.000Z", end: "2026-02-10T09:30:00.000Z" };
+  const first = mergeTimetableImport(mapped, [old, ...parsed], []);
+  const floor = importFloor(parsed, now);
+  const fresh = parsed.filter((s) => s.start >= "2026-09-14");
+  const merged = mergeTimetableImport(mapped, fresh, first, { now, semesterStart: floor });
+  assert.equal(merged.length, parsed.length);
+  assert.ok(!merged.some((s) => s.externalUid === "old-term"));
 });

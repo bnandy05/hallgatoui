@@ -54,7 +54,7 @@ export function proposeSemesterStart(sessions: Pick<ClassSession, "kind" | "star
 }
 
 /** A break longer than this between two classes separates two semesters. */
-const SEMESTER_GAP_MS = 21 * DAY_MS;
+export const SEMESTER_GAP_MS = 21 * DAY_MS;
 
 /**
  * A guess for week 1 from a whole Neptun export (which may hold earlier semesters too): walking

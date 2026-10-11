@@ -25,6 +25,7 @@ import {
   applySubjectMapping,
   mappingSubjectKey,
   mergeTimetableImport,
+  timetableCutoff,
   type ParsedSession,
 } from "@/lib/ical/neptun";
 import { budapestInstant } from "@/lib/ical/budapest";
@@ -257,7 +258,7 @@ export interface AppStore extends AppData {
   // timetable
   /** Creates (or, with sourceId, re-imports) a timetable source and maps its subjects. */
   importTimetable: (
-    meta: { sourceId?: string; name: string; url?: string },
+    meta: { sourceId?: string; name: string; url?: string; /** Import floor (ISO), from `importFloor`. */ from?: string },
     parsed: ParsedSession[],
     decisions: Record<string, SubjectDecision>
   ) => string;
@@ -827,7 +828,15 @@ export const useStore = create<AppStore>()(
             // A re-import reuses the earlier mapping; only new subjects were asked about.
             subjectCourses: applyMappingDecisions(previous?.subjectCourses ?? {}, mapping),
           };
+          // The import floor already folds in a same-term stored start; a stale one must not keep old terms.
           const semesterYmd = state.semester ? parseYmd(state.semester.start) : null;
+          // A floor of this week's Monday means no term was identified: keep the old fallback then.
+          const fromMs = meta.from ? Date.parse(meta.from) : NaN;
+          const semesterStart = Number.isFinite(fromMs) && fromMs < timetableCutoff(new Date()).getTime()
+            ? new Date(fromMs)
+            : semesterYmd
+              ? budapestInstant(semesterYmd, 0, 0)
+              : undefined;
           return {
             courses,
             // Canvas deadlines imported earlier may match the new courses' keywords now.
@@ -837,7 +846,7 @@ export const useStore = create<AppStore>()(
               : [...state.timetableSources, source],
             classSessions: mergeTimetableImport(source, parsed, state.classSessions, {
               now: new Date(),
-              ...(semesterYmd && { semesterStart: budapestInstant(semesterYmd, 0, 0) }),
+              ...(semesterStart && { semesterStart }),
             }),
           };
         });
