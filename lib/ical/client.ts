@@ -1,3 +1,4 @@
+import { isDemoFeedId } from "@/lib/demoMode";
 import { currentMessages } from "@/lib/i18n/clientLocale";
 import { useStore } from "@/lib/store";
 import type { IcalEventDTO } from "@/lib/ical/types";
@@ -53,7 +54,7 @@ export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
 export async function syncFeed(feedId: string): Promise<void> {
   const { feeds, applyFeedSync, updateFeed } = useStore.getState();
   const feed = feeds.find((f) => f.id === feedId);
-  if (!feed) return;
+  if (!feed || isDemoFeedId(feed.id)) return;
 
   try {
     const events = await fetchFeed(feed.url);

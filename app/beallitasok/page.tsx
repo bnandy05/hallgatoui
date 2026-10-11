@@ -5,6 +5,8 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useDataReady } from "@/lib/useDataReady";
 import { useSyncLabel } from "@/components/SyncStatus";
 import { AccountSettings } from "@/components/settings/AccountSettings";
+import { DemoAccountSettings } from "@/components/demo/DemoAccountSettings";
+import { useDemoMode } from "@/lib/useDemoMode";
 import { useStore } from "@/lib/store";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
@@ -80,6 +82,7 @@ export default function WeekSettingsPage() {
   const t = useT();
   const hydrated = useDataReady();
   const accountEmail = useStore((s) => s.account?.email);
+  const demo = useDemoMode();
   const sync = useSyncLabel();
   const active = useSyncExternalStore(
     subscribeHash,
@@ -106,7 +109,7 @@ export default function WeekSettingsPage() {
 
   const notificationsActive = notificationsOn && permission === "granted";
   const sections: { id: SectionKey; label: string; summary: string; on?: boolean }[] = [
-    { id: "fiok", label: t.settings.tabs.fiok, summary: accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : t.settings.signedIn },
+    { id: "fiok", label: t.settings.tabs.fiok, summary: demo ? t.demo.bannerShort : accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : t.settings.signedIn },
     { id: "naptarak", label: t.settings.tabs.naptarak, summary: feedCount > 0 ? t.settings.summaries.sources(feedCount) : t.settings.summaries.noSources },
     { id: "exportalas", label: t.settings.tabs.exportalas, summary: t.settings.summaries.export },
     {
@@ -204,7 +207,7 @@ export default function WeekSettingsPage() {
 
             <div className="min-w-0 max-w-[760px]">
               <TabPanel id="fiok" active={active === "fiok"}>
-                <AccountSettings />
+                {demo ? <DemoAccountSettings /> : <AccountSettings />}
               </TabPanel>
               <TabPanel id="naptarak" active={active === "naptarak"}>
                 <div className="flex flex-col gap-10">

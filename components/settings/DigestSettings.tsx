@@ -10,6 +10,8 @@ import { deleteDigest, fetchDigest, saveDigest } from "@/lib/subscription/client
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { DemoLocked } from "@/components/demo/NeedsAccount";
+import { useDemoMode } from "@/lib/useDemoMode";
 
 type Load =
   | { state: "loading" }
@@ -19,6 +21,8 @@ type Load =
 /** Email digest: stored on the account, sent to the account's confirmed address. */
 export function DigestSettings() {
   const t = useT();
+  const demo = useDemoMode();
+  if (demo) return <DemoLocked tour="digest" title={t.demo.locked.digest.title} text={t.demo.locked.digest.text} />;
   return (
     <section id="hirlevel" className="flex flex-col gap-6">
       <SectionHeading

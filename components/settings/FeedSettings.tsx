@@ -394,7 +394,7 @@ export function FeedSettings() {
   const editingFeed = feeds.find((f) => f.id === editingId);
 
   return (
-    <section id="naptarak" className="flex flex-col gap-6">
+    <section id="naptarak" data-tour="feeds" className="flex flex-col gap-6">
       <SectionHeading
         title={t.feeds.title}
         sub={t.feeds.sub}

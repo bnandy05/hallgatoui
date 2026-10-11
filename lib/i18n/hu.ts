@@ -575,6 +575,89 @@ export const hu = {
       data: "Mentés, visszaállítás, törlés",
     },
   },
+  demo: {
+    banner: "Bemutató: minta félévvel nézel körül. Semmi nem kerül a szerverre, a lap bezárásával minden eltűnik.",
+    bannerShort: "Bemutató, mintaadatokkal",
+    tour: "Útmutató",
+    register: "Regisztráció",
+    exit: "Kilépés a bemutatóból",
+    exitShort: "Kilépés",
+    reset: "Mintaadatok visszaállítása",
+    signInTitle: "Előbb körülnéznél?",
+    signInText: "Próbáld ki regisztráció nélkül, egy minta félévvel. Semmit nem mentünk el, és bármikor kiléphetsz.",
+    start: "Bemutató indítása",
+    needsAccount: "Regisztráció szükséges",
+    locked: {
+      account: {
+        title: "Fiók és szinkron",
+        text: "Fiókkal az adataid a szerveren vannak: minden eszközödön ugyanazok, offline is megnyílnak, és telepítheted az oldalt alkalmazásként. A bemutató adatai csak ebben a lapban élnek.",
+      },
+      subscription: {
+        text: "Fiókkal kapsz egy saját .ics linket, amit a Google vagy az Apple Naptárba felveszel: a határidők, a heti radar és a készülési napok maguktól frissülnek, a forrásnaptárakat negyedóránként újra lekérjük.",
+        download: "A bemutató naptárát letöltheted egyszeri .ics fájlként.",
+      },
+      digest: {
+        title: "E-mail-összefoglaló",
+        text: "Fiókkal napi, heti vagy havi levelet kérhetsz a közelgő és lejárt határidőkről, a napi levélben a mai órákkal együtt.",
+      },
+    },
+    tourLabel: "A bemutató útmutatója",
+    step: (i: number, n: number) => `${i} / ${n}`,
+    back: "Vissza",
+    next: "Tovább",
+    close: "Útmutató bezárása",
+    keepExploring: "Körülnézek még",
+    steps: {
+      welcome: {
+        title: "Üdv a Hallgatói rétegben",
+        body: "Ez egy minta félév négy tárggyal. Nyugodtan kattints, pipálj ki és adj hozzá bármit: minden csak ebben a lapban él, a szerverre semmi nem kerül. A Regisztráció szükséges jelölésű funkciók fiókkal működnek.",
+      },
+      board: {
+        title: "A heti tábla",
+        body: "A hét határidői kitűzött cetlik. A gombostű színe a tárgyé, piros, ha sürgős vagy kritikus. Kipipálva a cetli lekerül. A kék sávok a Neptun-órarendből jönnek, a fenti Órák kapcsolóval elrejthetők.",
+      },
+      courses: {
+        title: "Tárgyak",
+        body: "Minden tárgy egy kartoték: nyitott határidők, a következő óra és a linkek. Kattints egy tárgyra a részletekért.",
+      },
+      course: {
+        title: "Egy tárgy oldala",
+        body: "Itt van egy helyen a Teams, a Canvas, a TMS vagy a Discord link, a tárgy határidői, órái és a jegyzetek, régi ZH-k.",
+      },
+      newDeadline: {
+        title: "Új határidő",
+        body: "Határidő egyszer, több időpontra vagy ismétlődve, például heti kvízre. A tárgyhoz és a platformhoz kötheted, és kritikusnak jelölheted.",
+      },
+      search: {
+        title: "Keresés és gyors felvétel",
+        body: "Ctrl K (Macen ⌘K): keresés tárgyakban, határidőkben és linkekben. Ide gépelve gyorsan felvehetsz határidőt is, például: „Analízis ZH péntek 10:00”.",
+      },
+      radar: {
+        title: "Határidők",
+        body: "Minden határidő napokra bontva, tárgy, platform és állapot szerint szűrhetően. Ha ugyanaz a határidő több forrásból is jön, egyszer látszik, „+1 forrás” jelöléssel; a módosult időpontot is jelezzük.",
+      },
+      reminders: {
+        title: "Emlékeztetők",
+        body: "A csengő a lejárt, kritikus és hamarosan esedékes határidőket mutatja. Böngészős értesítést a Beállítások → Értesítések alatt kapcsolhatsz be, ez a bemutatóban is működik.",
+      },
+      feeds: {
+        title: "Naptárak bekötése",
+        body: "Canvas, Moodle vagy Neptun naptárlink, illetve Neptun-órarend fájl: a határidők és az órák maguktól a tárgyakhoz kerülnek. A minta Canvas-naptár nem frissül; a saját linkedet vagy fájlodat itt is kipróbálhatod.",
+      },
+      subscription: {
+        title: "Naptár-előfizetés",
+        body: "Egy link a Google vagy az Apple Naptárhoz, ami magától frissül. Ehhez fiók kell, mert a naptárat a szerver állítja elő.",
+      },
+      digest: {
+        title: "E-mail-összefoglaló",
+        body: "Napi, heti vagy havi levél a határidőkről. Ehhez fiók és megerősített e-mail-cím kell.",
+      },
+      finish: {
+        title: "Ennyi a körút",
+        body: "Fiókkal az adataid minden eszközödön ott vannak, offline is, és megkapod a naptár-előfizetést és az e-mail-összefoglalót. A regisztráció ingyenes, csak egy e-mail-cím kell. Nem küldünk promóciós anyagot emailben.",
+      },
+    },
+  },
   auth: {
     signIn: "Belépés",
     register: "Regisztráció",

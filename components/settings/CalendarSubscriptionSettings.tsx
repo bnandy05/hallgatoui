@@ -19,6 +19,8 @@ import { Select } from "@/components/ui/Select";
 import { CopyField } from "@/components/ui/CopyField";
 import { Switch } from "@/components/ui/Switch";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { DemoLocked } from "@/components/demo/NeedsAccount";
+import { useDemoMode } from "@/lib/useDemoMode";
 
 type Busy = "create" | "rotate" | "delete" | null;
 
@@ -29,6 +31,8 @@ export function CalendarSubscriptionSettings() {
   const setExportOptions = useStore((s) => s.setExportOptions);
   const ignoredCount = useStore((s) => s.ignoredDuplicatePairs.length);
   const clearIgnoredDuplicates = useStore((s) => s.clearIgnoredDuplicates);
+  // The demo has no account, so no subscription link (and no request for one).
+  const demo = useDemoMode();
 
   // undefined: still loading; null: the subscription is off.
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -37,6 +41,7 @@ export function CalendarSubscriptionSettings() {
   const [viewValue, setViewValue] = useState("osszes");
 
   useEffect(() => {
+    if (demo) return;
     let cancelled = false;
     void fetchCalendarToken().then((result) => {
       if (cancelled) return;
@@ -46,7 +51,7 @@ export function CalendarSubscriptionSettings() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [demo]);
 
   async function run(
     kind: Exclude<Busy, null>,
@@ -94,7 +99,15 @@ export function CalendarSubscriptionSettings() {
         sub={t.calendarExport.sub}
       />
 
-      {token === undefined ? (
+      {demo ? (
+        <DemoLocked tour="subscription" text={t.demo.locked.subscription.text}>
+          <p className="text-[13.5px] text-muted">{t.demo.locked.subscription.download}</p>
+          <Button type="button" variant="secondary" className="w-fit" onClick={downloadCalendar}>
+            <Download className="h-4 w-4" />
+            {t.calendarExport.downloadIcs}
+          </Button>
+        </DemoLocked>
+      ) : token === undefined ? (
         error ? (
           <p className="text-[13px] font-semibold text-danger">{error}</p>
         ) : (

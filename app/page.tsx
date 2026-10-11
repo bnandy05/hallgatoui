@@ -165,6 +165,7 @@ export default function WeekHome() {
           <HomeSkeleton />
         ) : (
           <>
+            <div data-tour="week-board">
             <WeekBoard
               weekStart={weekStart}
               deadlines={deadlines}
@@ -175,6 +176,7 @@ export default function WeekHome() {
               emptyDay={t.home.emptyDay}
               label={t.home.boardLabel(range)}
             />
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-3 text-[14px]">
               {deadlines.length === 0 ? (
                 <p className="text-muted">
@@ -237,7 +239,7 @@ export default function WeekHome() {
               }
             />
           ) : (
-            <div>
+            <div data-tour="courses">
               <CourseTable courses={sortedCourses} now={now} />
             </div>
           )}

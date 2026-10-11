@@ -2,6 +2,7 @@
 
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { useDemoMode } from "@/lib/useDemoMode";
 
 /** Text of the sync status, or null while there is nothing to show (not signed in yet). */
 export function useSyncLabel(): { label: string; tone: "ok" | "busy" | "offline" | "bad"; title?: string } | null {
@@ -9,7 +10,8 @@ export function useSyncLabel(): { label: string; tone: "ok" | "busy" | "offline"
   const account = useStore((s) => s.account);
   const status = useStore((s) => s.syncStatus);
   const error = useStore((s) => s.syncError);
-  if (!account) return null;
+  const demo = useDemoMode();
+  if (!account || demo) return null;
   if (status === "saving") return { label: t.sync.saving, tone: "busy" };
   if (status === "offline") return { label: t.sync.offline, tone: "offline", title: t.sync.offlineHint };
   if (status === "error") return { label: error ?? t.sync.failed, tone: "bad" };

@@ -46,7 +46,8 @@ export function AuthForm() {
   const t = useT();
   const searchParams = useSearchParams();
   const back = safeReturnPath(searchParams.get("vissza"));
-  const [view, setView] = useState<View>("belepes");
+  // ?mod=regisztracio opens the registration form (the demo's "Register" links here).
+  const [view, setView] = useState<View>(searchParams.get("mod") === "regisztracio" ? "regisztracio" : "belepes");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);

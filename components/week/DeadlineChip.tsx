@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
+import { deadlineAnchorId } from "@/lib/search";
 import type { Deadline } from "@/lib/types";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DuplicateSources } from "@/components/DuplicateSources";
@@ -64,6 +65,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   return (
     <div
       ref={slipRef}
+      id={deadlineAnchorId(deadline.id)}
       data-done={deadline.done}
       style={index === undefined ? undefined : ({ "--i": index } as CSSProperties)}
       className={`slip group px-2.5 pb-2.5 pt-3 ${overdue && !deadline.done ? "bg-salmon" : "bg-card"}`}

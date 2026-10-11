@@ -411,7 +411,37 @@ dialog.sheet[open] .pin {
   }
 }
 
+/* A deadline reached through a link (#hatarido-<id>, components/DeadlineAnchorScroll.tsx): a ring
+   for a moment. No animation, so the slip's own pin-up motion is left alone. */
+[data-flash] {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+[id^="hatarido-"] {
+  scroll-margin-top: 104px;
+}
+
+/* The demo guide's current element (components/demo/DemoTour.tsx): a toner ring, drawn in once. */
+[data-tour] {
+  scroll-margin-top: 104px;
+}
+[data-tour-active] {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: var(--radius);
+  animation: tour-ring 0.5s var(--ease-out-expo);
+}
+@keyframes tour-ring {
+  from {
+    outline-offset: 16px;
+    outline-color: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [data-tour-active] {
+    animation: none;
+  }
   html {
     scroll-behavior: auto;
   }

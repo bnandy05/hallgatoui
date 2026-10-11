@@ -195,7 +195,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[19rem_minmax(0,1fr)] lg:gap-10">
         {/* The course's index card, pinned beside its board. */}
-        <aside className="lg:sticky lg:top-[88px] lg:self-start">
+        <aside data-tour="course-card" className="lg:sticky lg:top-[88px] lg:self-start">
           <div className="slip flex flex-col gap-5 bg-card px-5 pb-5 pt-6">
             <span
               aria-hidden="true"

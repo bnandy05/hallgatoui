@@ -1,5 +1,6 @@
 import { currentMessages } from "@/lib/i18n/clientLocale";
 import { hardNavigate } from "@/lib/account/path";
+import { endDemoMode, isDemoMode } from "@/lib/demoMode";
 import { useStore } from "@/lib/store";
 import { clearOfflineCache } from "@/lib/sw";
 import { offsetFromResponse, setServerOffset } from "@/lib/sync/clock";
@@ -95,6 +96,8 @@ export const setAccountLanguage = (locale: string) => simple("/api/fiok/nyelv", 
  * can show it. Called by the sign-in forms before they navigate on.
  */
 export async function dropForeignCache(): Promise<void> {
+  // Signing in from the demo ends it; the account's own cache (localStorage) was never touched.
+  if (isDemoMode()) return endDemoMode();
   const me = await fetchMe();
   if (!me.ok) return;
   const state = useStore.getState();
