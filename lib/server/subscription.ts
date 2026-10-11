@@ -9,7 +9,6 @@ export const TTL_SECONDS = 180 * 24 * 60 * 60; // feed caches expire after 180 d
 export const SOURCE_FRESH_MS = 15 * 60 * 1000;
 export const FEED_FETCH_TIMEOUT_MS = 6_000;
 export const WARN_AFTER_MS = 24 * 60 * 60 * 1000;
-export const MAX_IGNORED_PAIRS = 2000;
 export const MAX_CLASS_SESSIONS = 1500;
 export const MAX_FEEDS = 20; // bounds the source fetches one calendar request can trigger
 

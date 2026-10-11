@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Download, Sparkles, Trash2, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { parseAppData } from "@/lib/importData";
+import { ImportError, parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -68,8 +68,7 @@ export function DataSettings() {
         t.data.restored(data.courses.length, data.deadlines.length)
       );
     } catch (err) {
-      // parseAppData throws Hungarian messages; show the matching wording of the UI language.
-      setImportError(err instanceof Error && err.message === "Nem támogatott verzió" ? t.data.unsupportedVersion : t.data.invalidFile);
+      setImportError(err instanceof ImportError && err.code === "unsupported_version" ? t.data.unsupportedVersion : t.data.invalidFile);
     } finally {
       // Reset so choosing the same file again re-fires onChange.
       if (fileInputRef.current) {

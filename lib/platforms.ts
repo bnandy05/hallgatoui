@@ -1,4 +1,4 @@
-import type { Platform, ResourceKind } from "@/lib/types";
+import type { Platform } from "@/lib/types";
 
 export const BUILT_IN_PLATFORMS: Platform[] = [
   { id: "neptun", name: "Neptun", color: "#1e3a8a", builtIn: true },
@@ -27,11 +27,3 @@ export function getPlatform(id: string | undefined, custom: Platform[]): Platfor
 export function platformName(platform: Platform, other: string): string {
   return platform.builtIn && platform.id === "egyeb" ? other : platform.name;
 }
-
-export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
-  jegyzet: "#2563eb",
-  zh: "#dc2626",
-  megoldas: "#16a34a",
-  video: "#9333ea",
-  egyeb: "#6b7280",
-};

@@ -20,7 +20,7 @@ export function stableStringify(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
-const same = (a: unknown, b: unknown) => stableStringify(a) === stableStringify(b);
+export const same = (a: unknown, b: unknown) => stableStringify(a) === stableStringify(b);
 
 type Item = { id: string; updatedAt?: string };
 

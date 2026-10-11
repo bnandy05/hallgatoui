@@ -1,4 +1,4 @@
-import { getMessages, isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, pickLocale, type Locale, type Messages } from "@/lib/i18n";
+import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, pickLocale, type Locale } from "@/lib/i18n";
 import type { StoredUser } from "@/lib/server/account/store";
 
 // The language of a server response. A signed-in user's own choice (account locale) wins for
@@ -23,8 +23,6 @@ export function requestLocale(req: Request): Locale {
 export function userLocale(user: Pick<StoredUser, "locale"> | null | undefined): Locale {
   return isLocale(user?.locale) ? user.locale : "hu";
 }
-
-export const messagesFor = (locale: Locale): Messages => getMessages(locale);
 
 /** Set-Cookie value for the language cookie (readable by the client, like the one the proxy sets). */
 export function localeCookie(locale: Locale): string {

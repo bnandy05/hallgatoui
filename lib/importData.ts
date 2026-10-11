@@ -119,20 +119,29 @@ function tombstonesFrom(value: unknown): Record<string, string> {
   return Object.fromEntries(entries.slice(0, MAX_TOMBSTONES));
 }
 
+/** Why a backup file was rejected; callers pick the wording in the UI language from the code. */
+export class ImportError extends Error {
+  readonly code: "invalid" | "unsupported_version";
+  constructor(code: "invalid" | "unsupported_version") {
+    super(code);
+    this.name = "ImportError";
+    this.code = code;
+  }
+}
+
 /**
  * Validates an arbitrary JSON value as an AppData export and returns it
- * typed. Throws an Error with a Hungarian message when the shape doesn't
- * match, so callers can show it directly to the user.
+ * typed. Throws an ImportError when the shape doesn't match.
  */
 export function parseAppData(json: unknown): AppData {
   if (!json || typeof json !== "object") {
-    throw new Error("Nem érvényes mentésfájl");
+    throw new ImportError("invalid");
   }
 
   const data = json as Record<string, unknown>;
 
   if (data.version !== 1) {
-    throw new Error("Nem támogatott verzió");
+    throw new ImportError("unsupported_version");
   }
 
   if (
@@ -141,15 +150,15 @@ export function parseAppData(json: unknown): AppData {
     !Array.isArray(data.customPlatforms) ||
     !Array.isArray(data.feeds)
   ) {
-    throw new Error("Nem érvényes mentésfájl");
+    throw new ImportError("invalid");
   }
 
   if (!data.courses.every(isCourseShaped)) {
-    throw new Error("Nem érvényes mentésfájl");
+    throw new ImportError("invalid");
   }
 
   if (!data.deadlines.every(isDeadlineShaped)) {
-    throw new Error("Nem érvényes mentésfájl");
+    throw new ImportError("invalid");
   }
 
   return sanitizeUrls({

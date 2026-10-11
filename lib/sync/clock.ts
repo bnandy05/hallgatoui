@@ -9,10 +9,6 @@ export function setServerOffset(ms: number) {
   serverOffsetMs = Number.isFinite(ms) ? ms : 0;
 }
 
-export function getServerOffset(): number {
-  return serverOffsetMs;
-}
-
 /** The current time on the server's clock, as an ISO string. */
 export function syncNow(): string {
   return new Date(Date.now() + serverOffsetMs).toISOString();

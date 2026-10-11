@@ -3,7 +3,7 @@ import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { hardNavigate } from "@/lib/account/path";
 import { fetchMe, pullData, pushData } from "@/lib/account/client";
 import { emptyAppData, selectPayload, useStore } from "@/lib/store";
-import { mergeAppData, stableStringify, type SyncPayload } from "@/lib/sync/merge";
+import { mergeAppData, same, type SyncPayload } from "@/lib/sync/merge";
 import { hasAppData, resolveStartupData } from "@/lib/sync/startup";
 
 // The sync engine: keeps the zustand store and the server's data document in step. The server is
@@ -14,7 +14,6 @@ const BACKOFF_MS = [2000, 5000, 15_000, 60_000];
 const PULL_INTERVAL_MS = 5 * 60 * 1000;
 const MAX_ROUNDS = 4;
 
-const same = (a: unknown, b: unknown) => stableStringify(a) === stableStringify(b);
 const EMPTY: SyncPayload = { data: emptyAppData(), exportOptions: DEFAULT_EXPORT_OPTIONS };
 
 let flushActive: (() => Promise<void>) | null = null;
