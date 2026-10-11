@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { hardNavigate } from "@/lib/account/path";
 import { dropForeignCache, consumeLink } from "@/lib/account/client";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -15,24 +16,12 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 type Kind = "megerosites" | "belepes" | "jelszo" | "email";
 
-const KINDS: Record<Kind, { title: string; sub: string; button: string }> = {
-  megerosites: {
-    title: "E-mail-cím megerősítése",
-    sub: "Erősítsd meg a címedet, utána be is léptetünk.",
-    button: "Megerősítem",
-  },
-  belepes: { title: "Belépés", sub: "Lépj be a fiókodba ezzel a linkkel.", button: "Belépés" },
-  jelszo: { title: "Új jelszó", sub: "Add meg az új jelszavad, utána be is léptetünk.", button: "Jelszó mentése" },
-  email: {
-    title: "E-mail-cím módosítása",
-    sub: "Erősítsd meg, hogy az új cím a fiókodhoz tartozzon.",
-    button: "Megerősítem",
-  },
-};
+const KIND_IDS: readonly Kind[] = ["megerosites", "belepes", "jelszo", "email"];
 
-const isKind = (value: string | null): value is Kind => value !== null && value in KINDS;
+const isKind = (value: string | null): value is Kind => value !== null && (KIND_IDS as readonly string[]).includes(value);
 
 export function LinkAction() {
+  const t = useT();
   const params = useSearchParams();
   const kind = params.get("m");
   const token = params.get("t");
@@ -40,18 +29,26 @@ export function LinkAction() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const [emailChanged, setEmailChanged] = useState(false);
 
   if (!isKind(kind) || !token) return <Expired />;
-  const copy = KINDS[kind];
+  const copy = {
+    megerosites: { title: t.auth.confirmEmailTitle, sub: t.auth.confirmEmailSub, button: t.auth.confirmButton },
+    belepes: { title: t.auth.signIn, sub: t.auth.linkSignInSub, button: t.auth.signIn },
+    jelszo: { title: t.auth.newPassword, sub: t.auth.newPasswordSub, button: t.auth.savePassword },
+    email: { title: t.auth.changeEmailTitle, sub: t.auth.changeEmailSub, button: t.auth.confirmButton },
+  }[kind];
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy || !isKind(kind) || !token) return;
     setBusy(true);
     setError(null);
+    setExpired(false);
     const result = await consumeLink(kind, token, kind === "jelszo" ? password : undefined);
     if (!result.ok) {
+      if (result.code === "link_expired") setExpired(true);
       setError(result.error);
       setBusy(false);
       return;
@@ -69,15 +66,14 @@ export function LinkAction() {
   if (emailChanged) {
     return (
       <Card className="flex flex-col gap-4">
-        <SectionHeading as="h1" title="Az e-mail-címed megváltozott." />
+        <SectionHeading as="h1" title={t.auth.emailChanged} />
         <Link href={signedIn ? "/" : "/belepes"} className={buttonClasses({ className: "self-start" })}>
-          {signedIn ? "Tovább az oldalra" : "Belépés"}
+          {signedIn ? t.auth.continueToApp : t.auth.signIn}
         </Link>
       </Card>
     );
   }
 
-  const expired = error === "A link lejárt vagy már felhasználták";
   if (expired) return <Expired />;
 
   return (
@@ -85,7 +81,7 @@ export function LinkAction() {
       <SectionHeading as="h1" title={copy.title} sub={copy.sub} />
       {kind === "jelszo" && (
         <div>
-          <Label htmlFor="link-password">Új jelszó</Label>
+          <Label htmlFor="link-password">{t.auth.newPassword}</Label>
           <Input
             id="link-password"
             type="password"
@@ -98,7 +94,7 @@ export function LinkAction() {
             aria-describedby="link-password-hint"
           />
           <p id="link-password-hint" className="mt-1.5 text-[13px] text-muted">
-            Legalább 10 karakter.
+            {t.auth.passwordHint}
           </p>
         </div>
       )}
@@ -116,11 +112,12 @@ export function LinkAction() {
 }
 
 function Expired() {
+  const t = useT();
   return (
     <Card className="flex flex-col gap-4">
-      <SectionHeading as="h1" title="A link lejárt vagy már felhasználták" sub="Kérj egy újat a belépő oldalon." />
+      <SectionHeading as="h1" title={t.auth.linkExpired} sub={t.auth.linkExpiredSub} />
       <Link href="/belepes" className={buttonClasses({ variant: "secondary", className: "self-start" })}>
-        Új link kérése
+        {t.auth.requestNewLink}
       </Link>
     </Card>
   );

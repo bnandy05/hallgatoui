@@ -1,5 +1,6 @@
 import { parseIcs } from "@/lib/ical/parse";
 import type { IcalEventDTO } from "@/lib/ical/types";
+import { IcalError } from "@/lib/ical/errors";
 import { assertPublicUrl, SsrfBlockedError } from "@/lib/ical/ssrf";
 
 // Server-only: shared by the /api/ical proxy and the calendar subscription route.
@@ -9,7 +10,11 @@ const MAX_REDIRECTS = 3;
 const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
 const USER_AGENT = "HallgatoiReteg/1.0";
 
-export class TooLargeError extends Error {}
+export class TooLargeError extends IcalError {
+  constructor() {
+    super("too_large");
+  }
+}
 
 export function normalizeUrl(rawUrl: string): URL | null {
   const trimmed = rawUrl.trim();
@@ -51,7 +56,7 @@ export async function fetchIcs(
     }
 
     if (redirectCount >= MAX_REDIRECTS) {
-      throw new Error("Túl sok átirányítás");
+      throw new IcalError("redirects");
     }
 
     const nextUrl = new URL(location, currentUrl);
@@ -101,34 +106,35 @@ export async function readBodyWithLimit(res: Response): Promise<string> {
   return new TextDecoder("utf-8").decode(merged);
 }
 
-/** Fetches and parses a feed; throws an Error with a Hungarian message on any failure. */
+/** Fetches and parses a feed; throws an IcalError (with a code to localize) on any failure. */
 export async function fetchAndParseFeed(
   rawUrl: string,
-  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS,
+  untitled?: string
 ): Promise<IcalEventDTO[]> {
   const url = normalizeUrl(rawUrl);
-  if (!url) throw new Error("Hiányzó vagy hibás URL");
+  if (!url) throw new IcalError("bad_url");
 
   let res: Response;
   try {
     res = await fetchIcs(url, timeoutMs);
   } catch (err) {
-    if (err instanceof SsrfBlockedError) throw err;
-    throw new Error("A naptár nem érhető el");
+    if (err instanceof IcalError) throw err;
+    throw new IcalError("unreachable");
   }
-  if (!res.ok) throw new Error(`A naptár nem tölthető le (HTTP ${res.status})`);
+  if (!res.ok) throw new IcalError("http", res.status);
 
   let text: string;
   try {
     text = await readBodyWithLimit(res);
   } catch (err) {
-    if (err instanceof TooLargeError) throw new Error("Túl nagy naptárfájl");
-    throw new Error("A naptár nem érhető el");
+    if (err instanceof IcalError) throw err;
+    throw new IcalError("unreachable");
   }
 
   try {
-    return parseIcs(text);
+    return parseIcs(text, untitled);
   } catch {
-    throw new Error("Hibás iCal formátum");
+    throw new IcalError("format");
   }
 }

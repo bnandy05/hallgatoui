@@ -1,5 +1,6 @@
 import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
 import { pickCourseColor } from "@/lib/colors";
+import type { Locale } from "@/lib/i18n/locales";
 import type { AppData, Course, Deadline, Resource } from "@/lib/types";
 
 function at(base: Date, hours: number, minutes = 0): string {
@@ -13,17 +14,18 @@ function dueAt(now: Date, dayOffset: number, hours: number, minutes = 0): string
 /**
  * Builds a fixed, idempotent set of demo data relative to `now`. IDs are
  * stable ("demo-…") so loading the demo twice never creates duplicates —
- * `loadDemo()` merges by id.
+ * `loadDemo()` merges by id. Texts follow `locale`; the Hungarian set is the default.
  */
-export function buildDemoData(now: Date): AppData {
+export function buildDemoData(now: Date, locale: Locale = "hu"): AppData {
+  const s = <T>(hu: T, en: T): T => (locale === "en" ? en : hu);
   const courses: Course[] = [
     {
       id: "demo-course-prog",
-      name: "Programozás",
+      name: s("Programozás", "Programming"),
       code: "IP-18PROGEG",
       semester: "2026/27/1",
       color: pickCourseColor(0),
-      matchKeywords: ["progeg", "ip-18progeg", "programozás"],
+      matchKeywords: s(["progeg", "ip-18progeg", "programozás"], ["progeg", "ip-18progeg", "programming"]),
       createdAt: at(now, 8),
       links: [
         {
@@ -39,29 +41,29 @@ export function buildDemoData(now: Date): AppData {
         {
           id: "demo-link-prog-tms",
           platformId: "tms",
-          label: "Beadandók",
+          label: s("Beadandók", "Assignments"),
           url: "https://example.com/tms/prog",
         },
         {
           id: "demo-link-prog-discord",
           platformId: "discord",
-          label: "Csoport szerver",
+          label: s("Csoport szerver", "Group server"),
           url: "https://example.com/discord/prog",
         },
       ],
       resources: demoResources("prog", now, [
-        { title: "1. előadás jegyzet", kind: "jegyzet" },
-        { title: "Múlt évi ZH feladatsor", kind: "zh" },
-        { title: "ZH mintamegoldás", kind: "megoldas" },
+        { title: s("1. előadás jegyzet", "Lecture 1 notes"), kind: "jegyzet" },
+        { title: s("Múlt évi ZH feladatsor", "Last year's midterm"), kind: "zh" },
+        { title: s("ZH mintamegoldás", "Midterm sample solution"), kind: "megoldas" },
       ]),
     },
     {
       id: "demo-course-anal",
-      name: "Analízis I.",
+      name: s("Analízis I.", "Calculus I"),
       code: "TTKMB1401",
       semester: "2026/27/1",
       color: pickCourseColor(1),
-      matchKeywords: ["analízis", "analizis", "ttkmb1401"],
+      matchKeywords: s(["analízis", "analizis", "ttkmb1401"], ["calculus", "analysis", "ttkmb1401"]),
       createdAt: at(now, 8),
       links: [
         {
@@ -77,22 +79,22 @@ export function buildDemoData(now: Date): AppData {
         {
           id: "demo-link-anal-messenger",
           platformId: "messenger",
-          label: "Évfolyam csoport",
+          label: s("Évfolyam csoport", "Year group"),
           url: "https://example.com/messenger/anal",
         },
       ],
       resources: demoResources("anal", now, [
-        { title: "Sorozatok – jegyzet", kind: "jegyzet" },
-        { title: "Gyakorló feladatsor", kind: "zh" },
+        { title: s("Sorozatok – jegyzet", "Series – notes"), kind: "jegyzet" },
+        { title: s("Gyakorló feladatsor", "Practice problems"), kind: "zh" },
       ]),
     },
     {
       id: "demo-course-adatb",
-      name: "Adatbázisok I.",
+      name: s("Adatbázisok I.", "Databases I"),
       code: "IB-ADATB1",
       semester: "2026/27/1",
       color: pickCourseColor(2),
-      matchKeywords: ["adatbázis", "adatbázisok", "adatb"],
+      matchKeywords: s(["adatbázis", "adatbázisok", "adatb"], ["database", "databases", "adatb"]),
       createdAt: at(now, 8),
       links: [
         {
@@ -103,23 +105,23 @@ export function buildDemoData(now: Date): AppData {
         {
           id: "demo-link-adatb-drive",
           platformId: "drive",
-          label: "Segédanyagok",
+          label: s("Segédanyagok", "Study materials"),
           url: "https://example.com/drive/adatbazisok",
         },
       ],
       resources: demoResources("adatb", now, [
-        { title: "ER-diagram jegyzet", kind: "jegyzet" },
-        { title: "SQL feladatok megoldással", kind: "megoldas" },
-        { title: "Bevezető videó", kind: "video" },
+        { title: s("ER-diagram jegyzet", "ER diagram notes"), kind: "jegyzet" },
+        { title: s("SQL feladatok megoldással", "SQL exercises with solutions"), kind: "megoldas" },
+        { title: s("Bevezető videó", "Introduction video"), kind: "video" },
       ]),
     },
     {
       id: "demo-course-dm",
-      name: "Diszkrét matematika",
+      name: s("Diszkrét matematika", "Discrete mathematics"),
       code: "TTKMB1105",
       semester: "2026/27/1",
       color: pickCourseColor(3),
-      matchKeywords: ["diszkrét", "diszkret", "dm"],
+      matchKeywords: s(["diszkrét", "diszkret", "dm"], ["discrete", "diszkret", "dm"]),
       createdAt: at(now, 8),
       links: [
         {
@@ -134,8 +136,8 @@ export function buildDemoData(now: Date): AppData {
         },
       ],
       resources: demoResources("dm", now, [
-        { title: "Gráfelmélet jegyzet", kind: "jegyzet" },
-        { title: "Korábbi vizsgasor", kind: "zh" },
+        { title: s("Gráfelmélet jegyzet", "Graph theory notes"), kind: "jegyzet" },
+        { title: s("Korábbi vizsgasor", "Past exam paper"), kind: "zh" },
       ]),
     },
   ];
@@ -144,7 +146,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-1",
       courseId: "demo-course-prog",
-      title: "1. beadandó",
+      title: s("1. beadandó", "Assignment 1"),
       due: dueAt(now, -2, 23, 59),
       platformId: "tms",
       url: "https://example.com/tms/prog/1-beadando",
@@ -155,7 +157,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-2",
       courseId: "demo-course-adatb",
-      title: "ZH 1",
+      title: s("ZH 1", "Midterm 1"),
       due: dueAt(now, -1, 10, 0),
       critical: false,
       done: true,
@@ -164,7 +166,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-3",
       courseId: "demo-course-anal",
-      title: "Gyakorlati feladatlap – 3. hét",
+      title: s("Gyakorlati feladatlap – 3. hét", "Practice worksheet – week 3"),
       due: dueAt(now, 0, 23, 59),
       platformId: "moodle",
       url: "https://example.com/moodle/analizis/feladatlap-3",
@@ -175,7 +177,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-4",
       courseId: "demo-course-prog",
-      title: "Canvas kvíz – 3. hét",
+      title: s("Canvas kvíz – 3. hét", "Canvas quiz – week 3"),
       due: dueAt(now, 2, 23, 59),
       platformId: "canvas",
       url: "https://example.com/canvas/prog/kviz-3",
@@ -186,7 +188,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-5",
       courseId: "demo-course-dm",
-      title: "2. házi feladat",
+      title: s("2. házi feladat", "Homework 2"),
       due: dueAt(now, 5, 23, 59),
       critical: false,
       done: false,
@@ -195,7 +197,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-6",
       courseId: "demo-course-adatb",
-      title: "Projektterv leadása",
+      title: s("Projektterv leadása", "Project plan submission"),
       due: dueAt(now, 9, 23, 59),
       platformId: "drive",
       url: "https://example.com/drive/adatbazisok/projektterv",
@@ -206,7 +208,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-7",
       courseId: "demo-course-anal",
-      title: "ZH 2",
+      title: s("ZH 2", "Midterm 2"),
       due: dueAt(now, 14, 10, 0),
       critical: false,
       done: false,
@@ -215,7 +217,7 @@ export function buildDemoData(now: Date): AppData {
     {
       id: "demo-dl-8",
       courseId: "demo-course-dm",
-      title: "Vizsgajelentkezés határideje",
+      title: s("Vizsgajelentkezés határideje", "Exam registration deadline"),
       due: dueAt(now, 20, 23, 59),
       platformId: "neptun",
       url: "https://example.com/neptun/dm/vizsgajelentkezes",

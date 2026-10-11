@@ -15,6 +15,10 @@ import {
   type DigestItem,
 } from "@/lib/digest";
 import type { ClassSession } from "@/lib/types";
+import { getMessages, type Locale, type Messages } from "@/lib/i18n";
+
+/** The mail wording of one language, and the language itself (for lang attributes). */
+type X = Messages["email"];
 
 // The digest and confirmation mails, drawn as the notice board: the heading on felt, then the
 // days as felt strips with paper slips pinned to them (DESIGN.md). Pure, so it can be tested.
@@ -79,12 +83,6 @@ const TABULAR = "font-variant-numeric:tabular-nums";
 const SHADOW_PAPER = "0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)";
 export const SHADOW_SHEET = "0 1px 2px rgba(30,40,48,0.08),0 10px 24px -12px rgba(30,40,48,0.3)";
 
-const MONTHS_SHORT = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
-const MONTHS = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"];
-const MONTHS_IN = ["januárban", "februárban", "márciusban", "áprilisban", "májusban", "júniusban", "júliusban", "augusztusban", "szeptemberben", "októberben", "novemberben", "decemberben"];
-const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap"];
-const WEEKDAYS_SHORT = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
-
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -94,19 +92,24 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const shortDate = ([, m, d]: YMD) => `${MONTHS_SHORT[m - 1]} ${d}.`;
+const shortDate = (x: X, [, m, d]: YMD) => x.shortDate(x.monthsShort[m - 1], d);
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
 
-/** "okt. 5. (H) 23:59" in Budapest time. */
-export function formatDigestDue(instant: Date): string {
+/** "okt. 5. (H) 23:59" (en: "5 Oct (Mon) 23:59") in Budapest time. */
+export function formatDigestDue(instant: Date, locale: Locale = "hu"): string {
+  const x = getMessages(locale).email;
+  return formatDue(x, instant);
+}
+
+function formatDue(x: X, instant: Date): string {
   const date = budapestDate(instant);
-  return `${shortDate(date)} (${WEEKDAYS_SHORT[isoWeekday(date) - 1]}) ${budapestTime(instant)}`;
+  return `${shortDate(x, date)} (${x.weekdaysShort[isoWeekday(date) - 1]}) ${budapestTime(instant)}`;
 }
 
 /** "okt. 5–11." or "szept. 28. – okt. 4." */
-function rangeLabel(from: YMD, to: YMD): string {
-  if (from[1] === to[1]) return `${MONTHS_SHORT[from[1] - 1]} ${from[2]}–${to[2]}.`;
-  return `${shortDate(from)} – ${shortDate(to)}`;
+function rangeLabel(x: X, from: YMD, to: YMD): string {
+  if (from[1] === to[1]) return x.rangeSameMonth(x.monthsShort[from[1] - 1], from[2], to[2]);
+  return `${shortDate(x, from)} – ${shortDate(x, to)}`;
 }
 
 /** A colour at `amount` (0..1) over another, both #rrggbb: the app's color-mix, precomputed. */
@@ -141,9 +144,9 @@ function courseHtml(course: Course): string {
 
 // --- shared pieces -------------------------------------------------------------------------
 
-export function documentHtml(title: string, preheader: string, body: string): string {
+export function documentHtml(title: string, preheader: string, body: string, locale: Locale = "hu"): string {
   return `<!doctype html>
-<html lang="hu">
+<html lang="${locale}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -193,7 +196,7 @@ export function documentHtml(title: string, preheader: string, body: string): st
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="felt" style="width:100%;background:${LIGHT.felt}">
 <tr><td align="center" class="outer" style="padding:28px 16px 36px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;font-family:${FONT};color:${LIGHT.ink}">
-${wordmark()}
+${wordmark(getMessages(locale).shell.brand)}
 ${body}
 </table>
 </td></tr>
@@ -203,11 +206,11 @@ ${body}
 }
 
 /** The wordmark from the app header: a red pushpin head beside the condensed name. */
-function wordmark(): string {
+function wordmark(brand: string): string {
   return `<tr><td style="padding:0 0 28px">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
 <td style="width:11px;padding-right:9px;vertical-align:middle"><div style="width:11px;height:11px;border-radius:6px;background:${LIGHT.pin};box-shadow:1px 2px 2px rgba(20,24,28,0.35)"></div></td>
-<td class="heading" style="vertical-align:middle;${DISPLAY};font-size:19px;color:${LIGHT.heading}">Hallgatói réteg</td>
+<td class="heading" style="vertical-align:middle;${DISPLAY};font-size:19px;color:${LIGHT.heading}">${escapeHtml(brand)}</td>
 </tr></table>
 </td></tr>`;
 }
@@ -243,13 +246,13 @@ interface TimeLeft {
   fraction: number;
 }
 
-function timeLeft(due: Date, now: Date): TimeLeft {
+function timeLeft(x: X, due: Date, now: Date): TimeLeft {
   const minutes = Math.max(0, Math.round((due.getTime() - now.getTime()) / 60_000));
-  const label = minutes < 60 ? `még ${minutes} perc` : `még ${Math.round(minutes / 60)} óra`;
+  const label = minutes < 60 ? x.digest.minutesLeft(minutes) : x.digest.hoursLeft(Math.round(minutes / 60));
   return { label, fraction: Math.min(1, Math.max(0.04, minutes / (24 * 60))) };
 }
 
-function slip(item: DigestItem, overdue: boolean, showDate: boolean, left?: TimeLeft): string {
+function slip(x: X, item: DigestItem, overdue: boolean, showDate: boolean, left?: TimeLeft): string {
   const d = item.deadline;
   const due = new Date(d.due);
   const hot = overdue || item.critical;
@@ -258,14 +261,14 @@ function slip(item: DigestItem, overdue: boolean, showDate: boolean, left?: Time
   const title = url
     ? `<a href="${escapeHtml(url)}" style="color:${LIGHT.heading};text-decoration:underline;text-decoration-color:${LIGHT.edgeStrong}">${escapeHtml(d.title)}</a>`
     : escapeHtml(d.title);
-  const when = showDate ? formatDigestDue(due) : budapestTime(due);
+  const when = showDate ? formatDue(x, due) : budapestTime(due);
   const stamps = [
-    !overdue && item.critical ? stamp("Kritikus", "danger", LIGHT.paper) : "",
-    item.changed ? stamp("Módosult", "warning", LIGHT.paper) : "",
+    !overdue && item.critical ? stamp(x.digest.critical, "danger", LIGHT.paper) : "",
+    item.changed ? stamp(x.digest.changed, "warning", LIGHT.paper) : "",
   ].filter(Boolean);
   const previous =
     item.changed && d.previousDue
-      ? `<span class="dim" style="color:${LIGHT.mutedDim}">korábban ${escapeHtml(formatDigestDue(new Date(d.previousDue)))}</span>`
+      ? `<span class="dim" style="color:${LIGHT.mutedDim}">${escapeHtml(x.digest.previously(formatDue(x, new Date(d.previousDue))))}</span>`
       : "";
   const meta = [item.course ? `<span class="muted" style="color:${LIGHT.muted}">${courseHtml(item.course)}</span>` : "", ...stamps, previous]
     .filter(Boolean)
@@ -297,28 +300,28 @@ function timeBar(fraction: number, hot: boolean): string {
 </td></tr>`;
 }
 
-function slipStack(items: DigestItem[], overdue: boolean, showDate: boolean, now?: Date): string {
+function slipStack(x: X, items: DigestItem[], overdue: boolean, showDate: boolean, now?: Date): string {
   return items
     .map((item, i) => {
-      const left = now ? timeLeft(new Date(item.deadline.due), now) : undefined;
-      return `<div style="${i > 0 ? "margin-top:8px" : ""}">${slip(item, overdue, showDate, left)}</div>`;
+      const left = now ? timeLeft(x, new Date(item.deadline.due), now) : undefined;
+      return `<div style="${i > 0 ? "margin-top:8px" : ""}">${slip(x, item, overdue, showDate, left)}</div>`;
     })
     .join("\n");
 }
 
 /** A day of the board: a lighter felt strip, Canary Soft for today, the day name beside its slips. */
-function dayStrip(day: YMD, items: DigestItem[], today: YMD): string {
+function dayStrip(x: X, day: YMD, items: DigestItem[], today: YMD): string {
   const isToday = dateKey(day) === dateKey(today);
   const bg = isToday ? LIGHT.canarySoft : LIGHT.strip;
   return `<tr><td style="padding:0 0 8px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="${isToday ? "today" : "strip"}" style="width:100%;background:${bg};border-radius:2px">
 <tr>
 <td class="day-col" style="width:92px;padding:12px 8px 12px 14px;vertical-align:top">
-<div class="heading day-name" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${WEEKDAYS[isoWeekday(day) - 1]}</div>
-<div class="muted" style="margin-top:3px;font-size:13px;${TABULAR};color:${LIGHT.muted}">${isToday ? "ma, " : ""}${shortDate(day)}</div>
+<div class="heading day-name" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${x.weekdays[isoWeekday(day) - 1]}</div>
+<div class="muted" style="margin-top:3px;font-size:13px;${TABULAR};color:${LIGHT.muted}">${isToday ? x.digest.todayPrefix : ""}${shortDate(x, day)}</div>
 </td>
 <td style="padding:10px 10px 10px 0;vertical-align:top">
-${slipStack(items, false, false)}
+${slipStack(x, items, false, false)}
 </td>
 </tr>
 </table>
@@ -337,15 +340,15 @@ function groupByDay(items: DigestItem[]): { day: YMD; items: DigestItem[] }[] {
   return [...days.values()];
 }
 
-function weekHeading(monday: YMD, thisMonday: YMD, from: YMD, to: YMD): string {
+function weekHeading(x: X, monday: YMD, thisMonday: YMD, from: YMD, to: YMD): string {
   const diff = Math.round((Date.UTC(...ymdUtc(monday)) - Date.UTC(...ymdUtc(thisMonday))) / (7 * 86_400_000));
-  const name = diff === 0 ? "Ez a hét" : diff === 1 ? "Jövő hét" : null;
+  const name = diff === 0 ? x.digest.thisWeek : diff === 1 ? x.digest.nextWeek : null;
   const start = dateKey(monday) < dateKey(from) ? from : monday;
   const sunday = addDays(monday, 6);
   const end = dateKey(sunday) > dateKey(to) ? to : sunday;
   return `<tr><td style="padding:18px 2px 10px">
-<span class="heading" style="${DISPLAY};font-size:22px;color:${LIGHT.heading}">${name ?? rangeLabel(start, end)}</span>${
-    name ? `<span class="muted" style="padding-left:10px;font-size:13.5px;${TABULAR};color:${LIGHT.muted}">${rangeLabel(start, end)}</span>` : ""
+<span class="heading" style="${DISPLAY};font-size:22px;color:${LIGHT.heading}">${name ?? rangeLabel(x, start, end)}</span>${
+    name ? `<span class="muted" style="padding-left:10px;font-size:13.5px;${TABULAR};color:${LIGHT.muted}">${rangeLabel(x, start, end)}</span>` : ""
   }
 </td></tr>`;
 }
@@ -354,69 +357,51 @@ function ymdUtc([y, m, d]: YMD): [number, number, number] {
   return [y, m - 1, d];
 }
 
-function overdueBlock(items: DigestItem[]): string {
+function overdueBlock(x: X, items: DigestItem[]): string {
   return `<tr><td style="padding:0 0 22px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="salmon" style="width:100%;background:${LIGHT.salmon};border-radius:2px">
 <tr><td style="padding:14px 14px 4px">
-<span class="danger" style="${DISPLAY};font-size:19px;color:${LIGHT.danger}">Lejárt</span>
-<span class="ink" style="padding-left:8px;font-size:13px;color:${LIGHT.ink}">még nincs kipipálva</span>
+<span class="danger" style="${DISPLAY};font-size:19px;color:${LIGHT.danger}">${escapeHtml(x.digest.overdue)}</span>
+<span class="ink" style="padding-left:8px;font-size:13px;color:${LIGHT.ink}">${escapeHtml(x.digest.notMarkedDone)}</span>
 </td></tr>
 <tr><td style="padding:8px 10px 10px">
-${slipStack(items, true, true)}
+${slipStack(x, items, true, true)}
 </td></tr>
 </table>
 </td></tr>`;
 }
 
-function feedNotice(name: string): string {
+function feedNotice(x: X, name: string): string {
   return `<tr><td style="padding:0 0 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="canary" style="width:100%;background:${LIGHT.canary};border-radius:2px">
 <tr><td class="ink" style="padding:12px 14px;font-size:14px;line-height:1.5;color:${LIGHT.ink}">
-<strong>A(z) „${escapeHtml(name)}” naptár nem frissül.</strong> Több mint egy napja nem sikerül letölteni, ezért a határidői elavultak lehetnek. Ellenőrizd a linkjét a Beállításokban.
+<strong>${escapeHtml(x.digest.feedWarningTitle(name))}</strong>${escapeHtml(x.digest.feedWarningBody)}
 </td></tr>
 </table>
 </td></tr>`;
 }
 
-/** "egy", "kettő"… up to five, then the numeral: reads better after "holnap még". */
-function countWord(n: number): string {
-  return ["nulla", "egy", "kettő", "három", "négy", "öt"][n] ?? String(n);
-}
-
-/** ", ebből 1 kritikus", or ", kritikus" / ", mindkettő kritikus" / ", mind kritikus" when all are. */
-function criticalClause(total: number, critical: number): string {
-  if (critical === 0) return "";
-  if (critical < total) return `, ebből ${critical} kritikus`;
-  return total === 1 ? ", kritikus" : total === 2 ? ", mindkettő kritikus" : ", mind kritikus";
-}
-
-/** The overdue sentence; it never starts with a numeral. */
-function overdueSentence(count: number): string {
-  if (count === 0) return "";
-  return count === 1 ? "Egy lejárt határidő még nincs kipipálva." : `Lejárt és még nincs kipipálva: ${count} határidő.`;
-}
-
 /** One line of the plain-text part. */
-function itemText(item: DigestItem): string {
+function itemText(x: X, item: DigestItem): string {
   const d = item.deadline;
-  const flags = [item.critical ? "kritikus" : "", item.changed ? "módosult" : ""].filter(Boolean);
+  const flags = [item.critical ? x.digest.criticalFlag : "", item.changed ? x.digest.changedFlag : ""].filter(Boolean);
   const course = courseLabel(item.course);
   return [
-    `- ${formatDigestDue(new Date(d.due))}  ${d.title}`,
+    `- ${formatDue(x, new Date(d.due))}  ${d.title}`,
     course ? ` (${course})` : "",
     flags.length ? ` [${flags.join(", ")}]` : "",
-    item.changed && d.previousDue ? `, korábban: ${formatDigestDue(new Date(d.previousDue))}` : "",
+    item.changed && d.previousDue ? x.digest.previouslyText(formatDue(x, new Date(d.previousDue))) : "",
   ].join("");
 }
 
 // --- daily --------------------------------------------------------------------------------
 
 /** A class from the timetable: Sky paper taped flat (no pin, no shadow), course dot, time range. */
-function classChip({ session, course }: { session: ClassSession; course?: Course }): string {
+function classChip(x: X, { session, course }: { session: ClassSession; course?: Course }): string {
   const start = budapestTime(new Date(session.start));
   const end = budapestTime(new Date(session.end));
   const dot = course ? courseColor(course) : LIGHT.ballpoint;
-  const name = [course?.name ?? session.subject, session.kind === "vizsga" ? "vizsga" : "", session.room ?? ""]
+  const name = [course?.name ?? session.subject, session.kind === "vizsga" ? x.digest.exam : "", session.room ?? ""]
     .filter(Boolean)
     .map(escapeHtml)
     .join(" · ");
@@ -449,7 +434,7 @@ ${slips || `<p class="muted" style="margin:0;padding:2px 4px 4px;font-size:14px;
 }
 
 /** The rest of the week after tomorrow: a ruled list on one sheet, lighter than slips. */
-function restOfWeek(items: DigestItem[]): string {
+function restOfWeek(x: X, items: DigestItem[]): string {
   const rows = items.map((item, i) => {
     const d = item.deadline;
     const due = new Date(d.due);
@@ -458,22 +443,22 @@ function restOfWeek(items: DigestItem[]): string {
     const pin = item.critical ? LIGHT.pin : courseColor(item.course);
     const meta = [
       item.course ? `<span class="muted" style="color:${LIGHT.muted}">${courseHtml(item.course)}</span>` : "",
-      item.critical ? stamp("Kritikus", "danger", LIGHT.paper) : "",
-      item.changed ? stamp("Módosult", "warning", LIGHT.paper) : "",
+      item.critical ? stamp(x.digest.critical, "danger", LIGHT.paper) : "",
+      item.changed ? stamp(x.digest.changed, "warning", LIGHT.paper) : "",
     ]
       .filter(Boolean)
       .join(`<span style="display:inline-block;width:8px"></span>`);
     return `<tr>
-<td class="rest-day heading ruled" style="width:48px;padding:10px 8px 10px 0;${rule}vertical-align:top;${DISPLAY};font-size:16px;color:${LIGHT.heading}">${WEEKDAYS_SHORT[isoWeekday(day) - 1]}</td>
+<td class="rest-day heading ruled" style="width:48px;padding:10px 8px 10px 0;${rule}vertical-align:top;${DISPLAY};font-size:16px;color:${LIGHT.heading}">${x.weekdaysShort[isoWeekday(day) - 1]}</td>
 <td class="ruled" style="padding:10px 0;${rule}vertical-align:top">
 <div class="ink" style="font-size:14px;font-weight:600;line-height:1.4;color:${LIGHT.ink}"><span style="display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:4px;background:${pin};vertical-align:1px"></span>${escapeHtml(d.title)}</div>
 ${meta ? `<div style="margin-top:2px;padding-left:15px;font-size:12.5px;line-height:1.5">${meta}</div>` : ""}
 </td>
-<td class="ruled muted" style="padding:10px 0 10px 8px;${rule}vertical-align:top;text-align:right;white-space:nowrap;font-size:13px;${TABULAR};color:${LIGHT.muted}">${shortDate(day)} ${budapestTime(due)}</td>
+<td class="ruled muted" style="padding:10px 0 10px 8px;${rule}vertical-align:top;text-align:right;white-space:nowrap;font-size:13px;${TABULAR};color:${LIGHT.muted}">${shortDate(x, day)} ${budapestTime(due)}</td>
 </tr>`;
   });
   return `<tr><td style="padding:0 2px 8px">
-<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">A hét hátralévő része</span>
+<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${escapeHtml(x.digest.restOfWeek)}</span>
 </td></tr>
 <tr><td style="padding:0 0 4px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:${LIGHT.paper};border:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.5)};border-radius:2px;box-shadow:${SHADOW_SHEET}">
@@ -486,7 +471,8 @@ ${rows.join("\n")}
 </td></tr>`;
 }
 
-function renderDailyEmail({ content, now, appUrl, unsubscribeUrl }: RenderDigestInput): RenderedEmail {
+function renderDailyEmail({ content, now, appUrl, unsubscribeUrl, locale = "hu" }: RenderDigestInput): RenderedEmail {
+  const x = getMessages(locale).email;
   const { overdue, upcoming, failingFeeds, classesToday, from } = content;
   const today = from;
   const tomorrow = addDays(today, 1);
@@ -495,52 +481,45 @@ function renderDailyEmail({ content, now, appUrl, unsubscribeUrl }: RenderDigest
   const shown = new Set([...todayItems, ...tomorrowItems]);
   const rest = upcoming.filter((i) => !shown.has(i));
   const critical = todayItems.filter((i) => i.critical).length;
-  const dateTitle = `${WEEKDAYS[isoWeekday(today) - 1]}, ${shortDate(today)}`;
+  const dateTitle = `${x.weekdays[isoWeekday(today) - 1]}, ${shortDate(x, today)}`;
 
-  const summary =
-    (todayItems.length === 0
-      ? "Ma nincs határidő"
-      : `Ma ${todayItems.length} határidő` + criticalClause(todayItems.length, critical)) +
-    (tomorrowItems.length > 0 ? `, holnap még ${countWord(tomorrowItems.length)}.` : ".");
-  const overdueLine = overdueSentence(overdue.length);
-  const subject =
-    `Napi összefoglaló: ${todayItems.length === 0 ? "ma nincs határidő" : `ma ${todayItems.length} határidő`}` +
-    (tomorrowItems.length > 0 ? `, holnap ${tomorrowItems.length}` : "") +
-    (overdue.length > 0 ? `, ${overdue.length} lejárt` : "");
+  const summary = x.digest.dailySummary(todayItems.length, critical, tomorrowItems.length);
+  const overdueLine = x.digest.overdueSentence(overdue.length);
+  const subject = x.digest.dailySubject(todayItems.length, tomorrowItems.length, overdue.length);
 
   const body = `<tr><td style="padding:0 2px 22px">
 <h1 class="heading h1" style="margin:0;${DISPLAY};font-size:44px;color:${LIGHT.heading}">${escapeHtml(dateTitle)}</h1>
-<p class="muted" style="margin:10px 0 0;font-size:15px;line-height:1.55;color:${LIGHT.muted}">Napi összefoglaló. ${escapeHtml(summary)}${overdueLine ? ` ${escapeHtml(overdueLine)}` : ""}</p>
+<p class="muted" style="margin:10px 0 0;font-size:15px;line-height:1.55;color:${LIGHT.muted}">${escapeHtml(x.digest.dailyIntro)} ${escapeHtml(summary)}${overdueLine ? ` ${escapeHtml(overdueLine)}` : ""}</p>
 </td></tr>
-${failingFeeds.map(feedNotice).join("\n")}
+${failingFeeds.map((name) => feedNotice(x, name)).join("\n")}
 ${namedDay({
-  name: "Ma",
-  sub: todayItems.length === 0 ? "nincs határidő" : `${todayItems.length} határidő`,
+  name: x.digest.today,
+  sub: todayItems.length === 0 ? x.digest.noDeadlineSub : x.digest.deadlineSub(todayItems.length),
   today: true,
-  classes: classesToday.map(classChip).join(""),
-  slips: slipStack(todayItems, false, false, now),
-  empty: "Mára nincs határidőd.",
+  classes: classesToday.map((c) => classChip(x, c)).join(""),
+  slips: slipStack(x, todayItems, false, false, now),
+  empty: x.digest.noneToday,
 })}
 ${
   tomorrowItems.length > 0
     ? namedDay({
-        name: "Holnap",
-        sub: `${WEEKDAYS[isoWeekday(tomorrow) - 1].toLowerCase()}, ${shortDate(tomorrow)}`,
+        name: x.digest.tomorrow,
+        sub: `${x.weekdays[isoWeekday(tomorrow) - 1].toLowerCase()}, ${shortDate(x, tomorrow)}`,
         today: false,
         classes: "",
-        slips: slipStack(tomorrowItems, false, false),
+        slips: slipStack(x, tomorrowItems, false, false),
       })
     : `<tr><td style="padding:0 0 14px"></td></tr>`
 }
-${overdue.length > 0 ? overdueBlock(overdue) : ""}
-${rest.length > 0 ? restOfWeek(rest) : ""}
+${overdue.length > 0 ? overdueBlock(x, overdue) : ""}
+${rest.length > 0 ? restOfWeek(x, rest) : ""}
 <tr><td style="padding:24px 0 30px">
-${primaryButton(`${appUrl}/`, "A hét megnyitása")}
+${primaryButton(`${appUrl}/`, x.digest.openWeek)}
 </td></tr>
 ${footer([
-  "Ezt a levelet azért kapod, mert feliratkoztál a Hallgatói réteg napi összefoglalójára. Csak akkor érkezik, ha ma vagy holnap van határidőd.",
-  `<a href="${escapeHtml(unsubscribeUrl)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Leiratkozás</a> · <a href="${escapeHtml(`${appUrl}/beallitasok#ertesitesek`)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Beállítások</a>`,
-  "Független projekt, nem kapcsolódik a Neptunhoz.",
+  escapeHtml(x.digest.reasonDaily),
+  `<a href="${escapeHtml(unsubscribeUrl)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">${escapeHtml(x.digest.unsubscribe)}</a> · <a href="${escapeHtml(`${appUrl}/beallitasok#ertesitesek`)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">${escapeHtml(x.digest.settings)}</a>`,
+  escapeHtml(x.independent),
 ])}`;
 
   const classText = classesToday.map(
@@ -548,26 +527,26 @@ ${footer([
       `- ${budapestTime(new Date(session.start))}–${budapestTime(new Date(session.end))}  ${course?.name ?? session.subject}${session.room ? ` (${session.room})` : ""}`
   );
   const text = [
-    `Napi összefoglaló · ${dateTitle}`,
+    `${x.digest.dailyTitle} · ${dateTitle}`,
     "",
     summary,
     ...(overdueLine ? [overdueLine] : []),
-    ...failingFeeds.map((name) => `\nA(z) „${name}” naptár több mint egy napja nem frissül. Ellenőrizd a linkjét a Beállításokban.`),
+    ...failingFeeds.map((name) => `\n${x.digest.feedWarningText(name)}`),
     "",
-    "Ma",
+    x.digest.today,
     ...classText,
-    ...(todayItems.length ? todayItems.map(itemText) : ["- Mára nincs határidőd."]),
-    ...(tomorrowItems.length ? ["", "Holnap", ...tomorrowItems.map(itemText)] : []),
-    ...(overdue.length ? ["", "Lejárt", ...overdue.map(itemText)] : []),
-    ...(rest.length ? ["", "A hét hátralévő része", ...rest.map(itemText)] : []),
+    ...(todayItems.length ? todayItems.map((i) => itemText(x, i)) : [`- ${x.digest.noneToday}`]),
+    ...(tomorrowItems.length ? ["", x.digest.tomorrow, ...tomorrowItems.map((i) => itemText(x, i))] : []),
+    ...(overdue.length ? ["", x.digest.overdue, ...overdue.map((i) => itemText(x, i))] : []),
+    ...(rest.length ? ["", x.digest.restOfWeek, ...rest.map((i) => itemText(x, i))] : []),
     "",
-    `A hét: ${appUrl}/`,
-    `Leiratkozás: ${unsubscribeUrl}`,
+    `${x.digest.weekText}: ${appUrl}/`,
+    `${x.digest.unsubscribeText}: ${unsubscribeUrl}`,
   ].join("\n");
 
   return {
     subject,
-    html: documentHtml("Napi összefoglaló", `${summary}${overdueLine ? ` ${overdueLine}` : ""}`, body),
+    html: documentHtml(x.digest.dailyTitle, `${summary}${overdueLine ? ` ${overdueLine}` : ""}`, body, locale),
     text,
   };
 }
@@ -578,30 +557,24 @@ export interface RenderDigestInput {
   now: Date;
   appUrl: string;
   unsubscribeUrl: string;
+  /** Language of the mail; Hungarian when omitted. */
+  locale?: Locale;
 }
 
 export function renderDigestEmail(input: RenderDigestInput): RenderedEmail {
   if (input.frequency === "napi") return renderDailyEmail(input);
-  const { frequency, content, now, appUrl, unsubscribeUrl } = input;
+  const { frequency, content, now, appUrl, unsubscribeUrl, locale = "hu" } = input;
+  const x = getMessages(locale).email;
   const { overdue, upcoming, failingFeeds, from, to } = content;
   const today = budapestDate(now);
   const weekly = frequency === "heti";
-  const title = weekly ? "Heti összefoglaló" : `Havi összefoglaló: ${MONTHS[from[1] - 1]}`;
-  const periodName = weekly ? "a héten" : MONTHS_IN[from[1] - 1];
+  const title = weekly ? x.digest.weeklyTitle : x.digest.monthlyTitle(x.months[from[1] - 1]);
+  const periodName = weekly ? x.digest.periodThisWeek : x.monthsIn[from[1] - 1];
   const critical = upcoming.filter((i) => i.critical).length;
 
-  const summary =
-    upcoming.length === 0
-      ? `Nincs nyitott határidő ${periodName}.`
-      : `${upcoming.length} határidő ${periodName}${criticalClause(upcoming.length, critical)}.`;
-  const overdueLine = overdueSentence(overdue.length);
-
-  const subject =
-    upcoming.length === 0 && overdue.length === 0
-      ? `${title}: nincs nyitott határidő`
-      : `${title}: ${upcoming.length} határidő` +
-        (critical > 0 ? `, ${critical} kritikus` : "") +
-        (overdue.length > 0 ? `, ${overdue.length} lejárt` : "");
+  const summary = x.digest.periodSummary(upcoming.length, periodName, critical);
+  const overdueLine = x.digest.overdueSentence(overdue.length);
+  const subject = x.digest.periodSubject(title, upcoming.length, critical, overdue.length);
 
   // The board: days of the period, grouped into weeks for the monthly digest.
   const board: string[] = [];
@@ -611,49 +584,49 @@ export function renderDigestEmail(input: RenderDigestInput): RenderedEmail {
     const monday = mondayOf(day);
     if (!weekly && dateKey(monday) !== currentWeek) {
       currentWeek = dateKey(monday);
-      board.push(weekHeading(monday, thisMonday, from, to));
+      board.push(weekHeading(x, monday, thisMonday, from, to));
     }
-    board.push(dayStrip(day, items, today));
+    board.push(dayStrip(x, day, items, today));
   }
   if (upcoming.length === 0) {
     board.push(`<tr><td style="padding:0 0 8px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="dashed" style="width:100%;border:2px dashed ${LIGHT.edgeStrong};border-radius:2px">
 <tr><td class="muted" style="padding:22px 18px;font-size:14.5px;line-height:1.5;color:${LIGHT.muted}">
-<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">Nincs nyitott határidő ${escapeHtml(periodName)}</span><br>
-Ha új határidő érkezik, a következő összefoglalóban már látod.
+<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${escapeHtml(x.digest.emptyHeading(periodName))}</span><br>
+${escapeHtml(x.digest.emptyHint)}
 </td></tr>
 </table>
 </td></tr>`);
   }
 
   const body = `<tr><td style="padding:0 2px 22px">
-<h1 class="heading h1" style="margin:0;${DISPLAY};font-size:44px;${TABULAR};color:${LIGHT.heading}">${escapeHtml(weekly ? rangeLabel(from, to) : capitalize(MONTHS[from[1] - 1]))}</h1>
-<p class="muted" style="margin:10px 0 0;font-size:15px;line-height:1.55;color:${LIGHT.muted}">${weekly ? "Heti" : "Havi"} összefoglaló.${upcoming.length > 0 ? ` ${escapeHtml(summary)}` : ""}${overdueLine ? ` ${escapeHtml(overdueLine)}` : ""}</p>
+<h1 class="heading h1" style="margin:0;${DISPLAY};font-size:44px;${TABULAR};color:${LIGHT.heading}">${escapeHtml(weekly ? rangeLabel(x, from, to) : capitalize(x.months[from[1] - 1]))}</h1>
+<p class="muted" style="margin:10px 0 0;font-size:15px;line-height:1.55;color:${LIGHT.muted}">${weekly ? x.digest.weeklyIntro : x.digest.monthlyIntro}${upcoming.length > 0 ? ` ${escapeHtml(summary)}` : ""}${overdueLine ? ` ${escapeHtml(overdueLine)}` : ""}</p>
 </td></tr>
-${failingFeeds.map(feedNotice).join("\n")}
-${overdue.length > 0 ? overdueBlock(overdue) : ""}
+${failingFeeds.map((name) => feedNotice(x, name)).join("\n")}
+${overdue.length > 0 ? overdueBlock(x, overdue) : ""}
 ${board.join("\n")}
 <tr><td style="padding:22px 0 30px">
-${primaryButton(`${appUrl}/radar`, "Határidők megnyitása")}
+${primaryButton(`${appUrl}/radar`, x.digest.openDeadlines)}
 </td></tr>
 ${footer([
-  `Ezt a levelet azért kapod, mert feliratkoztál a Hallgatói réteg ${weekly ? "heti" : "havi"} összefoglalójára.`,
-  `<a href="${escapeHtml(unsubscribeUrl)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Leiratkozás</a> · <a href="${escapeHtml(`${appUrl}/beallitasok#ertesitesek`)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">Beállítások</a>`,
-  "Független projekt, nem kapcsolódik a Neptunhoz.",
+  escapeHtml(weekly ? x.digest.reasonWeekly : x.digest.reasonMonthly),
+  `<a href="${escapeHtml(unsubscribeUrl)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">${escapeHtml(x.digest.unsubscribe)}</a> · <a href="${escapeHtml(`${appUrl}/beallitasok#ertesitesek`)}" class="dim" style="color:${LIGHT.mutedDim};text-decoration:underline">${escapeHtml(x.digest.settings)}</a>`,
+  escapeHtml(x.independent),
 ])}`;
 
   const text = [
-    `${title} · ${rangeLabel(from, to)}`,
+    `${title} · ${rangeLabel(x, from, to)}`,
     "",
     summary,
     ...(overdueLine ? [overdueLine] : []),
-    ...failingFeeds.map((name) => `\nA(z) „${name}” naptár több mint egy napja nem frissül. Ellenőrizd a linkjét a Beállításokban.`),
-    ...(overdue.length ? ["", "Lejárt", ...overdue.map(itemText)] : []),
-    ...(upcoming.length ? ["", weekly ? "A héten" : MONTHS[from[1] - 1], ...upcoming.map(itemText)] : []),
+    ...failingFeeds.map((name) => `\n${x.digest.feedWarningText(name)}`),
+    ...(overdue.length ? ["", x.digest.overdue, ...overdue.map((i) => itemText(x, i))] : []),
+    ...(upcoming.length ? ["", weekly ? x.digest.thisWeekText : x.months[from[1] - 1], ...upcoming.map((i) => itemText(x, i))] : []),
     "",
-    `Határidők: ${appUrl}/radar`,
-    `Leiratkozás: ${unsubscribeUrl}`,
+    `${x.digest.deadlinesText}: ${appUrl}/radar`,
+    `${x.digest.unsubscribeText}: ${unsubscribeUrl}`,
   ].join("\n");
 
-  return { subject, html: documentHtml(title, `${summary}${overdueLine ? ` ${overdueLine}` : ""}`, body), text };
+  return { subject, html: documentHtml(title, `${summary}${overdueLine ? ` ${overdueLine}` : ""}`, body, locale), text };
 }

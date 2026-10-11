@@ -1,4 +1,5 @@
 import type { AppData, ExportOptions } from "@/lib/types";
+import type { Locale } from "@/lib/i18n/locales";
 import { getKv, type Kv } from "@/lib/server/kv";
 import { createMemoryAccountStoreOver } from "@/lib/server/account/memoryStore";
 import { createRedisAccountStore, redisCredentials } from "@/lib/server/account/redisStore";
@@ -13,6 +14,10 @@ export interface StoredUser {
   passwordHash?: string;
   createdAt: string;
   calendarToken?: string;
+  /** UI and mail language. Missing on accounts from before the setting: treated as "hu". */
+  locale?: Locale;
+  /** True once the user picked the language themselves (then it beats browser detection at sign-in). */
+  localeExplicit?: boolean;
 }
 
 export interface StoredSession {

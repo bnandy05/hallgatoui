@@ -13,7 +13,8 @@ import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubs
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DigestSettings } from "@/components/settings/DigestSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
-import { AppearanceSettings, THEME_LABELS } from "@/components/settings/AppearanceSettings";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 
@@ -76,6 +77,7 @@ function SettingsSkeleton() {
 }
 
 export default function WeekSettingsPage() {
+  const t = useT();
   const hydrated = useDataReady();
   const accountEmail = useStore((s) => s.account?.email);
   const sync = useSyncLabel();
@@ -97,25 +99,25 @@ export default function WeekSettingsPage() {
 
   const status = (on: boolean) => (
     <span
-      aria-label={on ? "bekapcsolva" : "kikapcsolva"}
+      aria-label={on ? t.settings.on : t.settings.off}
       className={`h-2 w-2 rounded-full ${on ? "bg-success" : "border border-border-strong"}`}
     />
   );
 
   const notificationsActive = notificationsOn && permission === "granted";
   const sections: { id: SectionKey; label: string; summary: string; on?: boolean }[] = [
-    { id: "fiok", label: "Fiók", summary: accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : "Belépve" },
-    { id: "naptarak", label: "Naptárak", summary: feedCount > 0 ? `${feedCount} forrás` : "Még nincs forrás" },
-    { id: "exportalas", label: "Exportálás", summary: "Feliratkozási link és letöltés" },
+    { id: "fiok", label: t.settings.tabs.fiok, summary: accountEmail ? `${accountEmail}${sync ? ` · ${sync.label}` : ""}` : t.settings.signedIn },
+    { id: "naptarak", label: t.settings.tabs.naptarak, summary: feedCount > 0 ? t.settings.summaries.sources(feedCount) : t.settings.summaries.noSources },
+    { id: "exportalas", label: t.settings.tabs.exportalas, summary: t.settings.summaries.export },
     {
       id: "ertesitesek",
-      label: "Értesítések",
-      summary: notificationsActive ? "Bekapcsolva" : "Kikapcsolva",
+      label: t.settings.tabs.ertesitesek,
+      summary: notificationsActive ? t.settings.summaries.enabled : t.settings.summaries.disabled,
       on: notificationsActive,
     },
-    { id: "megjelenes", label: "Megjelenés", summary: THEME_LABELS[themePref] },
-    { id: "platformok", label: "Platformok", summary: customCount > 0 ? `${customCount} saját platform` : "Beépített platformok" },
-    { id: "adatok", label: "Adatok", summary: "Mentés, visszaállítás, törlés" },
+    { id: "megjelenes", label: t.settings.tabs.megjelenes, summary: t.appearance.themes[themePref].label },
+    { id: "platformok", label: t.settings.tabs.platformok, summary: customCount > 0 ? t.settings.summaries.customPlatforms(customCount) : t.settings.summaries.builtInPlatforms },
+    { id: "adatok", label: t.settings.tabs.adatok, summary: t.settings.summaries.data },
   ];
   const activeLabel = sections.find((x) => x.id === active)?.label ?? "";
 
@@ -125,7 +127,7 @@ export default function WeekSettingsPage() {
       {hydrated && hasHash ? (
         <>
           <div className="hidden lg:block">
-            <SectionHeading as="h1" title="Beállítások" />
+            <SectionHeading as="h1" title={t.settings.title} />
           </div>
           <button
             type="button"
@@ -133,12 +135,12 @@ export default function WeekSettingsPage() {
             className="-mb-4 inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
-            Beállítások
-            <span className="sr-only">, vissza a listához ({activeLabel})</span>
+            {t.settings.title}
+            <span className="sr-only">{t.settings.backToList(activeLabel)}</span>
           </button>
         </>
       ) : (
-        <SectionHeading as="h1" title="Beállítások" />
+        <SectionHeading as="h1" title={t.settings.title} />
       )}
 
       {!hydrated ? (
@@ -146,7 +148,7 @@ export default function WeekSettingsPage() {
       ) : (
         <>
           {!hasHash && (
-            <nav aria-label="Beállítások szakaszai" className="lg:hidden">
+            <nav aria-label={t.settings.sectionsLabel} className="lg:hidden">
               <ul className="sheet-paper divide-y divide-border/70">
                 {sections.map((section) => (
                   <li key={section.id}>
@@ -177,25 +179,25 @@ export default function WeekSettingsPage() {
           >
             <div className="hidden min-w-0 lg:sticky lg:top-[96px] lg:block lg:self-start">
               <Tabs
-                label="Beállítások szakaszai"
+                label={t.settings.sectionsLabel}
                 orientation="vertical"
                 value={active}
                 onChange={selectSection}
                 items={[
-                  { id: "fiok", label: "Fiók" },
-                  { id: "naptarak", label: "Naptárak", count: feedCount > 0 ? feedCount : undefined },
-                  { id: "exportalas", label: "Exportálás" },
+                  { id: "fiok", label: t.settings.tabs.fiok },
+                  { id: "naptarak", label: t.settings.tabs.naptarak, count: feedCount > 0 ? feedCount : undefined },
+                  { id: "exportalas", label: t.settings.tabs.exportalas },
                   {
                     id: "ertesitesek",
                     label: (
                       <span className="inline-flex items-center gap-2">
-                        Értesítések {status(notificationsOn && permission === "granted")}
+                        {t.settings.tabs.ertesitesek} {status(notificationsOn && permission === "granted")}
                       </span>
                     ),
                   },
-                  { id: "megjelenes", label: "Megjelenés" },
-                  { id: "platformok", label: "Platformok" },
-                  { id: "adatok", label: "Adatok" },
+                  { id: "megjelenes", label: t.settings.tabs.megjelenes },
+                  { id: "platformok", label: t.settings.tabs.platformok },
+                  { id: "adatok", label: t.settings.tabs.adatok },
                 ]}
               />
             </div>

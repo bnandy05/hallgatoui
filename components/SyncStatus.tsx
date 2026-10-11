@@ -1,19 +1,19 @@
 "use client";
 
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 /** Text of the sync status, or null while there is nothing to show (not signed in yet). */
-const OFFLINE_TEXT = "Offline – a módosítások ezen az eszközön megmaradnak, és feltöltjük őket, amint újra van kapcsolat.";
-
 export function useSyncLabel(): { label: string; tone: "ok" | "busy" | "offline" | "bad"; title?: string } | null {
+  const t = useT();
   const account = useStore((s) => s.account);
   const status = useStore((s) => s.syncStatus);
   const error = useStore((s) => s.syncError);
   if (!account) return null;
-  if (status === "saving") return { label: "Mentés…", tone: "busy" };
-  if (status === "offline") return { label: "Offline", tone: "offline", title: OFFLINE_TEXT };
-  if (status === "error") return { label: error ?? "Nem sikerült menteni", tone: "bad" };
-  return { label: "Mentve", tone: "ok" };
+  if (status === "saving") return { label: t.sync.saving, tone: "busy" };
+  if (status === "offline") return { label: t.sync.offline, tone: "offline", title: t.sync.offlineHint };
+  if (status === "error") return { label: error ?? t.sync.failed, tone: "bad" };
+  return { label: t.sync.saved, tone: "ok" };
 }
 
 const DOT = { ok: "bg-success", busy: "bg-muted-dim", offline: "bg-canary ring-1 ring-border-strong", bad: "bg-danger" } as const;

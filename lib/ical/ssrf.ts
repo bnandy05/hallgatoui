@@ -1,13 +1,14 @@
 import { promises as dns } from "node:dns";
 import net from "node:net";
+import { IcalError } from "@/lib/ical/errors";
 
 /**
  * Thrown when a URL resolves to (or is) a non-public address.
  * Server-only module: relies on node:dns / node:net.
  */
-export class SsrfBlockedError extends Error {
-  constructor(message = "Nem engedélyezett cím") {
-    super(message);
+export class SsrfBlockedError extends IcalError {
+  constructor() {
+    super("blocked");
     this.name = "SsrfBlockedError";
   }
 }

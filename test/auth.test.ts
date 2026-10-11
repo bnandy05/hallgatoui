@@ -108,7 +108,7 @@ test("a link works once; a second use fails cleanly", async () => {
   const { kind, token } = s.link(s.mails[0]);
   ok(await consumeLink(s.d, kind, token));
   const second = err(await consumeLink(s.d, kind, token), 400);
-  assert.equal(second.error, "A link lejárt vagy már felhasználták");
+  assert.equal(second.error, "A link lejárt, vagy már fel lett használva");
 });
 
 test("an expired link fails", async () => {

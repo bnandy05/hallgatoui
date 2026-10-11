@@ -1,6 +1,6 @@
 import type { AppData, ExportOptions } from "@/lib/types";
 import { parseAppData } from "@/lib/importData";
-import { icsIndexKey, MAX_CLASS_SESSIONS, MAX_FEEDS } from "@/lib/server/subscription";
+import { dropRenderedCalendars, MAX_CLASS_SESSIONS, MAX_FEEDS } from "@/lib/server/subscription";
 import type { AccountStore, CasResult } from "@/lib/server/account/store";
 
 // Validation and saving of an account's data document. Server-only (uses the account store).
@@ -56,10 +56,6 @@ export async function saveData(
   now: Date
 ): Promise<CasResult> {
   const result = await store.casData(userId, baseVersion, { updatedAt: now.toISOString(), data, exportOptions });
-  if (result.ok) {
-    const keys = await store.kv.smembers(icsIndexKey(userId));
-    if (keys.length > 0) await store.kv.del(...keys);
-    for (const key of keys) await store.kv.srem(icsIndexKey(userId), key);
-  }
+  if (result.ok) await dropRenderedCalendars(store.kv, userId);
   return result;
 }

@@ -1,9 +1,12 @@
 import type { CalendarSnapshot, Deadline, IcalFeed } from "@/lib/types";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { buildCalendar, type HealthWarning } from "@/lib/ical/export";
+import { ICAL_MESSAGES_HU } from "@/lib/ical/errors";
+import { getMessages, type Locale } from "@/lib/i18n";
 import { fetchAndParseFeed } from "@/lib/ical/fetch";
 import { parseView } from "@/lib/ical/views";
 import { mergeFeedSync } from "@/lib/ical/sync";
+import { userLocale } from "@/lib/server/locale";
 import { calendarInput } from "@/lib/server/calendarInput";
 import { trackDueChanges, type DueRecord } from "@/lib/server/dueChanges";
 import type { AccountStore } from "@/lib/server/account/store";
@@ -49,7 +52,8 @@ async function loadSource(
   kv: Kv,
   userId: string,
   feed: IcalFeed,
-  now: Date
+  now: Date,
+  untitled: string
 ): Promise<SourceCache | null> {
   const key = srcKey(userId, feed.id);
   let cached: SourceCache | null = null;
@@ -66,14 +70,14 @@ async function loadSource(
 
   let next: SourceCache;
   try {
-    const events = await fetchAndParseFeed(feed.url, FEED_FETCH_TIMEOUT_MS);
+    const events = await fetchAndParseFeed(feed.url, FEED_FETCH_TIMEOUT_MS, untitled);
     next = { url: feed.url, events: slimEvents(events, now.getTime()), fetchedAt: now.toISOString() };
   } catch (err) {
     next = {
       url: feed.url,
       events: cached?.events ?? null,
       fetchedAt: now.toISOString(),
-      error: err instanceof Error ? err.message : "A naptár nem érhető el",
+      error: err instanceof Error ? err.message : ICAL_MESSAGES_HU.unreachable,
       failingSince: cached?.failingSince ?? now.toISOString(),
     };
   }
@@ -95,11 +99,12 @@ export async function loadLiveDeadlines(
   kv: Kv,
   userId: string,
   input: CalendarSnapshot,
-  now: Date
+  now: Date,
+  locale: Locale = "hu"
 ): Promise<{ deadlines: Deadline[]; warnings: HealthWarning[] }> {
   const { courses, feeds } = input;
 
-  const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, userId, feed, now)));
+  const sources = await Promise.allSettled(feeds.map((feed) => loadSource(kv, userId, feed, now, getMessages(locale).labels.untitled)));
 
   let deadlines: Deadline[] = input.deadlines;
   const warnings: HealthWarning[] = [];
@@ -156,7 +161,9 @@ export async function renderCalendar(
   // Keyed on the raw parameter so a cache hit never loads the data document (calendar apps poll
   // often); anything that isn't view-shaped shares the default entry.
   const raw = viewParam?.trim().toLowerCase() ?? "";
-  const key = icsKey(userId, /^[a-z0-9-]{1,80}$/.test(raw) ? raw : "osszes");
+  // The subscribed calendar speaks the account's language (a calendar app has no preference of its own).
+  const locale = userLocale(await store.getUser(userId));
+  const key = icsKey(userId, locale, /^[a-z0-9-]{1,80}$/.test(raw) ? raw : "osszes");
 
   try {
     const cached = await kv.get<{ ics: string; renderedAt: string }>(key);
@@ -173,7 +180,7 @@ export async function renderCalendar(
   const view = parseView(viewParam, input.courses);
 
   const { courses, feeds, options, customPlatforms } = input;
-  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now);
+  const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now, locale);
   const ics = buildCalendar({
     courses,
     deadlines,
@@ -187,6 +194,7 @@ export async function renderCalendar(
     customPlatforms,
     ignoredDuplicatePairs: input.ignoredDuplicatePairs,
     classSessions: input.classSessions,
+    locale,
   });
 
   try {

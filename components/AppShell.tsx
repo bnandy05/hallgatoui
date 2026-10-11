@@ -20,11 +20,12 @@ import { ThemeSync } from "@/components/ThemeSync";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonClasses } from "@/components/ui/Button";
 import { syncAllFeeds } from "@/lib/ical/client";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const NAV_LINKS = [
-  { href: "/", label: "Hét", icon: CalendarDays },
-  { href: "/radar", label: "Határidők", icon: ListTodo },
-  { href: "/beallitasok", label: "Beállítások", icon: Settings },
+  { href: "/", key: "week", icon: CalendarDays },
+  { href: "/radar", key: "deadlines", icon: ListTodo },
+  { href: "/beallitasok", key: "settings", icon: Settings },
 ] as const;
 
 function isActiveLink(href: string, pathname: string) {
@@ -33,9 +34,10 @@ function isActiveLink(href: string, pathname: string) {
 
 /** Narrow screens: the main navigation sits at the bottom edge, within thumb reach. */
 function TabBar({ pathname }: { pathname: string }) {
+  const t = useT();
   return (
     <nav
-      aria-label="Fő navigáció"
+      aria-label={t.nav.label}
       data-tabbar
       className="fixed inset-x-0 bottom-0 z-10 border-t border-felt-dark bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
@@ -53,7 +55,7 @@ function TabBar({ pathname }: { pathname: string }) {
               }`}
             >
               <Icon className="h-5 w-5" aria-hidden="true" />
-              {link.label}
+              {t.nav[link.key]}
             </Link>
           );
         })}
@@ -63,6 +65,7 @@ function TabBar({ pathname }: { pathname: string }) {
 }
 
 function Wordmark() {
+  const t = useT();
   return (
     <Link href="/" className="group relative flex shrink-0 items-center gap-2.5 pr-1 text-heading">
       <span aria-hidden="true" className="relative block h-[22px] w-[18px]">
@@ -70,13 +73,14 @@ function Wordmark() {
         <span className="pin left-[3.5px] top-0" />
       </span>
       <span className="font-display text-[21px] leading-none tracking-[0.005em]">
-        Hallgatói réteg
+        {t.shell.brand}
       </span>
     </Link>
   );
 }
 
 function NewDeadlineButton() {
+  const t = useT();
   const hydrated = useDataReady();
   const [open, setOpen] = useState(false);
   return (
@@ -85,11 +89,11 @@ function NewDeadlineButton() {
         type="button"
         disabled={!hydrated}
         onClick={() => setOpen(true)}
-        aria-label="Új határidő"
+        aria-label={t.shell.newDeadline}
         className={buttonClasses({ size: "sm", className: "max-md:!h-9 !px-2.5 sm:!px-3" })}
       >
         <Plus className="h-4 w-4" />
-        <span className="hidden sm:inline">Új határidő</span>
+        <span className="hidden sm:inline">{t.shell.newDeadline}</span>
       </button>
       <DeadlineDialog open={open} onClose={() => setOpen(false)} />
     </>
@@ -97,6 +101,7 @@ function NewDeadlineButton() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const pathname = usePathname();
   const hydrated = useHydrated();
   const dataReady = useDataReady();
@@ -122,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">
           <Wordmark />
           {!bare && (
-          <nav aria-label="Fő navigáció" className="ml-4 hidden items-center gap-1 md:flex">
+          <nav aria-label={t.nav.label} className="ml-4 hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => {
               const isActive = isActiveLink(link.href, pathname);
               return (
@@ -136,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : "text-muted hover:bg-card/60 hover:text-heading"
                   }`}
                 >
-                  {link.label}
+                  {t.nav[link.key]}
                 </Link>
               );
             })}
@@ -156,11 +161,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-[13px] text-muted-dim md:pb-6">
         <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 sm:px-6">
-          <span>Az adataid a fiókodban vannak, így minden eszközödön ugyanazok.</span>
+          <span>{t.shell.footerData}</span>
           <span className="flex flex-wrap gap-x-6 gap-y-1">
-            <span>Független projekt, nem kapcsolódik a Neptunhoz.</span>
+            <span>{t.shell.footerIndependent}</span>
             <Link href="/adatvedelem" className="underline underline-offset-2 hover:text-muted">
-              Adatvédelem
+              {t.shell.footerPrivacy}
             </Link>
           </span>
         </div>

@@ -1,8 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getT } from "@/lib/i18n/server";
 import { AuthForm } from "@/components/auth/AuthForm";
 
-export const metadata: Metadata = { title: "Belépés" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t.meta.signIn };
+}
 
 export default function LoginPage() {
   return (

@@ -2,6 +2,7 @@
 
 import { addDays } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { buttonClasses } from "@/components/ui/Button";
 
 export interface WeekNavProps {
@@ -10,15 +11,16 @@ export interface WeekNavProps {
   onChange: (weekStart: Date) => void;
 }
 
-/** Previous / this week / next. "Ez a hét" is disabled while the current week is shown. */
+/** Previous / this week / next. "This week" is disabled while the current week is shown. */
 export function WeekNav({ weekStart, currentWeekStart, onChange }: WeekNavProps) {
+  const t = useT();
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
   const iconButton = buttonClasses({ variant: "secondary", size: "sm", className: "!px-2" });
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label="Hét választása">
+    <div className="flex items-center gap-1.5" role="group" aria-label={t.week.pickWeek}>
       <button
         type="button"
-        aria-label="Előző hét"
+        aria-label={t.week.previous}
         onClick={() => onChange(addDays(weekStart, -7))}
         className={iconButton}
       >
@@ -30,11 +32,11 @@ export function WeekNav({ weekStart, currentWeekStart, onChange }: WeekNavProps)
         onClick={() => onChange(currentWeekStart)}
         className={buttonClasses({ variant: "secondary", size: "sm" })}
       >
-        Ez a hét
+        {t.week.thisWeek}
       </button>
       <button
         type="button"
-        aria-label="Következő hét"
+        aria-label={t.week.nextWeek}
         onClick={() => onChange(addDays(weekStart, 7))}
         className={iconButton}
       >

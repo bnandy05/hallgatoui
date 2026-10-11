@@ -4,12 +4,15 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { format } from "date-fns";
 import { Download, Sparkles, Trash2, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function DataSettings() {
+  const t = useT();
+  const locale = useLocale();
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
   const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
@@ -56,16 +59,17 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm("A mentés felülírja a fiókod jelenlegi adatait. Folytatod?")) {
+      if (!confirm(t.data.confirmRestore)) {
         return;
       }
 
       importData(data);
       setImportSuccess(
-        `Visszaállítva: ${data.courses.length} tárgy, ${data.deadlines.length} határidő`
+        t.data.restored(data.courses.length, data.deadlines.length)
       );
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : "Nem érvényes mentésfájl");
+      // parseAppData throws Hungarian messages; show the matching wording of the UI language.
+      setImportError(err instanceof Error && err.message === "Nem támogatott verzió" ? t.data.unsupportedVersion : t.data.invalidFile);
     } finally {
       // Reset so choosing the same file again re-fires onChange.
       if (fileInputRef.current) {
@@ -75,7 +79,7 @@ export function DataSettings() {
   }
 
   function handleReset() {
-    if (confirm("Minden adat törlődik a fiókodból, minden eszközről. Biztosan folytatod?")) {
+    if (confirm(t.data.confirmDeleteAll)) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();
@@ -83,30 +87,30 @@ export function DataSettings() {
   }
 
   function handleLoadDemo() {
-    loadDemo();
+    loadDemo(locale);
   }
 
   return (
     <section className="flex flex-col gap-6">
       <SectionHeading
-        title="Adatok"
-        sub="Az adataid a fiókodban tárolódnak. Biztonsági mentést fájlba is készíthetsz."
+        title={t.data.title}
+        sub={t.data.sub}
       />
 
       <div className="sheet-paper divide-y divide-border/70 px-5">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">Mentés</p>
-            <p className="text-[13px] text-muted">Egy fájl mindennel: tárgyak, határidők, linkek, források.</p>
+            <p className="text-[14.5px] font-medium text-heading">{t.data.backup}</p>
+            <p className="text-[13px] text-muted">{t.data.backupHint}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4" />
-              Letöltés
+              {t.data.download}
             </Button>
             <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
               <Upload className="h-4 w-4" />
-              Visszaállítás
+              {t.data.restore}
             </Button>
             <input
               ref={fileInputRef}
@@ -114,7 +118,7 @@ export function DataSettings() {
               accept="application/json"
               className="hidden"
               onChange={handleImportFile}
-              aria-label="Mentésfájl kiválasztása"
+              aria-label={t.data.fileAria}
             />
           </div>
           {importError && <p className="basis-full text-[13px] font-semibold text-danger">{importError}</p>}
@@ -122,24 +126,24 @@ export function DataSettings() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">Mintaadatok</p>
-            <p className="text-[13px] text-muted">Minta tárgyak és határidők az oldal kipróbálásához.</p>
+            <p className="text-[14.5px] font-medium text-heading">{t.data.demo}</p>
+            <p className="text-[13px] text-muted">{t.data.demoHint}</p>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
             <Sparkles className="h-4 w-4" />
-            Betöltés
+            {t.data.load}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-dashed border-danger/40 px-5 py-4">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-medium text-danger">Minden adat törlése</p>
-          <p className="text-[13px] text-muted">Nem vonható vissza. Előtte érdemes mentést letölteni.</p>
+          <p className="text-[14.5px] font-medium text-danger">{t.data.deleteAll}</p>
+          <p className="text-[13px] text-muted">{t.data.deleteAllHint}</p>
         </div>
         <Button type="button" variant="danger" size="sm" onClick={handleReset}>
           <Trash2 className="h-4 w-4" />
-          Törlés
+          {t.common.delete}
         </Button>
       </div>
     </section>

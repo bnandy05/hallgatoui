@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { IcalEventDTO } from "@/lib/ical/types";
+import { getMessages, type Locale, type Messages } from "@/lib/i18n";
+import type { Kv } from "@/lib/server/kv";
 
 // Server-only constants, keys and helpers of the calendar subscription and the digest.
 
@@ -31,16 +33,26 @@ export const digKey = (userId: string) => `dig:${userId}`;
 export const DIGEST_INDEX_KEY = "dig:index";
 
 /** Rendered calendar of a user's view (see lib/server/calendar.ts), and the set listing them. */
-export const icsKey = (userId: string, view: string) => `ics:${userId}:${view}`;
+export const icsKey = (userId: string, locale: Locale, view: string) => `ics:${userId}:${locale}:${view}`;
 export const icsIndexKey = (userId: string) => `icsk:${userId}`;
 export const ICS_TTL_SECONDS = 900;
 
-export function errorResponse(error: string, status: number): Response {
-  return Response.json({ error }, { status });
+export type ErrorCode = keyof Messages["errors"];
+
+/** A JSON error in the given language; `code` is stable for clients that branch on it. */
+export function errorResponse(locale: Locale, code: ErrorCode, status: number, suffix = ""): Response {
+  return Response.json({ error: getMessages(locale).errors[code] + suffix, code }, { status });
 }
 
-export function storageErrorResponse(): Response {
-  return errorResponse("A tároló átmenetileg nem érhető el", 503);
+export function storageErrorResponse(locale: Locale): Response {
+  return errorResponse(locale, "storage_unavailable", 503);
+}
+
+/** Drops a user's rendered calendars (after a data save, a language change, turning the subscription off). */
+export async function dropRenderedCalendars(kv: Kv, userId: string): Promise<void> {
+  const keys = await kv.smembers(icsIndexKey(userId));
+  if (keys.length > 0) await kv.del(...keys);
+  for (const key of keys) await kv.srem(icsIndexKey(userId), key);
 }
 
 /** Best-effort client IP; Vercel sets x-forwarded-for. */

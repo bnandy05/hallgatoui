@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { useLocale } from "@/lib/i18n/I18nProvider";
 import { dueNotifications } from "@/lib/notifications";
 import { applyDedupe } from "@/lib/ical/dedupe";
 
@@ -14,6 +15,7 @@ const CHECK_INTERVAL_MS = 60 * 1000;
  */
 export function NotificationScheduler() {
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
     function check() {
@@ -39,7 +41,8 @@ export function NotificationScheduler() {
         courses,
         notificationPrefs,
         new Set(notifiedKeys),
-        new Date()
+        new Date(),
+        locale
       );
       const sent: string[] = [];
       for (const item of pending) {
@@ -73,7 +76,7 @@ export function NotificationScheduler() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [router]);
+  }, [router, locale]);
 
   return null;
 }

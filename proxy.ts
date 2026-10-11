@@ -1,17 +1,37 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isPublicPath } from "@/lib/account/path";
+import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, pickLocale } from "@/lib/i18n/locales";
 
-// Optimistic gate: app pages need a session cookie, otherwise the visitor goes to /belepes. It
-// only checks that the cookie exists; the API is the real gate (401), and the client handles that.
+// Two jobs. Language: a visitor without a valid hr_lang cookie gets one from Accept-Language (on
+// public pages too). Gate: app pages need a session cookie, otherwise the visitor goes to /belepes.
+// It only checks that the cookie exists; the API is the real gate (401), and the client handles that.
 export function proxy(request: NextRequest) {
-  if (request.cookies.has("hr_session")) return NextResponse.next();
-  const url = request.nextUrl.clone();
-  const back = request.nextUrl.pathname + request.nextUrl.search;
-  url.pathname = "/belepes";
-  url.search = back === "/" ? "" : `?vissza=${encodeURIComponent(back)}`;
-  return NextResponse.redirect(url);
+  const needsLocale = !isLocale(request.cookies.get(LOCALE_COOKIE)?.value);
+  let response: NextResponse;
+  if (request.cookies.has("hr_session") || isPublicPath(request.nextUrl.pathname)) {
+    response = NextResponse.next();
+  } else {
+    const url = request.nextUrl.clone();
+    const back = request.nextUrl.pathname + request.nextUrl.search;
+    url.pathname = "/belepes";
+    url.search = back === "/" ? "" : `?vissza=${encodeURIComponent(back)}`;
+    response = NextResponse.redirect(url);
+  }
+  if (needsLocale) {
+    response.cookies.set({
+      name: LOCALE_COOKIE,
+      value: pickLocale(request.headers.get("accept-language")),
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
+  return response;
 }
 
 export const config = {
-  // Everything except the API, Next internals, files with an extension (sw.js, manifest.webmanifest), generated icons, and the public pages.
-  matcher: ["/((?!api|_next|belepes|fiok/link|hirlevel|icon|apple-icon|.*\\..*).*)"],
+  // Everything except the API, Next internals, files with an extension (sw.js, manifest.webmanifest) and generated icons.
+  // Public pages are matched too (they need the language cookie); the gate skips them via isPublicPath.
+  matcher: ["/((?!api|_next|icon|apple-icon|.*\\..*).*)"],
 };

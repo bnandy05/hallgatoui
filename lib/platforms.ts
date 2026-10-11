@@ -23,13 +23,10 @@ export function getPlatform(id: string | undefined, custom: Platform[]): Platfor
   return BUILT_IN_PLATFORMS.find((p) => p.id === "egyeb")!;
 }
 
-export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
-  jegyzet: "Jegyzet",
-  zh: "Korábbi ZH",
-  megoldas: "Mintamegoldás",
-  video: "Videó",
-  egyeb: "Egyéb",
-};
+/** Display name: the built-in "Egyéb" is translated, everything else is a product or user-chosen name. */
+export function platformName(platform: Platform, other: string): string {
+  return platform.builtIn && platform.id === "egyeb" ? other : platform.name;
+}
 
 export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   jegyzet: "#2563eb",

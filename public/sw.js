@@ -9,9 +9,9 @@
 // - Soft navigations (RSC fetches) are not handled: when they fail, Next falls back to a full
 //   navigation, which is served here from the cache.
 // - Auth pages (/belepes, /fiok/*, /hirlevel): network only.
-// - Message { type: "clear" } deletes the page cache (sent on sign-out).
+// - Message { type: "clear" } deletes the page cache (sent on sign-out and when the language is switched, since pages differ per language).
 
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGES = `hr-pages-${VERSION}`;
 const STATIC = `hr-static-${VERSION}`;
 const PRECACHE = ["/", "/radar", "/beallitasok"];

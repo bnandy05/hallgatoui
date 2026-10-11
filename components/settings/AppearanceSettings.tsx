@@ -3,20 +3,13 @@
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { LOCALES } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { useSetLanguage } from "@/lib/i18n/useSetLanguage";
 import type { Theme, ThemePref } from "@/lib/theme";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-export const THEME_LABELS: Record<ThemePref, string> = {
-  system: "Rendszer szerint",
-  light: "Világos",
-  dark: "Sötét",
-};
-
-const OPTIONS: { pref: ThemePref; description: string }[] = [
-  { pref: "system", description: "Követi az eszköz beállítását." },
-  { pref: "light", description: "Mindig világos." },
-  { pref: "dark", description: "Mindig sötét." },
-];
+const PREFS: readonly ThemePref[] = ["system", "light", "dark"];
 
 /** A corner of the board in one lighting: felt, a day strip, two slips (one hot), drawn from that theme's tokens. */
 function BoardSample({ theme, className = "" }: { theme: Theme; className?: string }) {
@@ -45,16 +38,19 @@ function BoardSample({ theme, className = "" }: { theme: Theme; className?: stri
 }
 
 export function AppearanceSettings() {
+  const t = useT();
+  const locale = useLocale();
+  const setLanguage = useSetLanguage();
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
 
   return (
     <section id="megjelenes" className="flex flex-col gap-6">
-      <SectionHeading title="Megjelenés" sub="Alapból az eszköz beállítását követi. A fejlécben lévő gombbal is válthatsz." />
+      <SectionHeading title={t.appearance.title} sub={t.appearance.sub} />
 
       <fieldset className="grid gap-4 sm:grid-cols-3">
-        <legend className="sr-only">Téma</legend>
-        {OPTIONS.map(({ pref, description }, i) => {
+        <legend className="sr-only">{t.appearance.themeLegend}</legend>
+        {PREFS.map((pref, i) => {
           const checked = theme === pref;
           return (
             <label
@@ -82,8 +78,8 @@ export function AppearanceSettings() {
               )}
               <span className="flex items-start gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[14.5px] font-semibold text-heading">{THEME_LABELS[pref]}</span>
-                  <span className="mt-0.5 block text-[13px] text-muted">{description}</span>
+                  <span className="block text-[14.5px] font-semibold text-heading">{t.appearance.themes[pref].label}</span>
+                  <span className="mt-0.5 block text-[13px] text-muted">{t.appearance.themes[pref].description}</span>
                 </span>
                 <span
                   aria-hidden="true"
@@ -97,6 +93,43 @@ export function AppearanceSettings() {
             </label>
           );
         })}
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="font-display text-[20px] text-heading">{t.language.label}</legend>
+        <p className="text-[13.5px] text-muted">{t.language.hint}</p>
+        <div className="grid gap-3 sm:max-w-md sm:grid-cols-2">
+          {LOCALES.map((code) => {
+            const checked = locale === code;
+            return (
+              <label
+                key={code}
+                lang={code}
+                className={`sheet-paper flex cursor-pointer items-center gap-3 px-4 py-3 transition-shadow duration-150 hover:shadow-[var(--shadow-lift)] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-4 has-[:focus-visible]:outline-accent ${
+                  checked ? "outline-2 outline-offset-0 outline-accent" : ""
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="language"
+                  value={code}
+                  checked={checked}
+                  onChange={() => setLanguage(code)}
+                  className="sr-only"
+                />
+                <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-heading">{t.language[code]}</span>
+                <span
+                  aria-hidden="true"
+                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
+                    checked ? "border-accent bg-accent text-accent-ink" : "border-border-strong bg-inset"
+                  }`}
+                >
+                  {checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                </span>
+              </label>
+            );
+          })}
+        </div>
       </fieldset>
     </section>
   );

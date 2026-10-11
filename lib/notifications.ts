@@ -1,14 +1,10 @@
 import { format } from "date-fns";
-import { hu } from "date-fns/locale";
+import { dateLocale, getMessages, type Locale } from "@/lib/i18n";
 import { formatRelative } from "@/lib/radar";
 import type { Course, Deadline, NotificationPrefs } from "@/lib/types";
 
-export const LEAD_OPTIONS = [
-  { minutes: 1440, label: "1 nappal előtte" },
-  { minutes: 180, label: "3 órával előtte" },
-  { minutes: 60, label: "1 órával előtte" },
-  { minutes: 15, label: "15 perccel előtte" },
-] as const;
+/** Lead times offered in the settings; their labels are in the dictionaries (notifications.lead). */
+export const LEAD_OPTIONS = [{ minutes: 1440 }, { minutes: 180 }, { minutes: 60 }, { minutes: 15 }] as const;
 
 const MINUTE_MS = 60 * 1000;
 
@@ -36,9 +32,12 @@ export function dueNotifications(
   courses: Course[],
   prefs: NotificationPrefs,
   sentKeys: Set<string>,
-  now: Date
+  now: Date,
+  locale: Locale = "hu"
 ): PendingNotification[] {
   if (!prefs.enabled) return [];
+  const t = getMessages(locale);
+  const dl = dateLocale(locale);
 
   const result: { due: number; item: PendingNotification }[] = [];
   for (const d of deadlines) {
@@ -60,7 +59,7 @@ export function dueNotifications(
         keys,
         deadlineId: d.id,
         title: course ? `${course.name}: ${d.title}` : d.title,
-        body: `Lejár ${formatRelative(due, now)} (${format(due, "MMM d. HH:mm", { locale: hu })})`,
+        body: `${t.reminders.dueIn(formatRelative(due, now, dl))} (${format(due, t.formats.monthDayTime, { locale: dl })})`,
         href: course ? `/targy/${course.id}` : "/radar",
       },
     });

@@ -4,8 +4,9 @@ import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, CalendarPlus, Plus, Sparkles } from "lucide-react";
 import { addDays, format } from "date-fns";
-import { hu } from "date-fns/locale";
 import { useStore } from "@/lib/store";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { useDataReady } from "@/lib/useDataReady";
 import { visibleSessions } from "@/lib/ical/neptun";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
@@ -37,6 +38,8 @@ function HomeSkeleton() {
 
 /** The one notice that owns the top of the page: the next open deadline, pinned beside the week. */
 function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
+  const t = useT();
+  const dl = dateLocale(useLocale());
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const [open, setOpen] = useState(false);
   const critical = isCritical(deadline, now);
@@ -54,16 +57,16 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
           style={{ "--pin-color": critical ? "var(--pin)" : (course?.color ?? "var(--border-strong)") } as CSSProperties}
         />
         <span className="flex items-baseline justify-between gap-3">
-          <span className="text-[13px] font-semibold text-muted-dim">Következő</span>
+          <span className="text-[13px] font-semibold text-muted-dim">{t.home.next}</span>
           <span className={`font-display text-[22px] tabular-nums ${critical ? "text-danger" : "text-heading"}`}>
-            {formatRelative(due, now)}
+            {formatRelative(due, now, dl)}
           </span>
         </span>
         <span className="line-clamp-2 text-[16px] font-semibold leading-snug text-heading [overflow-wrap:anywhere] group-hover:underline">
           {deadline.title.replace(/(\d+\.) /g, "$1\u00a0")}
         </span>
         <span className="truncate text-[13px] text-muted">
-          {[course?.name, format(due, "EEEE HH:mm", { locale: hu })].filter(Boolean).join(" · ")}
+          {[course?.name, format(due, "EEEE HH:mm", { locale: dl })].filter(Boolean).join(" · ")}
         </span>
       </button>
       <DeadlineDetailDialog deadline={deadline} open={open} onClose={() => setOpen(false)} />
@@ -72,6 +75,8 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
 }
 
 export default function WeekHome() {
+  const t = useT();
+  const locale = useLocale();
   const hydrated = useDataReady();
   const courses = useStore((s) => s.courses);
   const { visible: deadlines } = useDedupedDeadlines();
@@ -89,8 +94,8 @@ export default function WeekHome() {
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
   const summary = useMemo(() => weekSummary(deadlines, now), [deadlines, now]);
   const sortedCourses = useMemo(
-    () => [...courses].sort((a, b) => a.name.localeCompare(b.name, "hu")),
-    [courses]
+    () => [...courses].sort((a, b) => a.name.localeCompare(b.name, locale)),
+    [courses, locale]
   );
   const next = useMemo(
     () =>
@@ -109,25 +114,26 @@ export default function WeekHome() {
     return !d.done && due >= nextWeekStart.getTime() && due < addDays(nextWeekStart, 7).getTime();
   }).length;
 
-  const range = capitalize(weekRangeLabel(weekStart));
+  const range = capitalize(weekRangeLabel(weekStart, dateLocale(locale), t.formats.weekRange));
   const sub = !hydrated ? (
     " "
   ) : isCurrent ? (
     summary.total === 0 ? (
-      "Ezen a héten nincs nyitott határidő."
+      t.home.noOpenThisWeek
     ) : (
       <>
-        {summary.total} nyitott határidő a hét végéig
+        {t.home.openUntilWeekEnd(summary.total)}
         {summary.critical > 0 && (
           <>
-            , ebből <span className="font-semibold text-danger">{summary.critical} kritikus</span>
+            {t.home.ofWhich}
+            <span className="font-semibold text-danger">{t.home.criticalCount(summary.critical)}</span>
           </>
         )}
         .
       </>
     )
   ) : (
-    `${shownWeekCount} nyitott határidő ezen a héten.`
+    t.home.openThisWeek(shownWeekCount)
   );
 
   return (
@@ -148,9 +154,9 @@ export default function WeekHome() {
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
           {hydrated && classSessions.length > 0 && (
-            <Pill active={showClasses} onClick={() => setShowClasses(!showClasses)} title="Órarendi órák a heti nézetben">
+            <Pill active={showClasses} onClick={() => setShowClasses(!showClasses)} title={t.home.classesToggleTitle}>
               <CalendarClock className="h-3.5 w-3.5" />
-              Órák
+              {t.home.classesToggle}
             </Pill>
           )}
         </div>
@@ -166,17 +172,17 @@ export default function WeekHome() {
               now={now}
               gutter
               intro
-              emptyDay="Nincs határidő"
-              label={`Heti nézet, ${range}`}
+              emptyDay={t.home.emptyDay}
+              label={t.home.boardLabel(range)}
             />
             <div className="flex flex-wrap items-center justify-between gap-3 text-[14px]">
               {deadlines.length === 0 ? (
                 <p className="text-muted">
-                  Még nincs határidőd.{" "}
+                  {t.home.noDeadlinesYet}{" "}
                   <Link href="/beallitasok#naptarak" className="font-semibold text-heading underline">
-                    Kapcsold össze a Canvas- vagy Moodle-naptáradat
+                    {t.home.connectCalendar}
                   </Link>
-                  , és a határidők automatikusan megjelennek.
+                  {t.home.connectCalendarAfter}
                 </p>
               ) : (
                 <span />
@@ -186,7 +192,7 @@ export default function WeekHome() {
                 onClick={() => setWeekStart(nextWeekStart)}
                 className="inline-flex items-center gap-1.5 font-semibold text-heading hover:underline"
               >
-                Következő hét: {nextWeekCount} határidő
+                {t.home.nextWeek(nextWeekCount)}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -198,12 +204,12 @@ export default function WeekHome() {
         <section className="flex flex-col gap-6" aria-labelledby="courses-heading" style={{ "--seq": 3 } as CSSProperties}>
           <SectionHeading
             id="courses-heading"
-            title="Tárgyak"
+            title={t.home.courses}
             actions={
               sortedCourses.length > 0 && (
                 <Button type="button" variant="secondary" size="sm" onClick={() => setCourseOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  Új tárgy
+                  {t.home.newCourse}
                 </Button>
               )
             }
@@ -211,21 +217,21 @@ export default function WeekHome() {
           {sortedCourses.length === 0 ? (
             <EmptyState
               icon={CalendarPlus}
-              title="Még nincs tárgyad"
-              text="Kapcsold össze a Canvas- vagy Moodle-naptáradat, és a tárgyakat automatikusan felvesszük. Kézzel is hozzáadhatod őket."
+              title={t.home.noCourses}
+              text={t.home.noCoursesText}
               action={
                 <>
                   <Link href="/beallitasok#naptarak" className={buttonClasses()}>
                     <CalendarPlus className="h-4 w-4" />
-                    Naptár összekapcsolása
+                    {t.home.linkCalendar}
                   </Link>
                   <Button variant="secondary" onClick={() => setCourseOpen(true)}>
                     <Plus className="h-4 w-4" />
-                    Új tárgy
+                    {t.home.newCourse}
                   </Button>
-                  <Button variant="ghost" onClick={loadDemo}>
+                  <Button variant="ghost" onClick={() => loadDemo(locale)}>
                     <Sparkles className="h-4 w-4" />
-                    Kipróbálás mintaadatokkal
+                    {t.home.tryDemo}
                   </Button>
                 </>
               }

@@ -3,7 +3,7 @@ import { authDeps, checkOrigin, clearedSessionCookie, guarded, json, sessionToke
 
 // Signs out this session, or every session with ?mindenhol=1.
 export function POST(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const bad = checkOrigin(req);
     if (bad) return bad;
     const deps = authDeps(req);

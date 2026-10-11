@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, MailCheck } from "lucide-react";
 import { hardNavigate, safeReturnPath } from "@/lib/account/path";
 import { dropForeignCache, login, register, requestMagicLink, requestPasswordReset } from "@/lib/account/client";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -13,29 +15,16 @@ import { Label } from "@/components/ui/Label";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 type View = "belepes" | "regisztracio" | "link" | "jelszo" | "elkuldve";
-type Sent = { email: string; minutes: string };
-
-const TITLES: Record<Exclude<View, "elkuldve">, string> = {
-  belepes: "Belépés",
-  regisztracio: "Regisztráció",
-  link: "Belépő link",
-  jelszo: "Elfelejtett jelszó",
-};
-
-const SUBS: Record<Exclude<View, "elkuldve">, string> = {
-  belepes: "Az adataid a fiókodhoz tartoznak, így bármelyik eszközödön ott vannak.",
-  regisztracio: "Az e-mail-címedet egy levélben megerősítjük, utána használhatod a fiókot.",
-  link: "Küldünk egy linket, amivel jelszó nélkül beléphetsz.",
-  jelszo: "Küldünk egy linket, amivel új jelszót adhatsz meg.",
-};
+type Sent = { email: string; long: boolean };
 
 function Segment({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  const t = useT();
   const items = [
-    { id: "belepes", label: "Belépés" },
-    { id: "regisztracio", label: "Regisztráció" },
+    { id: "belepes", label: t.auth.signIn },
+    { id: "regisztracio", label: t.auth.register },
   ] as const;
   return (
-    <div role="group" aria-label="Belépés vagy regisztráció" className="grid grid-cols-2 gap-1 rounded-[var(--radius)] bg-inset p-1">
+    <div role="group" aria-label={t.auth.signInOrRegister} className="grid grid-cols-2 gap-1 rounded-[var(--radius)] bg-inset p-1">
       {items.map((item) => (
         <button
           key={item.id}
@@ -54,6 +43,7 @@ function Segment({ view, onChange }: { view: View; onChange: (v: View) => void }
 }
 
 export function AuthForm() {
+  const t = useT();
   const searchParams = useSearchParams();
   const back = safeReturnPath(searchParams.get("vissza"));
   const [view, setView] = useState<View>("belepes");
@@ -95,7 +85,7 @@ export function AuthForm() {
             ? await requestMagicLink(address)
             : await requestPasswordReset(address);
       if (result.ok) {
-        setSent({ email: address, minutes: view === "regisztracio" ? "48 órán át" : "30 percig" });
+        setSent({ email: address, long: view === "regisztracio" });
         setView("elkuldve");
       } else {
         setError(result.error);
@@ -109,7 +99,7 @@ export function AuthForm() {
     setError(null);
     const result = await requestMagicLink(email.trim());
     if (result.ok) {
-      setSent({ email: email.trim(), minutes: "30 percig" });
+      setSent({ email: email.trim(), long: false });
       setView("elkuldve");
       setUnconfirmed(false);
     } else {
@@ -122,14 +112,13 @@ export function AuthForm() {
     return (
       <Card className="flex flex-col gap-4">
         <MailCheck className="h-6 w-6 text-heading" aria-hidden="true" />
-        <SectionHeading title="Ellenőrizd a postafiókodat" />
+        <SectionHeading title={t.auth.checkInbox} />
         <p className="text-[15px] text-muted">
-          Ha a {sent.email} címhez tartozik fiók, küldtünk oda egy levelet. A benne lévő link {sent.minutes} érvényes.
-          Ha nem érkezik meg, ellenőrizd a levélszemét mappát is.
+          {t.auth.sentText(sent.email, sent.long ? t.auth.validity48h : t.auth.validity30m)}
         </p>
         <Button variant="secondary" className="self-start" onClick={() => go("belepes")}>
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Vissza a belépéshez
+          {t.auth.backToSignIn}
         </Button>
       </Card>
     );
@@ -138,15 +127,22 @@ export function AuthForm() {
   const current = view === "elkuldve" ? "belepes" : view;
   const showPassword = current === "belepes" || current === "regisztracio";
   const submitLabel = {
-    belepes: "Belépés",
-    regisztracio: "Regisztráció",
-    link: "Link küldése",
-    jelszo: "Link küldése",
+    belepes: t.auth.signIn,
+    regisztracio: t.auth.register,
+    link: t.auth.sendLink,
+    jelszo: t.auth.sendLink,
   }[current];
+  const titles = { belepes: t.auth.signIn, regisztracio: t.auth.register, link: t.auth.magicLink, jelszo: t.auth.forgotPassword };
+  const subs = {
+    belepes: t.auth.signInSub,
+    regisztracio: t.auth.registerSub,
+    link: t.auth.magicLinkSub,
+    jelszo: t.auth.forgotPasswordSub,
+  };
 
   return (
     <Card as="form" onSubmit={submit} className="flex flex-col gap-5" noValidate={false}>
-      <SectionHeading as="h1" title={TITLES[current]} sub={SUBS[current]} />
+      <SectionHeading as="h1" title={titles[current]} sub={subs[current]} actions={<LanguageToggle />} />
 
       {showPassword ? (
         <Segment view={current} onChange={go} />
@@ -157,12 +153,12 @@ export function AuthForm() {
           className="-mt-2 inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Vissza a belépéshez
+          {t.auth.backToSignIn}
         </button>
       )}
 
       <div>
-        <Label htmlFor="auth-email">E-mail-cím</Label>
+        <Label htmlFor="auth-email">{t.auth.email}</Label>
         <Input
           id="auth-email"
           type="email"
@@ -178,7 +174,7 @@ export function AuthForm() {
 
       {showPassword && (
         <div>
-          <Label htmlFor="auth-password">Jelszó</Label>
+          <Label htmlFor="auth-password">{t.auth.password}</Label>
           <Input
             id="auth-password"
             type="password"
@@ -193,7 +189,7 @@ export function AuthForm() {
           />
           {current === "regisztracio" && (
             <p id="auth-password-hint" className="mt-1.5 text-[13px] text-muted">
-              Legalább 10 karakter.
+              {t.auth.passwordHint}
             </p>
           )}
         </div>
@@ -204,7 +200,7 @@ export function AuthForm() {
           <p className="text-[14px] font-semibold text-danger">{error}</p>
           {unconfirmed && (
             <Button type="button" variant="secondary" size="sm" onClick={resend} disabled={busy}>
-              Megerősítő link újraküldése
+              {t.auth.resendConfirmation}
             </Button>
           )}
         </div>
@@ -217,9 +213,9 @@ export function AuthForm() {
 
       {current === "regisztracio" && (
         <p className="text-[13px] text-muted">
-          A fiókhoz az e-mail-címedet és a megadott tanulmányi adataidat kezeljük. Részletek az{" "}
+          {t.auth.privacyBefore}
           <Link href="/adatvedelem" className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
-            adatvédelmi tájékoztatóban
+            {t.auth.privacyLink}
           </Link>
           .
         </p>
@@ -228,10 +224,10 @@ export function AuthForm() {
       {current === "belepes" && (
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
           <button type="button" onClick={() => go("link")} className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
-            Belépő link küldése e-mailben
+            {t.auth.sendMagicLink}
           </button>
           <button type="button" onClick={() => go("jelszo")} className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
-            Elfelejtett jelszó
+            {t.auth.forgotPassword}
           </button>
         </div>
       )}

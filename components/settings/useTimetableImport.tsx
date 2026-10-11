@@ -9,13 +9,8 @@ import {
   type ParsedSession,
 } from "@/lib/ical/neptun";
 import type { IcalEventDTO } from "@/lib/ical/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
-
-const SOURCE_NAME = "Neptun órarend";
-
-export const NO_UPCOMING_ERROR =
-  "A naptárban nincs aktuális vagy jövőbeli óra (a korábbi félévek órái nem kerülnek be).";
-const EMPTY_ERROR = "A naptárban nincs egyetlen esemény sem";
 
 interface PendingImport {
   parsed: ParsedSession[];
@@ -40,6 +35,7 @@ export interface TimetableImport {
 
 /** Timetable import orchestration: future-only filter, subject mapping dialog, store import. */
 export function useTimetableImport(): TimetableImport {
+  const t = useT();
   const sessions = useStore((s) => s.classSessions);
   const sources = useStore((s) => s.timetableSources);
   const importTimetable = useStore((s) => s.importTimetable);
@@ -58,12 +54,12 @@ export function useTimetableImport(): TimetableImport {
 
   function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}): string | null {
     const all = parseNeptunEvents(events);
-    if (all.length === 0) return EMPTY_ERROR;
+    if (all.length === 0) return t.timetable.empty;
     const parsed = upcomingSessions(all, new Date());
-    if (parsed.length === 0) return NO_UPCOMING_ERROR;
+    if (parsed.length === 0) return t.timetable.noUpcoming;
     const next: PendingImport = { parsed, sourceId: opts.sourceId, url: opts.url };
     if (subjectsToAsk(next).length === 0) {
-      importTimetable({ sourceId: next.sourceId, name: SOURCE_NAME, url: next.url }, next.parsed, {});
+      importTimetable({ sourceId: next.sourceId, name: t.timetable.sourceName, url: next.url }, next.parsed, {});
     } else {
       setPending(next);
     }
@@ -81,18 +77,18 @@ export function useTimetableImport(): TimetableImport {
       <TimetableMappingDialog
         open={pending !== null}
         onClose={() => setPending(null)}
-        title="Órarendi tárgyak hozzárendelése"
+        title={t.timetable.mappingTitle}
         subjects={pending ? subjectsToAsk(pending) : []}
         initial={{}}
         onConfirm={(decisions: Record<string, SubjectDecision>) => {
           if (!pending) return;
-          importTimetable({ sourceId: pending.sourceId, name: SOURCE_NAME, url: pending.url }, pending.parsed, decisions);
+          importTimetable({ sourceId: pending.sourceId, name: t.timetable.sourceName, url: pending.url }, pending.parsed, decisions);
         }}
       />
       <TimetableMappingDialog
         open={editing !== undefined}
         onClose={() => setEditingId(null)}
-        title="Hozzárendelés szerkesztése"
+        title={t.timetable.editMappingTitle}
         subjects={editSubjects}
         initial={editing?.subjectCourses ?? {}}
         onConfirm={(decisions) => {

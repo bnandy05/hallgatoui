@@ -6,7 +6,10 @@ export type YMD = [number, number, number];
 
 const TIME_ZONE = "Europe/Budapest";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DAY_ABBREVIATIONS = ["H", "K", "Sze", "Cs", "P", "Szo", "V"]; // Monday first
+const DAY_ABBREVIATIONS = {
+  hu: ["H", "K", "Sze", "Cs", "P", "Szo", "V"],
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+} as const; // Monday first
 
 const partsFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: TIME_ZONE,
@@ -75,9 +78,9 @@ export function dateKey([y, m, d]: YMD): string {
   return `${y}${String(m).padStart(2, "0")}${String(d).padStart(2, "0")}`;
 }
 
-/** Day abbreviation of a Budapest date: H K Sze Cs P Szo V. */
-export function dayAbbreviation(date: YMD): string {
-  return DAY_ABBREVIATIONS[isoWeekday(date) - 1];
+/** Day abbreviation of a Budapest date: H K Sze Cs P Szo V (hu) or Mon Tue … (en). */
+export function dayAbbreviation(date: YMD, locale: "hu" | "en" = "hu"): string {
+  return DAY_ABBREVIATIONS[locale][isoWeekday(date) - 1];
 }
 
 /** "HH:mm" of an instant in Budapest. */
@@ -86,8 +89,10 @@ export function budapestTime(instant: Date): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-/** "2026. 10. 05. 23:59" in Budapest time. */
-export function formatBudapest(instant: Date): string {
+/** "2026. 10. 05. 23:59" (hu) or "05/10/2026 23:59" (en) in Budapest time. */
+export function formatBudapest(instant: Date, locale: "hu" | "en" = "hu"): string {
   const [y, m, d] = budapestDate(instant);
-  return `${y}. ${String(m).padStart(2, "0")}. ${String(d).padStart(2, "0")}. ${budapestTime(instant)}`;
+  const mm = String(m).padStart(2, "0");
+  const dd = String(d).padStart(2, "0");
+  return locale === "en" ? `${dd}/${mm}/${y} ${budapestTime(instant)}` : `${y}. ${mm}. ${dd}. ${budapestTime(instant)}`;
 }

@@ -1,15 +1,17 @@
+import { currentMessages } from "@/lib/i18n/clientLocale";
+import { currentLocale } from "@/lib/i18n/clientLocale";
 import { visibleSessions } from "@/lib/ical/neptun";
 import { buildCalendar } from "@/lib/ical/export";
 import { useStore } from "@/lib/store";
 import type { DigestFrequency, DigestStatus } from "@/lib/digest";
 
 // Browser side of the account's calendar subscription and email digest. Both live on the server
-// under the signed-in account; these wrappers never throw, errors come back as Hungarian messages.
+// under the signed-in account; these wrappers never throw, errors come back as messages in the UI language.
 
 const CALENDAR_API = "/api/fiok/naptar";
 const DIGEST_API = "/api/fiok/hirlevel";
-const GENERIC_ERROR = "A naptárexport nem érhető el";
-const NETWORK_ERROR = "A szerver nem érhető el";
+const genericError = () => currentMessages().errors.calendar_export;
+const networkError = () => currentMessages().errors.network;
 
 /** Path part of the subscription URL; add an origin or a scheme in front of it. */
 export function subscriptionPath(token: string): string {
@@ -25,7 +27,7 @@ async function errorFrom(res: Response): Promise<string> {
   } catch {
     // Not JSON: fall through.
   }
-  return GENERIC_ERROR;
+  return genericError();
 }
 
 async function request(url: string, method: string, body?: unknown): Promise<Response | Failure> {
@@ -38,7 +40,7 @@ async function request(url: string, method: string, body?: unknown): Promise<Res
     });
     return res.ok ? res : { error: await errorFrom(res) };
   } catch {
-    return { error: NETWORK_ERROR };
+    return { error: networkError() };
   }
 }
 
@@ -51,7 +53,7 @@ async function tokenRequest(method: string, url = CALENDAR_API): Promise<{ token
     const json = (await res.json()) as { token?: unknown };
     return { token: typeof json.token === "string" ? json.token : null };
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: genericError() };
   }
 }
 
@@ -81,6 +83,7 @@ export function downloadCalendar(): void {
     customPlatforms,
     ignoredDuplicatePairs,
     classSessions: visibleSessions(classSessions, timetableSources),
+    locale: currentLocale(),
   });
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
   const link = document.createElement("a");
@@ -108,7 +111,7 @@ async function digestRequest(method: "GET" | "PUT" | "DELETE", body?: unknown): 
     const json = (await res.json()) as { digest?: DigestStatus | null; email?: string; available?: boolean };
     return { digest: json.digest ?? null, email: json.email, available: json.available };
   } catch {
-    return { error: GENERIC_ERROR };
+    return { error: genericError() };
   }
 }
 

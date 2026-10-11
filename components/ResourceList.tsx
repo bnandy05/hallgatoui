@@ -2,11 +2,11 @@
 
 import { useState, type CSSProperties, type FormEvent } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { hu } from "date-fns/locale";
 import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
-import { RESOURCE_KIND_LABELS } from "@/lib/platforms";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import type { Resource, ResourceKind } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
@@ -45,6 +45,8 @@ function fromResource(resource: Resource): ResourceFormState {
 }
 
 export function ResourceList({ courseId }: ResourceListProps) {
+  const t = useT();
+  const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const addResource = useStore((s) => s.addResource);
   const updateResource = useStore((s) => s.updateResource);
@@ -67,7 +69,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
 
   function handleRemove(resource: Resource) {
     if (!course) return;
-    if (confirm("Biztosan törlöd?")) {
+    if (confirm(t.linkEditor.confirmDelete)) {
       removeResource(course.id, resource.id);
     }
   }
@@ -81,7 +83,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
     <Dialog
       open={editing !== null}
       onClose={() => setEditing(null)}
-      title={editingResource ? "Anyag szerkesztése" : "Új anyag"}
+      title={editingResource ? t.resources.editTitle : t.resources.newTitle}
     >
       <ResourceForm
         initial={editingResource}
@@ -96,12 +98,12 @@ export function ResourceList({ courseId }: ResourceListProps) {
       <>
         <EmptyState
           icon={BookOpen}
-          title="Még nincs anyag"
-          text="Gyűjtsd ide a jegyzeteket, a korábbi ZH-kat és a mintamegoldásokat."
+          title={t.resources.none}
+          text={t.resources.noneText}
           action={
             <Button type="button" size="sm" onClick={() => setEditing("new")}>
               <Plus className="h-4 w-4" />
-              Anyag hozzáadása
+              {t.resources.add}
             </Button>
           }
         />
@@ -115,16 +117,16 @@ export function ResourceList({ courseId }: ResourceListProps) {
       {kindsInUse.length > 1 && (
         <div
           role="group"
-          aria-label="Típus"
+          aria-label={t.resources.type}
           className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
         >
-          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label="Mind" count={course.resources.length} />
+          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label={t.resources.all} count={course.resources.length} />
           {kindsInUse.map((kind) => (
             <FilterChip
               key={kind}
               active={activeFilter === kind}
               onClick={() => setFilter(kind)}
-              label={RESOURCE_KIND_LABELS[kind]}
+              label={t.resourceKinds[kind]}
               count={course.resources.filter((r) => r.kind === kind).length}
             />
           ))}
@@ -143,7 +145,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
               className="pin -top-[4px] left-4"
               style={{ "--pin-color": "var(--pin-neutral)" } as CSSProperties}
             />
-            <p className="text-[12px] font-semibold text-muted-dim">{RESOURCE_KIND_LABELS[resource.kind]}</p>
+            <p className="text-[12px] font-semibold text-muted-dim">{t.resourceKinds[resource.kind]}</p>
             <a
               href={resource.url}
               target="_blank"
@@ -157,12 +159,12 @@ export function ResourceList({ courseId }: ResourceListProps) {
             <div className="mt-auto flex items-center gap-1 pt-2">
               <span className="min-w-0 flex-1 truncate text-[12px] text-muted-dim">
                 {linkHost(resource.url)} ·{" "}
-                {formatDistanceToNow(new Date(resource.createdAt), { locale: hu, addSuffix: true })}
+                {formatDistanceToNow(new Date(resource.createdAt), { locale: dateLocale(locale), addSuffix: true })}
               </span>
               <button
                 type="button"
-                aria-label={`${resource.title} szerkesztése`}
-                title="Szerkesztés"
+                aria-label={t.resources.editAria(resource.title)}
+                title={t.common.edit}
                 onClick={() => setEditing(resource.id)}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
               >
@@ -170,8 +172,8 @@ export function ResourceList({ courseId }: ResourceListProps) {
               </button>
               <button
                 type="button"
-                aria-label={`${resource.title} törlése`}
-                title="Törlés"
+                aria-label={t.resources.deleteAria(resource.title)}
+                title={t.common.delete}
                 onClick={() => handleRemove(resource)}
                 className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
               >
@@ -187,7 +189,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
             className="flex h-full min-h-[7.5rem] w-full items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-[14px] font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
           >
             <Plus className="h-4 w-4" />
-            Anyag hozzáadása
+            {t.resources.add}
           </button>
         </li>
       </ul>
@@ -231,6 +233,7 @@ interface ResourceFormProps {
 }
 
 function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
+  const t = useT();
   const [form, setForm] = useState<ResourceFormState>(() => (initial ? fromResource(initial) : emptyForm()));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -239,7 +242,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
     if (!title) return;
     const url = normalizeLinkUrl(form.url);
     if (!url) {
-      setForm((f) => ({ ...f, error: "Érvénytelen link" }));
+      setForm((f) => ({ ...f, error: t.linkEditor.invalidLink }));
       return;
     }
     onSubmit({ title, url, kind: form.kind, note: form.note.trim() || undefined });
@@ -249,7 +252,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]">
         <div>
-          <Label htmlFor="resource-title">Cím</Label>
+          <Label htmlFor="resource-title">{t.resources.title}</Label>
           <Input
             id="resource-title"
             value={form.title}
@@ -258,7 +261,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
           />
         </div>
         <div>
-          <Label htmlFor="resource-kind">Típus</Label>
+          <Label htmlFor="resource-kind">{t.resources.type}</Label>
           <Select
             id="resource-kind"
             value={form.kind}
@@ -266,7 +269,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
           >
             {KINDS.map((kind) => (
               <option key={kind} value={kind}>
-                {RESOURCE_KIND_LABELS[kind]}
+                {t.resourceKinds[kind]}
               </option>
             ))}
           </Select>
@@ -274,7 +277,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="resource-url">Link</Label>
+        <Label htmlFor="resource-url">{t.linkEditor.link}</Label>
         <Input
           id="resource-url"
           value={form.url}
@@ -286,7 +289,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="resource-note">Megjegyzés</Label>
+        <Label htmlFor="resource-note">{t.deadlineDetail.note}</Label>
         <Textarea
           id="resource-note"
           value={form.note}
@@ -297,9 +300,9 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
 
       <DialogActions>
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Mégse
+          {t.common.cancel}
         </Button>
-        <Button type="submit">{initial ? "Mentés" : "Hozzáadás"}</Button>
+        <Button type="submit">{initial ? t.common.save : t.linkEditor.add}</Button>
       </DialogActions>
     </form>
   );

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -10,13 +12,16 @@ const archivo = Archivo({
   axes: ["wdth"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    template: "%s – Hallgatói réteg",
-    default: "Hallgatói réteg",
-  },
-  description: "Tárgyak, határidők és linkek egy helyen, a Neptun, a Canvas, a Moodle és a Teams fölött.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: {
+      template: `%s – ${t.shell.brand}`,
+      default: t.shell.brand,
+    },
+    description: t.meta.description,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -27,15 +32,18 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
     // The theme script sets data-theme before the first paint, so <html> differs from the server render.
-    <html lang="hu" className={`${archivo.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${archivo.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">
-        <AppShell>{children}</AppShell>
+        <I18nProvider locale={locale}>
+          <AppShell>{children}</AppShell>
+        </I18nProvider>
       </body>
     </html>
   );

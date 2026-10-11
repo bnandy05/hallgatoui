@@ -1,3 +1,4 @@
+import { currentMessages } from "@/lib/i18n/clientLocale";
 import { hardNavigate } from "@/lib/account/path";
 import { useStore } from "@/lib/store";
 import { clearOfflineCache } from "@/lib/sw";
@@ -5,12 +6,13 @@ import { offsetFromResponse, setServerOffset } from "@/lib/sync/clock";
 import type { SyncPayload } from "@/lib/sync/merge";
 
 // Fetch wrappers for /api/fiok* and /api/adatok. They never throw: errors come back as
-// Hungarian messages, like lib/subscription/client.ts.
+// messages in the UI language (the server localizes its own; the generic ones are here),
+// like lib/subscription/client.ts.
 
-const GENERIC_ERROR = "Valami hiba történt, próbáld újra";
-const NETWORK_ERROR = "A szerver nem érhető el";
+const genericError = () => currentMessages().errors.generic;
+const networkError = () => currentMessages().errors.network;
 
-export type Result<T = undefined> = ({ ok: true } & (T extends undefined ? object : T)) | { ok: false; error: string; status: number };
+export type Result<T = undefined> = ({ ok: true } & (T extends undefined ? object : T)) | { ok: false; error: string; status: number; code?: string };
 
 /** Records how far this device's clock is from the server's (the `Date` header of a good response). */
 function learnServerClock(res: Response, sentAt: number) {
@@ -37,15 +39,17 @@ async function call(path: string, method: string, body?: unknown): Promise<Respo
   }
 }
 
-async function errorOf(res: Response | null): Promise<{ ok: false; error: string; status: number }> {
-  if (!res) return { ok: false, error: NETWORK_ERROR, status: 0 };
+async function errorOf(res: Response | null): Promise<{ ok: false; error: string; status: number; code?: string }> {
+  if (!res) return { ok: false, error: networkError(), status: 0 };
   try {
-    const json = (await res.json()) as { error?: unknown };
-    if (typeof json.error === "string") return { ok: false, error: json.error, status: res.status };
+    const json = (await res.json()) as { error?: unknown; code?: unknown };
+    if (typeof json.error === "string") {
+      return { ok: false, error: json.error, status: res.status, code: typeof json.code === "string" ? json.code : undefined };
+    }
   } catch {
     // Not JSON.
   }
-  return { ok: false, error: GENERIC_ERROR, status: res.status };
+  return { ok: false, error: genericError(), status: res.status };
 }
 
 /** A request whose success body we don't need. */
@@ -71,7 +75,7 @@ export async function fetchMe(): Promise<Result<{ user: AccountUser }>> {
   } catch {
     // Fall through.
   }
-  return { ok: false, error: GENERIC_ERROR, status: res.status };
+  return { ok: false, error: genericError(), status: res.status };
 }
 
 export const register = (email: string, password: string) => simple("/api/fiok/regisztracio", "POST", { email, password });
@@ -83,6 +87,8 @@ export const consumeLink = (kind: string, token: string, password?: string) =>
 export const changePassword = (current: string | undefined, next: string) =>
   simple("/api/fiok/jelszo", "PUT", { current, next });
 export const changeEmail = (email: string) => simple("/api/fiok/email", "PUT", { email });
+/** Saves the language as the account's own choice (mails and the subscribed calendar follow). */
+export const setAccountLanguage = (locale: string) => simple("/api/fiok/nyelv", "PUT", { locale });
 
 /**
  * Right after a sign-in: if this browser's cache belongs to someone else, drop it before any page
@@ -135,27 +141,27 @@ function isPayload(json: unknown): json is { version: number; data: SyncPayload[
 
 export async function pullData(since?: number): Promise<PullResult> {
   const res = await call(since === undefined ? "/api/adatok" : `/api/adatok?since=${since}`, "GET");
-  if (!res) return { kind: "failed", offline: true, error: NETWORK_ERROR };
+  if (!res) return { kind: "failed", offline: true, error: networkError() };
   if (res.status === 401) return { kind: "unauthorized" };
   if (!res.ok) return { kind: "failed", offline: res.status >= 500, error: (await errorOf(res)).error };
   const json = (await res.json().catch(() => null)) as unknown;
   if (json && typeof json === "object" && (json as { unchanged?: unknown }).unchanged === true) {
     return { kind: "unchanged", version: Number((json as { version?: unknown }).version) };
   }
-  if (!isPayload(json)) return { kind: "failed", offline: false, error: GENERIC_ERROR };
+  if (!isPayload(json)) return { kind: "failed", offline: false, error: genericError() };
   return { kind: "data", version: json.version, payload: { data: json.data, exportOptions: json.exportOptions } };
 }
 
 export async function pushData(baseVersion: number, payload: SyncPayload): Promise<PushResult> {
   const res = await call("/api/adatok", "PUT", { baseVersion, data: payload.data, exportOptions: payload.exportOptions });
-  if (!res) return { kind: "failed", offline: true, error: NETWORK_ERROR, retry: true };
+  if (!res) return { kind: "failed", offline: true, error: networkError(), retry: true };
   if (res.status === 401) return { kind: "unauthorized" };
   if (res.status === 409) {
     const json = (await res.json().catch(() => null)) as unknown;
     if (isPayload(json)) {
       return { kind: "conflict", version: json.version, payload: { data: json.data, exportOptions: json.exportOptions } };
     }
-    return { kind: "failed", offline: false, error: GENERIC_ERROR, retry: true };
+    return { kind: "failed", offline: false, error: genericError(), retry: true };
   }
   if (!res.ok) {
     const err = await errorOf(res);
@@ -165,5 +171,5 @@ export async function pushData(baseVersion: number, payload: SyncPayload): Promi
   const json = (await res.json().catch(() => null)) as { version?: unknown } | null;
   return typeof json?.version === "number"
     ? { kind: "ok", version: json.version }
-    : { kind: "failed", offline: false, error: GENERIC_ERROR, retry: true };
+    : { kind: "failed", offline: false, error: genericError(), retry: true };
 }

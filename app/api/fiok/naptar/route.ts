@@ -1,18 +1,11 @@
-import type { Kv } from "@/lib/server/kv";
 import { checkOrigin, guarded, json, requireUser } from "@/lib/server/auth/http";
-import { generateCalendarToken, icsIndexKey, subKey } from "@/lib/server/subscription";
+import { dropRenderedCalendars, generateCalendarToken, subKey } from "@/lib/server/subscription";
 
 // The account's calendar subscription. GET: { token | null }. POST: create (no-op when there is
 // one); ?uj=1 rotates the token. DELETE: turn it off. The public .ics is /api/naptar/[token].
 
-async function dropRendered(kv: Kv, userId: string) {
-  const keys = await kv.smembers(icsIndexKey(userId));
-  if (keys.length > 0) await kv.del(...keys);
-  for (const key of keys) await kv.srem(icsIndexKey(userId), key);
-}
-
 export function GET(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const auth = await requireUser(req);
     if (auth instanceof Response) return auth;
     const fresh = await auth.deps.store.getUser(auth.user.id);
@@ -21,7 +14,7 @@ export function GET(req: Request) {
 }
 
 export function POST(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const bad = checkOrigin(req);
     if (bad) return bad;
     const auth = await requireUser(req);
@@ -40,7 +33,7 @@ export function POST(req: Request) {
 }
 
 export function DELETE(req: Request) {
-  return guarded(async () => {
+  return guarded(req, async () => {
     const bad = checkOrigin(req);
     if (bad) return bad;
     const auth = await requireUser(req);
@@ -51,7 +44,7 @@ export function DELETE(req: Request) {
       await store.kv.del(subKey(user.calendarToken));
       await store.putUser({ ...user, calendarToken: undefined });
     }
-    await dropRendered(store.kv, user.id);
+    await dropRenderedCalendars(store.kv, user.id);
     return json({ ok: true });
   });
 }

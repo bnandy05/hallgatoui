@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { buttonClasses } from "@/components/ui/Button";
 import { fieldClasses } from "@/components/ui/Input";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export interface CopyFieldProps {
   value: string;
@@ -12,6 +13,7 @@ export interface CopyFieldProps {
 
 /** A read-only link with one big copy button; tapping the field selects the whole link. */
 export function CopyField({ value, label }: CopyFieldProps) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,7 +52,7 @@ export function CopyField({ value, label }: CopyFieldProps) {
         })}
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        {copied ? "Másolva" : "Link másolása"}
+        {copied ? t.ui.copied : t.ui.copyLink}
       </button>
     </div>
   );

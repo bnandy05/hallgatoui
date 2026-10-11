@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { dateLocale } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { buildReminders } from "@/lib/reminders";
 import { formatRelative, urgencyOf } from "@/lib/radar";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
@@ -26,6 +28,8 @@ function useMinuteNow(): Date {
 }
 
 export function RemindersMenu() {
+  const t = useT();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Deadline | null>(null);
   const courses = useStore((s) => s.courses);
@@ -35,14 +39,14 @@ export function RemindersMenu() {
   const courseName = (id: string | null) => (id ? courses.find((c) => c.id === id)?.name : undefined);
   const close = useCallback((next: boolean) => setOpen(next), []);
   const urgent = reminders.deadlines.some((d) => urgencyOf(d, now) === "overdue");
-  const label = reminders.badge > 0 ? `Emlékeztetők (${reminders.badge})` : "Emlékeztetők";
+  const label = reminders.badge > 0 ? t.reminders.titleWithCount(reminders.badge) : t.reminders.title;
 
   return (
     <>
       <Popover
         open={open}
         onOpenChange={close}
-        label="Emlékeztetők"
+        label={t.reminders.title}
         trigger={(props) => (
           <button
             type="button"
@@ -66,18 +70,18 @@ export function RemindersMenu() {
         )}
       >
         <div className="flex items-baseline justify-between gap-2 px-4 pb-2 pt-3">
-          <p className="font-display text-[20px] text-heading">Emlékeztetők</p>
+          <p className="font-display text-[20px] text-heading">{t.reminders.title}</p>
           {reminders.deadlines.length > 0 && (
             <Link href="/radar" onClick={() => setOpen(false)} className="text-[12.5px] font-semibold text-heading underline underline-offset-2">
-              Összes határidő
+              {t.reminders.allDeadlines}
             </Link>
           )}
         </div>
         {reminders.deadlines.length === 0 ? (
-          <p className="px-4 pb-4 text-[14px] text-muted">Nincs teendőd.</p>
+          <p className="px-4 pb-4 text-[14px] text-muted">{t.reminders.none}</p>
         ) : (
           <section className="border-t border-border px-4 py-3">
-            <h3 className="mb-1.5 text-[13px] font-bold text-heading">Közelgő határidők</h3>
+            <h3 className="mb-1.5 text-[13px] font-bold text-heading">{t.reminders.upcoming}</h3>
             <ul className="flex flex-col">
               {reminders.deadlines.map((d) => {
                 const u = urgencyOf(d, now);
@@ -86,7 +90,7 @@ export function RemindersMenu() {
                     <button type="button" onClick={() => setDetail(d)} className="block w-full py-1.5 text-left hover:underline">
                       <span className="block truncate text-[13.5px] font-semibold text-foreground">{d.title}</span>
                       <span className={`block truncate text-[12.5px] ${u === "soon" ? "text-muted" : "font-semibold text-danger"}`}>
-                        {u === "overdue" ? "Lejárt" : `Lejár ${formatRelative(new Date(d.due), now)}`}
+                        {u === "overdue" ? t.reminders.overdue : t.reminders.dueIn(formatRelative(new Date(d.due), now, dateLocale(locale)))}
                         {courseName(d.courseId) && <span className="font-normal text-muted"> · {courseName(d.courseId)}</span>}
                       </span>
                     </button>

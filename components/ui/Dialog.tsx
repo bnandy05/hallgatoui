@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export interface DialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function Dialog({
   pinColor,
   tone = "paper",
 }: DialogProps) {
+  const t = useT();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export function Dialog({
         <h2 className="font-display min-w-0 self-center py-1.5 text-[24px] text-heading [overflow-wrap:anywhere]">{title}</h2>
         <button
           type="button"
-          aria-label="Bezárás"
+          aria-label={t.ui.close}
           onClick={onClose}
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors hover:bg-wash/[0.06] hover:text-heading"
         >

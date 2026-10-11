@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useStore, type SubjectDecision } from "@/lib/store";
 import { suggestCourseForSubject, type SubjectInfo } from "@/lib/ical/neptun";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
@@ -35,6 +36,7 @@ interface Choice {
 }
 
 function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMappingDialogProps) {
+  const t = useT();
   const courses = useStore((s) => s.courses);
 
   // Children mount only while the dialog is open, so initialise from props here.
@@ -75,11 +77,10 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[14px] text-muted">
-        A Neptun a tárgyneveket gyakran angolul, kód nélkül exportálja, ezért egyszer meg kell adnod, melyik
-        tárgyadhoz tartoznak az órák. A hozzárendelést a következő importnál is megőrizzük.
+        {t.mapping.intro}
       </p>
 
-      {subjects.length === 0 && <p className="text-[14px] text-muted">Nincs hozzárendelendő tárgy.</p>}
+      {subjects.length === 0 && <p className="text-[14px] text-muted">{t.mapping.none}</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {subjects.map((s) => {
@@ -89,12 +90,12 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
             <li key={s.subjectKey} className="px-5 py-4">
               <p className="text-[14px] font-medium text-foreground">{s.subject}</p>
               <p className="mb-2 text-[12.5px] text-muted">
-                {s.count} óra
-                {s.groups.length > 0 && ` · csoport: ${s.groups.join(", ")}`}
+                {t.mapping.classCount(s.count)}
+                {s.groups.length > 0 && t.mapping.groups(s.groups.join(", "))}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Select
-                  aria-label={`${s.subject}: tárgy`}
+                  aria-label={t.mapping.courseOf(s.subject)}
                   value={choice.target}
                   onChange={(e) => patch(s.subjectKey, { target: e.target.value })}
                 >
@@ -103,12 +104,12 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
                       {c.name}
                     </option>
                   ))}
-                  <option value={TARGET_NEW}>Új tárgy létrehozása</option>
-                  <option value={TARGET_SKIP}>Kihagyás</option>
+                  <option value={TARGET_NEW}>{t.mapping.createNew}</option>
+                  <option value={TARGET_SKIP}>{t.mapping.skip}</option>
                 </Select>
                 {choice.target === TARGET_NEW && (
                   <Input
-                    aria-label={`${s.subject}: az új tárgy neve`}
+                    aria-label={t.mapping.newNameOf(s.subject)}
                     value={choice.name}
                     onChange={(e) => patch(s.subjectKey, { name: e.target.value })}
                   />
@@ -121,10 +122,10 @@ function MappingForm({ onClose, subjects, initial, onConfirm }: TimetableMapping
 
       <DialogActions>
         <Button type="button" variant="secondary" onClick={onClose}>
-          Mégse
+          {t.common.cancel}
         </Button>
         <Button type="button" onClick={handleSave}>
-          {newCount > 0 ? `Mentés (${newCount} új tárgy)` : "Mentés"}
+          {newCount > 0 ? t.mapping.saveWithNew(newCount) : t.common.save}
         </Button>
       </DialogActions>
     </div>

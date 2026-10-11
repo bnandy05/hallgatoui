@@ -12,6 +12,7 @@ import {
   type DiscoveryDecision,
   type DiscoveryGroup,
 } from "@/lib/ical/discover";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
@@ -32,14 +33,16 @@ export interface DiscoveryDialogProps {
 }
 
 export function DiscoveryDialog({ open, onClose }: DiscoveryDialogProps) {
+  const t = useT();
   return (
-    <Dialog open={open} onClose={onClose} title="Tárgyak felvétele a naptárból" size="lg">
+    <Dialog open={open} onClose={onClose} title={t.discovery.title} size="lg">
       <DiscoveryForm onClose={onClose} />
     </Dialog>
   );
 }
 
 function DiscoveryForm({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const courses = useStore((s) => s.courses);
   const applyDiscovery = useStore((s) => s.applyDiscovery);
 
@@ -90,11 +93,10 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[14px] text-muted">
-        A naptáradban ezeket a tárgyakat találtuk. Az előadás és a gyakorlat alapból egy tárgy
-        lesz – ha külön szeretnéd, bontsd szét.
+        {t.discovery.intro}
       </p>
 
-      {groups.length === 0 && <p className="text-[14px] text-muted">Nincs új tárgy.</p>}
+      {groups.length === 0 && <p className="text-[14px] text-muted">{t.discovery.none}</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {groups.map((group) => {
@@ -104,7 +106,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Input
-                    aria-label="Tárgy neve"
+                    aria-label={t.discovery.courseName}
                     value={choice.name}
                     disabled={choice.target !== TARGET_NEW}
                     onChange={(e) => setChoice(group, { name: e.target.value })}
@@ -114,17 +116,17 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <Select
-                  aria-label="Mi legyen vele"
+                  aria-label={t.discovery.whatToDo}
                   value={choice.target}
                   onChange={(e) => setChoice(group, { target: e.target.value })}
                 >
-                  <option value={TARGET_NEW}>Új tárgy</option>
+                  <option value={TARGET_NEW}>{t.discovery.newCourse}</option>
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
-                  <option value={TARGET_SKIP}>Kihagyás</option>
+                  <option value={TARGET_SKIP}>{t.discovery.skip}</option>
                 </Select>
               </div>
 
@@ -135,13 +137,13 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                       <Badge color="var(--accent-2)">{formatKindLabel(context.kind)}</Badge>
                     )}
                     {context.code && <span>{context.code}</span>}
-                    <span>· {context.eventCount} határidő</span>
+                    <span>· {t.counts.deadlines(context.eventCount)}</span>
                     {context.courseUrl && (
                       <a
                         href={context.courseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label="Kurzus megnyitása"
+                        aria-label={t.discovery.openCourse}
                         className="hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -155,7 +157,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                 <div className="mt-2 flex justify-end">
                   <Button type="button" variant="ghost" size="sm" onClick={() => handleSplit(group)}>
                     <Split className="h-4 w-4" />
-                    Szétbontás
+                    {t.discovery.split}
                   </Button>
                 </div>
               )}
@@ -166,10 +168,10 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
 
       <DialogActions>
         <Button type="button" variant="secondary" onClick={onClose}>
-          Mégse
+          {t.common.cancel}
         </Button>
         <Button type="button" onClick={handleSave} disabled={groups.length === 0}>
-          {newCount > 0 ? `Mentés (${newCount} új tárgy)` : "Mentés"}
+          {newCount > 0 ? t.discovery.saveWithNew(newCount) : t.common.save}
         </Button>
       </DialogActions>
     </div>

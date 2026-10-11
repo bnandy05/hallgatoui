@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/I18nProvider";
 import type { ClassSession } from "@/lib/types";
 
 export interface ClassChipProps {
@@ -15,6 +16,7 @@ export interface ClassChipProps {
  * checkbox, no shadow. Classes are not deadlines.
  */
 export function ClassChip({ session, showCourse = true }: ClassChipProps) {
+  const t = useT();
   const course = useStore((s) => s.courses.find((c) => c.id === session.courseId));
   const start = new Date(session.start);
   const end = new Date(session.end);
@@ -25,7 +27,7 @@ export function ClassChip({ session, showCourse = true }: ClassChipProps) {
   return (
     <div
       className="flex items-start gap-1.5 rounded-[var(--radius-slip)] bg-sky/80 px-2 py-1.5 text-[12px] leading-snug text-muted"
-      title={[session.subject, session.group && `csoport: ${session.group}`, session.location]
+      title={[session.subject, session.group && t.week.classGroup(session.group), session.location]
         .filter(Boolean)
         .join(" · ")}
     >
@@ -37,7 +39,7 @@ export function ClassChip({ session, showCourse = true }: ClassChipProps) {
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-baseline gap-x-1.5">
           <span className="font-semibold tabular-nums text-heading">{range}</span>
-          {session.kind === "vizsga" && <span className="font-semibold text-warning">vizsga</span>}
+          {session.kind === "vizsga" && <span className="font-semibold text-warning">{t.week.exam}</span>}
           {session.room && (
             <span className="max-w-full truncate whitespace-nowrap text-muted" title={session.location ?? session.room}>
               {session.room}
