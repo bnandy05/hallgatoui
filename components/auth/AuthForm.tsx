@@ -214,9 +214,13 @@ export function AuthForm() {
 
       {current === "regisztracio" && (
         <p className="text-small text-muted">
-          {t.auth.privacyBefore}
+          {t.auth.registerAccept}
+          <Link href="/feltetelek" className="link-text">
+            {t.auth.registerTermsLink}
+          </Link>
+          {t.auth.registerAnd}
           <Link href="/adatvedelem" className="link-text">
-            {t.auth.privacyLink}
+            {t.auth.registerPrivacyLink}
           </Link>
           .
         </p>

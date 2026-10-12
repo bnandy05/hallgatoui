@@ -12,7 +12,7 @@ export function isAuthPath(pathname: string): boolean {
 
 /** Pages anyone can open without an account: no app chrome and no sync (which would send them to /belepes). */
 export function isPublicPath(pathname: string): boolean {
-  return isAuthPath(pathname) || pathname === "/hirlevel" || pathname === "/adatvedelem";
+  return isAuthPath(pathname) || pathname === "/hirlevel" || pathname === "/adatvedelem" || pathname === "/feltetelek";
 }
 
 /** Full page load (not a client navigation): the store and the proxy gate must start fresh. */

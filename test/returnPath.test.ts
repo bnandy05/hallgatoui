@@ -23,6 +23,7 @@ test("isPublicPath", () => {
   assert.equal(isPublicPath("/belepes"), true);
   assert.equal(isPublicPath("/hirlevel"), true);
   assert.equal(isPublicPath("/adatvedelem"), true);
+  assert.equal(isPublicPath("/feltetelek"), true);
   assert.equal(isPublicPath("/"), false);
   assert.equal(isPublicPath("/beallitasok"), false);
 });
