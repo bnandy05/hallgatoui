@@ -12,7 +12,7 @@ import { buildSearchItems } from "@/lib/search";
 import { pickLocale } from "@/lib/i18n";
 import { privacyContent } from "@/lib/privacy";
 import { termsContent } from "@/lib/terms";
-import { HOSTING, TERMS_UPDATED } from "@/lib/legal";
+import { HOSTING, MINIMUM_AGE, PRIVACY_UPDATED, RESEND_RETENTION_DAYS, TERMS_UPDATED } from "@/lib/legal";
 import { requestLocale, userLocale } from "@/lib/server/locale";
 import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
@@ -292,6 +292,17 @@ test("the privacy notice exists in both languages and names the language data an
   }
   assert.ok(en.purposes.items.some((p) => p.what === "Language preference"));
   assert.ok(hu.purposes.items.some((p) => p.what === "Nyelvbeállítás"));
+  for (const c of [hu, en]) {
+    const names = c.processors.items.map((p) => p.name);
+    assert.ok(names.includes("Plus Five Five, Inc. (Resend)"));
+    const text = c.processors.items.map((p) => p.where).join(" ");
+    assert.ok(text.includes("Frankfurt"));
+    assert.ok(text.includes(String(RESEND_RETENTION_DAYS)));
+    assert.ok(c.controller.terms.link.length > 0);
+    assert.ok(c.purposes.items[0].data.includes(String(MINIMUM_AGE)));
+    assert.ok(c.cookies.text.includes("service worker"));
+    assert.ok(c.sub.includes(PRIVACY_UPDATED));
+  }
 });
 
 test("the terms exist in both languages with the same structure, date and provider facts", () => {
