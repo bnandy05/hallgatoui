@@ -98,6 +98,10 @@ The digest is opt-in under Settings → Notifications: daily, weekly (Monday) or
 
 Without a key in development, emails are written to the server log, and the cron can be called by hand: `curl localhost:3000/api/cron/hirlevel`.
 
+## License
+
+MIT, see [LICENSE](LICENSE).
+
 ---
 
 <a id="magyar"></a>
@@ -195,3 +199,7 @@ Az összefoglalót a Beállítások → Értesítések alatt lehet bekapcsolni: 
 - `APP_URL` (nem kötelező): a levelekben lévő linkek alapcíme; ha nincs megadva, a `VERCEL_PROJECT_PRODUCTION_URL`.
 
 Fejlesztés közben, API-kulcs nélkül a levelek a szerver naplójába kerülnek, a cront pedig kézzel is meghívhatod: `curl localhost:3000/api/cron/hirlevel`.
+
+## Licenc
+
+MIT, lásd a [LICENSE](LICENSE) fájlt.
