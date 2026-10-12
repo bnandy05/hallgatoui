@@ -21,6 +21,9 @@ async function parseJsonSafe(res: Response): Promise<IcalApiResponse> {
 /** Thrown when the request never reached the server (offline, DNS, dropped): not a problem with the feed. */
 export class NetworkError extends Error {}
 
+/** Thrown on a 401: the session expired, which says nothing about the feed. */
+export class SignedOutError extends Error {}
+
 const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
 /** Fetches and parses a feed via the server-side /api/ical route (CORS proxy). */
@@ -38,6 +41,7 @@ export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
   }
   const json = await parseJsonSafe(res);
 
+  if (res.status === 401) throw new SignedOutError(json.error ?? currentMessages().errors.not_signed_in);
   if (!res.ok) {
     throw new Error(json.error ?? currentMessages().errors.ical_unreachable);
   }
@@ -60,8 +64,8 @@ export async function syncFeed(feedId: string): Promise<void> {
     const events = await fetchFeed(feed.url);
     applyFeedSync(feedId, events);
   } catch (err) {
-    // No connection says nothing about the feed (and lastError is a synced change): skip quietly.
-    if (err instanceof NetworkError) return;
+    // No connection or an expired session says nothing about the feed (and lastError is a synced change): skip quietly.
+    if (err instanceof NetworkError || err instanceof SignedOutError) return;
     const message = err instanceof Error ? err.message : currentMessages().errors.ical_unreachable;
     updateFeed(feedId, { lastError: message });
   }
