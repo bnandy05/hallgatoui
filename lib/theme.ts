@@ -2,8 +2,6 @@
 export type ThemePref = "system" | "light" | "dark";
 export type Theme = "light" | "dark";
 
-export const THEME_PREFS: readonly ThemePref[] = ["system", "light", "dark"];
-
 /** The felt colour per theme, for the browser chrome (`theme-color`). Keep in sync with tokens.css. */
 export const THEME_COLOR: Record<Theme, string> = { light: "#dde2e4", dark: "#171b1e" };
 

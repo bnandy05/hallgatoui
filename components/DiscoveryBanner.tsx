@@ -29,7 +29,7 @@ export function DiscoveryBanner() {
       <div className="slip flex flex-wrap items-center gap-3 bg-canary py-3 pl-9 pr-4">
         <span aria-hidden="true" className="pin left-3.5 top-1/2 -mt-[5.5px]" />
         <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
-        <p className="min-w-0 flex-1 text-[14.5px] font-semibold text-heading">
+        <p className="min-w-0 flex-1 text-body font-semibold text-heading">
           {t.banners.newCourses(groupCount)}
         </p>
         <div className="flex items-center gap-2">

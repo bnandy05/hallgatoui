@@ -59,7 +59,7 @@ export function dueNotifications(
         keys,
         deadlineId: d.id,
         title: course ? `${course.name}: ${d.title}` : d.title,
-        body: `${t.reminders.dueIn(formatRelative(due, now, dl))} (${format(due, t.formats.monthDayTime, { locale: dl })})`,
+        body: `${t.reminders.dueIn(formatRelative(due, now, locale))} (${format(due, t.formats.monthDayTime, { locale: dl })})`,
         href: course ? `/targy/${course.id}` : "/radar",
       },
     });

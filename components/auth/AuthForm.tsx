@@ -31,7 +31,7 @@ function Segment({ view, onChange }: { view: View; onChange: (v: View) => void }
           type="button"
           aria-pressed={view === item.id}
           onClick={() => onChange(item.id)}
-          className={`h-9 rounded-[calc(var(--radius)-2px)] text-[14px] font-semibold transition-colors duration-150 ${
+          className={`h-9 rounded-[calc(var(--radius)-2px)] text-body font-semibold transition-colors duration-150 ${
             view === item.id ? "bg-card text-heading shadow-[var(--shadow-paper)]" : "text-muted hover:text-heading"
           }`}
         >
@@ -114,7 +114,7 @@ export function AuthForm() {
       <Card className="flex flex-col gap-4">
         <MailCheck className="h-6 w-6 text-heading" aria-hidden="true" />
         <SectionHeading title={t.auth.checkInbox} />
-        <p className="text-[15px] text-muted">
+        <p className="text-lead text-muted">
           {t.auth.sentText(sent.email, sent.long ? t.auth.validity48h : t.auth.validity30m)}
         </p>
         <Button variant="secondary" className="self-start" onClick={() => go("belepes")}>
@@ -151,7 +151,7 @@ export function AuthForm() {
         <button
           type="button"
           onClick={() => go("belepes")}
-          className="-mt-2 inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading"
+          className="-mt-2 inline-flex w-fit items-center gap-1.5 text-body font-semibold text-muted hover:text-heading"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {t.auth.backToSignIn}
@@ -189,7 +189,7 @@ export function AuthForm() {
             aria-describedby={current === "regisztracio" ? "auth-password-hint" : undefined}
           />
           {current === "regisztracio" && (
-            <p id="auth-password-hint" className="mt-1.5 text-[13px] text-muted">
+            <p id="auth-password-hint" className="mt-1.5 text-small text-muted">
               {t.auth.passwordHint}
             </p>
           )}
@@ -198,7 +198,7 @@ export function AuthForm() {
 
       {error && (
         <div role="alert" className="flex flex-col items-start gap-2">
-          <p className="text-[14px] font-semibold text-danger">{error}</p>
+          <p className="text-body font-semibold text-danger">{error}</p>
           {unconfirmed && (
             <Button type="button" variant="secondary" size="sm" onClick={resend} disabled={busy}>
               {t.auth.resendConfirmation}
@@ -213,9 +213,9 @@ export function AuthForm() {
       </Button>
 
       {current === "regisztracio" && (
-        <p className="text-[13px] text-muted">
+        <p className="text-small text-muted">
           {t.auth.privacyBefore}
-          <Link href="/adatvedelem" className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
+          <Link href="/adatvedelem" className="link-text">
             {t.auth.privacyLink}
           </Link>
           .
@@ -223,11 +223,11 @@ export function AuthForm() {
       )}
 
       {current === "belepes" && (
-        <div className="flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
-          <button type="button" onClick={() => go("link")} className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-body">
+          <button type="button" onClick={() => go("link")} className="link-text">
             {t.auth.sendMagicLink}
           </button>
-          <button type="button" onClick={() => go("jelszo")} className="font-semibold text-heading underline underline-offset-2 hover:text-muted">
+          <button type="button" onClick={() => go("jelszo")} className="link-text">
             {t.auth.forgotPassword}
           </button>
         </div>

@@ -54,7 +54,7 @@ function TabBar({ pathname }: { pathname: string }) {
               key={link.href}
               href={link.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 rounded-[var(--radius)] text-[12px] font-semibold transition-colors duration-150 ${
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-[var(--radius)] text-fine font-semibold transition-colors duration-150 ${
                 isActive ? "bg-card text-heading shadow-[var(--shadow-paper)]" : "text-muted active:bg-card/60"
               }`}
             >
@@ -73,10 +73,10 @@ function Wordmark() {
   return (
     <Link href="/" className="group relative flex shrink-0 items-center gap-2.5 pr-1 text-heading">
       <span aria-hidden="true" className="relative block h-[22px] w-[18px]">
-        <span className="absolute inset-x-0 bottom-0 top-[5px] rounded-[1px] bg-card shadow-[var(--shadow-paper)] transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:-rotate-3" />
+        <span className="absolute inset-x-0 bottom-0 top-[5px] rounded-[var(--radius-slip)] bg-card shadow-[var(--shadow-paper)] transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:-rotate-3" />
         <span className="pin left-[3.5px] top-0" />
       </span>
-      <span className="font-display text-[21px] leading-none tracking-[0.005em]">
+      <span className="font-display text-subhead leading-none tracking-[0.005em]">
         {t.shell.brand}
       </span>
     </Link>
@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={link.href}
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`relative inline-flex h-9 items-center rounded-[var(--radius)] px-3 text-[14.5px] font-semibold transition-colors duration-150 ${
+                  className={`relative inline-flex h-9 items-center rounded-[var(--radius)] px-3 text-body font-semibold transition-colors duration-150 ${
                     isActive
                       ? "bg-card text-heading shadow-[var(--shadow-paper)]"
                       : "text-muted hover:bg-card/60 hover:text-heading"
@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {children}
       </main>
-      <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-[13px] text-muted-dim md:pb-6">
+      <footer className="border-t border-felt-dark pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 text-small text-muted-dim md:pb-6">
         <div className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 sm:px-6">
           <span>{demo ? t.demo.bannerShort : t.shell.footerData}</span>
           <span className="flex flex-wrap gap-x-6 gap-y-1">

@@ -101,7 +101,7 @@ export function CalendarSubscriptionSettings() {
 
       {demo ? (
         <DemoLocked tour="subscription" text={t.demo.locked.subscription.text}>
-          <p className="text-[13.5px] text-muted">{t.demo.locked.subscription.download}</p>
+          <p className="text-small text-muted">{t.demo.locked.subscription.download}</p>
           <Button type="button" variant="secondary" className="w-fit" onClick={downloadCalendar}>
             <Download className="h-4 w-4" />
             {t.calendarExport.downloadIcs}
@@ -109,15 +109,15 @@ export function CalendarSubscriptionSettings() {
         </DemoLocked>
       ) : token === undefined ? (
         error ? (
-          <p className="text-[13px] font-semibold text-danger">{error}</p>
+          <p className="text-small font-semibold text-danger">{error}</p>
         ) : (
           <div className="h-40 rounded-[var(--radius-slip)] bg-strip/80" />
         )
       ) : token === null ? (
         <div className="slip flex flex-col gap-4 bg-card px-5 pb-5 pt-6">
           <span aria-hidden="true" className="pin -top-[4px] left-5" style={{ "--pin-color": "var(--pin-neutral)" } as CSSProperties} />
-          <p className="font-display text-[22px] text-heading">{t.calendarExport.autoUpdating}</p>
-          <div className="flex gap-2.5 rounded-[var(--radius)] bg-canary/60 p-3 text-[13.5px] text-foreground">
+          <p className="font-display text-subhead text-heading">{t.calendarExport.autoUpdating}</p>
+          <div className="flex gap-2.5 rounded-[var(--radius)] bg-canary/60 p-3 text-small text-foreground">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>
               {t.calendarExport.secretWarning}
@@ -133,21 +133,21 @@ export function CalendarSubscriptionSettings() {
               {t.calendarExport.downloadIcs}
             </Button>
           </div>
-          <p className="text-[13px] text-muted">
+          <p className="text-small text-muted">
             {t.calendarExport.downloadNote}
           </p>
-          {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
+          {error && <p className="text-small font-semibold text-danger">{error}</p>}
         </div>
       ) : (
         <div className="slip flex flex-col gap-4 bg-card px-5 pb-5 pt-6">
           <span aria-hidden="true" className="pin -top-[4px] left-5" style={{ "--pin-color": "var(--success)" } as CSSProperties} />
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="font-display text-[22px] text-heading">{t.calendarExport.subscriptionLink}</p>
+            <p className="font-display text-subhead text-heading">{t.calendarExport.subscriptionLink}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_13rem]">
             <div className="min-w-0">
               <CopyField value={httpsUrl} label={t.calendarExport.subscriptionLink} />
-              <p className="mt-2 text-[12.5px] text-muted">{t.calendarExport.keepPrivate}</p>
+              <p className="mt-2 text-fine text-muted">{t.calendarExport.keepPrivate}</p>
             </div>
             <div>
               <Label htmlFor="naptar-nezet">{t.calendarExport.view}</Label>
@@ -176,17 +176,17 @@ export function CalendarSubscriptionSettings() {
               {t.calendarExport.addGoogle}
             </a>
           </div>
-          <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted">
+          <ul className="list-disc space-y-1 pl-5 text-small text-muted">
             <li>{t.calendarExport.tip1}</li>
             <li>{t.calendarExport.tip2}</li>
             <li>{t.calendarExport.tip3}</li>
           </ul>
-          {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
+          {error && <p className="text-small font-semibold text-danger">{error}</p>}
         </div>
       )}
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">{t.calendarExport.content}</h3>
+        <h3 className="font-display text-subhead text-heading">{t.calendarExport.content}</h3>
         <div className="sheet-paper divide-y divide-border/70 px-5 py-1">
           <Switch
             checked={exportOptions.includeDone}
@@ -211,7 +211,7 @@ export function CalendarSubscriptionSettings() {
                   <button
                     type="button"
                     onClick={clearIgnoredDuplicates}
-                    className="ml-1 font-semibold text-heading underline"
+                    className="link-text ml-1"
                   >
                     {t.calendarExport.clearExceptions(ignoredCount)}
                   </button>
@@ -223,7 +223,7 @@ export function CalendarSubscriptionSettings() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">{t.calendarExport.extras}</h3>
+        <h3 className="font-display text-subhead text-heading">{t.calendarExport.extras}</h3>
         <div className="sheet-paper divide-y divide-border/70 px-5 py-1">
           <Switch
             checked={exportOptions.alarms}

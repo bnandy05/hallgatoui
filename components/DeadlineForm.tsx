@@ -12,6 +12,7 @@ import { parseQuickDeadline } from "@/lib/quickAdd";
 import { expandDueDates, MAX_SERIES, seriesTitles, wasCapped, type RepeatSpec } from "@/lib/recurrence";
 import type { Deadline } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -212,12 +213,12 @@ export function DeadlineForm({
             </Button>
           </div>
           {!parsed && (
-            <p className="mt-1.5 text-[12.5px] text-muted">
+            <p className="mt-1.5 text-fine text-muted">
               {t.deadlineForm.quickHelpBefore}<span className="font-semibold">!</span>{t.deadlineForm.quickHelpAfter}
             </p>
           )}
           {parsed && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-fine text-muted">
               {parsed.title && <span className="font-medium text-foreground">{parsed.title}</span>}
               {parsed.due && (
                 <span>· {format(parsed.due, t.formats.yearMonthDayWeekdayTime, { locale: dl })}</span>
@@ -327,7 +328,7 @@ export function DeadlineForm({
             </div>
           </TabPanel>
           <TabPanel id="every" active={mode === "every"} className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-[14px] text-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
               <span>{t.deadlineForm.every}</span>
               <Input
                 type="number"
@@ -349,7 +350,7 @@ export function DeadlineForm({
                 <option value="day">{t.deadlineForm.dayUnit}</option>
               </Select>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-[14px] text-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
               <Select
                 aria-label={t.deadlineForm.end}
                 value={endKind}
@@ -387,16 +388,8 @@ export function DeadlineForm({
           </TabPanel>
           {dates.length > 1 && (
             <div className="flex flex-col gap-1.5">
-              <label className="flex items-center gap-2 text-[14px] font-medium text-foreground">
-                <input
-                  type="checkbox"
-                  checked={numbered}
-                  onChange={(e) => setNumbered(e.target.checked)}
-                  className="h-4 w-4 accent-accent"
-                />
-                {t.deadlineForm.numbered}
-              </label>
-              <p className="text-[12.5px] text-muted" aria-live="polite">
+              <Checkbox checked={numbered} onChange={(e) => setNumbered(e.target.checked)} label={t.deadlineForm.numbered} />
+              <p className="text-fine text-muted" aria-live="polite">
                 {t.deadlineForm.seriesPreview(dates.length, previewDates)}
                 {capped && t.deadlineForm.cappedAt(MAX_SERIES)}
               </p>
@@ -440,19 +433,11 @@ export function DeadlineForm({
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://…"
           />
-          {error && <p className="mt-1 text-[12.5px] text-danger">{error}</p>}
+          {error && <p className="mt-1 text-fine text-danger">{error}</p>}
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-[14px] font-medium text-foreground">
-        <input
-          type="checkbox"
-          checked={critical}
-          onChange={(e) => setCritical(e.target.checked)}
-          className="h-4 w-4 accent-accent"
-        />
-        {t.common.critical}
-      </label>
+      <Checkbox checked={critical} onChange={(e) => setCritical(e.target.checked)} label={t.common.critical} />
 
       <div>
         <Label htmlFor="deadline-note">{t.deadlineForm.note}</Label>

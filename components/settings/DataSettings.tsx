@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Download, Sparkles, Trash2, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { parseAppData } from "@/lib/importData";
+import { ImportError, parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -68,8 +68,7 @@ export function DataSettings() {
         t.data.restored(data.courses.length, data.deadlines.length)
       );
     } catch (err) {
-      // parseAppData throws Hungarian messages; show the matching wording of the UI language.
-      setImportError(err instanceof Error && err.message === "Nem támogatott verzió" ? t.data.unsupportedVersion : t.data.invalidFile);
+      setImportError(err instanceof ImportError && err.code === "unsupported_version" ? t.data.unsupportedVersion : t.data.invalidFile);
     } finally {
       // Reset so choosing the same file again re-fires onChange.
       if (fileInputRef.current) {
@@ -100,8 +99,8 @@ export function DataSettings() {
       <div className="sheet-paper divide-y divide-border/70 px-5">
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">{t.data.backup}</p>
-            <p className="text-[13px] text-muted">{t.data.backupHint}</p>
+            <p className="text-body font-medium text-heading">{t.data.backup}</p>
+            <p className="text-small text-muted">{t.data.backupHint}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
@@ -121,13 +120,13 @@ export function DataSettings() {
               aria-label={t.data.fileAria}
             />
           </div>
-          {importError && <p className="basis-full text-[13px] font-semibold text-danger">{importError}</p>}
-          {importSuccess && <p className="basis-full text-[13px] font-semibold text-success">{importSuccess}</p>}
+          {importError && <p className="basis-full text-small font-semibold text-danger">{importError}</p>}
+          {importSuccess && <p className="basis-full text-small font-semibold text-success">{importSuccess}</p>}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="min-w-0">
-            <p className="text-[14.5px] font-medium text-heading">{t.data.demo}</p>
-            <p className="text-[13px] text-muted">{t.data.demoHint}</p>
+            <p className="text-body font-medium text-heading">{t.data.demo}</p>
+            <p className="text-small text-muted">{t.data.demoHint}</p>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={handleLoadDemo}>
             <Sparkles className="h-4 w-4" />
@@ -138,8 +137,8 @@ export function DataSettings() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-dashed border-danger/40 px-5 py-4">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-medium text-danger">{t.data.deleteAll}</p>
-          <p className="text-[13px] text-muted">{t.data.deleteAllHint}</p>
+          <p className="text-body font-medium text-danger">{t.data.deleteAll}</p>
+          <p className="text-small text-muted">{t.data.deleteAllHint}</p>
         </div>
         <Button type="button" variant="danger" size="sm" onClick={handleReset}>
           <Trash2 className="h-4 w-4" />

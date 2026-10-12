@@ -39,7 +39,8 @@ function HomeSkeleton() {
 /** The one notice that owns the top of the page: the next open deadline, pinned beside the week. */
 function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
   const t = useT();
-  const dl = dateLocale(useLocale());
+  const locale = useLocale();
+  const dl = dateLocale(locale);
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const [open, setOpen] = useState(false);
   const critical = isCritical(deadline, now);
@@ -57,15 +58,15 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
           style={{ "--pin-color": critical ? "var(--pin)" : (course?.color ?? "var(--border-strong)") } as CSSProperties}
         />
         <span className="flex items-baseline justify-between gap-3">
-          <span className="text-[13px] font-semibold text-muted-dim">{t.home.next}</span>
-          <span className={`font-display text-[22px] tabular-nums ${critical ? "text-danger" : "text-heading"}`}>
-            {formatRelative(due, now, dl)}
+          <span className="text-small font-semibold text-muted-dim">{t.home.next}</span>
+          <span className={`font-display text-subhead tabular-nums ${critical ? "text-danger" : "text-heading"}`}>
+            {formatRelative(due, now, locale)}
           </span>
         </span>
-        <span className="line-clamp-2 text-[16px] font-semibold leading-snug text-heading [overflow-wrap:anywhere] group-hover:underline">
+        <span className="line-clamp-2 text-lead font-semibold leading-snug text-heading [overflow-wrap:anywhere] group-hover:underline">
           {deadline.title.replace(/(\d+\.) /g, "$1\u00a0")}
         </span>
-        <span className="truncate text-[13px] text-muted">
+        <span className="truncate text-small text-muted">
           {[course?.name, format(due, "EEEE HH:mm", { locale: dl })].filter(Boolean).join(" · ")}
         </span>
       </button>
@@ -177,11 +178,11 @@ export default function WeekHome() {
               label={t.home.boardLabel(range)}
             />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 text-[14px]">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-body">
               {deadlines.length === 0 ? (
                 <p className="text-muted">
                   {t.home.noDeadlinesYet}{" "}
-                  <Link href="/beallitasok#naptarak" className="font-semibold text-heading underline">
+                  <Link href="/beallitasok#naptarak" className="link-text">
                     {t.home.connectCalendar}
                   </Link>
                   {t.home.connectCalendarAfter}

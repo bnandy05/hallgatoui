@@ -1,18 +1,18 @@
 "use client";
 
 import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { ChevronRight, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { fetchFeed, syncAllFeeds, syncFeed } from "@/lib/ical/client";
 import { parseIcs } from "@/lib/ical/parse";
 import { isNeptunCalendar } from "@/lib/ical/neptun";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
-import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { formatRelative } from "@/lib/radar";
 import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
 import type { IcalFeed, TimetableSource } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -352,7 +352,7 @@ export function FeedSettings() {
             placeholder={t.feeds.linkPlaceholder}
             inputMode="url"
           />
-          {error && <p className="mt-1 text-[13px] font-semibold text-danger">{error}</p>}
+          {error && <p className="mt-1 text-small font-semibold text-danger">{error}</p>}
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor={`${prefix}-name`}>{t.feeds.name}</Label>
@@ -409,7 +409,7 @@ export function FeedSettings() {
       />
 
       {listError && (
-        <p role="alert" className="rounded-[var(--radius-slip)] bg-salmon px-4 py-3 text-[14px] font-semibold text-danger">
+        <p role="alert" className="rounded-[var(--radius-slip)] bg-salmon px-4 py-3 text-body font-semibold text-danger">
           {listError}
         </p>
       )}
@@ -435,22 +435,22 @@ export function FeedSettings() {
               <div className="flex items-start gap-3">
                 <PlatformIcon platform={platform} size="md" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[16px] font-bold text-heading">{feed.name}</p>
-                  <p className="truncate text-[12.5px] text-muted-dim" title={feed.url}>
+                  <p className="truncate text-lead font-bold text-heading">{feed.name}</p>
+                  <p className="truncate text-fine text-muted-dim" title={feed.url}>
                     {linkHost(feed.url)}
                   </p>
                 </div>
               </div>
-              <p className="text-[13.5px] text-muted">
+              <p className="text-small text-muted">
                 {course ? course.name : t.feeds.courseByKeyword} · {t.feeds.deadlineCount(deadlineCount(feed.id))}
               </p>
-              <p className={`text-[13px] ${feed.lastError ? "font-semibold text-danger" : "text-muted"}`}>
+              <p className={`text-small ${feed.lastError ? "font-semibold text-danger" : "text-muted"}`}>
                 {feed.lastError ? (
                   feed.lastError
                 ) : feed.lastSyncedAt ? (
                   <>
                     <span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full bg-success align-middle" />
-                    {t.feeds.updated(formatDistanceToNow(new Date(feed.lastSyncedAt), { locale: dateLocale(locale), addSuffix: true }))}
+                    {t.feeds.updated(formatRelative(new Date(feed.lastSyncedAt), new Date(), locale))}
                   </>
                 ) : (
                   t.feeds.neverUpdated
@@ -512,12 +512,12 @@ export function FeedSettings() {
             }}
             className="flex h-full min-h-[9rem] w-full flex-col items-center justify-center gap-1.5 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-6 py-6 text-center text-muted transition-colors hover:border-accent hover:text-heading"
           >
-            <span className="inline-flex items-center gap-2 text-[15px] font-semibold text-heading">
+            <span className="inline-flex items-center gap-2 text-body font-semibold text-heading">
               <Plus className="h-4 w-4" />
               {hasSources ? t.feeds.newCalendar : t.feeds.addCalendar}
             </span>
             {!hasSources && (
-              <span className="max-w-sm text-[13.5px]">{t.feeds.addHint}</span>
+              <span className="max-w-sm text-small">{t.feeds.addHint}</span>
             )}
           </button>
         </li>
@@ -536,19 +536,13 @@ export function FeedSettings() {
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} title={t.feeds.newCalendar}>
         <form onSubmit={(e) => void handleAdd(e)} className="flex flex-col gap-4">
           {feedFields(addForm, setAddForm, "feed-add", addError, handleAddUrlChange)}
-          <label className="flex items-start gap-2 text-[14px] text-foreground">
-            <input
-              type="checkbox"
-              checked={addForm.markPastDone}
-              onChange={(e) => setAddForm((f) => ({ ...f, markPastDone: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 accent-accent"
-            />
-            <span>
-              {t.feeds.markPastDoneLabel}
-              <span className="block text-[12.5px] text-muted">{t.feeds.markPastDoneHint}</span>
-            </span>
-          </label>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius)] bg-inset px-3 py-2.5 text-[13.5px] text-muted">
+          <Checkbox
+            checked={addForm.markPastDone}
+            onChange={(e) => setAddForm((f) => ({ ...f, markPastDone: e.target.checked }))}
+            label={t.feeds.markPastDoneLabel}
+            description={t.feeds.markPastDoneHint}
+          />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius)] bg-inset px-3 py-2.5 text-small text-muted">
             <span className="min-w-0 flex-1">{t.feeds.fileNote}</span>
             <Button
               type="button"
@@ -563,7 +557,7 @@ export function FeedSettings() {
               {t.feeds.uploadFile}
             </Button>
           </div>
-          <details className="group text-[13.5px] text-muted">
+          <details className="group text-small text-muted">
             <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold text-heading [&::-webkit-details-marker]:hidden">
               <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
               {t.feeds.whereLink}

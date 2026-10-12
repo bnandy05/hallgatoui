@@ -5,12 +5,14 @@ import { Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { BUILT_IN_PLATFORMS, platformName } from "@/lib/platforms";
+import { COURSE_COLORS } from "@/lib/colors";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Input } from "@/components/ui/Input";
 import { PlatformIcon } from "@/components/PlatformIcon";
 
-const DEFAULT_CUSTOM_COLOR = "#8b5cf6";
+// The palette violet, so a new platform never looks like the red of "now".
+const DEFAULT_CUSTOM_COLOR = COURSE_COLORS[4];
 
 export function PlatformSettings() {
   const t = useT();
@@ -45,7 +47,7 @@ export function PlatformSettings() {
       />
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">{t.platformSettings.custom}</h3>
+        <h3 className="font-display text-subhead text-heading">{t.platformSettings.custom}</h3>
         <div className="sheet-paper divide-y divide-border/70 px-5">
           {customPlatforms.map((platform) => (
             <div key={platform.id} className="flex items-center gap-2 py-3">
@@ -98,12 +100,12 @@ export function PlatformSettings() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-display text-[22px] text-heading">{t.platformSettings.builtIn}</h3>
+        <h3 className="font-display text-subhead text-heading">{t.platformSettings.builtIn}</h3>
         <ul className="flex flex-wrap gap-2">
           {BUILT_IN_PLATFORMS.map((platform) => (
             <li
               key={platform.id}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-[13.5px] text-foreground"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-small text-foreground"
             >
               <PlatformIcon platform={platform} size="sm" />
               {platformName(platform, t.platforms.other)}

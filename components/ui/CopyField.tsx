@@ -41,7 +41,7 @@ export function CopyField({ value, label }: CopyFieldProps) {
         value={value}
         aria-label={label}
         onFocus={(e) => e.currentTarget.select()}
-        className={`${fieldClasses} min-w-0 flex-1 truncate bg-inset text-[13.5px] text-muted`}
+        className={`${fieldClasses} min-w-0 flex-1 truncate bg-inset text-small text-muted`}
       />
       <button
         type="button"

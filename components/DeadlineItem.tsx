@@ -29,8 +29,8 @@ const URGENCY_COLOR: Partial<Record<string, string>> = {
 /** One labelled line on the slip, ruled off from the next like a form on paper. */
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-[14px]">
-      <dt className="text-[13px] text-muted">{label}</dt>
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-body">
+      <dt className="text-small text-muted">{label}</dt>
       <dd className="flex min-w-0 flex-wrap items-center gap-2">{children}</dd>
     </div>
   );
@@ -92,7 +92,8 @@ function DeadlineDetail({
   onEdit: () => void;
 }) {
   const t = useT();
-  const dl = dateLocale(useLocale());
+  const locale = useLocale();
+  const dl = dateLocale(locale);
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -145,11 +146,11 @@ function DeadlineDetail({
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-1 pb-4">
-        <p className="text-[17px] font-semibold tabular-nums text-heading first-letter:uppercase">
+        <p className="text-lead font-semibold tabular-nums text-heading first-letter:uppercase">
           {format(due, t.formats.weekdayMonthDayTime, { locale: dl })}
         </p>
-        <p className={`text-[14.5px] ${hot && !deadline.done ? "font-semibold text-danger" : "text-muted"}`}>
-          {deadline.done ? t.common.done : formatRelative(due, now, dl)}
+        <p className={`text-body ${hot && !deadline.done ? "font-semibold text-danger" : "text-muted"}`}>
+          {deadline.done ? t.common.done : formatRelative(due, now, locale)}
         </p>
         {share > 0 && (
           <span aria-hidden="true" className="mt-2 block h-[3px] w-full rounded-full bg-wash/[0.07]">
@@ -160,7 +161,7 @@ function DeadlineDetail({
           </span>
         )}
         {ordered && seriesPosition > 0 && (
-          <p className="text-[13px] tabular-nums text-muted">
+          <p className="text-small tabular-nums text-muted">
             {t.deadlineDetail.series(seriesPosition, ordered.length)}
           </p>
         )}
@@ -226,7 +227,7 @@ function DeadlineDetail({
                 href={deadline.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-heading underline"
+                className="inline-flex items-center gap-1 link-text"
               >
                 {t.common.open}
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -276,7 +277,7 @@ function DeadlineDetail({
       </DialogActions>
 
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} title={t.deadlineDetail.deleteSeriesTitle}>
-        <p className="text-[14.5px] text-foreground">
+        <p className="text-body text-foreground">
           {t.deadlineDetail.deleteSeriesText(ordered?.length ?? 0)}
         </p>
         <DialogActions>
@@ -304,8 +305,8 @@ function DeadlineDetail({
 function DuplicateRow({ deadline }: { deadline: Deadline }) {
   const t = useT();
   return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-[14px] [&:not(:has(button))]:hidden">
-      <dt className="text-[13px] text-muted">{t.deadlineDetail.sources}</dt>
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 border-t border-wash/[0.08] py-2.5 text-body [&:not(:has(button))]:hidden">
+      <dt className="text-small text-muted">{t.deadlineDetail.sources}</dt>
       <dd className="flex min-w-0 flex-wrap items-center gap-2">
         <DuplicateSources deadline={deadline} />
       </dd>

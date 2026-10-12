@@ -33,6 +33,19 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* The type ramp. Seven steps for text, three fluid steps for display headings; nothing else sets a pixel size. */
+@theme {
+  --text-fine: 12px;
+  --text-small: 13px;
+  --text-body: 14px;
+  --text-lead: 16px;
+  --text-title: 19px;
+  --text-subhead: 22px;
+  --text-headline: clamp(24px, 3vw, 30px);
+  --text-display-sm: clamp(30px, 4vw, 40px);
+  --text-display: clamp(34px, 5.2vw, 52px);
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
@@ -74,11 +87,6 @@ textarea {
   textarea {
     font-size: 16px;
   }
-  /* Bigger tick boxes for thumbs. */
-  input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-  }
 }
 
 /* While a dialog is open the page behind it stays put. */
@@ -98,6 +106,19 @@ html:has(dialog[open]) {
 a {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
+}
+
+/* A text link or text-only button inside running copy: bold ink, underlined. */
+.link-text {
+  font-weight: 600;
+  color: var(--heading);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+.link-text:hover {
+  color: var(--muted);
 }
 
 /* Printed-notice display type: Archivo condensed, heavy. */

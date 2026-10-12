@@ -2,8 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { isDemoMode } from "@/lib/demoMode";
-
-const noop = () => () => {};
+import { noop } from "@/lib/useHydrated";
 
 /** True in the demo (no account, sample data). False during the server render. */
 export function useDemoMode(): boolean {

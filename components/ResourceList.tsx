@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
-import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { formatRelative } from "@/lib/radar";
 import type { Resource, ResourceKind } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
+import { IconButton } from "@/components/ui/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -145,40 +145,38 @@ export function ResourceList({ courseId }: ResourceListProps) {
               className="pin -top-[4px] left-4"
               style={{ "--pin-color": "var(--pin-neutral)" } as CSSProperties}
             />
-            <p className="text-[12px] font-semibold text-muted-dim">{t.resourceKinds[resource.kind]}</p>
+            <p className="text-fine font-semibold text-muted-dim">{t.resourceKinds[resource.kind]}</p>
             <a
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
               title={resource.url}
-              className="mt-0.5 line-clamp-2 text-[15px] font-semibold leading-snug text-heading [overflow-wrap:anywhere] hover:underline"
+              className="mt-0.5 line-clamp-2 text-body font-semibold leading-snug text-heading [overflow-wrap:anywhere] hover:underline"
             >
               {resource.title}
             </a>
-            {resource.note && <p className="mt-1 line-clamp-3 text-[13.5px] text-muted">{resource.note}</p>}
+            {resource.note && <p className="mt-1 line-clamp-3 text-small text-muted">{resource.note}</p>}
             <div className="mt-auto flex items-center gap-1 pt-2">
-              <span className="min-w-0 flex-1 truncate text-[12px] text-muted-dim">
+              <span className="min-w-0 flex-1 truncate text-fine text-muted-dim">
                 {linkHost(resource.url)} ·{" "}
-                {formatDistanceToNow(new Date(resource.createdAt), { locale: dateLocale(locale), addSuffix: true })}
+                {formatRelative(new Date(resource.createdAt), new Date(), locale)}
               </span>
-              <button
-                type="button"
+              <IconButton
                 aria-label={t.resources.editAria(resource.title)}
                 title={t.common.edit}
                 onClick={() => setEditing(resource.id)}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
+                tone="danger"
                 aria-label={t.resources.deleteAria(resource.title)}
                 title={t.common.delete}
                 onClick={() => handleRemove(resource)}
-                className="-mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted hover:bg-wash/[0.05] hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
+                className="-mr-1.5"
               >
                 <Trash2 className="h-4 w-4" />
-              </button>
+              </IconButton>
             </div>
           </li>
         ))}
@@ -186,7 +184,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
           <button
             type="button"
             onClick={() => setEditing("new")}
-            className="flex h-full min-h-[7.5rem] w-full items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-[14px] font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
+            className="flex h-full min-h-[7.5rem] w-full items-center justify-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 text-body font-semibold text-muted transition-colors hover:border-accent hover:text-heading"
           >
             <Plus className="h-4 w-4" />
             {t.resources.add}
@@ -214,7 +212,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
         active
           ? "border-accent bg-accent text-accent-ink"
           : "border-border bg-card text-muted hover:border-border-strong hover:text-heading"
@@ -285,7 +283,7 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
           placeholder="https://…"
           inputMode="url"
         />
-        {form.error && <p className="mt-1 text-[13px] font-semibold text-danger">{form.error}</p>}
+        {form.error && <p className="mt-1 text-small font-semibold text-danger">{form.error}</p>}
       </div>
 
       <div>

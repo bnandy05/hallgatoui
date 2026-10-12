@@ -92,11 +92,11 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[14px] text-muted">
+      <p className="text-body text-muted">
         {t.discovery.intro}
       </p>
 
-      {groups.length === 0 && <p className="text-[14px] text-muted">{t.discovery.none}</p>}
+      {groups.length === 0 && <p className="text-body text-muted">{t.discovery.none}</p>}
 
       <ul className="-mx-5 divide-y divide-border/70 border-y border-border/70">
         {groups.map((group) => {
@@ -112,7 +112,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
                     onChange={(e) => setChoice(group, { name: e.target.value })}
                   />
                   {group.semester && (
-                    <p className="mt-1 text-[12.5px] text-muted">{group.semester}</p>
+                    <p className="mt-1 text-fine text-muted">{group.semester}</p>
                   )}
                 </div>
                 <Select
@@ -132,7 +132,7 @@ function DiscoveryForm({ onClose }: { onClose: () => void }) {
 
               <ul className="mt-2 flex flex-col gap-1">
                 {group.items.map(({ context }) => (
-                  <li key={context.key} className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
+                  <li key={context.key} className="flex flex-wrap items-center gap-1.5 text-fine text-muted">
                     {context.kind && (
                       <Badge color="var(--accent-2)">{formatKindLabel(context.kind)}</Badge>
                     )}

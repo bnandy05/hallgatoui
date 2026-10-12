@@ -266,7 +266,7 @@ test("email change: confirmed through the link, refused when the address is take
   const a = await confirmed(s);
   await confirmed(s, "bela@x.hu");
   const user = (await sessionUser(s.d, a.sessionToken))!;
-  assert.equal(err(await requestEmailChange(s.d, user, "bela@x.hu"), 409).error, "Ez a cím már foglalt");
+  assert.equal(err(await requestEmailChange(s.d, user, "bela@x.hu"), 409).error, "Ez az email cím már használatban van");
 
   ok(await requestEmailChange(s.d, user, "Anna2@x.hu"));
   const mail = s.mails.at(-1)!;
@@ -296,7 +296,7 @@ test("email change loses to an address claimed in the meantime", async () => {
   ok(await requestEmailChange(s.d, user, "late@x.hu"));
   const { kind, token } = s.link(s.mails.at(-1)!);
   await confirmed(s, "late@x.hu");
-  assert.equal(err(await consumeLink(s.d, kind, token), 409).error, "Ez a cím már foglalt");
+  assert.equal(err(await consumeLink(s.d, kind, token), 409).error, "Ez az email cím már használatban van");
 });
 
 test("deleteAccount removes everything the user owns", async () => {

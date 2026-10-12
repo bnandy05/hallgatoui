@@ -26,7 +26,7 @@ export function ClassChip({ session, showCourse = true }: ClassChipProps) {
 
   return (
     <div
-      className="flex items-start gap-1.5 rounded-[var(--radius-slip)] bg-sky/80 px-2 py-1.5 text-[12px] leading-snug text-muted"
+      className="flex items-start gap-1.5 rounded-[var(--radius-slip)] bg-sky/80 px-2 py-1.5 text-fine leading-snug text-muted"
       title={[session.subject, session.group && t.week.classGroup(session.group), session.location]
         .filter(Boolean)
         .join(" · ")}

@@ -12,7 +12,7 @@ export interface PillProps {
 }
 
 export function Pill({ active = false, onClick, children, className = "", title, expanded, controls }: PillProps) {
-  const base = `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium ${
+  const base = `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-small font-medium ${
     active
       ? "border-accent bg-accent text-accent-ink"
       : "border-border bg-card text-muted"

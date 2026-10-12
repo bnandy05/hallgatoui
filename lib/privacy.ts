@@ -48,7 +48,7 @@ const HU: PrivacyContent = {
     items: [
       {
         what: "Fiók",
-        data: "E-mail-cím, a jelszó visszafejthetetlen lenyomata (scrypt), a regisztráció és a megerősítés ideje.",
+        data: "Email cím, a jelszó visszafejthetetlen lenyomata (scrypt), a regisztráció és a megerősítés ideje.",
         basis: "Szerződés teljesítése (GDPR 6. cikk (1) b)).",
         until: "A fiók törléséig. A meg nem erősített regisztráció 7 nap után magától törlődik.",
       },
@@ -60,7 +60,7 @@ const HU: PrivacyContent = {
       },
       {
         what: "Bejelentkezés",
-        data: "Munkamenet-azonosító (csak lenyomatként tároljuk), létrehozásának és utolsó használatának ideje, a böngésző típusa (user agent, legfeljebb 200 karakter). Az e-mailben küldött egyszer használatos linkek lenyomata.",
+        data: "Munkamenet-azonosító (csak lenyomatként tároljuk), létrehozásának és utolsó használatának ideje, a böngésző típusa (user agent, legfeljebb 200 karakter). Az emailben küldött egyszer használatos linkek lenyomata.",
         basis: "Szerződés teljesítése (6. cikk (1) b)).",
         until: "A munkamenet kilépéskor vagy 90 nap használaton kívül törlődik, a linkek 30 perc (belépés, jelszó) vagy 48 óra (megerősítés, címváltás) után.",
       },
@@ -77,14 +77,14 @@ const HU: PrivacyContent = {
         until: "Kikapcsolásig, a link cseréjéig vagy a fiók törléséig.",
       },
       {
-        what: "E-mail-összefoglaló",
-        data: "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod e-mail-címére megy.",
+        what: "Email-összefoglaló",
+        data: "Ha feliratkozol: a gyakoriság, a leiratkozási kulcs és az utolsó küldés ideje. A levél a fiókod email címére megy.",
         basis: "Hozzájárulás (6. cikk (1) a)). Bármikor visszavonhatod a beállításokban vagy a levél leiratkozó linkjével.",
         until: "Leiratkozásig vagy a fiók törléséig.",
       },
       {
         what: "Visszaélés elleni védelem",
-        data: "IP-cím, a belépési, regisztrációs és levélküldési kísérletek számlálásához. Az e-mail-címeket a számlálókban csak lenyomatként tároljuk.",
+        data: "IP-cím, a belépési, regisztrációs és levélküldési kísérletek számlálásához. Az email címeket a számlálókban csak lenyomatként tároljuk.",
         basis: "Jogos érdek (6. cikk (1) f)): a fiókok védelme a jelszópróbálgatás és a tömeges levélküldés ellen.",
         until: "Legfeljebb 1 óra.",
       },
@@ -101,7 +101,7 @@ const HU: PrivacyContent = {
     items: [
       { name: "Vercel Inc.", role: "Tárhely és a weboldal kiszolgálása (a kérések rendszernaplóival együtt).", where: "Egyesült Államok." },
       { name: "Upstash, Inc.", role: "Adatbázis: a fiók, a tanulmányi adatok és a fenti átmeneti adatok tárolása.", where: `Az adatbázis helye ${DATABASE_REGION}.` },
-      { name: "Resend", role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: e-mail-cím és a levél tartalma.", where: "Egyesült Államok." },
+      { name: "Resend", role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: email cím és a levél tartalma.", where: "Egyesült Államok." },
     ],
     transfers:
       "Az Egyesült Államokba irányuló adattovábbítás az EU–USA adatvédelmi keretrendszerről szóló megfelelőségi határozaton vagy az Európai Bizottság általános szerződési feltételein alapul. Mindhárom szolgáltatóval adatfeldolgozási szerződés köt minket.",
@@ -117,7 +117,7 @@ const HU: PrivacyContent = {
       },
       {
         label: "Helyesbítés:",
-        text: " az adataidat az alkalmazásban szerkesztheted, az e-mail-címedet a Beállítások → Fiók fülön módosíthatod.",
+        text: " az adataidat az alkalmazásban szerkesztheted, az email címedet a Beállítások → Fiók fülön módosíthatod.",
       },
       {
         label: "Törlés:",
@@ -137,7 +137,7 @@ const HU: PrivacyContent = {
   },
   changes: {
     title: "Változások",
-    text: "Ha a tájékoztató lényegesen változik, a fiókod e-mail-címén értesítünk. A fenti dátum mindig az utolsó módosításé.",
+    text: "Ha a tájékoztató lényegesen változik, a fiókod email címén értesítünk. A fenti dátum mindig az utolsó módosításé.",
   },
 };
 

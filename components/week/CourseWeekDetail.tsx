@@ -31,7 +31,7 @@ import { DeadlineChip } from "@/components/week/DeadlineChip";
 function BackLink() {
   const t = useT();
   return (
-    <Link href="/" className="inline-flex w-fit items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-heading">
+    <Link href="/" className="inline-flex w-fit items-center gap-1.5 text-body font-semibold text-muted hover:text-heading">
       <ArrowLeft className="h-4 w-4" />
       {t.course.back}
     </Link>
@@ -66,8 +66,8 @@ function LaunchTile({ link }: { link: CourseLink }) {
     >
       <PlatformIcon platform={platform} size="md" />
       <span className="min-w-0">
-        <span className="block truncate text-[14px] font-semibold text-heading">{name}</span>
-        <span className="block truncate text-[12px] text-muted-dim">{linkHost(link.url)}</span>
+        <span className="block truncate text-body font-semibold text-heading">{name}</span>
+        <span className="block truncate text-fine text-muted-dim">{linkHost(link.url)}</span>
       </span>
     </a>
   );
@@ -104,7 +104,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
     .filter((s) => new Date(s.end) >= now && new Date(s.start) < to)
     .sort((a, b) => a.start.localeCompare(b.start));
   if (upcoming.length === 0) {
-    return <p className="text-[14px] text-muted">{t.course.noClassesNext7}</p>;
+    return <p className="text-body text-muted">{t.course.noClassesNext7}</p>;
   }
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
@@ -112,7 +112,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
         const start = new Date(s.start);
         return (
           <li key={s.id} className="flex flex-col gap-1">
-            <span className="text-[12.5px] font-semibold text-muted first-letter:uppercase">
+            <span className="text-fine font-semibold text-muted first-letter:uppercase">
               {isSameDay(start, now) ? t.course.todayCapital : format(start, t.formats.weekdayMonthDay, { locale: dl })}
             </span>
             <ClassChip session={s} showCourse={false} />
@@ -203,13 +203,13 @@ export function CourseWeekDetail({ id }: { id: string }) {
               style={{ "--pin-color": course.color } as CSSProperties}
             />
             <div>
-              <h1 className="font-display break-words text-[clamp(30px,4vw,40px)] text-heading [text-wrap:balance]">
+              <h1 className="font-display break-words text-display-sm text-heading [text-wrap:balance]">
                 {course.name}
               </h1>
-              {meta && <p className="mt-1.5 text-[13px] tabular-nums text-muted-dim">{meta}</p>}
+              {meta && <p className="mt-1.5 text-small tabular-nums text-muted-dim">{meta}</p>}
             </div>
 
-            <dl className="flex flex-col gap-2 border-t border-border/70 pt-4 text-[14px]">
+            <dl className="flex flex-col gap-2 border-t border-border/70 pt-4 text-body">
               <div>
                 <dt className="sr-only">{t.course.openDeadlines}</dt>
                 <dd className="text-foreground">
@@ -224,20 +224,20 @@ export function CourseWeekDetail({ id }: { id: string }) {
               </div>
               {next && (
                 <div>
-                  <dt className="text-[12.5px] text-muted">{t.course.nextDeadline}</dt>
+                  <dt className="text-fine text-muted">{t.course.nextDeadline}</dt>
                   <dd className="font-semibold text-heading">
                     {next.title}
                     <span
-                      className={`block text-[13px] ${isCritical(next, now) ? "text-danger" : "font-normal text-muted"}`}
+                      className={`block text-small ${isCritical(next, now) ? "text-danger" : "font-normal text-muted"}`}
                     >
-                      {formatRelative(new Date(next.due), now, dl)}
+                      {formatRelative(new Date(next.due), now, locale)}
                     </span>
                   </dd>
                 </div>
               )}
               {nextClass && (
                 <div>
-                  <dt className="text-[12.5px] text-muted">{t.course.nextClass}</dt>
+                  <dt className="text-fine text-muted">{t.course.nextClass}</dt>
                   <dd className="font-semibold text-heading first-letter:uppercase">
                     {format(new Date(nextClass.start), "EEEE HH:mm", { locale: dl })}
                     {nextClass.room && <span className="font-normal text-muted">, {nextClass.room}</span>}
@@ -254,7 +254,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-[14px] text-muted">{t.course.noLinks}</p>
+                <p className="text-body text-muted">{t.course.noLinks}</p>
               )}
               <Button type="button" variant="ghost" size="sm" onClick={() => setLinksOpen(true)} className="self-start">
                 {course.links.length > 0 ? <Link2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -293,7 +293,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
             }
           >
             {open.length === 0 ? (
-              <div className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-5 py-8 text-center text-[14.5px] text-muted">
+              <div className="rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-5 py-8 text-center text-body text-muted">
                 {done.length > 0 ? t.course.allDone : t.course.noDeadlines}
               </div>
             ) : (
@@ -304,8 +304,8 @@ export function CourseWeekDetail({ id }: { id: string }) {
                     className="flex flex-col gap-4 rounded-[var(--radius-slip)] bg-salmon px-3 pb-4 pt-3 sm:px-4"
                   >
                     <h3 id="course-overdue" className="flex items-baseline gap-2">
-                      <span className="font-display text-[22px] text-danger">{t.course.overdue}</span>
-                      <span className="text-[13px] font-semibold tabular-nums text-danger">{overdue.length}</span>
+                      <span className="font-display text-subhead text-danger">{t.course.overdue}</span>
+                      <span className="text-small font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h3>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
                       {overdue.map((d, i) => (
@@ -322,11 +322,11 @@ export function CourseWeekDetail({ id }: { id: string }) {
                     style={{ "--seq": wi + 1 } as CSSProperties}
                   >
                     <h3 className="flex flex-wrap items-baseline gap-x-3">
-                      <span className="font-display text-[22px] text-heading">
+                      <span className="font-display text-subhead text-heading">
                         {week.label.charAt(0).toUpperCase() + week.label.slice(1)}
                       </span>
                       {!/\d/.test(week.label) && (
-                        <span className="text-[13.5px] text-muted">{weekRangeLabel(week.weekStart, dl, t.formats.weekRange)}</span>
+                        <span className="text-small text-muted">{weekRangeLabel(week.weekStart, dl, t.formats.weekRange)}</span>
                       )}
                     </h3>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} showCourse={false} />
@@ -336,7 +336,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
             )}
             {done.length > 0 && (
               <details className="group rounded-[var(--radius-slip)] bg-strip px-3 py-2.5">
-                <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[14px] font-semibold text-heading [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-1.5 text-body font-semibold text-heading [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
                   {t.course.doneCount(done.length)}
                 </summary>

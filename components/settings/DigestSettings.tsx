@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { Loader2, Mail } from "lucide-react";
 import { DIGEST_FREQUENCIES, type DigestFrequency, type DigestStatus } from "@/lib/digest";
-import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
+import { formatRelative } from "@/lib/radar";
 import { deleteDigest, fetchDigest, saveDigest } from "@/lib/subscription/client";
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
@@ -63,10 +62,10 @@ function DigestForm() {
     return <div className="h-40 rounded-[var(--radius-slip)] bg-strip/80" />;
   }
   if (load.state === "error") {
-    return <p className="text-[14px] font-semibold text-danger">{load.message}</p>;
+    return <p className="text-body font-semibold text-danger">{load.message}</p>;
   }
   if (!load.available) {
-    return <p className="text-[14px] text-muted">{t.digest.notConfigured}</p>;
+    return <p className="text-body text-muted">{t.digest.notConfigured}</p>;
   }
 
   const { digest, email } = load;
@@ -97,12 +96,12 @@ function DigestForm() {
   return (
     <form onSubmit={submit} className="sheet-paper flex flex-col gap-4 px-5 py-5">
       <div>
-        <p className="text-[13px] font-semibold text-heading">{t.digest.recipient}</p>
-        <p className="mt-0.5 break-all text-[15px] text-foreground">{email}</p>
-        <p className="mt-1 text-[13px] text-muted">{t.digest.recipientHint}</p>
+        <p className="text-small font-semibold text-heading">{t.digest.recipient}</p>
+        <p className="mt-0.5 break-all text-body text-foreground">{email}</p>
+        <p className="mt-1 text-small text-muted">{t.digest.recipientHint}</p>
       </div>
       <div>
-        <p className="mb-1.5 text-[13px] font-semibold text-heading">{t.digest.frequency}</p>
+        <p className="mb-1.5 text-small font-semibold text-heading">{t.digest.frequency}</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label={t.digest.frequency}>
           {DIGEST_FREQUENCIES.map((f) => (
             <Pill key={f.id} active={frequency === f.id} onClick={() => setFrequency(f.id)}>
@@ -110,19 +109,19 @@ function DigestForm() {
             </Pill>
           ))}
         </div>
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="mt-1.5 text-small text-muted">
           {t.digest.morning}
         </p>
       </div>
       {digest && (
-        <p className="text-[13.5px] text-muted">
+        <p className="text-small text-muted">
           <span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full bg-success align-middle" />
           {t.digest.subscribed}
           {digest.lastSentAt &&
-            t.digest.lastSent(formatDistanceToNow(new Date(digest.lastSentAt), { addSuffix: true, locale: dateLocale(locale) }))}
+            t.digest.lastSent(formatRelative(new Date(digest.lastSentAt), new Date(), locale))}
         </p>
       )}
-      {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
+      {error && <p className="text-small font-semibold text-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={busy !== null || unchanged}>
           {busy === "save" ? spinner : <Mail className="h-4 w-4" />}

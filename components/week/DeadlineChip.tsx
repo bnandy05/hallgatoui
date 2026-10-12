@@ -9,6 +9,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import { deadlineAnchorId } from "@/lib/search";
 import type { Deadline } from "@/lib/types";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DuplicateSources } from "@/components/DuplicateSources";
 
@@ -76,18 +77,16 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
         style={{ "--pin-color": pinColor } as CSSProperties}
       />
       <div className="flex items-start gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={deadline.done}
           onChange={() => toggleDone(deadline.id)}
           aria-label={deadline.done ? t.week.markNotDone(deadline.title) : t.week.markDone(deadline.title)}
-          className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-accent"
         />
         <div className="min-w-0 flex-1">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className={`line-clamp-3 w-full text-left text-[13.5px] font-semibold leading-snug [overflow-wrap:anywhere] hover:underline ${
+            className={`line-clamp-3 w-full text-left text-small font-semibold leading-snug [overflow-wrap:anywhere] hover:underline ${
               deadline.done ? "text-muted" : "text-heading"
             }`}
           >
@@ -95,7 +94,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
               {deadline.title}
             </span>
           </button>
-          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 text-fine text-muted">
             <span className={`shrink-0 tabular-nums ${hot && !deadline.done ? "font-semibold text-danger" : ""}`}>
               {format(due, showDate ? t.formats.monthDayTime : "HH:mm", { locale: dateLocale(locale) })}
             </span>
