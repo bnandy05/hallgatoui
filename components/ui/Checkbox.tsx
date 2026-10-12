@@ -13,7 +13,7 @@ export function Checkbox({ label, description, className = "", ...props }: Check
     <span className="relative mt-px inline-flex h-[18px] w-[18px] shrink-0">
       <input
         type="checkbox"
-        className="peer absolute -inset-2 z-10 m-0 h-auto w-auto cursor-pointer opacity-0 disabled:cursor-default"
+        className="peer absolute -left-2 -top-2 z-10 m-0 h-[calc(100%+16px)] w-[calc(100%+16px)] cursor-pointer appearance-none opacity-0 disabled:cursor-default"
         {...props}
       />
       <span

@@ -127,18 +127,19 @@ function PaletteContent({
   // Grouped by kind in a fixed order; the flat list drives keyboard navigation.
   const results = useMemo(() => {
     const text = query.trim();
-    let found = searchItems(allItems, query);
+    const found = searchItems(allItems, query).filter((i) => !(text && i.actionId === "new-deadline"));
+    const grouped = KIND_ORDER.flatMap((kind) => found.filter((i) => i.kind === kind));
+    // With typed text "Új határidő" always offers quick-add as the very last row, so it is only
+    // the auto-selected one when nothing else matches.
     if (text) {
-      // "Új határidő" always offers quick-add with the typed text, as the last action.
-      found = found.filter((i) => i.actionId !== "new-deadline");
-      found.push({
+      grouped.push({
         id: "action:new-deadline",
         kind: "action",
         title: t.palette.newDeadline(text),
         actionId: "new-deadline",
       });
     }
-    return KIND_ORDER.flatMap((kind) => found.filter((i) => i.kind === kind));
+    return grouped;
   }, [allItems, query, t]);
 
   useEffect(() => {
