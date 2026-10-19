@@ -41,7 +41,7 @@ export async function sendEmail(email: OutgoingEmail): Promise<boolean> {
       }),
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     });
-    if (!res.ok) console.error(`[email] Resend ${res.status}: ${await res.text().catch(() => "")}`);
+    if (!res.ok) console.error(`[email] Resend ${res.status}`); // the body can contain the recipient address
     return res.ok;
   } catch (err) {
     console.error("[email] Resend request failed", err);

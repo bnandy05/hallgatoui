@@ -11,6 +11,8 @@ import { dueNotifications } from "@/lib/notifications";
 import { buildSearchItems } from "@/lib/search";
 import { pickLocale } from "@/lib/i18n";
 import { privacyContent } from "@/lib/privacy";
+import { termsContent } from "@/lib/terms";
+import { HOSTING, MINIMUM_AGE, PRIVACY_UPDATED, RESEND_RETENTION_DAYS, TERMS_UPDATED } from "@/lib/legal";
 import { requestLocale, userLocale } from "@/lib/server/locale";
 import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
@@ -290,6 +292,33 @@ test("the privacy notice exists in both languages and names the language data an
   }
   assert.ok(en.purposes.items.some((p) => p.what === "Language preference"));
   assert.ok(hu.purposes.items.some((p) => p.what === "Nyelvbeállítás"));
+  for (const c of [hu, en]) {
+    const names = c.processors.items.map((p) => p.name);
+    assert.ok(names.includes("Plus Five Five, Inc. (Resend)"));
+    const text = c.processors.items.map((p) => p.where).join(" ");
+    assert.ok(text.includes("Frankfurt"));
+    assert.ok(text.includes(String(RESEND_RETENTION_DAYS)));
+    assert.ok(c.controller.terms.link.length > 0);
+    assert.ok(c.purposes.items[0].data.includes(String(MINIMUM_AGE)));
+    assert.ok(c.cookies.text.includes("service worker"));
+    assert.ok(c.sub.includes(PRIVACY_UPDATED));
+  }
+});
+
+test("the terms exist in both languages with the same structure, date and provider facts", () => {
+  const hu = termsContent("hu");
+  const en = termsContent("en");
+  assert.equal(hu.translationNote, undefined);
+  assert.ok(en.translationNote?.includes("Hungarian text is the authoritative"));
+  assert.equal(hu.sections.length, 10);
+  assert.equal(hu.sections.length, en.sections.length);
+  assert.equal(hu.sections.filter((s) => s.prominent).length, 1);
+  assert.equal(en.sections.filter((s) => s.prominent).length, 1);
+  for (const c of [hu, en]) {
+    assert.ok(c.sub.includes(TERMS_UPDATED));
+    assert.ok(c.provider.hosting.some((r) => r.value === HOSTING.email));
+    assert.ok(c.sections.some((s) => s.paragraphs.some((p) => typeof p !== "string" && p.link.kind === "source")));
+  }
 });
 
 test("formatRelative gives the largest whole unit, short, in both languages", () => {

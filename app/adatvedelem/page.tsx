@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -45,6 +46,13 @@ export default async function PrivacyPage() {
           {c.controller.afterMail}
         </p>
         <p>{c.controller.independent}</p>
+        <p>
+          {c.controller.terms.before}
+          <Link href="/feltetelek" className="link-text">
+            {c.controller.terms.link}
+          </Link>
+          {c.controller.terms.after}
+        </p>
       </Section>
 
       <Section title={c.purposes.title}>

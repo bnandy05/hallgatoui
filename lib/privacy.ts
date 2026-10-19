@@ -1,5 +1,17 @@
 import type { Locale } from "@/lib/i18n/locales";
-import { CONTROLLER, DATABASE_REGION_EN, DATABASE_REGION, PRIVACY_UPDATED } from "@/lib/legal";
+import {
+  CONTROLLER,
+  DATABASE_REGION,
+  DATABASE_REGION_EN,
+  FUNCTIONS_REGION,
+  FUNCTIONS_REGION_EN,
+  MINIMUM_AGE,
+  PRIVACY_UPDATED,
+  RESEND_RETENTION_DAYS,
+  RESEND_SENDING_REGION,
+  RESEND_SENDING_REGION_EN,
+  VERCEL_LOG_HOURS,
+} from "@/lib/legal";
 
 // The text of the privacy notice (/adatvedelem) in both languages. Pure, so it can be tested.
 // The Hungarian text is the authoritative one; the English page says so. Every statement must
@@ -18,7 +30,14 @@ export interface PrivacyContent {
   sub: string;
   /** English page only: points at the authoritative Hungarian text. */
   translationNote?: string;
-  controller: { title: string; beforeMail: string; afterMail: string; independent: string };
+  controller: {
+    title: string;
+    beforeMail: string;
+    afterMail: string;
+    independent: string;
+    /** Sentence pointing at the terms of use: text before, the link text, text after. */
+    terms: { before: string; link: string; after: string };
+  };
   purposes: { title: string; items: PrivacyPurpose[]; basisLabel: string; keepLabel: string; closing: string };
   cookies: { title: string; text: string };
   processors: { title: string; items: { name: string; role: string; where: string }[]; transfers: string; feeds: string };
@@ -40,6 +59,7 @@ const HU: PrivacyContent = {
     afterMail: ". Az adataiddal kapcsolatos kérésekre egy hónapon belül válaszolunk.",
     independent:
       "A Hallgatói réteg független projekt, nem kapcsolódik az egyetemhez, a Neptunhoz, a Canvashoz vagy a Moodle-höz, és nem kap tőlük adatot. Csak azt látjuk, amit te adsz meg, vagy amit a megadott naptár-hivatkozásaid tartalmaznak.",
+    terms: { before: "A szolgáltatás használatának szabályait a ", link: "felhasználási feltételek", after: " tartalmazzák." },
   },
   purposes: {
     title: "Milyen adatot, miért és meddig",
@@ -48,7 +68,7 @@ const HU: PrivacyContent = {
     items: [
       {
         what: "Fiók",
-        data: "Email cím, a jelszó visszafejthetetlen lenyomata (scrypt), a regisztráció és a megerősítés ideje.",
+        data: `Email cím, a jelszó visszafejthetetlen lenyomata (scrypt), a regisztráció és a megerősítés ideje. Regisztrálni csak ${MINIMUM_AGE}. életévét betöltött személy tud; a fiókra a felhasználási feltételek vonatkoznak.`,
         basis: "Szerződés teljesítése (GDPR 6. cikk (1) b)).",
         until: "A fiók törléséig. A meg nem erősített regisztráció 7 nap után magától törlődik.",
       },
@@ -94,14 +114,22 @@ const HU: PrivacyContent = {
   },
   cookies: {
     title: "Süti és helyi tárolás",
-    text: "Három sütit használunk. A hr_session belépve tart (a munkamenet-azonosítót tartalmazza, kilépésig vagy 90 napig él). A hr_lang a választott nyelvet jegyzi meg (csak a „hu” vagy az „en” értéket tartalmazza, 1 évig él, azonosítót nem hordoz). A hr_demo csak akkor jön létre, ha regisztráció nélkül kipróbálod az oldalt: azt jelzi, hogy a bemutatóban vagy (értéke „1”, a böngésző bezárásáig vagy a bemutatóból való kilépésig él). Mindhárom a kért szolgáltatás működéséhez szükséges, ezért nem kér hozzájárulást. A bemutató mintaadatai és a bennük tett változtatások csak az adott böngészőlap tárolójában vannak, a szerverre nem kerülnek, és a lap bezárásával törlődnek. A böngésződ helyi tárolójában a fiókod adatainak egy másolata és az eszközbeállításaid (például a téma) maradnak, hogy az oldal gyorsan betöltsön; kilépéskor ezt a másolatot töröljük. Elemző, követő vagy hirdetési sütit nem használunk, a betűtípust is a saját szerverünkről töltjük.",
+    text: "Három sütit használunk. A hr_session belépve tart (a munkamenet-azonosítót tartalmazza, kilépésig vagy 90 napig él). A hr_lang a választott nyelvet jegyzi meg (csak a „hu” vagy az „en” értéket tartalmazza, 1 évig él, azonosítót nem hordoz). A hr_demo csak akkor jön létre, ha regisztráció nélkül kipróbálod az oldalt: azt jelzi, hogy a bemutatóban vagy (értéke „1”, a böngésző bezárásáig vagy a bemutatóból való kilépésig él). Mindhárom a kért szolgáltatás működéséhez szükséges, ezért nem kér hozzájárulást. A bemutató mintaadatai és a bennük tett változtatások csak az adott böngészőlap tárolójában vannak, a szerverre nem kerülnek, és a lap bezárásával törlődnek. A böngésződ helyi tárolójában a fiókod adatainak egy másolata és az eszközbeállításaid (például a téma) maradnak, hogy az oldal gyorsan betöltsön; kilépéskor ezt a másolatot töröljük. Hogy az oldal internetkapcsolat nélkül is megnyíljon, a böngésző a meglátogatott oldalakat és az oldal fájljait (szkriptek, stílusok, ikonok) a gyorsítótárában (service worker) tárolja; az oldalak másolatát kilépéskor és fióktörléskor töröljük. A fiókod adatait szállító (API) kérések válaszait nem tárolja el. Elemző, követő vagy hirdetési sütit nem használunk, a betűtípust is a saját szerverünkről töltjük.",
   },
   processors: {
     title: "Adatfeldolgozók",
     items: [
-      { name: "Vercel Inc.", role: "Tárhely és a weboldal kiszolgálása (a kérések rendszernaplóival együtt).", where: "Egyesült Államok." },
+      {
+        name: "Vercel Inc.",
+        role: "Tárhely és a weboldal kiszolgálása (a kérések rendszernaplóival együtt).",
+        where: `Egyesült államokbeli cég. A szerveroldali feldolgozás ${FUNCTIONS_REGION} történik; a kérések rendszernaplóit legfeljebb ${VERCEL_LOG_HOURS} óráig őrzi.`,
+      },
       { name: "Upstash, Inc.", role: "Adatbázis: a fiók, a tanulmányi adatok és a fenti átmeneti adatok tárolása.", where: `Az adatbázis helye ${DATABASE_REGION}.` },
-      { name: "Resend", role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: email cím és a levél tartalma.", where: "Egyesült Államok." },
+      {
+        name: "Plus Five Five, Inc. (Resend)",
+        role: "A megerősítő, belépő és összefoglaló levelek kézbesítése: email cím és a levél tartalma.",
+        where: `Egyesült államokbeli cég. A leveleket ${RESEND_SENDING_REGION} küldi; a kézbesítési adatokat és naplókat az Egyesült Államokban, legfeljebb ${RESEND_RETENTION_DAYS} napig őrzi.`,
+      },
     ],
     transfers:
       "Az Egyesült Államokba irányuló adattovábbítás az EU–USA adatvédelmi keretrendszerről szóló megfelelőségi határozaton vagy az Európai Bizottság általános szerződési feltételein alapul. Mindhárom szolgáltatóval adatfeldolgozási szerződés köt minket.",
@@ -121,7 +149,7 @@ const HU: PrivacyContent = {
       },
       {
         label: "Törlés:",
-        text: " a Beállítások → Fiók → Fiók törlése azonnal és véglegesen töröl minden adatot, ami a fiókodhoz tartozik. A tárhelyszolgáltató biztonsági mentéseiből a másolat a mentések lejártával tűnik el.",
+        text: " a Beállítások → Fiók → Fiók törlése azonnal és véglegesen töröl minden adatot, ami a fiókodhoz tartozik. A tárhelyszolgáltató biztonsági mentéseiből a másolat a mentések lejártával tűnik el. A korábban elküldött email-hivatkozások (belépés, megerősítés) a törlés után nem használhatók, és 48 órán belül egyébként is lejárnak.",
       },
       {
         label: "Tiltakozás, korlátozás, a hozzájárulás visszavonása:",
@@ -151,6 +179,7 @@ const EN: PrivacyContent = {
     afterMail: ". We answer requests about your data within one month.",
     independent:
       "Hallgatói réteg is an independent project. It is not affiliated with any university, Neptun, Canvas or Moodle, and receives no data from them. We only see what you enter or what the calendar links you provide contain.",
+    terms: { before: "The rules for using the service are set out in the ", link: "terms of use", after: "." },
   },
   purposes: {
     title: "What data, why and for how long",
@@ -159,7 +188,7 @@ const EN: PrivacyContent = {
     items: [
       {
         what: "Account",
-        data: "Email address, an irreversible hash of the password (scrypt), the time of registration and confirmation.",
+        data: `Email address, an irreversible hash of the password (scrypt), the time of registration and confirmation. Only people aged ${MINIMUM_AGE} or over can register; the account is governed by the terms of use.`,
         basis: "Performance of a contract (GDPR Art. 6(1)(b)).",
         until: "Until the account is deleted. An unconfirmed registration is deleted automatically after 7 days.",
       },
@@ -205,14 +234,22 @@ const EN: PrivacyContent = {
   },
   cookies: {
     title: "Cookies and local storage",
-    text: "We use three cookies. hr_session keeps you signed in (it holds the session identifier and lasts until you sign out or 90 days). hr_lang remembers the language you chose (it only contains “hu” or “en”, lasts 1 year and carries no identifier). hr_demo is only set if you try the site without registering: it marks that you are in the demo (its value is “1”, and it lasts until you close the browser or leave the demo). All three are strictly necessary for the service you asked for, so they do not ask for consent. The demo's sample data and your changes to it stay in that browser tab's storage only, are never sent to the server, and are deleted when you close the tab. Your browser's local storage keeps a copy of your account's data and your device settings (such as the theme) so that the page loads quickly; we delete that copy when you sign out. We use no analytics, tracking or advertising cookies, and the font is loaded from our own server.",
+    text: "We use three cookies. hr_session keeps you signed in (it holds the session identifier and lasts until you sign out or 90 days). hr_lang remembers the language you chose (it only contains “hu” or “en”, lasts 1 year and carries no identifier). hr_demo is only set if you try the site without registering: it marks that you are in the demo (its value is “1”, and it lasts until you close the browser or leave the demo). All three are strictly necessary for the service you asked for, so they do not ask for consent. The demo's sample data and your changes to it stay in that browser tab's storage only, are never sent to the server, and are deleted when you close the tab. Your browser's local storage keeps a copy of your account's data and your device settings (such as the theme) so that the page loads quickly; we delete that copy when you sign out. So that the site also opens without an internet connection, the browser stores the pages you visited and the site’s files (scripts, styles, icons) in its cache (a service worker); we delete the copies of the pages when you sign out or delete your account. Responses of the API calls that carry your account data are never cached. We use no analytics, tracking or advertising cookies, and the font is loaded from our own server.",
   },
   processors: {
     title: "Processors",
     items: [
-      { name: "Vercel Inc.", role: "Hosting and serving the website (including system logs of requests).", where: "United States." },
+      {
+        name: "Vercel Inc.",
+        role: "Hosting and serving the website (including system logs of requests).",
+        where: `A US company. Server-side processing takes place in ${FUNCTIONS_REGION_EN}; it keeps the system logs of requests for at most ${VERCEL_LOG_HOURS} hour.`,
+      },
       { name: "Upstash, Inc.", role: "Database: storing the account, the study data and the temporary data above.", where: `The database is located in ${DATABASE_REGION_EN}.` },
-      { name: "Resend", role: "Delivering confirmation, sign-in and digest emails: the email address and the content of the email.", where: "United States." },
+      {
+        name: "Plus Five Five, Inc. (Resend)",
+        role: "Delivering confirmation, sign-in and digest emails: the email address and the content of the email.",
+        where: `A US company. It sends the emails from ${RESEND_SENDING_REGION_EN}; it keeps the delivery data and logs in the United States for at most ${RESEND_RETENTION_DAYS} days.`,
+      },
     ],
     transfers:
       "Transfers to the United States rely on the adequacy decision on the EU–US Data Privacy Framework or on the European Commission's standard contractual clauses. We have a data processing agreement with all three providers.",
@@ -232,7 +269,7 @@ const EN: PrivacyContent = {
       },
       {
         label: "Erasure:",
-        text: " Settings → Account → Delete account immediately and permanently deletes all data that belongs to your account. Copies in the hosting provider's backups disappear when the backups expire.",
+        text: " Settings → Account → Delete account immediately and permanently deletes all data that belongs to your account. Copies in the hosting provider's backups disappear when the backups expire. Email links already sent (sign-in, confirmation) can no longer be used after deletion, and they expire within 48 hours anyway.",
       },
       {
         label: "Objection, restriction, withdrawal of consent:",

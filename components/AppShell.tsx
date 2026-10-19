@@ -175,6 +175,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href="/adatvedelem" className="underline underline-offset-2 hover:text-muted">
               {t.shell.footerPrivacy}
             </Link>
+            <Link href="/feltetelek" className="underline underline-offset-2 hover:text-muted">
+              {t.shell.footerTerms}
+            </Link>
           </span>
         </div>
       </footer>
