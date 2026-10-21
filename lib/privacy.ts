@@ -132,7 +132,7 @@ const HU: PrivacyContent = {
       },
     ],
     transfers:
-      "Az Egyesült Államokba irányuló adattovábbítás az EU–USA adatvédelmi keretrendszerről szóló megfelelőségi határozaton vagy az Európai Bizottság általános szerződési feltételein alapul. Mindhárom szolgáltatóval adatfeldolgozási szerződés köt minket.",
+      "Az Egyesült Államokba irányuló adattovábbítás az EU–USA adatvédelmi keretrendszerről szóló megfelelőségi határozaton vagy az Európai Bizottság általános szerződési feltételein alapul; a Vercel a keretrendszer szerint tanúsított. A Resenddel és az Upstash-sel adatfeldolgozási szerződés köt minket. A Vercel a saját felhasználási feltételei és adatvédelmi szabályzata szerint kezeli az adatokat; ingyenes csomagjához külön adatfeldolgozási szerződést nem kínál.",
     feeds:
       "Ha naptár-hivatkozást adsz meg, a szerverünk erről a címről tölti le a naptárat (az egyetem vagy a platform szerveréről). Ehhez a kéréshez a te adataidból semmit nem küldünk el.",
   },
@@ -252,7 +252,7 @@ const EN: PrivacyContent = {
       },
     ],
     transfers:
-      "Transfers to the United States rely on the adequacy decision on the EU–US Data Privacy Framework or on the European Commission's standard contractual clauses. We have a data processing agreement with all three providers.",
+      "Transfers to the United States rely on the adequacy decision on the EU–US Data Privacy Framework or on the European Commission's standard contractual clauses; Vercel is certified under the Framework. We have data processing agreements with Resend and Upstash. Vercel processes the data under its own terms of service and privacy policy; it does not offer a separate data processing agreement for its free plan.",
     feeds:
       "If you provide a calendar link, our server downloads the calendar from that address (from the university's or the platform's server). We send none of your data with that request.",
   },

@@ -1,6 +1,6 @@
 # Adatkezelési nyilvántartás (GDPR 30. cikk (1))
 
-Utolsó frissítés: 2026-10-12
+Utolsó frissítés: 2026-10-16
 
 > Belső dokumentum, a felügyeleti hatóság (NAIH) kérésére bemutatható. Az `/adatvedelem` oldal szövegével (`lib/privacy.ts`, magyar változat) és a tényekkel (`lib/legal.ts`) egyeznie kell: a tájékoztató minden módosításakor ezt is frissíteni kell, és a fenti dátumot átírni.
 
@@ -41,7 +41,7 @@ Az emailek kézbesítésénél (megerősítő, belépő, jelszó- és címvált�
 - Helyi tárolás és gyorsítótár (service worker): a böngésző a fiók adatainak helyi másolatát és az oldalak másolatát tartja; kilépéskor és fióktörléskor ezeket töröljük. A fiókadatokat szállító API-válaszok nem kerülnek a gyorsítótárba.
 - Profilalkotás, automatizált döntéshozatal, hirdetés, elemzés nincs; az adatokat nem adjuk el és nem adjuk át harmadik félnek, csak a fenti adatfeldolgozóknak.
 - Az érintetti jogok (hozzáférés, adathordozhatóság JSON-exporttal, helyesbítés, törlés, tiltakozás, korlátozás, hozzájárulás visszavonása): a tájékoztató „Jogaid" szakasza szerint; kérelmekre egy hónapon belül válaszolunk. A fióktörlés azonnal és véglegesen töröl minden fiókhoz tartozó adatot; a tárhelyszolgáltató biztonsági mentéseiből a másolat a mentések lejártával tűnik el.
-- Adatfeldolgozói szerződések (DPA): mindhárom szolgáltatóval fennállnak (lásd `docs/PLAN.md`, tulajdonosi teendők: a szerződések elfogadása és az egyes szolgáltatók beállításainak ellenőrzése).
+- Adatfeldolgozói szerződések (DPA): a Resenddel (előre aláírt, a regisztrációval hatályos) és az Upstash-sel (a szolgáltatási szerződés része) fennállnak. A Vercel DPA-ja csak a Pro és az Enterprise csomagra vonatkozik (a Vercel támogatása 2026 októberében megerősítette); a Hobby csomagon a Vercel a saját feltételei és adatvédelmi szabályzata szerint jár el, az adattovábbítás alapja a DPF-tanúsítása. Ez a GDPR 28. cikk (3) bekezdése szerinti hiány, a tájékoztató nyíltan közli; ha a szolgáltatás túlnő a szűk körön, Pro csomagra kell váltani.
 
 ## Technikai és szervezési biztonsági intézkedések
 
