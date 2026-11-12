@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { newId } from "@/lib/id";
 import type {
   AlertKinds,
@@ -12,44 +12,32 @@ import type {
   NotificationPrefs,
   Platform,
   Resource,
-  TimetableSource,
 } from "@/lib/types";
 import type { ComponentLink } from "@/lib/rules/links";
 import type { IcalEventDTO } from "@/lib/ical/types";
-import { resultId, type RequirementResult, type RequirementRules, type SubjectRules } from "@/lib/rules/types";
+import type { RequirementResult, RequirementRules, SubjectRules } from "@/lib/rules/types";
 import { formatKindLabel } from "@/lib/ical/canvas";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { mergeFeedSync, rematchDeadlines } from "@/lib/ical/sync";
 import { CONFIRMED_PREFIX, confirmedPairKey, findDuplicates, pairKey } from "@/lib/ical/dedupe";
-import {
-  applyMappingDecisions,
-  applySubjectMapping,
-  mappingSubjectKey,
-  mergeTimetableImport,
-  timetableCutoff,
-  type ParsedSession,
-} from "@/lib/ical/neptun";
-import { budapestInstant } from "@/lib/ical/budapest";
-import { normalizeSemesterStart, parseYmd } from "@/lib/timetable/semester";
+import type { ParsedSession } from "@/lib/ical/neptun";
 import { autoLinkContexts, keywordForContext, type DiscoveryDecision } from "@/lib/ical/discover";
 import { pickCourseColor } from "@/lib/colors";
 import { normalizeLinkUrl } from "@/lib/url";
 import { buildDemoData, buildShowcaseData } from "@/lib/demo";
-import { DEMO_CACHE_KEY, DEMO_USER_ID, isDemoMode } from "@/lib/demoMode";
+import { DEMO_USER_ID } from "@/lib/demoMode";
 import type { ThemePref } from "@/lib/theme";
 import type { Locale } from "@/lib/i18n/locales";
 import type { SyncPayload } from "@/lib/sync/merge";
-import { setServerOffset, syncNow } from "@/lib/sync/clock";
+import { syncNow } from "@/lib/sync/clock";
 import { stampChanges, type Stamped } from "@/lib/sync/stamp";
+import { storePersistence } from "@/lib/store/persistence";
+import { timetableActions } from "@/lib/store/timetable";
+import { requirementActions } from "@/lib/store/requirements";
+import { archiveSemester, emptySemester, selectSemester } from "@/lib/semesterArchive";
 
 export function emptyAppData(): AppData {
-  return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [],
-    classSessions: [],
-    timetableSources: [],
-    requirementRules: [],
-    requirementResults: [],
-    tombstones: {},
-  };
+  return { version: 1, ...emptySemester(), customPlatforms: [], tombstones: {} };
 }
 
 /** Server or merged data from before a field existed gets that field's default. */
@@ -64,13 +52,12 @@ function withDataDefaults(data: AppData): AppData {
     semester: data.semester,
     catchUp: data.catchUp,
     alertPrefs: data.alertPrefs,
+    semesterNumber: data.semesterNumber,
+    semesterArchives: data.semesterArchives,
   };
 }
 
 const MAX_NOTIFIED_KEYS = 500;
-
-const CACHE_KEY = "hallgatoireteg-v2";
-const LEGACY_CACHE_KEY = "hallgatoireteg-v1";
 
 export interface Account {
   userId: string;
@@ -84,48 +71,16 @@ export function selectPayload(s: AppData & { exportOptions: ExportOptions }): Sy
   return {
     data: {
       version: s.version,
-      courses: s.courses,
-      deadlines: s.deadlines,
+      ...selectSemester(s),
       customPlatforms: s.customPlatforms,
-      feeds: s.feeds,
-      ignoredDuplicatePairs: s.ignoredDuplicatePairs,
-      classSessions: s.classSessions,
-      timetableSources: s.timetableSources,
-      requirementRules: s.requirementRules,
-      requirementResults: s.requirementResults,
       tombstones: s.tombstones,
-      ...(s.semester && { semester: s.semester }),
-      ...(s.catchUp && { catchUp: s.catchUp }),
       ...(s.alertPrefs && { alertPrefs: s.alertPrefs }),
+      ...(s.semesterNumber && { semesterNumber: s.semesterNumber }),
+      ...(s.semesterArchives?.length && { semesterArchives: s.semesterArchives }),
     },
     exportOptions: s.exportOptions,
   };
 }
-
-/**
- * localStorage with a one-time hand-over of the pre-accounts cache: its data has no owner, so the
- * first sign-in on this browser can upload it into an empty account. The old key is removed so
- * data never lingers after sign-out.
- */
-const cacheStorage = {
-  getItem: (name: string) => {
-    // The demo keeps its own copy in this tab only, so it never touches an account's cache.
-    if (isDemoMode()) return sessionStorage.getItem(DEMO_CACHE_KEY);
-    let value = localStorage.getItem(name);
-    if (value === null && name === CACHE_KEY) {
-      const legacy = localStorage.getItem(LEGACY_CACHE_KEY);
-      if (legacy !== null) {
-        value = legacy;
-        localStorage.setItem(name, legacy);
-        localStorage.removeItem(LEGACY_CACHE_KEY);
-      }
-    }
-    return value;
-  },
-  setItem: (name: string, value: string) =>
-    isDemoMode() ? sessionStorage.setItem(DEMO_CACHE_KEY, value) : localStorage.setItem(name, value),
-  removeItem: (name: string) => (isDemoMode() ? sessionStorage.removeItem(DEMO_CACHE_KEY) : localStorage.removeItem(name)),
-};
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   enabled: false,
@@ -286,54 +241,12 @@ export interface AppStore extends AppData {
 
   // data
   importData: (data: AppData) => void;
+  archiveCurrentSemester: (name: string) => boolean;
+  removeSemesterArchive: (number: number) => void;
   resetAll: () => void;
   loadDemo: (locale?: Locale) => void;
   /** Demo mode: replaces everything with fresh sample data owned by the demo user (never synced). */
   startDemo: (locale?: Locale) => void;
-}
-
-/**
- * Turns the dialog's decisions into courses and a subject -> course mapping: creates the new
- * courses and adds the subject name to the keywords of the courses it is mapped onto.
- */
-function resolveDecisions(
-  courses: Course[],
-  decisions: Record<string, SubjectDecision>,
-  subjectNames: Record<string, string>
-): { courses: Course[]; mapping: Record<string, string | null> } {
-  const mapping: Record<string, string | null> = {};
-  let next = courses;
-  let created = 0;
-  for (const [key, decision] of Object.entries(decisions)) {
-    const subject = subjectNames[key] ?? subjectNames[mappingSubjectKey(key)] ?? key;
-    if (decision.kind === "skip") {
-      mapping[key] = null;
-    } else if (decision.kind === "existing") {
-      mapping[key] = decision.courseId;
-      next = next.map((c) => {
-        if (c.id !== decision.courseId) return c;
-        const known = c.matchKeywords.some((k) => k.trim().toLowerCase() === subject.toLowerCase());
-        return known ? c : { ...c, matchKeywords: [...c.matchKeywords, subject] };
-      });
-    } else {
-      const id = newId();
-      mapping[key] = id;
-      next = [
-        ...next,
-        {
-          id,
-          name: decision.name.trim() || subject,
-          color: pickCourseColor(courses.length + created),
-          links: [],
-          resources: [],
-          matchKeywords: [subject],
-          createdAt: new Date().toISOString(),
-        },
-      ];
-      created += 1;
-    }
-  }
-  return { courses: next, mapping };
 }
 
 /**
@@ -351,6 +264,8 @@ function groupFollowerIds(state: AppData & { exportOptions: ExportOptions }, id:
   return new Set(group?.others.map((d) => d.id));
 }
 
+export type StoreSet = (patch: Partial<AppStore> | ((state: AppStore) => Partial<AppStore>)) => void;
+
 type NewDeadline = Omit<Deadline, "id" | "source" | "done"> & { done?: boolean };
 
 /**
@@ -365,7 +280,7 @@ function trackChanges(rawSet: (fn: (state: AppStore) => Partial<AppStore> | AppS
       return stampChanges(state as Stamped, patch as Partial<Stamped>, syncNow()) as Partial<AppStore>;
     };
     (rawSet as unknown as (f: typeof fn, r?: boolean) => void)(fn, replace);
-  }) as unknown as (partial: Partial<AppStore> | ((state: AppStore) => Partial<AppStore> | AppStore)) => void;
+  }) as StoreSet;
 }
 
 export const useStore = create<AppStore>()(
@@ -427,6 +342,8 @@ export const useStore = create<AppStore>()(
           semester: undefined,
           catchUp: undefined,
           alertPrefs: undefined,
+          semesterNumber: undefined,
+          semesterArchives: undefined,
           exportOptions: DEFAULT_EXPORT_OPTIONS,
           notifiedKeys: [],
           account: null,
@@ -837,70 +754,7 @@ export const useStore = create<AppStore>()(
         return created;
       },
 
-      // ---- timetable ----
-      importTimetable: (meta, parsed, decisions) => {
-        const sourceId = meta.sourceId ?? newId();
-        set((state) => {
-          const subjectNames = Object.fromEntries(parsed.map((p) => [p.subjectKey, p.subject]));
-          const { courses, mapping } = resolveDecisions(state.courses, decisions, subjectNames);
-          const previous = state.timetableSources.find((s) => s.id === sourceId);
-          const source: TimetableSource = {
-            id: sourceId,
-            // A re-import keeps the stored name; only a new source gets the caller's (locale-default) one.
-            name: previous?.name ?? meta.name,
-            url: meta.url ?? previous?.url,
-            importedAt: new Date().toISOString(),
-            // A re-import reuses the earlier mapping; only new subjects were asked about.
-            subjectCourses: applyMappingDecisions(previous?.subjectCourses ?? {}, mapping),
-          };
-          // The import floor already folds in a same-term stored start; a stale one must not keep old terms.
-          const semesterYmd = state.semester ? parseYmd(state.semester.start) : null;
-          // A floor of this week's Monday means no term was identified: keep the old fallback then.
-          const fromMs = meta.from ? Date.parse(meta.from) : NaN;
-          const semesterStart = Number.isFinite(fromMs) && fromMs < timetableCutoff(new Date()).getTime()
-            ? new Date(fromMs)
-            : semesterYmd
-              ? budapestInstant(semesterYmd, 0, 0)
-              : undefined;
-          return {
-            courses,
-            // Canvas deadlines imported earlier may match the new courses' keywords now.
-            deadlines: rematchDeadlines(state.deadlines, state.feeds, courses),
-            timetableSources: previous
-              ? state.timetableSources.map((s) => (s.id === sourceId ? source : s))
-              : [...state.timetableSources, source],
-            classSessions: mergeTimetableImport(source, parsed, state.classSessions, {
-              now: new Date(),
-              ...(semesterStart && { semesterStart }),
-            }),
-          };
-        });
-        return sourceId;
-      },
-      remapTimetable: (sourceId, decisions) => {
-        set((state) => {
-          const previous = state.timetableSources.find((s) => s.id === sourceId);
-          if (!previous) return state;
-          const subjectNames: Record<string, string> = {};
-          for (const s of state.classSessions) {
-            if (s.sourceId === sourceId) subjectNames[s.subjectKey] = s.subject;
-          }
-          const { courses, mapping } = resolveDecisions(state.courses, decisions, subjectNames);
-          const source = { ...previous, subjectCourses: applyMappingDecisions(previous.subjectCourses, mapping) };
-          return {
-            courses,
-            deadlines: rematchDeadlines(state.deadlines, state.feeds, courses),
-            timetableSources: state.timetableSources.map((s) => (s.id === sourceId ? source : s)),
-            classSessions: applySubjectMapping(source, state.classSessions),
-          };
-        });
-      },
-      removeTimetableSource: (sourceId) => {
-        set((state) => ({
-          timetableSources: state.timetableSources.filter((s) => s.id !== sourceId),
-          classSessions: state.classSessions.filter((s) => s.sourceId !== sourceId),
-        }));
-      },
+      ...timetableActions(set),
 
       // ---- duplicates ----
       ignoreDuplicate: (aId, bId) => {
@@ -934,115 +788,36 @@ export const useStore = create<AppStore>()(
         });
       },
 
-      // ---- requirement rules and results ----
-      setRequirementRules: (courseId, rules) => {
-        set((state) => {
-          const id = `rules:${courseId}`;
-          const previous = state.requirementRules.find((r) => r.id === id);
-          const rest = state.requirementRules.filter((r) => r.id !== id);
-          if (!rules) return { requirementRules: rest };
-          const { updatedAt: _u, calendarLinks: _l, autoLinked: _a, ...clean } = rules as RequirementRules;
-          void _u;
-          void _l;
-          void _a;
-          // Editing the rules keeps the calendar links of the components that are still there, and
-          // what was decided about them (`autoLinked`); new components are linked by
-          // `RequirementAutoLink` once the data makes it clear.
-          const ids = new Set([...clean.components.map((c) => c.id), ...clean.retakes.map((r) => r.id)]);
-          const kept = Object.entries(previous?.calendarLinks ?? {}).filter(([cid]) => ids.has(cid));
-          const decided = (previous?.autoLinked ?? []).filter((cid) => ids.has(cid));
-          const next: RequirementRules = {
-            ...clean,
-            id,
-            courseId,
-            ...(kept.length > 0 && { calendarLinks: Object.fromEntries(kept) }),
-            ...(decided.length > 0 && { autoLinked: decided }),
-          };
-          return { requirementRules: [...rest, next] };
-        });
-      },
-      setRequirementResult: (courseId, componentId, instanceKey, patch) => {
-        set((state) => {
-          const id = resultId(courseId, componentId, instanceKey);
-          const rest = state.requirementResults.filter((r) => r.id !== id);
-          if (!patch) return { requirementResults: rest };
-          const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
-          if (result.state !== "recorded") delete result.value;
-          return { requirementResults: [...rest, result] };
-        });
-      },
-      setRequirementResults: (items) => {
-        if (items.length === 0) return;
-        set((state) => {
-          const byId = new Map(state.requirementResults.map((r) => [r.id, r]));
-          for (const { courseId, componentId, instanceKey, patch } of items) {
-            const id = resultId(courseId, componentId, instanceKey);
-            if (!patch) {
-              byId.delete(id);
-              continue;
-            }
-            const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
-            if (result.state !== "recorded") delete result.value;
-            byId.set(id, result);
-          }
-          return { requirementResults: [...byId.values()] };
-        });
-      },
-      setComponentLink: (courseId, componentId, link) => {
-        set((state) => {
-          const rules = state.requirementRules.find((r) => r.courseId === courseId);
-          if (!rules) return state;
-          const links = { ...rules.calendarLinks };
-          if (link) links[componentId] = link;
-          else delete links[componentId];
-          const { calendarLinks: _old, ...rest } = rules;
-          void _old;
-          // The user decided: the auto-linker never touches this component again.
-          const autoLinked = [...new Set([...(rules.autoLinked ?? []), componentId])];
-          const next: RequirementRules = { ...rest, autoLinked, ...(Object.keys(links).length > 0 && { calendarLinks: links }) };
-          return { requirementRules: state.requirementRules.map((r) => (r.id === rules.id ? next : r)) };
-        });
-      },
-      applyAutoLinks: (courseId, links) => {
-        set((state) => {
-          const rules = state.requirementRules.find((r) => r.courseId === courseId);
-          if (!rules) return state;
-          const fresh = Object.entries(links).filter(([cid]) => !rules.calendarLinks?.[cid] && !rules.autoLinked?.includes(cid));
-          if (fresh.length === 0) return state;
-          const next: RequirementRules = {
-            ...rules,
-            calendarLinks: { ...rules.calendarLinks, ...Object.fromEntries(fresh) },
-            autoLinked: [...(rules.autoLinked ?? []), ...fresh.map(([cid]) => cid)],
-          };
-          return { requirementRules: state.requirementRules.map((r) => (r.id === rules.id ? next : r)) };
-        });
-      },
-      setSemester: (start) => {
-        const normalized = start ? normalizeSemesterStart(start) : null;
-        if (start && !normalized) return;
-        // A scalar, not a list item: stamped here instead of by trackChanges.
-        set({ semester: normalized ? { start: normalized, updatedAt: syncNow() } : undefined });
-      },
-      markCatchUpPrompted: () => {
-        set({ catchUp: { promptedUntil: syncNow() } });
-      },
-      setBellAlertKinds: (kinds) => {
-        // A scalar, not a list item: stamped here instead of by trackChanges.
-        set({ alertPrefs: { bell: { ...kinds }, updatedAt: syncNow() } });
-      },
+      ...requirementActions(set),
 
       // ---- data ----
       importData: (data) => {
-        set(() => ({ semester: undefined, catchUp: undefined, alertPrefs: undefined, ...data }));
+        set((state) => ({
+          semester: undefined, catchUp: undefined, alertPrefs: undefined, semesterArchives: undefined,
+          ...data,
+          semesterNumber: Math.max(state.semesterNumber ?? 0, data.semesterNumber ?? 0) || undefined,
+        }));
+      },
+      archiveCurrentSemester: (name) => {
+        const patch = archiveSemester(useStore.getState(), name, syncNow());
+        if (!patch) return false;
+        // This moves records between semesters. Their timestamps and deletion markers still apply.
+        rawSet({ ...patch, notifiedKeys: [] });
+        return true;
+      },
+      removeSemesterArchive: (number) => {
+        rawSet((state) => ({ semesterArchives: state.semesterArchives?.filter((a) => a.number !== number) }));
       },
       resetAll: () => {
-        set(() => ({ ...emptyAppData(), semester: undefined, catchUp: undefined, alertPrefs: undefined, notifiedKeys: [] }));
+        set(() => ({ ...emptyAppData(), semester: undefined, catchUp: undefined, alertPrefs: undefined, semesterArchives: undefined, notifiedKeys: [] }));
       },
       startDemo: (locale) => {
         rawSet({
           ...emptyAppData(),
           ...buildShowcaseData(new Date(), locale),
           alertPrefs: undefined,
+          semesterNumber: undefined,
+          semesterArchives: undefined,
           tombstones: {},
           exportOptions: DEFAULT_EXPORT_OPTIONS,
           notifiedKeys: [],
@@ -1077,63 +852,6 @@ export const useStore = create<AppStore>()(
       },
       });
     },
-    {
-      name: CACHE_KEY,
-      version: 1,
-      storage: createJSONStorage(() => cacheStorage),
-      // persist merges shallowly, so options added in newer versions need their defaults here.
-      merge: (persisted, current) => {
-        // `subscription` belonged to the pre-accounts calendar (local credentials); drop it.
-        const { subscription: _legacy, ...saved } = (persisted ?? {}) as Partial<AppStore> & { subscription?: unknown };
-        void _legacy;
-        return {
-          ...current,
-          ...saved,
-          exportOptions: { ...DEFAULT_EXPORT_OPTIONS, ...saved.exportOptions },
-          ignoredDuplicatePairs: saved.ignoredDuplicatePairs ?? [],
-          classSessions: saved.classSessions ?? [],
-          timetableSources: saved.timetableSources ?? [],
-          requirementRules: saved.requirementRules ?? [],
-          requirementResults: saved.requirementResults ?? [],
-          showClasses: saved.showClasses ?? true,
-          theme: saved.theme ?? "system",
-          account: saved.account ?? null,
-          ownerUserId: saved.ownerUserId ?? null,
-          syncedVersion: saved.syncedVersion ?? 0,
-          syncBase: saved.syncBase ?? null,
-          tombstones: saved.tombstones ?? {},
-          serverOffsetMs: saved.serverOffsetMs ?? 0,
-          pulledThisSession: false,
-        };
-      },
-      // The clock module cannot import the store, so it gets the persisted offset here.
-      onRehydrateStorage: () => (state) => setServerOffset(state?.serverOffsetMs ?? 0),
-      partialize: (state) => ({
-        version: state.version,
-        courses: state.courses,
-        deadlines: state.deadlines,
-        customPlatforms: state.customPlatforms,
-        feeds: state.feeds,
-        ignoredDuplicatePairs: state.ignoredDuplicatePairs,
-        classSessions: state.classSessions,
-        timetableSources: state.timetableSources,
-        requirementRules: state.requirementRules,
-        requirementResults: state.requirementResults,
-        tombstones: state.tombstones,
-        semester: state.semester,
-        catchUp: state.catchUp,
-        alertPrefs: state.alertPrefs,
-        serverOffsetMs: state.serverOffsetMs,
-        showClasses: state.showClasses,
-        theme: state.theme,
-        notificationPrefs: state.notificationPrefs,
-        notifiedKeys: state.notifiedKeys,
-        exportOptions: state.exportOptions,
-        account: state.account,
-        ownerUserId: state.ownerUserId,
-        syncedVersion: state.syncedVersion,
-        syncBase: state.syncBase,
-      }),
-    }
+    storePersistence
   )
 );

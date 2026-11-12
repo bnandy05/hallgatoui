@@ -189,6 +189,7 @@ export const rulesHu = {
     unknownGrade: "Ismeretlen jegy.",
     noRequirement: "Ehhez az összetevőhöz nem számolható szükséges eredmény.",
     nothingLeft: "Nincs hátralévő tétel.",
+    searchLimit: "Túl sok lehetséges pontszám van a pontos minimum kiszámításához.",
     unreachable: "A cél nem érhető el.",
     onlyIfOthers: "Csak akkor érhető el, ha a többi eredmény is jól alakul.",
     gateUnmet: (label: string) => `Nem teljesíthető feltétel: ${label}.`,

@@ -1,7 +1,7 @@
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import type { AppData } from "@/lib/types";
 import { requestLocale } from "@/lib/server/locale";
-import { errorResponse } from "@/lib/server/subscription";
+import { errorResponse, MAX_CLASS_SESSIONS } from "@/lib/server/subscription";
 import { checkOrigin, guarded, json, readJson, requireUser } from "@/lib/server/auth/http";
 import { MAX_DATA_BYTES, saveData, validateAppData, validateExportOptions } from "@/lib/server/validate";
 
@@ -53,6 +53,10 @@ export function PUT(req: Request) {
     if (typeof baseVersion !== "number" || !Number.isInteger(baseVersion) || baseVersion < 0) {
       return errorResponse(requestLocale(req), "bad_data", 400);
     }
+    const sessions = (data as { classSessions?: unknown } | null)?.classSessions;
+    if (Array.isArray(sessions) && sessions.length > MAX_CLASS_SESSIONS) {
+      return errorResponse(auth.deps.locale ?? requestLocale(req), "too_many_classes", 413);
+    }
     const validData = validateAppData(data);
     if (!validData) return errorResponse(requestLocale(req), "bad_data", 400);
     const options = validateExportOptions(exportOptions);
@@ -62,6 +66,7 @@ export function PUT(req: Request) {
 
     const result = await saveData(auth.deps.store, auth.user.id, baseVersion, validData, options, auth.deps.now());
     if (result.ok) return json({ version: result.version });
+    if (result.staleSemester) return errorResponse(auth.deps.locale ?? requestLocale(req), "stale_semester", 412);
     const current = result.current;
     return json(
       {

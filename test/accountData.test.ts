@@ -70,15 +70,16 @@ test("validateAppData strips unsafe links and feeds", () => {
   assert.deepEqual(valid.feeds.map((f) => f.id), ["feed-1"]);
 });
 
-test("validateAppData applies the caps", () => {
+test("validateAppData rejects over-limit active timetables instead of truncating", () => {
   const tooManyFeeds = { ...fullData(), feeds: Array.from({ length: 21 }, (_, i) => makeFeed({ id: `f${i}` })) };
   assert.equal(validateAppData(tooManyFeeds), null);
   const session = (i: number) => ({
     id: `s${i}`, sourceId: "t", externalUid: `u${i}`, subject: "A", subjectKey: "a",
     start: "2026-10-06T08:00:00.000Z", end: "2026-10-06T09:40:00.000Z", kind: "ora", teachers: [], courseId: null,
   });
-  const many = { ...emptyAppData(), classSessions: Array.from({ length: 1600 }, (_, i) => session(i)) };
-  assert.equal(validateAppData(many)!.classSessions.length, 1500);
+  const atLimit = { ...emptyAppData(), classSessions: Array.from({ length: 1500 }, (_, i) => session(i)) };
+  assert.equal(validateAppData(atLimit)?.classSessions.length, 1500);
+  assert.equal(validateAppData({ ...atLimit, classSessions: [...atLimit.classSessions, session(1500)] }), null);
 });
 
 test("validateExportOptions fills defaults", () => {

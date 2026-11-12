@@ -1,4 +1,5 @@
-import type { AlertPrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterInfo } from "@/lib/types";
+import type { AlertPrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterArchive, SemesterData, SemesterInfo } from "@/lib/types";
+import { emptySemester, selectSemester } from "@/lib/semesterArchive";
 import { syncNow } from "@/lib/sync/clock";
 import { mergeTombstones, pruneTombstones } from "@/lib/sync/tombstones";
 
@@ -232,26 +233,59 @@ function mergeOptions(base: ExportOptions, local: ExportOptions, remote: ExportO
 const withOptional = <K extends string, V>(key: K, value: V | undefined) =>
   value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
-/**
- * Merges the local state onto a newer remote one, given the last synced `base`. Pure (`now` only
- * stamps tombstones and prunes); used when the server answers a save with 409.
- */
+function mergeSemesterData(b: SemesterData, l: SemesterData, r: SemesterData, tombstones: Record<string, string>, now: string): SemesterData {
+  const merged = mergeById(b.deadlines, l.deadlines, r.deadlines, tombstones);
+  const collapsed = collapseFeedDuplicates(merged, new Set(r.deadlines.map((d) => d.id)));
+  for (const id of collapsed.dropped) tombstones[id] = now;
+  return {
+    courses: mergeById(b.courses, l.courses, r.courses, tombstones),
+    deadlines: collapsed.deadlines,
+    feeds: mergeById(b.feeds, l.feeds, r.feeds, tombstones),
+    timetableSources: mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones),
+    classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
+    // Rules merge as a whole so two edits cannot mix into an invalid rule set.
+    requirementRules: mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true),
+    requirementResults: mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones),
+    ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
+    ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
+    ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),
+  };
+}
+
+/** Match active and archived data by semester, so a late edit stays in the term it was made in. */
+function mergeSemesters(b: AppData, l: AppData, r: AppData, tombstones: Record<string, string>, now: string) {
+  const number = Math.max(l.semesterNumber ?? 0, r.semesterNumber ?? 0);
+  const archiveOf = (d: AppData, term: number) => d.semesterArchives?.find((a) => a.number === term);
+  const dataOf = (d: AppData, term: number) => (d.semesterNumber ?? 0) === term ? selectSemester(d) : archiveOf(d, term)?.data;
+  const mergeTerm = (term: number) => {
+    const local = dataOf(l, term);
+    const remote = dataOf(r, term);
+    if (!local || !remote) return local ?? remote ?? emptySemester();
+    if (term !== number && same(local, remote)) return remote;
+    return mergeSemesterData(dataOf(b, term) ?? emptySemester(), local, remote, tombstones, now);
+  };
+  const archives: SemesterArchive[] = [];
+  const numbers = new Set([...(l.semesterArchives ?? []), ...(r.semesterArchives ?? [])].map((a) => a.number));
+  for (const term of [...numbers].sort((a, b) => a - b)) {
+    const local = archiveOf(l, term);
+    const remote = archiveOf(r, term);
+    const base = archiveOf(b, term);
+    // Reset/restore can remove an archive. An offline device still in that semester has active data instead.
+    if (base && (!local || !remote) && same(local ?? remote, base)) continue;
+    const meta = !remote || (local && local.archivedAt > remote.archivedAt) ? local : remote;
+    if (meta) archives.push({ ...meta, data: mergeTerm(term) });
+  }
+  return { active: mergeTerm(number), number, archives };
+}
+
+/** Merge local changes against the last synced base after a conflict. */
 export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: SyncPayload, now: string = syncNow()): SyncPayload {
   const b = base.data;
   const l = local.data;
   const r = remote.data;
-  let tombstones = mergeTombstones(l.tombstones, r.tombstones);
-
-  const courses = mergeById(b.courses, l.courses, r.courses, tombstones);
-  const merged = mergeById(b.deadlines, l.deadlines, r.deadlines, tombstones);
-  const collapsed = collapseFeedDuplicates(merged, new Set(r.deadlines.map((d) => d.id)));
-  for (const id of collapsed.dropped) tombstones[id] = now;
+  const tombstones = mergeTombstones(l.tombstones, r.tombstones);
+  const { active, number, archives } = mergeSemesters(b, l, r, tombstones, now);
   const customPlatforms = mergeById(b.customPlatforms, l.customPlatforms, r.customPlatforms, tombstones);
-  const feeds = mergeById(b.feeds, l.feeds, r.feeds, tombstones);
-  const timetableSources = mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones);
-  // A rule set merges as one block, so two devices' edits can't mix into an invalid set.
-  const requirementRules = mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true);
-  const requirementResults = mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones);
 
   // An item that survived (edited after its deletion) is not deleted any more.
   const alive = new Set<string>();
@@ -262,30 +296,25 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
       i.resources?.forEach((x) => alive.add(x.id));
     }
   };
-  collect(courses);
-  collect(collapsed.deadlines);
   collect(customPlatforms);
-  collect(feeds);
-  collect(timetableSources);
-  collect(requirementRules);
-  collect(requirementResults);
-  tombstones = Object.fromEntries(Object.entries(tombstones).filter(([id]) => !alive.has(id)));
+  for (const term of [active, ...archives.map((a) => a.data)]) {
+    collect(term.courses);
+    collect(term.deadlines);
+    collect(term.feeds);
+    collect(term.timetableSources);
+    collect(term.requirementRules);
+    collect(term.requirementResults);
+  }
+  for (const id of alive) delete tombstones[id];
 
   return {
     data: {
       version: pick(b.version, l.version, r.version),
-      courses,
-      deadlines: collapsed.deadlines,
+      ...active,
       customPlatforms,
-      feeds,
-      classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
-      timetableSources,
-      requirementRules,
-      requirementResults,
-      ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
+      ...(number > 0 && { semesterNumber: number }),
+      ...(archives.length > 0 && { semesterArchives: archives }),
       tombstones: pruneTombstones(tombstones, now),
-      ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
-      ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),
       ...withOptional("alertPrefs", mergeAlertPrefs(b.alertPrefs, l.alertPrefs, r.alertPrefs)),
     },
     // Per-option timestamps are not worth it: the same option changed on two devices takes the remote's.

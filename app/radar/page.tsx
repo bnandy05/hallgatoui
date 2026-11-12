@@ -4,6 +4,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { dateLocale } from "@/lib/i18n";
@@ -43,7 +44,7 @@ export default function WeekRadarPage() {
   const [criticalOnly, setCriticalOnly] = useState(false);
   const [platformFilter, setPlatformFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
 
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));

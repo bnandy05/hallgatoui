@@ -7,7 +7,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { instanceLabel, instanceSnapshot, resolveInstances, type Instance } from "@/lib/rules/instances";
 import { isMultiInstance, linkModes, type ComponentLink, type LinkTarget } from "@/lib/rules/links";
 import type { RequirementResult, Scale } from "@/lib/rules/types";
-import { useMinuteNow } from "@/lib/useCatchUp";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { ComponentLinkDialog } from "@/components/requirements/ComponentLinkDialog";
 import { InstanceInput, type ResultPatch } from "@/components/requirements/InstanceInput";
 import { SemesterField } from "@/components/settings/SemesterField";

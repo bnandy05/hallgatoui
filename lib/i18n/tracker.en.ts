@@ -323,6 +323,7 @@ export const trackerEn: Pick<Messages, "catchUp" | "componentLink" | "extractDia
     alreadyThere: (label, goal) => `A ${goal} for ${label.toLowerCase()} is already secured, whatever happens.`,
     unreachable: (goal) => `A ${goal} can no longer be reached this way.`,
     via: (label) => ` (by taking ${label})`,
+    retakeFor: (retake, exam) => `${retake} for ${exam}`,
     need: (label) => `${label}: at least`,
     needAfter: (series, via) => `needed${series ? " from the remaining ones" : ""}${via}.`,
     unitPoints: "points",

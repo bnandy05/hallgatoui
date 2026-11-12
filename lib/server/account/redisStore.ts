@@ -7,7 +7,7 @@ import type {
   StoredToken,
   StoredUser,
 } from "@/lib/server/account/store";
-import { dataKey, dataVersionKey, emailKey, sessionKey, tokenKey, userKey, userSessionsKey } from "@/lib/server/account/keys";
+import { dataKey, dataSemesterKey, dataVersionKey, emailKey, sessionKey, tokenKey, userKey, userSessionsKey } from "@/lib/server/account/keys";
 
 // Upstash Redis AccountStore. Server-only.
 
@@ -18,13 +18,17 @@ export function redisCredentials(): { url: string; token: string } | null {
   return url && token ? { url, token } : null;
 }
 
-// KEYS[1] data, KEYS[2] version; ARGV[1] base version, ARGV[2] the new document (JSON).
-// Returns the new version, or -1 on conflict.
+// Keys: data, version, semester. Arguments: base version, new JSON document, new semester.
+// Returns the new version, -1 on conflict, or -2 if the client would erase an archived semester.
 const CAS_SCRIPT = `
 local current = tonumber(redis.call('GET', KEYS[2]) or '0')
 if current ~= tonumber(ARGV[1]) then return -1 end
+local previousTerm = tonumber(redis.call('GET', KEYS[3]) or '0')
+local term = tonumber(ARGV[3])
+if term < previousTerm then return -2 end
 redis.call('SET', KEYS[1], ARGV[2])
 redis.call('SET', KEYS[2], tostring(current + 1))
+if term > previousTerm then redis.call('SET', KEYS[3], ARGV[3]) end
 return current + 1
 `;
 
@@ -95,17 +99,18 @@ export function createRedisAccountStore(url: string, token: string): AccountStor
       const result = Number(
         await redis.eval(
           CAS_SCRIPT,
-          [dataKey(userId), dataVersionKey(userId)],
-          [String(baseVersion), JSON.stringify(doc)]
+          [dataKey(userId), dataVersionKey(userId), dataSemesterKey(userId)],
+          [String(baseVersion), JSON.stringify(doc), String(doc.data.semesterNumber ?? 0)]
         )
       );
+      if (result === -2) return { ok: false, current: null, staleSemester: true };
       if (result < 0) {
         return { ok: false, current: (await redis.get<DataDoc>(dataKey(userId))) ?? null };
       }
       return { ok: true, version: result };
     },
     async deleteData(userId) {
-      await redis.del(dataKey(userId), dataVersionKey(userId));
+      await redis.del(dataKey(userId), dataVersionKey(userId), dataSemesterKey(userId));
     },
   };
 }

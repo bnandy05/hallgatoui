@@ -68,6 +68,15 @@ npm test        # node:test, TZ=UTC, with real iCal fixtures (fixtures/ical)
 
 Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, date-fns, lucide-react. Project conventions (structure, design tokens, iCal rules) are in [`CLAUDE.md`](CLAUDE.md), the roadmap in [`docs/PLAN.md`](docs/PLAN.md).
 
+GitHub Actions runs lint, unit tests, the production build and browser tests. The browser tests use an existing production build and a temporary Playwright installation.
+
+```bash
+browser_tools=$(mktemp -d)
+npm install --prefix "$browser_tools" --no-save playwright@1.64.1
+"$browser_tools/node_modules/.bin/playwright" install chromium
+NODE_PATH="$browser_tools/node_modules" node --test test/calendar.browser.mjs
+```
+
 ### Layout
 
 | Path | Contents |

@@ -154,11 +154,9 @@ export interface CatchUpState {
   promptedUntil?: string; // ISO
 }
 
-export interface AppData {
-  version: 1;
+export interface SemesterData {
   courses: Course[];
   deadlines: Deadline[];
-  customPlatforms: Platform[];
   feeds: IcalFeed[];
   /** Pair keys (see lib/ical/dedupe.ts) the user marked "Nem duplikátum". Defaults to []. */
   ignoredDuplicatePairs: string[];
@@ -172,6 +170,21 @@ export interface AppData {
   semester?: SemesterInfo;
   /** When the catch-up popup last closed (account-wide, merged as the later of two). Optional. */
   catchUp?: CatchUpState;
+}
+
+export interface SemesterArchive {
+  number: number;
+  name: string;
+  archivedAt: string;
+  data: SemesterData;
+}
+
+export interface AppData extends SemesterData {
+  version: 1;
+  customPlatforms: Platform[];
+  /** The first active semester is 0. Each archive advances to the next number. */
+  semesterNumber?: number;
+  semesterArchives?: SemesterArchive[];
   /** Which grade-alert kinds the bell shows (lib/gradeAlerts.ts). Optional; missing = all on. */
   alertPrefs?: AlertPrefs;
   /**

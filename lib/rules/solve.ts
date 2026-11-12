@@ -1,6 +1,6 @@
 // "What do I need?" — the smallest value of one target (an exam, a retake slot or a series'
 // remaining points) that still reaches a goal grade, by a linear scan over the target's discrete
-// range. Exact for monotone rules. Design in plans/requirements-tracker/schema.md §4.
+// range. Keep the work bounded without skipping scores and reporting a false minimum.
 
 import { getMessages, type Locale } from "@/lib/i18n";
 import { buildModel, choiceVectors, runScenario, type Model, type Scenario } from "./engine";
@@ -14,25 +14,38 @@ export interface SolveQuery {
 }
 
 export interface SolveResult {
-  status: "already" | "reachable" | "unreachable";
+  status: "already" | "reachable" | "unreachable" | "indeterminate";
   min?: number; // exam/retake: the value; series: points (or + / passed items) still to collect
-  viaRetake?: string; // the retake slot that has to be taken as well
+  /** All other retakes needed for this score, with the exam to replace when selectable. */
+  viaRetakes?: { id: string; targetId?: string }[];
+  /** The exam to replace when the queried component is itself a selectable retake. */
+  retakeTarget?: string;
   reason?: string;
 }
 
-const MAX_STEPS = 2000;
+const MAX_SCENARIOS = 16_000;
 
-function scaleDomain(scale: Scale): number[] {
-  if (scale.kind === "grade") return [1, 2, 3, 4, 5];
+type ScoreDomain = { max: number; scores: () => Iterable<number> };
+
+function scaleDomain(scale: Scale): ScoreDomain {
+  if (scale.kind === "grade") return { max: 5, scores: () => [1, 2, 3, 4, 5] };
+  const { max } = scale;
   const step = scale.step ?? 1;
-  const n = Math.min(MAX_STEPS, Math.floor(scale.max / step + 1e-9));
-  const out: number[] = [];
-  for (let i = 0; i <= n; i++) out.push(Math.min(scale.max, Math.round(i * step * 1e6) / 1e6));
-  if (out[out.length - 1] < scale.max) out.push(scale.max);
-  return out;
+  return {
+    max,
+    *scores() {
+      for (let i = 0; ; i++) {
+        // Trim floating-point multiplication noise without rounding small steps to zero.
+        const value = Number((i * step).toPrecision(15));
+        if (value >= max) break;
+        yield value;
+      }
+      yield max;
+    },
+  };
 }
 
-function domainOf(m: Model, target: string): number[] | null {
+function domainOf(m: Model, target: string): ScoreDomain | "empty" | null {
   const exam = m.exams.get(target);
   if (exam) return scaleDomain(exam.comp.scale);
   const retake = m.retakes.find((r) => r.slot.id === target);
@@ -42,7 +55,7 @@ function domainOf(m: Model, target: string): number[] | null {
     const s = series.comp.scoring;
     const top = s.kind === "points" ? series.unknown * s.max : series.unknown;
     const step = s.kind === "points" ? (s.step ?? 1) : 1;
-    if (series.unknown === 0) return [];
+    if (series.unknown === 0) return "empty";
     return scaleDomain({ kind: "points", max: top, step });
   }
   return null;
@@ -59,20 +72,23 @@ export function solveFor(rules: SubjectRules, results: RequirementResult[], now:
   const none = new Map<string, true | string>();
   const grade = (sc: Scenario) => runScenario(m, sc).outcomes.get(q.outcomeId)!.grade;
   if (grade({ regular: "worst", alt: "worst", choice: none }) >= q.goal) return { status: "already" };
-  if (domain.length === 0) return { status: "unreachable", reason: t.nothingLeft };
+  if (domain === "empty") return { status: "unreachable", reason: t.nothingLeft };
 
   const retake = m.retakes.find((r) => r.slot.id === q.target);
   const retakeTargets: (string | undefined)[] = retake?.slot.pick === "choose" ? retake.slot.targets : [undefined];
+  let remaining = MAX_SCENARIOS;
+  const indeterminate: SolveResult = { status: "indeterminate", reason: t.searchLimit };
 
-  // The smallest value reaching the goal under a choice vector, or null.
-  const scan = (choice: Map<string, true | string>): number | null => {
-    let best: number | null = null;
+  // null means no score reached the goal, undefined means the scan could not finish.
+  const scan = (choice: Map<string, true | string>): { min: number; retakeTarget?: string } | null | undefined => {
+    let best: { min: number; retakeTarget?: string } | null = null;
     for (const retakeTarget of retakeTargets) {
-      for (const v of domain) {
-        if (best !== null && v >= best) break;
+      for (const v of domain.scores()) {
+        if (best !== null && v >= best.min) break;
+        if (remaining-- === 0) return undefined;
         const g = grade({ regular: q.others, alt: q.others, choice, override: { id: q.target, value: v, retakeTarget } });
         if (g >= q.goal) {
-          best = v;
+          best = { min: v, ...(retakeTarget && { retakeTarget }) };
           break;
         }
       }
@@ -81,21 +97,27 @@ export function solveFor(rules: SubjectRules, results: RequirementResult[], now:
   };
 
   const plain = scan(none);
-  if (plain !== null) return { status: "reachable", min: plain };
+  if (plain === undefined) return indeterminate;
+  if (plain !== null) return { status: "reachable", ...plain };
 
   // With retakes taken as well (best value), fewest retakes first.
   const vectors = choiceVectors(m, q.target)
     .filter((c) => c.size > 0)
     .sort((a, b) => a.size - b.size);
-  let found: { min: number; via: string; size: number } | null = null;
+  let found: { answer: NonNullable<ReturnType<typeof scan>>; choice: Map<string, true | string> } | null = null;
   for (const c of vectors) {
-    if (found && c.size > found.size) break;
+    if (found && c.size > found.choice.size) break;
     const v = scan(c);
-    if (v !== null && (!found || v < found.min)) found = { min: v, via: [...c.keys()][0], size: c.size };
+    if (v === undefined) return indeterminate;
+    if (v !== null && (!found || v.min < found.answer.min)) found = { answer: v, choice: c };
   }
-  if (found) return { status: "reachable", min: found.min, viaRetake: found.via };
+  if (found) return {
+    status: "reachable",
+    ...found.answer,
+    viaRetakes: [...found.choice].map(([id, target]) => ({ id, ...(typeof target === "string" && { targetId: target }) })),
+  };
 
-  return { status: "unreachable", reason: unreachableReason(m, q, domain[domain.length - 1], t) };
+  return { status: "unreachable", reason: unreachableReason(m, q, domain.max, t) };
 }
 
 function unreachableReason(m: Model, q: SolveQuery, top: number, t: ReturnType<typeof getMessages>["rules"]["solve"]): string {

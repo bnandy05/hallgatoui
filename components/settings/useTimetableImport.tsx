@@ -8,11 +8,13 @@ import {
   summarizeSubjects,
   importFloor,
   isStaleSemester,
+  isNeptunCalendar,
   timetableCutoff,
   upcomingSessions,
   type ParsedSession,
 } from "@/lib/ical/neptun";
 import { normalizeSemesterStart, proposeSemesterStartAt } from "@/lib/timetable/semester";
+import { parseIcs } from "@/lib/ical/parse";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
@@ -47,6 +49,7 @@ interface SemesterQuestion {
 export interface TimetableImport {
   /** Starts an import of Neptun events. Returns an error message, or null when it went (or is going) well. */
   importEvents: (events: IcalEventDTO[], opts?: TimetableImportOptions) => string | null;
+  importFile: (file: File, opts?: TimetableImportOptions, signal?: AbortSignal) => Promise<string | null>;
   editMapping: (sourceId: string) => void;
   /** The mapping dialogs; render once. */
   dialogs: ReactNode;
@@ -144,7 +147,20 @@ export function useTimetableImport(): TimetableImport {
     </>
   );
 
-  return { importEvents, editMapping: setEditingId, dialogs };
+  async function importFile(file: File, opts?: TimetableImportOptions, signal?: AbortSignal) {
+    try {
+      // Read locally so a student's timetable file never leaves the browser.
+      const text = await file.text();
+      if (signal?.aborted) return null;
+      const events = parseIcs(text);
+      if (!isNeptunCalendar(events, text)) return t.feeds.notNeptun;
+      return importEvents(events, opts);
+    } catch {
+      return t.feeds.fileUnreadable;
+    }
+  }
+
+  return { importEvents, importFile, editMapping: setEditingId, dialogs };
 }
 
 /** Week 1 of the teaching period, proposed from the timetable; week numbers count from it. */

@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronRight, FileQuestion, Link2, Pencil, Plus, Trash2 } fr
 import { addDays, format, isSameDay, startOfDay } from "date-fns";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
@@ -139,7 +140,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const classSessions = useStore((s) => s.classSessions);
   const router = useRouter();
 
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
 
   // The bell links to #course-requirements; the page renders a skeleton first, so the browser's
   // own jump finds nothing. Scroll once the content is there (and when the hash changes).

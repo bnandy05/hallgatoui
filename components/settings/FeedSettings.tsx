@@ -1,23 +1,18 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent } from "react";
-import { ChevronRight, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
+import { Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { fetchFeed, syncAllFeeds, syncFeed } from "@/lib/ical/client";
-import { parseIcs } from "@/lib/ical/parse";
 import { isNeptunCalendar } from "@/lib/ical/neptun";
-import { linkHost, normalizeLinkUrl } from "@/lib/url";
+import { linkHost } from "@/lib/url";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { formatRelative } from "@/lib/radar";
-import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
+import { getPlatform } from "@/lib/platforms";
 import type { IcalFeed, TimetableSource } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Select } from "@/components/ui/Select";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { groupContexts, pendingContexts } from "@/lib/ical/discover";
 import { DiscoveryDialog } from "@/components/DiscoveryDialog";
@@ -26,35 +21,8 @@ import { TimetableSourceItem } from "@/components/settings/TimetableSourceItem";
 import { useTimetableImport } from "@/components/settings/useTimetableImport";
 import { SemesterField } from "@/components/settings/SemesterField";
 
-const AUTO_COURSE = "";
-const DEFAULT_PLATFORM = "canvas";
-
-function normalizeFeedUrl(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (/^webcal:\/\//i.test(trimmed)) {
-    return normalizeLinkUrl(`https://${trimmed.slice("webcal://".length)}`);
-  }
-  return normalizeLinkUrl(trimmed);
-}
-
-interface FeedFormValues {
-  name: string;
-  url: string;
-  platformId: string;
-  courseId: string; // AUTO_COURSE for "automatikus"
-  markPastDone: boolean; // add form only: mark already-expired deadlines done on the first sync
-}
-
-function emptyForm(): FeedFormValues {
-  return {
-    name: "",
-    url: "",
-    platformId: DEFAULT_PLATFORM,
-    courseId: AUTO_COURSE,
-    markPastDone: true,
-  };
-}
+import { CalendarImportForm } from "@/components/calendar/CalendarImportForm";
+import { CalendarFeedOptions, CalendarLinkField, normalizeFeedUrl, type FeedFields } from "@/components/calendar/CalendarFeedFields";
 
 export function FeedSettings() {
   const t = useT();
@@ -64,29 +32,23 @@ export function FeedSettings() {
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const deadlines = useStore((s) => s.deadlines);
-  const addFeed = useStore((s) => s.addFeed);
   const updateFeed = useStore((s) => s.updateFeed);
   const removeFeed = useStore((s) => s.removeFeed);
   const markFeedPastDone = useStore((s) => s.markFeedPastDone);
-  const applyFeedSync = useStore((s) => s.applyFeedSync);
   const timetableSources = useStore((s) => s.timetableSources);
   const timetable = useTimetableImport();
 
   const fileRef = useRef<HTMLInputElement>(null);
   const reimportRef = useRef<string | null>(null);
-  const [adding, setAdding] = useState(false);
   const [reimportingIds, setReimportingIds] = useState<Set<string>>(new Set());
 
-  const [addForm, setAddForm] = useState<FeedFormValues>(emptyForm());
-  const [addError, setAddError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   // Errors from re-importing a timetable from its card (the add sheet is closed then).
   const [listError, setListError] = useState<string | null>(null);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
-  const [platformTouched, setPlatformTouched] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<FeedFormValues>(emptyForm());
+  const [editForm, setEditForm] = useState<FeedFields>({ url: "", name: "", platformId: "canvas", courseId: "" });
   const [editError, setEditError] = useState<string | null>(null);
 
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
@@ -147,78 +109,14 @@ export function FeedSettings() {
     }
   }
 
-  async function handleAdd(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedUrl = normalizeFeedUrl(addForm.url);
-    if (!normalizedUrl) {
-      setAddError(t.feeds.invalidLink);
-      return;
-    }
-
-    // Fetch first: the content decides whether this is a timetable or a deadline feed.
-    setAdding(true);
-    setAddError(null);
-    let events;
-    try {
-      events = await fetchFeed(normalizedUrl);
-    } catch (err) {
-      setAddError(err instanceof Error ? err.message : t.feeds.unreachable);
-      setAdding(false);
-      return;
-    }
-    setAdding(false);
-
-    if (isNeptunCalendar(events)) {
-      // The same link again re-imports into its existing source instead of adding a second one.
-      const existing = timetableSources.find((s) => s.url === normalizedUrl);
-      const error = timetable.importEvents(events, { sourceId: existing?.id, url: normalizedUrl });
-      if (error) {
-        setAddError(error);
-        return;
-      }
-    } else {
-      const trimmedName =
-        addForm.name.trim() ||
-        t.feeds.defaultName(platformName(getPlatform(addForm.platformId, customPlatforms), t.platforms.other));
-      const newId = addFeed({
-        name: trimmedName,
-        url: normalizedUrl,
-        platformId: addForm.platformId,
-        courseId: addForm.courseId === AUTO_COURSE ? null : addForm.courseId,
-        markDoneBefore: addForm.markPastDone ? new Date().toISOString() : undefined,
-      });
-      applyFeedSync(newId, events);
-    }
-    setAddForm(emptyForm());
-    setPlatformTouched(false);
-    setAddOpen(false);
-  }
-
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    const sourceId = reimportRef.current ?? undefined;
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    const sourceId = reimportRef.current;
     reimportRef.current = null;
-    // A re-import starts from a card, so its errors show above the list, not in the add sheet.
-    const setError = sourceId ? setListError : setAddError;
-    setError(null);
-    if (!file) return;
-    try {
-      // Parsed right here: the file never leaves the browser.
-      const text = await file.text();
-      const events = parseIcs(text);
-      if (!isNeptunCalendar(events, text)) {
-        setError(t.feeds.notNeptun);
-        return;
-      }
-      const source = sourceId ? timetableSources.find((s) => s.id === sourceId) : undefined;
-      const error = timetable.importEvents(events, { sourceId, url: source?.url });
-      setError(error);
-      if (!error && !sourceId) setAddOpen(false);
-    } catch {
-      setError(t.feeds.fileUnreadable);
-    } finally {
-      if (fileRef.current) fileRef.current.value = "";
-    }
+    if (!file || !sourceId) return;
+    setListError(null);
+    setListError(await timetable.importFile(file, { sourceId }));
   }
 
   async function handleReimport(source: TimetableSource) {
@@ -247,29 +145,13 @@ export function FeedSettings() {
     }
   }
 
-  function handleAddUrlChange(url: string) {
-    setAddForm((f) => {
-      if (platformTouched) return { ...f, url };
-      const host = url.toLowerCase();
-      const platformId = host.includes("canvas")
-        ? "canvas"
-        : host.includes("moodle")
-          ? "moodle"
-          : host.includes("neptun")
-            ? "neptun"
-            : f.platformId;
-      return { ...f, url, platformId };
-    });
-  }
-
   function startEdit(feed: IcalFeed) {
     setEditingId(feed.id);
     setEditForm({
       name: feed.name,
       url: feed.url,
       platformId: feed.platformId,
-      courseId: feed.courseId ?? AUTO_COURSE,
-      markPastDone: false,
+      courseId: feed.courseId ?? "",
     });
     setEditError(null);
   }
@@ -288,12 +170,16 @@ export function FeedSettings() {
       setEditError(t.feeds.invalidLink);
       return;
     }
+    if (feeds.some((feed) => feed.id !== feedId && normalizeFeedUrl(feed.url) === normalizedUrl)) {
+      setEditError(t.feeds.alreadyConnected);
+      return;
+    }
 
     updateFeed(feedId, {
       name: trimmedName,
       url: normalizedUrl,
       platformId: editForm.platformId,
-      courseId: editForm.courseId === AUTO_COURSE ? null : editForm.courseId,
+      courseId: editForm.courseId || null,
     });
     setEditingId(null);
     setEditError(null);
@@ -306,98 +192,6 @@ export function FeedSettings() {
       confirmLabel: t.common.delete,
     });
     if (ok) removeFeed(feedId);
-  }
-
-  function platformOptions() {
-    return (
-      <>
-        <optgroup label={t.feeds.builtIn}>
-          {BUILT_IN_PLATFORMS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {platformName(p, t.platforms.other)}
-            </option>
-          ))}
-        </optgroup>
-        {customPlatforms.length > 0 && (
-          <optgroup label={t.feeds.custom}>
-            {customPlatforms.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </optgroup>
-        )}
-      </>
-    );
-  }
-
-  function courseOptions() {
-    return (
-      <>
-        <option value={AUTO_COURSE}>{t.feeds.autoCourse}</option>
-        {courses.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </>
-    );
-  }
-
-  function feedFields(
-    form: FeedFormValues,
-    setForm: (u: (f: FeedFormValues) => FeedFormValues) => void,
-    prefix: string,
-    error: string | null,
-    onUrlChange?: (url: string) => void
-  ) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <Label htmlFor={`${prefix}-url`}>{t.feeds.calendarLink}</Label>
-          <Input
-            id={`${prefix}-url`}
-            value={form.url}
-            onChange={(e) => (onUrlChange ? onUrlChange(e.target.value) : setForm((f) => ({ ...f, url: e.target.value })))}
-            placeholder={t.feeds.linkPlaceholder}
-            inputMode="url"
-          />
-          {error && <p className="mt-1 text-small font-semibold text-danger">{error}</p>}
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor={`${prefix}-name`}>{t.feeds.name}</Label>
-          <Input
-            id={`${prefix}-name`}
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder={t.feeds.namePlaceholder}
-          />
-        </div>
-        <div>
-          <Label htmlFor={`${prefix}-platform`}>{t.feeds.platform}</Label>
-          <Select
-            id={`${prefix}-platform`}
-            value={form.platformId}
-            onChange={(e) => {
-              if (prefix === "feed-add") setPlatformTouched(true);
-              setForm((f) => ({ ...f, platformId: e.target.value }));
-            }}
-          >
-            {platformOptions()}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor={`${prefix}-course`}>{t.feeds.course}</Label>
-          <Select
-            id={`${prefix}-course`}
-            value={form.courseId}
-            onChange={(e) => setForm((f) => ({ ...f, courseId: e.target.value }))}
-          >
-            {courseOptions()}
-          </Select>
-        </div>
-      </div>
-    );
   }
 
   const hasSources = feeds.length > 0 || timetableSources.length > 0;
@@ -517,10 +311,7 @@ export function FeedSettings() {
         <li className={hasSources ? "" : "col-span-full"}>
           <button
             type="button"
-            onClick={() => {
-              setAddError(null);
-              setAddOpen(true);
-            }}
+            onClick={() => setAddOpen(true)}
             className="flex h-full min-h-[9rem] w-full flex-col items-center justify-center gap-1.5 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-6 py-6 text-center text-muted transition-colors hover:border-accent hover:text-heading"
           >
             <span className="inline-flex items-center gap-2 text-body font-semibold text-heading">
@@ -551,59 +342,11 @@ export function FeedSettings() {
       />
 
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} title={t.feeds.newCalendar}>
-        <form onSubmit={(e) => void handleAdd(e)} className="flex flex-col gap-4">
-          {feedFields(addForm, setAddForm, "feed-add", addError, handleAddUrlChange)}
-          <Checkbox
-            checked={addForm.markPastDone}
-            onChange={(e) => setAddForm((f) => ({ ...f, markPastDone: e.target.checked }))}
-            label={t.feeds.markPastDoneLabel}
-            description={t.feeds.markPastDoneHint}
-          />
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius)] bg-inset px-3 py-2.5 text-small text-muted">
-            <span className="min-w-0 flex-1">{t.feeds.fileNote}</span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                reimportRef.current = null;
-                fileRef.current?.click();
-              }}
-            >
-              <Upload className="h-4 w-4" />
-              {t.feeds.uploadFile}
-            </Button>
-          </div>
-          <details className="group text-small text-muted">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold text-heading [&::-webkit-details-marker]:hidden">
-              <ChevronRight className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-90" />
-              {t.feeds.whereLink}
-            </summary>
-            <ul className="mt-2 space-y-1.5 pl-5">
-              <li>
-                <span className="font-semibold text-foreground">{t.feeds.canvasName}</span>{t.feeds.canvasHow}
-              </li>
-              <li>
-                <span className="font-semibold text-foreground">{t.feeds.moodleName}</span>{t.feeds.moodleHow}
-              </li>
-              <li>
-                <span className="font-semibold text-foreground">{t.feeds.neptunName}</span>{t.feeds.neptunHow}
-              </li>
-              <li>
-                <span className="font-semibold text-foreground">{t.feeds.otherName}</span>{t.feeds.otherHow}
-              </li>
-            </ul>
-          </details>
-          <DialogActions>
-            <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>
-              {t.common.cancel}
-            </Button>
-            <Button type="submit" disabled={adding || addForm.url.trim().length === 0}>
-              {adding && <Loader2 className="h-4 w-4 animate-spin" />}
-              {t.feeds.add}
-            </Button>
-          </DialogActions>
-        </form>
+        <CalendarImportForm
+          timetable={timetable}
+          onComplete={() => setAddOpen(false)}
+          onCancel={() => setAddOpen(false)}
+        />
       </Dialog>
 
       <Dialog open={editingFeed !== undefined} onClose={cancelEdit} title={t.feeds.editTitle}>
@@ -615,7 +358,17 @@ export function FeedSettings() {
             }}
             className="flex flex-col gap-4"
           >
-            {feedFields(editForm, setEditForm, "feed-edit", editError)}
+              <CalendarLinkField
+              id="feed-edit-url"
+              value={editForm.url}
+              error={editError}
+              onChange={(url) => setEditForm((form) => ({ ...form, url }))}
+            />
+            <CalendarFeedOptions
+              id="feed-edit"
+              value={editForm}
+              onChange={(patch) => setEditForm((form) => ({ ...form, ...patch }))}
+            />
             <DialogActions>
               <Button type="button" variant="secondary" onClick={cancelEdit}>
                 {t.common.cancel}
@@ -628,7 +381,6 @@ export function FeedSettings() {
 
       {timetable.dialogs}
       <DiscoveryDialog open={discoveryOpen} onClose={() => setDiscoveryOpen(false)} />
-      {confirmDialog}
     </section>
   );
 }

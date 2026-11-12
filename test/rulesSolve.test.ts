@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { solveFor } from "@/lib/rules/solve";
 import type { RequirementResult } from "@/lib/rules/types";
+import { validateRules } from "@/lib/rules/validate";
 import { NOW, asg, grade, pts, rdItems, res, rules, seriesPts, state } from "./rulesHelpers";
 
 const solve = (id: string, rs: RequirementResult[], outcomeId: string, target: string, goal: number, others: "worst" | "best" = "worst") =>
@@ -52,13 +53,46 @@ test("P-solve: a retake slot as target — after zh2 15, the pót needs 25 for a
   // Target zh1 cannot fix the failed zh2 alone: via the pót.
   const via = solve("elte-ik-progelm", rs, "gyak", "zh1", 2);
   assert.equal(via.status, "reachable");
-  assert.equal(via.viaRetake, "pot");
+  assert.deepEqual(via.viaRetakes, [{ id: "pot" }]);
   // At zh1 = 15 the tie goes to zh2 (the later target), so the pót (at 60) replaces zh2.
   assert.equal(via.min, 15);
 });
 
+test("solver reports both required retakes and the exam each one replaces", () => {
+  const validated = validateRules({
+    schemaVersion: 1,
+    components: ["a", "b", "c"].map((id) => ({ id, label: id, kind: "exam", scale: { kind: "grade" } })),
+    retakes: ["a", "b"].map((id) => ({ id: `retake_${id}`, label: id, targets: [id], pick: "choose", mode: "ifBetter" })),
+    derived: [], tables: [], flags: [],
+    outcomes: [{ id: "final", label: "Grade", kind: "gyakorlat", select: "best", paths: [{ id: "base", label: "Base", grade: "min(a, b, c)" }] }],
+  });
+  assert.ok(validated.ok);
+  const results = [grade("a", 1), grade("b", 1)];
+  const query = { outcomeId: "final", goal: 4, others: "worst" } as const;
+  assert.deepEqual(solveFor(validated.rules, results, NOW, { ...query, target: "c" }), {
+    status: "reachable", min: 4, viaRetakes: [{ id: "retake_a", targetId: "a" }, { id: "retake_b", targetId: "b" }],
+  });
+  assert.deepEqual(solveFor(validated.rules, [...results, grade("c", 4)], NOW, { ...query, target: "retake_b" }), {
+    status: "reachable", min: 4, retakeTarget: "b", viaRetakes: [{ id: "retake_a", targetId: "a" }],
+  });
+});
+
 const rzh = (total: number) => seriesPts("rzh", Array.from({ length: 10 }, (_, i) => Math.min(4, Math.max(0, total - 4 * i))));
 const M1_NO_N3 = [...rzh(30), pts("n1", 40), pts("n2", 35)];
+
+test("fine score increments preserve the exact minimum above 2,000 steps", () => {
+  const template = structuredClone(rules("elte-ik-matalap"));
+  const exam = template.components.find((c) => c.id === "n3");
+  assert.ok(exam?.kind === "exam" && exam.scale.kind === "points");
+  exam.scale.step = 0.01;
+  const validated = validateRules(template);
+  assert.ok(validated.ok);
+  const query = { outcomeId: "gyak", target: "n3", goal: 5, others: "worst" } as const;
+  assert.deepEqual(solveFor(validated.rules, M1_NO_N3, NOW, query), { status: "reachable", min: 38 });
+
+  exam.scale.step = 0.0001;
+  assert.equal(solveFor(template, M1_NO_N3, NOW, query).status, "indeterminate");
+});
 
 test("M-solve: n3 needs 17 (passAt) for a 4 and 38 for a 5", () => {
   assert.deepEqual(solve("elte-ik-matalap", M1_NO_N3, "gyak", "n3", 4), { status: "reachable", min: 17 });

@@ -8,14 +8,17 @@ import { useStore } from "@/lib/store";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { useDataReady } from "@/lib/useDataReady";
+import { useMinuteNow } from "@/lib/useMinuteNow";
+import { useDemoMode } from "@/lib/useDemoMode";
 import { visibleSessions } from "@/lib/ical/neptun";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { formatRelative, isCritical, weekRangeLabel, weekStartOf, weekSummary, weekWorkload } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
-import { Button, buttonClasses } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CourseDialog } from "@/components/CourseDialog";
+import { FirstCalendar } from "@/components/calendar/FirstCalendar";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DiscoveryBanner } from "@/components/DiscoveryBanner";
 import { TimetableBanner } from "@/components/TimetableBanner";
@@ -38,19 +41,17 @@ function HomeSkeleton() {
 }
 
 /** The one notice that owns the top of the page: the next open deadline, pinned beside the week. */
-function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
+function NextNotice({ deadline, now, onOpen }: { deadline: Deadline; now: Date; onOpen: () => void }) {
   const t = useT();
   const locale = useLocale();
   const dl = dateLocale(locale);
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
-  const [open, setOpen] = useState(false);
   const critical = isCritical(deadline, now);
   const due = new Date(deadline.due);
   return (
-    <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={onOpen}
         className="slip group flex w-full shrink-0 flex-col gap-1 bg-card px-4 pb-3.5 pt-4 text-left lg:w-[24rem]"
       >
         <span
@@ -71,8 +72,6 @@ function NextNotice({ deadline, now }: { deadline: Deadline; now: Date }) {
           {[course?.name, format(due, "EEEE HH:mm", { locale: dl })].filter(Boolean).join(" · ")}
         </span>
       </button>
-      <DeadlineDetailDialog deadline={deadline} open={open} onClose={() => setOpen(false)} />
-    </>
   );
 }
 
@@ -80,18 +79,27 @@ export default function WeekHome() {
   const t = useT();
   const locale = useLocale();
   const hydrated = useDataReady();
+  const demo = useDemoMode();
   const courses = useStore((s) => s.courses);
+  const hasFeeds = useStore((s) => s.feeds.length > 0);
   const { visible: deadlines } = useDedupedDeadlines();
   const loadDemo = useStore((s) => s.loadDemo);
   const allSessions = useStore((s) => s.classSessions);
   const timetableSources = useStore((s) => s.timetableSources);
   const classSessions = useMemo(() => visibleSessions(allSessions, timetableSources), [allSessions, timetableSources]);
+  const firstCalendar = hydrated && !demo && !hasFeeds && timetableSources.length === 0 && deadlines.length === 0;
   const showClasses = useStore((s) => s.showClasses);
   const setShowClasses = useStore((s) => s.setShowClasses);
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
   const currentWeekStart = useMemo(() => weekStartOf(now), [now]);
-  const [weekStart, setWeekStart] = useState(currentWeekStart);
+  const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
+  const weekStart = selectedWeek ?? currentWeekStart;
+  function setWeekStart(start: Date) {
+    setSelectedWeek(start.getTime() === currentWeekStart.getTime() ? null : start);
+  }
   const [courseOpen, setCourseOpen] = useState(false);
+  const [nextDetail, setNextDetail] = useState<{ id: string; open: boolean } | null>(null);
+  const detailDeadline = deadlines.find((deadline) => deadline.id === nextDetail?.id);
 
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
   const summary = useMemo(() => weekSummary(deadlines, now), [deadlines, now]);
@@ -152,7 +160,9 @@ export default function WeekHome() {
       <section className="flex flex-col gap-5" aria-labelledby="week-heading">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
           <SectionHeading as="h1" id="week-heading" title={range} sub={subWithWork} />
-          {hydrated && isCurrent && next && <NextNotice deadline={next} now={now} />}
+          {hydrated && isCurrent && next && (
+            <NextNotice deadline={next} now={now} onOpen={() => setNextDetail({ id: next.id, open: true })} />
+          )}
         </div>
 
         {hydrated && (
@@ -162,18 +172,22 @@ export default function WeekHome() {
           </>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
-          {hydrated && classSessions.length > 0 && (
-            <Pill active={showClasses} onClick={() => setShowClasses(!showClasses)} title={t.home.classesToggleTitle}>
-              <CalendarClock className="h-3.5 w-3.5" />
-              {t.home.classesToggle}
-            </Pill>
-          )}
-        </div>
+        {!firstCalendar && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <WeekNav weekStart={weekStart} currentWeekStart={currentWeekStart} onChange={setWeekStart} />
+            {hydrated && classSessions.length > 0 && (
+              <Pill active={showClasses} onClick={() => setShowClasses(!showClasses)} title={t.home.classesToggleTitle}>
+                <CalendarClock className="h-3.5 w-3.5" />
+                {t.home.classesToggle}
+              </Pill>
+            )}
+          </div>
+        )}
 
         {!hydrated ? (
           <HomeSkeleton />
+        ) : firstCalendar ? (
+          <FirstCalendar />
         ) : (
           <>
             <div data-tour="week-board">
@@ -191,11 +205,10 @@ export default function WeekHome() {
             <div className="flex flex-wrap items-center justify-between gap-3 text-body">
               {deadlines.length === 0 ? (
                 <p className="text-muted">
-                  {t.home.noDeadlinesYet}{" "}
-                  <Link href="/beallitasok#naptarak" className="link-text">
-                    {t.home.connectCalendar}
-                  </Link>
-                  {t.home.connectCalendarAfter}
+                  {t.home.noDeadlinesYet}
+                  {!hasFeeds && (
+                    <>{" "}<Link href="/beallitasok#naptarak" className="link-text">{t.home.connectCalendar}</Link>{t.home.connectCalendarAfter}</>
+                  )}
                 </p>
               ) : (
                 <span />
@@ -234,11 +247,7 @@ export default function WeekHome() {
               text={t.home.noCoursesText}
               action={
                 <>
-                  <Link href="/beallitasok#naptarak" className={buttonClasses()}>
-                    <CalendarPlus className="h-4 w-4" />
-                    {t.home.linkCalendar}
-                  </Link>
-                  <Button variant="secondary" onClick={() => setCourseOpen(true)}>
+                  <Button variant={firstCalendar ? "secondary" : "primary"} onClick={() => setCourseOpen(true)}>
                     <Plus className="h-4 w-4" />
                     {t.home.newCourse}
                   </Button>
@@ -258,6 +267,14 @@ export default function WeekHome() {
       )}
 
       <CourseDialog open={courseOpen} onClose={() => setCourseOpen(false)} />
+      {detailDeadline && nextDetail && (
+        <DeadlineDetailDialog
+          key={detailDeadline.id}
+          deadline={detailDeadline}
+          open={nextDetail.open}
+          onClose={() => setNextDetail({ id: nextDetail.id, open: false })}
+        />
+      )}
     </div>
   );
 }

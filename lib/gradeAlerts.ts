@@ -107,8 +107,13 @@ function assessmentAlerts(
   now: Date,
   locale: Locale
 ): { assessment: UpcomingAssessment; alert: AssessmentAlert & { courseId: string } }[] {
-  const t = getMessages(locale).gradeAlerts.text;
+  const messages = getMessages(locale);
+  const t = messages.gradeAlerts.text;
   const courseId = rules.courseId;
+  const targetLabel = (label: string, targetId?: string) => {
+    const exam = targetId && rules.components.find((component) => component.id === targetId);
+    return exam ? messages.rulesPanel.retakeFor(label, exam.label) : label;
+  };
   // With several outcomes a text must say which one it is about.
   const named = (o: OutcomeEval, text: string) => (rules.outcomes.length > 1 ? t.outcomePrefix(o.label, text) : text);
   const out: { assessment: UpcomingAssessment; alert: AssessmentAlert & { courseId: string } }[] = [];
@@ -119,15 +124,15 @@ function assessmentAlerts(
     const max = maxOf(scale);
     const due = a.instance.at ? { due: a.instance.at } : {};
 
-    let found: { outcome: OutcomeEval; goal: number; min: number } | null = null;
+    let found: { outcome: OutcomeEval; goal: number; min: number; label: string } | null = null;
     for (const outcome of ev.outcomes) {
       if (outcome.status === "final") continue;
       // Passing itself (a 2) is the risk kind's business; here only grades above it.
       for (let goal = outcome.best; goal > Math.max(outcome.worst, PASS_GRADE); goal--) {
         const r = solveFor(rules, results, now, { outcomeId: outcome.outcomeId, goal, target: a.target.id, others: "worst" }, locale);
-        if (r.status !== "reachable" || r.viaRetake || r.min === undefined || r.min <= 0) continue;
+        if (r.status !== "reachable" || r.viaRetakes?.length || r.min === undefined || r.min <= 0) continue;
         if (r.min <= REACHABLE_SHARE * max + 1e-9) {
-          if (!found || goal > found.goal) found = { outcome, goal, min: r.min };
+          if (!found || goal > found.goal) found = { outcome, goal, min: r.min, label: targetLabel(a.target.label, r.retakeTarget) };
           break;
         }
       }
@@ -135,8 +140,8 @@ function assessmentAlerts(
     if (found) {
       const text =
         scale.kind === "points"
-          ? t.opportunityPoints(a.target.label, found.min, max, found.goal)
-          : t.opportunityGrade(a.target.label, found.min, found.goal);
+          ? t.opportunityPoints(found.label, found.min, max, found.goal)
+          : t.opportunityGrade(found.label, found.min, found.goal);
       out.push({
         assessment: a,
         alert: {
@@ -154,11 +159,12 @@ function assessmentAlerts(
     for (const outcome of ev.outcomes) {
       if (!isRiskOutcome(outcome) || outcome.worst >= PASS_GRADE || outcome.best < PASS_GRADE) continue;
       const r = solveFor(rules, results, now, { outcomeId: outcome.outcomeId, goal: PASS_GRADE, target: a.target.id, others: "worst" }, locale);
-      if (r.status !== "reachable" || r.viaRetake || r.min === undefined || r.min < HARD_SHARE * max - 1e-9) continue;
+      if (r.status !== "reachable" || r.viaRetakes?.length || r.min === undefined || r.min < HARD_SHARE * max - 1e-9) continue;
+      const label = targetLabel(a.target.label, r.retakeTarget);
       const text =
         scale.kind === "points"
-          ? t.hardPoints(a.target.label, r.min, max, PASS_GRADE)
-          : t.hardGrade(a.target.label, r.min, PASS_GRADE);
+          ? t.hardPoints(label, r.min, max, PASS_GRADE)
+          : t.hardGrade(label, r.min, PASS_GRADE);
       out.push({
         assessment: a,
         alert: {

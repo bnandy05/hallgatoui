@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useStore } from "@/lib/store";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import {
   awaitingResults,
   linkedInstances,
@@ -13,18 +14,6 @@ import {
   type LinkedInstance,
   type UpcomingAssessment,
 } from "@/lib/catchup";
-
-const TICK_MS = 60 * 1000;
-
-/** The current time, refreshed every minute, so a class that just ended shows up. */
-export function useMinuteNow(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), TICK_MS);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
 
 export interface CatchUpData {
   linked: LinkedInstance[];

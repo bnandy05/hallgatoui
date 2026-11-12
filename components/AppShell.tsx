@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CalendarDays, ListTodo, Plus, Settings } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 import { useDataReady } from "@/lib/useDataReady";
@@ -24,6 +24,7 @@ import { ThemeSync } from "@/components/ThemeSync";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonClasses } from "@/components/ui/Button";
 import { syncAllFeeds } from "@/lib/ical/client";
+import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { useDemoMode } from "@/lib/useDemoMode";
 import { DemoBar } from "@/components/demo/DemoBar";
@@ -117,14 +118,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   const dataReady = useDataReady();
   const bare = isPublicPath(pathname);
   const demo = useDemoMode() && !bare;
-  const didAutoSync = useRef(false);
+  const pulledThisSession = useStore((s) => s.pulledThisSession);
 
   useEffect(() => {
-    if (!dataReady || bare || didAutoSync.current) return;
-    didAutoSync.current = true;
-    // Fire and forget: doesn't block the UI, errors are stored per-feed.
-    void syncAllFeeds({ staleOnly: true });
-  }, [dataReady, bare]);
+    if (!dataReady || bare || demo || !pulledThisSession) return;
+    const refresh = () => {
+      if (document.visibilityState === "visible") void syncAllFeeds({ staleOnly: true });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 5 * 60_000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [dataReady, bare, demo, pulledThisSession]);
 
   return (
     <div className="isolate flex min-h-full flex-1 flex-col">

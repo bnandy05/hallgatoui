@@ -1,16 +1,11 @@
 import type { AppData } from "@/lib/types";
+import { hasSemesterContent } from "@/lib/semesterArchive";
 
 export type StartupDecision = { kind: "use-server" } | { kind: "upload-local" };
 
 /** True when the data holds anything the user created or imported. */
 export function hasAppData(d: AppData): boolean {
-  return (
-    d.courses.length > 0 ||
-    d.deadlines.length > 0 ||
-    d.feeds.length > 0 ||
-    d.customPlatforms.length > 0 ||
-    d.classSessions.length > 0
-  );
+  return hasSemesterContent(d) || d.customPlatforms.length > 0 || !!d.semesterArchives?.length;
 }
 
 /**

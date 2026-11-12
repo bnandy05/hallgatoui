@@ -316,6 +316,7 @@ export const trackerHu = {
     alreadyThere: (label: string, goal: number) => `A ${goal}-es ${label.toLowerCase()} már megvan, ettől függetlenül.`,
     unreachable: (goal: number) => `A ${goal}-es így már nem érhető el.`,
     via: (label: string) => ` (${label} megírásával)`,
+    retakeFor: (retake: string, exam: string) => `${retake} (${exam} helyett)`,
     need: (label: string, series: boolean) => `${label}: ${series ? "még legalább" : "legalább"}`,
     needAfter: (series: boolean, via: string) => `kell${series ? " a hátralévőkből" : ""}${via}.`,
     unitPoints: "pont",

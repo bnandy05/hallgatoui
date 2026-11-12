@@ -22,6 +22,7 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DuplicateSources } from "@/components/DuplicateSources";
 import { useDeadlineUndo } from "@/lib/useDeadlineUndo";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { newId } from "@/lib/id";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -113,7 +114,7 @@ function DeadlineDetail({
     [deadlines, deadline.seriesId]
   );
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
 
   const due = new Date(deadline.due);
   const urgency = urgencyOf(deadline, now);

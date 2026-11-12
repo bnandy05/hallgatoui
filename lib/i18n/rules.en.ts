@@ -182,6 +182,7 @@ export const rulesEn: Messages["rules"] = {
     unknownGrade: "Unknown grade.",
     noRequirement: "No required result can be calculated for this component.",
     nothingLeft: "No items left.",
+    searchLimit: "There are too many possible scores to calculate an exact minimum.",
     unreachable: "The goal cannot be reached.",
     onlyIfOthers: "Only reachable if the other results go well too.",
     gateUnmet: (label) => `Condition that cannot be met: ${label}.`,

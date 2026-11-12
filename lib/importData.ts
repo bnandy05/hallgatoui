@@ -1,10 +1,11 @@
-import type { AppData, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterInfo, TimetableSource } from "@/lib/types";
+import type { AppData, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterArchive, SemesterInfo, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
 import { validateRules } from "@/lib/rules/validate";
 import { linksFrom } from "@/lib/rules/links";
 import { alertPrefsFrom } from "@/lib/alertPrefs";
 import { normalizeSemesterStart } from "@/lib/timetable/semester";
 import type { RequirementResult, RequirementRules, ResultValue } from "@/lib/rules/types";
+import { MAX_SEMESTER_NAME, selectSemester } from "@/lib/semesterArchive";
 
 export const MAX_REQUIREMENTS_CHARS = 20_000;
 
@@ -116,7 +117,6 @@ function sourcesFrom(value: unknown): TimetableSource[] {
   });
 }
 
-export const MAX_REQUIREMENT_RESULTS = 4000;
 
 /** Keeps the rule sets that pass the rules validator, one per course. */
 function requirementRulesFrom(value: unknown, courseIds: Set<string>): RequirementRules[] {
@@ -190,7 +190,6 @@ function requirementResultsFrom(value: unknown, courseIds: Set<string>): Require
   const out: RequirementResult[] = [];
   const seen = new Set<string>();
   for (const item of value) {
-    if (out.length >= MAX_REQUIREMENT_RESULTS) break;
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
     if (typeof o.courseId !== "string" || !courseIds.has(o.courseId)) continue;
@@ -256,6 +255,25 @@ export class ImportError extends Error {
   }
 }
 
+function semesterArchivesFrom(value: unknown, activeNumber: number): SemesterArchive[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new ImportError("invalid");
+  const seen = new Set<number>();
+  return value.map((entry: unknown) => {
+    if (!entry || typeof entry !== "object") throw new ImportError("invalid");
+    const { number, name, archivedAt, data } = entry as Record<string, unknown>;
+    if (
+      typeof number !== "number" || !Number.isSafeInteger(number) || number < 0 || number >= activeNumber || seen.has(number) ||
+      typeof name !== "string" || !name.trim() || name.length > MAX_SEMESTER_NAME ||
+      typeof archivedAt !== "string" || !Number.isFinite(Date.parse(archivedAt)) ||
+      !data || typeof data !== "object" || Array.isArray(data)
+    ) throw new ImportError("invalid");
+    seen.add(number);
+    const snapshot = parseAppData({ ...data, version: 1, customPlatforms: [], semesterArchives: undefined, semesterNumber: undefined });
+    return { number, name: name.trim(), archivedAt: new Date(archivedAt).toISOString(), data: selectSemester(snapshot) };
+  }).sort((a, b) => a.number - b.number);
+}
+
 /**
  * Validates an arbitrary JSON value as an AppData export and returns it
  * typed. Throws an ImportError when the shape doesn't match.
@@ -288,6 +306,12 @@ export function parseAppData(json: unknown): AppData {
     throw new ImportError("invalid");
   }
 
+  const semesterNumber = data.semesterNumber ?? 0;
+  if (typeof semesterNumber !== "number" || !Number.isSafeInteger(semesterNumber) || semesterNumber < 0) {
+    throw new ImportError("invalid");
+  }
+  const archives = semesterArchivesFrom(data.semesterArchives, semesterNumber);
+
   return sanitizeUrls({
     version: 1,
     courses: data.courses,
@@ -302,6 +326,8 @@ export function parseAppData(json: unknown): AppData {
     ...optional("semester", semesterFrom(data.semester)),
     ...optional("catchUp", catchUpFrom(data.catchUp)),
     ...optional("alertPrefs", alertPrefsFrom(data.alertPrefs)),
+    ...(semesterNumber > 0 && { semesterNumber }),
+    ...(archives.length > 0 && { semesterArchives: archives }),
     ignoredDuplicatePairs: Array.isArray(data.ignoredDuplicatePairs)
       ? data.ignoredDuplicatePairs
           .filter((p): p is string => typeof p === "string" && p.length <= 600)

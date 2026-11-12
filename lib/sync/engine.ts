@@ -233,6 +233,8 @@ export function startSync(): () => void {
       state.semester !== prev.semester ||
       state.catchUp !== prev.catchUp ||
       state.alertPrefs !== prev.alertPrefs ||
+      state.semesterNumber !== prev.semesterNumber ||
+      state.semesterArchives !== prev.semesterArchives ||
       state.ignoredDuplicatePairs !== prev.ignoredDuplicatePairs ||
       state.exportOptions !== prev.exportOptions;
     if (changed) schedule();

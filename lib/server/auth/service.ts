@@ -303,7 +303,10 @@ export async function deleteAccount(
   await store.deleteUserSessions(user.id);
 
   const doc = await store.getData(user.id);
-  const feedIds = new Set((doc?.data.feeds ?? []).map((f) => f.id));
+  const feedIds = new Set([
+    ...(doc?.data.feeds ?? []),
+    ...(doc?.data.semesterArchives ?? []).flatMap((archive) => archive.data.feeds),
+  ].map((f) => f.id));
   await kv.del(...[...feedIds].map((id) => srcKey(user.id, id)), chgKey(user.id));
 
   await dropRenderedCalendars(kv, user.id);
