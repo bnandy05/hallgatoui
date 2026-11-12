@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, FileQuestion, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 import { addDays, format, isSameDay, startOfDay } from "date-fns";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
@@ -19,8 +20,10 @@ import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { LinkEditor } from "@/components/LinkEditor";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { RequirementsSection } from "@/components/RequirementsSection";
 import { ResourceList } from "@/components/ResourceList";
 import { Button, buttonClasses } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -78,16 +81,18 @@ function Section({
   title,
   sub,
   actions,
+  tour,
   children,
 }: {
   id: string;
+  tour?: string;
   title: string;
   sub?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-5">
+    <section aria-labelledby={id} data-tour={tour} className="flex flex-col gap-5">
       <SectionHeading id={id} title={title} sub={sub} actions={actions} />
       {children}
     </section>
@@ -125,6 +130,7 @@ function UpcomingClasses({ sessions, now }: { sessions: ClassSession[]; now: Dat
 
 export function CourseWeekDetail({ id }: { id: string }) {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
   const dl = dateLocale(locale);
   const hydrated = useDataReady();
@@ -134,7 +140,23 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const classSessions = useStore((s) => s.classSessions);
   const router = useRouter();
 
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
+
+  // The bell links to #course-requirements; the page renders a skeleton first, so the browser's
+  // own jump finds nothing. Scroll once the content is there (and when the hash changes).
+  useEffect(() => {
+    if (!hydrated) return;
+    const scroll = () => {
+      if (window.location.hash !== "#course-requirements") return;
+      document.getElementById("course-requirements")?.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    };
+    scroll();
+    window.addEventListener("hashchange", scroll);
+    return () => window.removeEventListener("hashchange", scroll);
+  }, [hydrated]);
   const [editOpen, setEditOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
@@ -180,9 +202,14 @@ export function CourseWeekDetail({ id }: { id: string }) {
   const nextClass = nextSessionFor(course.id, courseSessions, now);
   const criticalCount = open.filter((d) => isCritical(d, now)).length;
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!course) return;
-    if (confirm(t.course.confirmDelete)) {
+    const ok = await confirm({
+      title: t.course.confirmTitle,
+      message: t.course.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) {
       setDeleting(true);
       router.push("/");
       deleteCourse(course.id);
@@ -191,6 +218,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
+      {confirmDialog}
       <BackLink />
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[19rem_minmax(0,1fr)] lg:gap-10">
@@ -355,6 +383,10 @@ export function CourseWeekDetail({ id }: { id: string }) {
             </Section>
           )}
 
+          <Section id="course-requirements" tour="requirements" title={t.course.requirements}>
+            <RequirementsSection courseId={course.id} />
+          </Section>
+
           <Section id="course-resources" title={t.course.resources}>
             <ResourceList courseId={course.id} />
           </Section>
@@ -366,6 +398,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
         <LinkEditor courseId={course.id} />
       </Dialog>
       <DeadlineDialog open={deadlineOpen} onClose={() => setDeadlineOpen(false)} defaultCourseId={course.id} />
+      {confirmDialog}
     </div>
   );
 }

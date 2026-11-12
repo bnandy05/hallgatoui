@@ -22,10 +22,13 @@ Each course gets its own page with its platform links (Neptun, Canvas, Teams, Mo
 Add a Canvas, Moodle or any other iCal feed and the deadlines land on the right course automatically. Canvas courses found in a feed can be turned into courses in the app, and their Canvas links are added for you. When you connect a feed mid-semester, everything already past can be marked done in one go. Feeds keep syncing in the background, and your own ticks and flags survive every sync.
 
 ### Timetable import
-Import the timetable exported from Neptun (Calendar → Export) as a link or an `.ics` file. A file is parsed in your browser. Map each subject to a course once; the mapping survives re-imports. Classes then show up in the weekly view, on the course page and in the calendar subscription. Only the current week and later are imported, so last semester never gets in the way.
+Import the timetable exported from Neptun (Calendar → Export) as a link or an `.ics` file. A file is parsed in your browser. Map each subject to a course once; the mapping survives re-imports. Classes then show up in the weekly view, on the course page and in the calendar subscription. The whole current semester is imported (the start of the term is detected from the breaks in the timetable); earlier terms never get in the way.
 
 ### Deadline radar
 Deadlines grouped by week and sorted by urgency: overdue, critical (within 48 hours or flagged by you), within a week, later. Includes a weekly summary. Deadlines from a feed can't be edited, only marked done or critical, so your board always matches the source.
+
+### Requirements (Követelmények)
+Each course page has a requirements section that turns the course's scoring rules into a live standing. Set the rules up whichever way suits you: read them from the requirements document (upload the PDF, which your browser reads, or paste the text; the **Jev** AI from TypeSafe fills in a form that you review before saving), start from a template (including ones shared by students of your university with the same course code), or **fill the form in by hand** or write the rules as JSON; no AI is needed. Then record your results (tests, assignments, quizzes, attendance, bonus points) and see, for every grade, where you stand, what is still reachable and what you need for the grade you want. Components can be linked to classes, teaching weeks or deadlines, so after a class the **"What happened in your classes?"** popup and the header bell ask for the missing result. The grade is a calculation from the rules you set, not an official grade.
 
 ### Merged calendar subscription
 One `.ics` link with every source plus your own deadlines, rendered by the server from your account, so edits show up straight away:
@@ -65,6 +68,15 @@ npm test        # node:test, TZ=UTC, with real iCal fixtures (fixtures/ical)
 
 Next.js (App Router), React, Tailwind CSS v4, zustand, ical.js, date-fns, lucide-react. Project conventions (structure, design tokens, iCal rules) are in [`CLAUDE.md`](CLAUDE.md), the roadmap in [`docs/PLAN.md`](docs/PLAN.md).
 
+GitHub Actions runs lint, unit tests, the production build and browser tests. The browser tests use an existing production build and a temporary Playwright installation.
+
+```bash
+browser_tools=$(mktemp -d)
+npm install --prefix "$browser_tools" --no-save playwright@1.64.1
+"$browser_tools/node_modules/.bin/playwright" install chromium
+NODE_PATH="$browser_tools/node_modules" node --test test/calendar.browser.mjs
+```
+
 ### Layout
 
 | Path | Contents |
@@ -98,6 +110,10 @@ The digest is opt-in under Settings → Notifications: daily, weekly (Monday) or
 
 Without a key in development, emails are written to the server log, and the cron can be called by hand: `curl localhost:3000/api/cron/hirlevel`.
 
+### Requirements reading (Jev)
+
+- `JEV_API_KEY` (optional): [TypeSafe AI](https://typesafe.ai) key for reading requirement documents and for course, component and duplicate suggestions. Without it the requirements are read by the built-in pattern parser in the browser (the API answers 503), suggestions are skipped, and rules can always be set up by hand or from a template. `npm run jev:survey -- <doc.txt> "<course>"` evaluates the survey against a real document.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
@@ -124,10 +140,13 @@ Minden tárgynak külön oldala van: itt vannak a linkjei (Neptun, Canvas, Teams
 Elég megadni a Canvas, a Moodle vagy bármilyen más iCal feed linkjét, a határidők maguktól a megfelelő tárgyhoz kerülnek. Ha a feedben olyan Canvas-kurzus van, ami még nincs meg, tárgyat is csinálhatsz belőle, a Canvas-linkje pedig automatikusan bekerül. Ha félév közben kötöd be, a már lejárt határidőket egy pipával kipipálhatod. A feedek a háttérben frissülnek, a pipáid és a kritikus jelöléseid közben nem vesznek el.
 
 ### Órarend-import
-A Neptunból exportált órarendet (Naptár → Exportálás) linkként vagy `.ics` fájlként is behúzhatod; a fájlt a böngésző olvassa be, nem megy fel sehova. A Neptunos tantárgyneveket egyszer kell párosítani a tárgyaiddal, ezt az app megjegyzi, újraimportálás után sem kell újra megcsinálni. Utána az órák megjelennek a heti nézetben, a tárgy oldalán és a naptárban is. Csak az aktuális héttől importál, a múlt félév órái nem keverednek bele.
+A Neptunból exportált órarendet (Naptár → Exportálás) linkként vagy `.ics` fájlként is behúzhatod; a fájlt a böngésző olvassa be, nem megy fel sehova. A Neptunos tantárgyneveket egyszer kell párosítani a tárgyaiddal, ezt az app megjegyzi, újraimportálás után sem kell újra megcsinálni. Utána az órák megjelennek a heti nézetben, a tárgy oldalán és a naptárban is. Az aktuális félév egészét importálja (a félév kezdetét az órarend szüneteiből ismeri fel), a korábbi félévek órái nem keverednek bele.
 
 ### Határidő-radar
 Hetekre bontva, sürgősség szerint látod, mi vár rád: mi járt le, mi kritikus (48 órán belül esedékes, vagy te jelölted meg), mi jön egy héten belül, és mi ráér. Hetente összesítőt is kapsz. A feedből jövő határidőket nem lehet szerkeszteni, csak késznek vagy kritikusnak jelölni, így mindig az van ott, ami a forrásban.
+
+### Követelmények
+Minden tárgy oldalán van egy követelmények szakasz, ami a tárgy pontozási szabályaiból élő állást számol. A szabályokat többféleképpen állíthatod be: kiolvashatod a követelményrendszerből (feltöltöd a PDF-et, amit a böngésződ olvas be, vagy beillesztesz szöveget; a **Jev** MI a TypeSafe-től kitölt egy űrlapot, amit mentés előtt átnézel), indulhatsz sablonból (az egyetemed azonos tárgykódú hallgatói által megosztottakból is), vagy **kézzel töltheted ki az űrlapot**, illetve megírhatod a szabályokat JSON-ban; MI nélkül is megy. Utána rögzíted az eredményeidet (zh, beadandó, kvíz, jelenlét, bónuszpont), és minden jegyre látod, hol állsz, mi érhető még el, és mi kell ahhoz, amit szeretnél. Az összetevőket órákhoz, oktatási hetekhez vagy határidőkhöz kötheted, így óra után a **„Mi történt az óráidon?”** ablak és a csengő rákérdez a hiányzó eredményre. A jegy a beállított szabályokból számolt érték, nem hivatalos jegy.
 
 ### Közös naptár-előfizetés
 Egyetlen `.ics` link, benne minden forrással és a saját határidőiddel. A szerver mindig a fiókod aktuális adataiból rakja össze, így amit átírsz, az azonnal látszik:
@@ -199,6 +218,10 @@ Az összefoglalót a Beállítások → Értesítések alatt lehet bekapcsolni: 
 - `APP_URL` (nem kötelező): a levelekben lévő linkek alapcíme; ha nincs megadva, a `VERCEL_PROJECT_PRODUCTION_URL`.
 
 Fejlesztés közben, API-kulcs nélkül a levelek a szerver naplójába kerülnek, a cront pedig kézzel is meghívhatod: `curl localhost:3000/api/cron/hirlevel`.
+
+### Követelmények beolvasása (Jev)
+
+- `JEV_API_KEY` (nem kötelező): [TypeSafe AI](https://typesafe.ai) kulcs a követelményrendszerek beolvasásához, valamint a tárgy-, összetevő- és ismétlődés-javaslatokhoz. Nélküle a követelményeket a böngészőben futó mintaolvasó dolgozza fel (az API 503-at ad), a javaslatok elmaradnak, a szabályok pedig mindig megadhatók kézzel vagy sablonból. A `npm run jev:survey -- <doc.txt> "<tárgy>"` egy valódi dokumentumon méri a felmérést.
 
 ## Licenc
 

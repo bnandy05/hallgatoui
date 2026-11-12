@@ -22,10 +22,12 @@ export default async function Page(props: PageProps<"/hirlevel">) {
   const result = param(query.eredmeny);
   const userId = param(query.u);
   const key = param(query.k);
+  // m=riaszto: the link of an urgent grade-alert mail (turns only those off).
+  const alerts = param(query.m) === "riaszto";
 
   let body;
   if (result === "ok") {
-    body = <p className="text-lead text-foreground">{t.unsubscribe.done}</p>;
+    body = <p className="text-lead text-foreground">{alerts ? t.unsubscribe.doneAlerts : t.unsubscribe.done}</p>;
   } else if (result) {
     body = <p className="text-lead font-semibold text-danger">{t.unsubscribe.invalid}</p>;
   } else if (!userId || !key) {
@@ -33,10 +35,10 @@ export default async function Page(props: PageProps<"/hirlevel">) {
   } else {
     body = (
       <form method="post" action="/api/hirlevel" className="flex flex-col items-start gap-4">
-        <input type="hidden" name="m" value="leiratkozas" />
+        <input type="hidden" name="m" value={alerts ? "riaszto" : "leiratkozas"} />
         <input type="hidden" name="u" value={userId} />
         <input type="hidden" name="k" value={key} />
-        <p className="text-lead text-foreground">{t.unsubscribe.prompt}</p>
+        <p className="text-lead text-foreground">{alerts ? t.unsubscribe.promptAlerts : t.unsubscribe.prompt}</p>
         <Button type="submit" variant="danger">
           {t.unsubscribe.button}
         </Button>

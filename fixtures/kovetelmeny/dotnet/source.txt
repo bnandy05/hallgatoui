@@ -1,0 +1,21 @@
+.NET GUI programozás (Windows Forms, WPF, Avalonia) – Követelmények
+
+Gyakorlati jegy
+
+A félév során 2 beadandó feladatot kell elkészíteni.
+A határidőre elfogadott beadandó 3 pontot ér.
+A határidő után egy hetes javítási időszak van, az ekkor elfogadott beadandó 1 pontot ér.
+Ha valamelyik beadandó nincs elfogadva, nincs gyakorlati jegy.
+
+A félév során 2 gyakorlati zh-t írunk, ezeket 1–5 skálán értékeljük, és mindkettő duplán számít.
+Egy elméleti zh-t írunk, amely 30 feleletválasztós kérdésből áll.
+Az elméleti zh jegye: 27-től jeles (5), 24-től jó (4), 21-től közepes (3), 18-tól elégséges (2), alatta elégtelen (1).
+Minden zh-nak legalább elégségesnek kell lennie.
+A gyakorlati zh-k közül egy, valamint az elméleti zh egyszer javítható.
+
+Összesen 31 pont szerezhető. A gyakorlati jegy:
+0–11 pont: elégtelen (1)
+12–16 pont: elégséges (2)
+17–20 pont: közepes (3)
+21–25 pont: jó (4)
+26–31 pont: jeles (5)

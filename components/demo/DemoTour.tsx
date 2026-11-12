@@ -14,8 +14,8 @@ type StepKey = keyof ReturnType<typeof useT>["demo"]["steps"];
 
 interface Step {
   key: StepKey;
-  /** Where the step is shown; null stays on the current page. A function gets the first course id. */
-  path: string | null | ((courseId: string | undefined) => string);
+  /** Where the step is shown; null stays on the current page. A function gets the first course id and the one with requirement rules. */
+  path: string | null | ((courseId: string | undefined, rulesCourseId: string | undefined) => string);
   /** `data-tour` value of the element to highlight. */
   target?: string;
   locked?: boolean;
@@ -26,6 +26,7 @@ const STEPS: Step[] = [
   { key: "board", path: "/", target: "week-board" },
   { key: "courses", path: "/", target: "courses" },
   { key: "course", path: (id) => (id ? `/targy/${id}` : "/"), target: "course-card" },
+  { key: "requirements", path: (first, withRules) => { const id = withRules ?? first; return id ? `/targy/${id}#course-requirements` : "/"; }, target: "requirements" },
   { key: "newDeadline", path: null, target: "new-deadline" },
   { key: "search", path: null, target: "search" },
   { key: "radar", path: "/radar", target: "deadline-list" },
@@ -113,6 +114,7 @@ export function DemoTour() {
   const router = useRouter();
   const pathname = usePathname();
   const firstCourseId = useStore((s) => s.courses[0]?.id);
+  const rulesCourseId = useStore((s) => s.requirementRules[0]?.courseId);
   const step = useSyncExternalStore(subscribe, readStep, () => null);
 
   const current = step === null ? undefined : STEPS[step];
@@ -121,7 +123,7 @@ export function DemoTour() {
   const goTo = useCallback(
     (index: number) => {
       const next = STEPS[index];
-      const path = typeof next.path === "function" ? next.path(firstCourseId) : next.path;
+      const path = typeof next.path === "function" ? next.path(firstCourseId, rulesCourseId) : next.path;
       writeStep(index);
       if (!path) return;
       const [route, hash] = path.split("#");
@@ -138,7 +140,7 @@ export function DemoTour() {
         router.push(path);
       }
     },
-    [router, firstCourseId]
+    [router, firstCourseId, rulesCourseId]
   );
 
   if (step === null || !current) return null;

@@ -30,6 +30,9 @@ export const chgKey = (userId: string) => `chg:${userId}`;
 export const digKey = (userId: string) => `dig:${userId}`;
 /** Set of userIds with a digest, visited by the daily cron. */
 export const DIGEST_INDEX_KEY = "dig:index";
+/** Grade-alert email settings of a user (see lib/server/gradeAlerts.ts) and the set the cron visits. */
+export const alrKey = (userId: string) => `alr:${userId}`;
+export const ALERT_INDEX_KEY = "alr:index";
 
 /** Rendered calendar of a user's view (see lib/server/calendar.ts), and the set listing them. */
 export const icsKey = (userId: string, locale: Locale, view: string) => `ics:${userId}:${locale}:${view}`;

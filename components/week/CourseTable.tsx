@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Link2, Pencil, Plus } from "lucide-react";
 import { format } from "date-fns";
@@ -11,6 +11,7 @@ import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
+import { courseStanding } from "@/lib/rules/standing";
 import type { Course, CourseLink } from "@/lib/types";
 import { CourseDialog } from "@/components/CourseDialog";
 import { LinkEditor } from "@/components/LinkEditor";
@@ -53,6 +54,8 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
   const locale = useLocale();
   const { visible: deadlines } = useDedupedDeadlines();
   const classSessions = useStore((s) => s.classSessions);
+  const rules = useStore((s) => s.requirementRules);
+  const allResults = useStore((s) => s.requirementResults);
   const [editOpen, setEditOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
 
@@ -61,6 +64,14 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
   const open = deadlines.filter((d) => d.courseId === course.id && !d.done).length;
   const meta = [course.code, course.semester].filter(Boolean).join(" · ");
   const extra = course.links.length - MAX_LAUNCHERS;
+  // Only once something is recorded: before that every course would read "1–5".
+  const standing = useMemo(() => {
+    const own = rules.find((r) => r.courseId === course.id);
+    const results = allResults.filter((r) => r.courseId === course.id);
+    const standing = own && results.some((r) => r.state === "recorded") ? courseStanding(own, results, now, locale) : null;
+    // "1–5" with nothing at risk says nothing yet.
+    return standing && (standing.grade !== "1–5" || standing.risk) ? standing : null;
+  }, [rules, allResults, course.id, now, locale]);
 
   return (
     <li className="slip flex min-w-0 flex-col bg-card px-4 pb-3.5 pt-4" style={{ "--i": index } as CSSProperties}>
@@ -108,6 +119,18 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
             {t.courseCard.classLabel}: {format(new Date(nextClass.start), "EEE HH:mm", { locale: dateLocale(locale) })}
             {nextClass.room && ` · ${nextClass.room}`}
           </p>
+        )}
+        {standing && (
+          <Link href={`/targy/${course.id}`} className="mt-2 block rounded-[var(--radius)] text-fine hover:underline">
+            <span className="text-muted">{standing.label}: </span>
+            <span className="font-semibold tabular-nums text-heading">{standing.grade}</span>
+            {!standing.final && standing.grade.includes("–") && <span className="text-muted"> {t.courseCard.possible}</span>}
+            {standing.risk && (
+              <span className={`block truncate ${standing.danger ? "font-semibold text-danger" : "text-warning"}`} title={standing.risk}>
+                {standing.risk}
+              </span>
+            )}
+          </Link>
         )}
       </div>
 

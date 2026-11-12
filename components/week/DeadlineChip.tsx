@@ -2,16 +2,18 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { format } from "date-fns";
-import { Flame } from "lucide-react";
+import { Flame, ListChecks } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
+import { checklistProgress } from "@/lib/checklist";
+import { formatEstimate, isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import { deadlineAnchorId } from "@/lib/search";
 import type { Deadline } from "@/lib/types";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DuplicateSources } from "@/components/DuplicateSources";
+import { useDeadlineUndo } from "@/lib/useDeadlineUndo";
 
 export interface DeadlineChipProps {
   deadline: Deadline;
@@ -35,7 +37,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   const t = useT();
   const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
-  const toggleDone = useStore((s) => s.toggleDone);
+  const { toggleDoneWithUndo } = useDeadlineUndo();
   const [open, setOpen] = useState(false);
   const slipRef = useRef<HTMLDivElement>(null);
   const wasDone = useRef(deadline.done);
@@ -57,6 +59,9 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   const hot = overdue || urgency === "critical";
   const due = new Date(deadline.due);
   const changed = deadline.previousDue && isRecentlyChanged(deadline, now);
+  const { done: checklistDone, total: checklistTotal } = deadline.done
+    ? { done: 0, total: 0 }
+    : checklistProgress(deadline.checklist);
   // A done slip's pin is on its way out: it keeps the colour it had, so it doesn't flash as it goes.
   const wasHot = deadline.done && ["overdue", "critical"].includes(urgencyOf({ ...deadline, done: false }, now));
   const pinColor = hot || wasHot ? "var(--pin)" : (course?.color ?? "var(--border-strong)");
@@ -79,7 +84,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
       <div className="flex items-start gap-2">
         <Checkbox
           checked={deadline.done}
-          onChange={() => toggleDone(deadline.id)}
+          onChange={() => toggleDoneWithUndo(deadline.id)}
           aria-label={deadline.done ? t.week.markNotDone(deadline.title) : t.week.markDone(deadline.title)}
         />
         <div className="min-w-0 flex-1">
@@ -100,6 +105,22 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
             </span>
             {deadline.critical && !deadline.done && (
               <Flame className="h-3.5 w-3.5 shrink-0 text-danger" aria-label={t.common.critical} />
+            )}
+            {deadline.estimateMinutes && !deadline.done && (
+              <span className="shrink-0 tabular-nums" title={t.estimate.label}>
+                {formatEstimate(deadline.estimateMinutes, locale)}
+              </span>
+            )}
+            {checklistTotal > 0 && (
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 tabular-nums"
+                title={t.checklist.progress(checklistDone, checklistTotal)}
+              >
+                <ListChecks className="h-3 w-3" aria-hidden="true" />
+                <span aria-label={t.checklist.progress(checklistDone, checklistTotal)}>
+                  {checklistDone}/{checklistTotal}
+                </span>
+              </span>
             )}
             {changed && <span className="shrink-0 font-semibold text-warning">{t.week.changed}</span>}
             {showCourse && course && (

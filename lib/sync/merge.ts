@@ -1,4 +1,5 @@
-import type { AppData, Deadline, ExportOptions } from "@/lib/types";
+import type { AlertPrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterArchive, SemesterData, SemesterInfo } from "@/lib/types";
+import { emptySemester, selectSemester } from "@/lib/semesterArchive";
 import { syncNow } from "@/lib/sync/clock";
 import { mergeTombstones, pruneTombstones } from "@/lib/sync/tombstones";
 
@@ -88,13 +89,31 @@ function mergeItem<T extends Item>(b: T | undefined, l: T, r: T, tombstones: Rec
   return out as unknown as T;
 }
 
+/** Item-level merge: the side that changed wins; changed on both, the later edit (a tie the remote). */
+function mergeWhole<T extends Item>(b: T | undefined, l: T, r: T): T {
+  if (same(l, r)) return l;
+  if (b) {
+    const localChanged = !same(l, b);
+    const remoteChanged = !same(r, b);
+    if (localChanged && !remoteChanged) return l;
+    if (remoteChanged && !localChanged) return r;
+  }
+  return timeOf(r) >= timeOf(l) ? r : l;
+}
+
 /**
  * Time-aware three-way merge of an id-keyed list (see the table in docs/superpowers/plans/
  * 2026-10-05-offline-and-series.md). Items on both sides merge field by field; a deletion beats an
  * edit only when the edit is older than the tombstone. Order: remote's, then local-only items in
  * local order.
  */
-function mergeById<T extends Item>(base: T[], local: T[], remote: T[], tombstones: Record<string, string>): T[] {
+function mergeById<T extends Item>(
+  base: T[],
+  local: T[],
+  remote: T[],
+  tombstones: Record<string, string>,
+  whole = false
+): T[] {
   const baseMap = new Map(base.map((i) => [i.id, i]));
   const localMap = new Map(local.map((i) => [i.id, i]));
   const remoteMap = new Map(remote.map((i) => [i.id, i]));
@@ -105,7 +124,7 @@ function mergeById<T extends Item>(base: T[], local: T[], remote: T[], tombstone
     const l = localMap.get(id);
     const r = remoteMap.get(id);
     const deletedAt = tombstones[id] ?? "";
-    if (l && r) return mergeItem(b, l, r, tombstones);
+    if (l && r) return whole ? mergeWhole(b, l, r) : mergeItem(b, l, r, tombstones);
     const only = l ?? r;
     if (!only) return undefined;
     // Present on one side only: added there, or deleted on the other side.
@@ -178,6 +197,30 @@ function pick<T>(base: T, local: T, remote: T): T {
   return !same(local, base) && same(remote, base) ? local : remote;
 }
 
+/** The semester start: the side that changed wins; changed on both, the later edit. */
+function mergeSemester(base?: SemesterInfo, local?: SemesterInfo, remote?: SemesterInfo): SemesterInfo | undefined {
+  if (same(local, remote)) return local;
+  if (same(remote, base)) return local;
+  if (same(local, base)) return remote;
+  return (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
+}
+
+/** The alert preferences: the side that changed wins; changed on both, the later edit. */
+function mergeAlertPrefs(base?: AlertPrefs, local?: AlertPrefs, remote?: AlertPrefs): AlertPrefs | undefined {
+  if (same(local, remote)) return local;
+  if (same(remote, base)) return local;
+  if (same(local, base)) return remote;
+  return (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
+}
+
+/** When the catch-up popup was last closed: the later of the two. */
+function mergeCatchUp(local?: CatchUpState, remote?: CatchUpState): CatchUpState | undefined {
+  const l = local?.promptedUntil ?? "";
+  const r = remote?.promptedUntil ?? "";
+  if (!l && !r) return undefined;
+  return { promptedUntil: l > r ? l : r };
+}
+
 /** Merges the options field by field, so two devices changing different options both keep them. */
 function mergeOptions(base: ExportOptions, local: ExportOptions, remote: ExportOptions): ExportOptions {
   const out = { ...remote } as Record<string, unknown>;
@@ -187,23 +230,62 @@ function mergeOptions(base: ExportOptions, local: ExportOptions, remote: ExportO
   return out as unknown as ExportOptions;
 }
 
-/**
- * Merges the local state onto a newer remote one, given the last synced `base`. Pure (`now` only
- * stamps tombstones and prunes); used when the server answers a save with 409.
- */
+const withOptional = <K extends string, V>(key: K, value: V | undefined) =>
+  value === undefined ? {} : ({ [key]: value } as Record<K, V>);
+
+function mergeSemesterData(b: SemesterData, l: SemesterData, r: SemesterData, tombstones: Record<string, string>, now: string): SemesterData {
+  const merged = mergeById(b.deadlines, l.deadlines, r.deadlines, tombstones);
+  const collapsed = collapseFeedDuplicates(merged, new Set(r.deadlines.map((d) => d.id)));
+  for (const id of collapsed.dropped) tombstones[id] = now;
+  return {
+    courses: mergeById(b.courses, l.courses, r.courses, tombstones),
+    deadlines: collapsed.deadlines,
+    feeds: mergeById(b.feeds, l.feeds, r.feeds, tombstones),
+    timetableSources: mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones),
+    classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
+    // Rules merge as a whole so two edits cannot mix into an invalid rule set.
+    requirementRules: mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true),
+    requirementResults: mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones),
+    ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
+    ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
+    ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),
+  };
+}
+
+/** Match active and archived data by semester, so a late edit stays in the term it was made in. */
+function mergeSemesters(b: AppData, l: AppData, r: AppData, tombstones: Record<string, string>, now: string) {
+  const number = Math.max(l.semesterNumber ?? 0, r.semesterNumber ?? 0);
+  const archiveOf = (d: AppData, term: number) => d.semesterArchives?.find((a) => a.number === term);
+  const dataOf = (d: AppData, term: number) => (d.semesterNumber ?? 0) === term ? selectSemester(d) : archiveOf(d, term)?.data;
+  const mergeTerm = (term: number) => {
+    const local = dataOf(l, term);
+    const remote = dataOf(r, term);
+    if (!local || !remote) return local ?? remote ?? emptySemester();
+    if (term !== number && same(local, remote)) return remote;
+    return mergeSemesterData(dataOf(b, term) ?? emptySemester(), local, remote, tombstones, now);
+  };
+  const archives: SemesterArchive[] = [];
+  const numbers = new Set([...(l.semesterArchives ?? []), ...(r.semesterArchives ?? [])].map((a) => a.number));
+  for (const term of [...numbers].sort((a, b) => a - b)) {
+    const local = archiveOf(l, term);
+    const remote = archiveOf(r, term);
+    const base = archiveOf(b, term);
+    // Reset/restore can remove an archive. An offline device still in that semester has active data instead.
+    if (base && (!local || !remote) && same(local ?? remote, base)) continue;
+    const meta = !remote || (local && local.archivedAt > remote.archivedAt) ? local : remote;
+    if (meta) archives.push({ ...meta, data: mergeTerm(term) });
+  }
+  return { active: mergeTerm(number), number, archives };
+}
+
+/** Merge local changes against the last synced base after a conflict. */
 export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: SyncPayload, now: string = syncNow()): SyncPayload {
   const b = base.data;
   const l = local.data;
   const r = remote.data;
-  let tombstones = mergeTombstones(l.tombstones, r.tombstones);
-
-  const courses = mergeById(b.courses, l.courses, r.courses, tombstones);
-  const merged = mergeById(b.deadlines, l.deadlines, r.deadlines, tombstones);
-  const collapsed = collapseFeedDuplicates(merged, new Set(r.deadlines.map((d) => d.id)));
-  for (const id of collapsed.dropped) tombstones[id] = now;
+  const tombstones = mergeTombstones(l.tombstones, r.tombstones);
+  const { active, number, archives } = mergeSemesters(b, l, r, tombstones, now);
   const customPlatforms = mergeById(b.customPlatforms, l.customPlatforms, r.customPlatforms, tombstones);
-  const feeds = mergeById(b.feeds, l.feeds, r.feeds, tombstones);
-  const timetableSources = mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones);
 
   // An item that survived (edited after its deletion) is not deleted any more.
   const alive = new Set<string>();
@@ -214,24 +296,26 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
       i.resources?.forEach((x) => alive.add(x.id));
     }
   };
-  collect(courses);
-  collect(collapsed.deadlines);
   collect(customPlatforms);
-  collect(feeds);
-  collect(timetableSources);
-  tombstones = Object.fromEntries(Object.entries(tombstones).filter(([id]) => !alive.has(id)));
+  for (const term of [active, ...archives.map((a) => a.data)]) {
+    collect(term.courses);
+    collect(term.deadlines);
+    collect(term.feeds);
+    collect(term.timetableSources);
+    collect(term.requirementRules);
+    collect(term.requirementResults);
+  }
+  for (const id of alive) delete tombstones[id];
 
   return {
     data: {
       version: pick(b.version, l.version, r.version),
-      courses,
-      deadlines: collapsed.deadlines,
+      ...active,
       customPlatforms,
-      feeds,
-      classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
-      timetableSources,
-      ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
+      ...(number > 0 && { semesterNumber: number }),
+      ...(archives.length > 0 && { semesterArchives: archives }),
       tombstones: pruneTombstones(tombstones, now),
+      ...withOptional("alertPrefs", mergeAlertPrefs(b.alertPrefs, l.alertPrefs, r.alertPrefs)),
     },
     // Per-option timestamps are not worth it: the same option changed on two devices takes the remote's.
     exportOptions: mergeOptions(base.exportOptions, local.exportOptions, remote.exportOptions),
