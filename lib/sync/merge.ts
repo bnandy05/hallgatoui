@@ -1,4 +1,4 @@
-import type { AppData, Deadline, ExportOptions } from "@/lib/types";
+import type { AlertPrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterInfo } from "@/lib/types";
 import { syncNow } from "@/lib/sync/clock";
 import { mergeTombstones, pruneTombstones } from "@/lib/sync/tombstones";
 
@@ -88,13 +88,31 @@ function mergeItem<T extends Item>(b: T | undefined, l: T, r: T, tombstones: Rec
   return out as unknown as T;
 }
 
+/** Item-level merge: the side that changed wins; changed on both, the later edit (a tie the remote). */
+function mergeWhole<T extends Item>(b: T | undefined, l: T, r: T): T {
+  if (same(l, r)) return l;
+  if (b) {
+    const localChanged = !same(l, b);
+    const remoteChanged = !same(r, b);
+    if (localChanged && !remoteChanged) return l;
+    if (remoteChanged && !localChanged) return r;
+  }
+  return timeOf(r) >= timeOf(l) ? r : l;
+}
+
 /**
  * Time-aware three-way merge of an id-keyed list (see the table in docs/superpowers/plans/
  * 2026-10-05-offline-and-series.md). Items on both sides merge field by field; a deletion beats an
  * edit only when the edit is older than the tombstone. Order: remote's, then local-only items in
  * local order.
  */
-function mergeById<T extends Item>(base: T[], local: T[], remote: T[], tombstones: Record<string, string>): T[] {
+function mergeById<T extends Item>(
+  base: T[],
+  local: T[],
+  remote: T[],
+  tombstones: Record<string, string>,
+  whole = false
+): T[] {
   const baseMap = new Map(base.map((i) => [i.id, i]));
   const localMap = new Map(local.map((i) => [i.id, i]));
   const remoteMap = new Map(remote.map((i) => [i.id, i]));
@@ -105,7 +123,7 @@ function mergeById<T extends Item>(base: T[], local: T[], remote: T[], tombstone
     const l = localMap.get(id);
     const r = remoteMap.get(id);
     const deletedAt = tombstones[id] ?? "";
-    if (l && r) return mergeItem(b, l, r, tombstones);
+    if (l && r) return whole ? mergeWhole(b, l, r) : mergeItem(b, l, r, tombstones);
     const only = l ?? r;
     if (!only) return undefined;
     // Present on one side only: added there, or deleted on the other side.
@@ -178,6 +196,30 @@ function pick<T>(base: T, local: T, remote: T): T {
   return !same(local, base) && same(remote, base) ? local : remote;
 }
 
+/** The semester start: the side that changed wins; changed on both, the later edit. */
+function mergeSemester(base?: SemesterInfo, local?: SemesterInfo, remote?: SemesterInfo): SemesterInfo | undefined {
+  if (same(local, remote)) return local;
+  if (same(remote, base)) return local;
+  if (same(local, base)) return remote;
+  return (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
+}
+
+/** The alert preferences: the side that changed wins; changed on both, the later edit. */
+function mergeAlertPrefs(base?: AlertPrefs, local?: AlertPrefs, remote?: AlertPrefs): AlertPrefs | undefined {
+  if (same(local, remote)) return local;
+  if (same(remote, base)) return local;
+  if (same(local, base)) return remote;
+  return (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
+}
+
+/** When the catch-up popup was last closed: the later of the two. */
+function mergeCatchUp(local?: CatchUpState, remote?: CatchUpState): CatchUpState | undefined {
+  const l = local?.promptedUntil ?? "";
+  const r = remote?.promptedUntil ?? "";
+  if (!l && !r) return undefined;
+  return { promptedUntil: l > r ? l : r };
+}
+
 /** Merges the options field by field, so two devices changing different options both keep them. */
 function mergeOptions(base: ExportOptions, local: ExportOptions, remote: ExportOptions): ExportOptions {
   const out = { ...remote } as Record<string, unknown>;
@@ -186,6 +228,9 @@ function mergeOptions(base: ExportOptions, local: ExportOptions, remote: ExportO
   }
   return out as unknown as ExportOptions;
 }
+
+const withOptional = <K extends string, V>(key: K, value: V | undefined) =>
+  value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
 /**
  * Merges the local state onto a newer remote one, given the last synced `base`. Pure (`now` only
@@ -204,6 +249,9 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
   const customPlatforms = mergeById(b.customPlatforms, l.customPlatforms, r.customPlatforms, tombstones);
   const feeds = mergeById(b.feeds, l.feeds, r.feeds, tombstones);
   const timetableSources = mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones);
+  // A rule set merges as one block, so two devices' edits can't mix into an invalid set.
+  const requirementRules = mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true);
+  const requirementResults = mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones);
 
   // An item that survived (edited after its deletion) is not deleted any more.
   const alive = new Set<string>();
@@ -219,6 +267,8 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
   collect(customPlatforms);
   collect(feeds);
   collect(timetableSources);
+  collect(requirementRules);
+  collect(requirementResults);
   tombstones = Object.fromEntries(Object.entries(tombstones).filter(([id]) => !alive.has(id)));
 
   return {
@@ -230,8 +280,13 @@ export function mergeAppData(base: SyncPayload, local: SyncPayload, remote: Sync
       feeds,
       classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
       timetableSources,
+      requirementRules,
+      requirementResults,
       ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
       tombstones: pruneTombstones(tombstones, now),
+      ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
+      ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),
+      ...withOptional("alertPrefs", mergeAlertPrefs(b.alertPrefs, l.alertPrefs, r.alertPrefs)),
     },
     // Per-option timestamps are not worth it: the same option changed on two devices takes the remote's.
     exportOptions: mergeOptions(base.exportOptions, local.exportOptions, remote.exportOptions),

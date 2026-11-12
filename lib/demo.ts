@@ -2,6 +2,7 @@ import { addDays, addHours, setHours, setMinutes, setSeconds, setMilliseconds, s
 import { normalizeCourseName } from "@/lib/ical/canvas";
 import { pickCourseColor } from "@/lib/colors";
 import type { Locale } from "@/lib/i18n/locales";
+import { buildDemoRequirements } from "@/lib/demoRules";
 import type { AppData, ClassSession, Course, Deadline, IcalFeed, Resource, TimetableSource } from "@/lib/types";
 
 function at(base: Date, hours: number, minutes = 0): string {
@@ -174,6 +175,7 @@ export function buildDemoData(now: Date, locale: Locale = "hu"): AppData {
       critical: true,
       done: false,
       source: "manual",
+      estimateMinutes: 120,
     },
     {
       id: "demo-dl-4",
@@ -185,6 +187,7 @@ export function buildDemoData(now: Date, locale: Locale = "hu"): AppData {
       critical: false,
       done: false,
       source: "manual",
+      estimateMinutes: 60,
     },
     {
       id: "demo-dl-5",
@@ -194,6 +197,12 @@ export function buildDemoData(now: Date, locale: Locale = "hu"): AppData {
       critical: false,
       done: false,
       source: "manual",
+      estimateMinutes: 240,
+      checklist: [
+        { id: "demo-dl-5-s1", text: s("Feladatok átolvasása", "Read the problems"), done: true },
+        { id: "demo-dl-5-s2", text: s("1–3. feladat megoldása", "Solve problems 1–3"), done: false },
+        { id: "demo-dl-5-s3", text: s("Beadás előtti ellenőrzés", "Check before submitting"), done: false },
+      ],
     },
     {
       id: "demo-dl-6",
@@ -228,7 +237,7 @@ export function buildDemoData(now: Date, locale: Locale = "hu"): AppData {
     },
   ];
 
-  return { version: 1, courses, deadlines, customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [] };
+  return { version: 1, courses, deadlines, customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [], requirementRules: [], requirementResults: [] };
 }
 
 function demoResources(
@@ -249,7 +258,8 @@ function demoResources(
  * The demo mode's data (no account, see lib/demoMode.ts): the sample set plus what a real semester
  * brings in from outside, so every surface has something to show: a Canvas feed (with a deadline
  * that duplicates a manual one, and one whose due date moved), a weekly series and a Neptun
- * timetable for this week and the next two. Never merged into an account (`loadDemo` uses
+ * timetable for this week and the next two, and the requirement tracker on the Calculus course
+ * (template rules plus a few results, `lib/demoRules.ts`). Never merged into an account (`loadDemo` uses
  * `buildDemoData` only), and the feed is never fetched (`isDemoFeedId`).
  */
 export function buildShowcaseData(now: Date, locale: Locale = "hu"): AppData {
@@ -373,5 +383,6 @@ export function buildShowcaseData(now: Date, locale: Locale = "hu"): AppData {
     { id: sourceId, name: s("Neptun órarend", "Neptun timetable"), importedAt: now.toISOString(), subjectCourses },
   ];
 
-  return { ...base, deadlines, feeds, classSessions, timetableSources };
+  const { rules: requirementRules, results: requirementResults } = buildDemoRequirements(now, locale);
+  return { ...base, deadlines, feeds, classSessions, timetableSources, requirementRules, requirementResults };
 }

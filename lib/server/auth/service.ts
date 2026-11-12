@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { forgetTemplateUser } from "@/lib/server/ruleTemplates";
 import { normalizeEmail } from "@/lib/digest";
 import { renderAuthEmail, type AuthEmailKind } from "@/lib/authEmail";
 import type { OutgoingEmail } from "@/lib/server/email";
@@ -13,7 +14,7 @@ import {
   hashToken,
   newToken,
 } from "@/lib/server/auth/tokens";
-import { DIGEST_INDEX_KEY, chgKey, digKey, dropRenderedCalendars, srcKey, subKey } from "@/lib/server/subscription";
+import { ALERT_INDEX_KEY, DIGEST_INDEX_KEY, alrKey, chgKey, digKey, dropRenderedCalendars, srcKey, subKey } from "@/lib/server/subscription";
 
 // Account logic (register, sign-in, email links, sessions) over an AccountStore. Every function
 // takes its dependencies first so tests can run it on the memory store with a recording mailer.
@@ -312,6 +313,9 @@ export async function deleteAccount(
   if (calendarToken) await kv.del(subKey(calendarToken));
   await kv.del(digKey(user.id));
   await kv.srem(DIGEST_INDEX_KEY, user.id);
+  await kv.del(alrKey(user.id));
+  await kv.srem(ALERT_INDEX_KEY, user.id);
+  await forgetTemplateUser(kv, user.id);
 
   await store.deleteData(user.id);
   await store.releaseEmail(user.email);

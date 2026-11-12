@@ -43,6 +43,7 @@ export function validateExportOptions(value: unknown): ExportOptions {
     studyBlocks: o.studyBlocks !== false,
     dedupe: o.dedupe !== false,
     includeClasses: o.includeClasses === true,
+    gradeInfo: o.gradeInfo !== false,
   };
 }
 

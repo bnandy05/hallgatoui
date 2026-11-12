@@ -8,6 +8,7 @@ import { getPlatform } from "@/lib/platforms";
 import type { TimetableSource } from "@/lib/types";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export interface TimetableSourceItemProps {
   source: TimetableSource;
@@ -19,6 +20,7 @@ export interface TimetableSourceItemProps {
 /** An imported Neptun timetable as a card on sky-blue timetable paper, taped flat like its classes. */
 export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }: TimetableSourceItemProps) {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const day = (iso: string) => format(new Date(iso), t.formats.numericDate);
   const sessions = useStore((s) => s.classSessions);
   const customPlatforms = useStore((s) => s.customPlatforms);
@@ -30,14 +32,18 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
   const from = starts[0];
   const to = starts[starts.length - 1];
 
-  function handleDelete() {
-    if (confirm(t.timetable.confirmDelete)) {
-      removeTimetableSource(source.id);
-    }
+  async function handleDelete() {
+    const ok = await confirm({
+      title: t.timetable.confirmDeleteTitle,
+      message: t.timetable.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) removeTimetableSource(source.id);
   }
 
   return (
     <li className="flex min-w-0 flex-col gap-3 rounded-[var(--radius-slip)] bg-sky px-4 pb-3 pt-4">
+      {confirmDialog}
       <div className="flex items-start gap-3">
         <PlatformIcon platform={getPlatform("neptun", customPlatforms)} size="md" />
         <div className="min-w-0 flex-1">
@@ -70,6 +76,7 @@ export function TimetableSourceItem({ source, busy, onReimport, onEditMapping }:
           {t.common.delete}
         </Button>
       </div>
+      {confirmDialog}
     </li>
   );
 }

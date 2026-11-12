@@ -11,7 +11,11 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AccountSync } from "@/components/AccountSync";
 import { SyncStatus } from "@/components/SyncStatus";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
+import { DuplicateCheck } from "@/components/DuplicateCheck";
 import { RemindersMenu } from "@/components/RemindersMenu";
+import { CatchUpGate } from "@/components/catchup/CatchUpGate";
+import { MarkDoneLink } from "@/components/MarkDoneLink";
+import { RequirementAutoLink } from "@/components/RequirementAutoLink";
 import { KeyboardInset } from "@/components/KeyboardInset";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
@@ -24,6 +28,7 @@ import { useT } from "@/lib/i18n/I18nProvider";
 import { useDemoMode } from "@/lib/useDemoMode";
 import { DemoBar } from "@/components/demo/DemoBar";
 import { DemoTour } from "@/components/demo/DemoTour";
+import { ToastHost } from "@/components/ui/Toast";
 import { DeadlineAnchorScroll } from "@/components/DeadlineAnchorScroll";
 
 const NAV_LINKS = [
@@ -130,6 +135,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {hydrated && <ServiceWorkerRegister />}
       {dataReady && !bare && <NotificationScheduler />}
       {dataReady && !bare && <DeadlineAnchorScroll />}
+      {dataReady && !bare && <CatchUpGate />}
+      {dataReady && !bare && <MarkDoneLink />}
+      {dataReady && !bare && <RequirementAutoLink />}
+      {dataReady && !bare && <DuplicateCheck />}
       <header className="sticky top-0 z-10 border-b border-felt-dark bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center gap-2 px-4 sm:gap-6 sm:px-6 md:h-16">
           <Wordmark />
@@ -182,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </footer>
       {!bare && <TabBar pathname={pathname} />}
+      <ToastHost />
       {hydrated && demo && <DemoTour />}
     </div>
   );

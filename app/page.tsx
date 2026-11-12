@@ -10,7 +10,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { useDataReady } from "@/lib/useDataReady";
 import { visibleSessions } from "@/lib/ical/neptun";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
-import { formatRelative, isCritical, weekRangeLabel, weekStartOf, weekSummary } from "@/lib/radar";
+import { formatRelative, isCritical, weekRangeLabel, weekStartOf, weekSummary, weekWorkload } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -23,6 +23,7 @@ import { Pill } from "@/components/ui/Pill";
 import { CourseTable } from "@/components/week/CourseTable";
 import { WeekBoard } from "@/components/week/WeekBoard";
 import { WeekNav } from "@/components/week/WeekNav";
+import { WorkloadNote } from "@/components/week/WorkloadNote";
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -94,6 +95,7 @@ export default function WeekHome() {
 
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
   const summary = useMemo(() => weekSummary(deadlines, now), [deadlines, now]);
+  const workload = useMemo(() => weekWorkload(deadlines, weekStart), [deadlines, weekStart]);
   const sortedCourses = useMemo(
     () => [...courses].sort((a, b) => a.name.localeCompare(b.name, locale)),
     [courses, locale]
@@ -136,12 +138,20 @@ export default function WeekHome() {
   ) : (
     t.home.openThisWeek(shownWeekCount)
   );
+  const subWithWork =
+    hydrated && workload.estimated > 0 ? (
+      <>
+        {sub} <WorkloadNote workload={workload} />
+      </>
+    ) : (
+      sub
+    );
 
   return (
     <div className="flex flex-col gap-14 sm:gap-20">
       <section className="flex flex-col gap-5" aria-labelledby="week-heading">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
-          <SectionHeading as="h1" id="week-heading" title={range} sub={sub} />
+          <SectionHeading as="h1" id="week-heading" title={range} sub={subWithWork} />
           {hydrated && isCurrent && next && <NextNotice deadline={next} now={now} />}
         </div>
 

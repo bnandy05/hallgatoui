@@ -11,6 +11,8 @@ import {
 import {
   itemsOnDay,
   type DigestContent,
+  type DigestPending,
+  type DigestGrade,
   type DigestFrequency,
   type DigestItem,
 } from "@/lib/digest";
@@ -79,8 +81,8 @@ const FONT = "Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif";
 const DISPLAY_FONT = "Archivo,'Arial Narrow','Helvetica Neue',Helvetica,Arial,sans-serif";
 /** The printed-notice voice: condensed heavy Archivo where the client loads it. */
 export const DISPLAY = `font-family:${DISPLAY_FONT};font-weight:800;font-stretch:72%;font-variation-settings:'wdth' 72;line-height:1.02;letter-spacing:-0.005em`;
-const TABULAR = "font-variant-numeric:tabular-nums";
-const SHADOW_PAPER = "0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)";
+export const TABULAR = "font-variant-numeric:tabular-nums";
+export const SHADOW_PAPER = "0 1px 1px rgba(30,40,48,0.08),0 3px 8px -3px rgba(30,40,48,0.22)";
 export const SHADOW_SHEET = "0 1px 2px rgba(30,40,48,0.08),0 10px 24px -12px rgba(30,40,48,0.3)";
 
 export function escapeHtml(text: string): string {
@@ -231,7 +233,7 @@ ${lines.map((l) => `<p style="margin:0 0 4px">${l}</p>`).join("\n")}
 // --- digest --------------------------------------------------------------------------------
 
 /** A rubber stamp, as `Badge`: outline at 55%, ink mixed 80% with black, no fill. */
-function stamp(label: string, tone: "danger" | "warning", over: string): string {
+export function stamp(label: string, tone: "danger" | "warning", over: string): string {
   const color = LIGHT[tone];
   return `<span class="stamp-${tone}" style="display:inline-block;padding:0 5px;border:1px solid ${mix(color, over, 0.55)};border-radius:3px;font-size:11.5px;font-weight:600;line-height:17px;color:${mix(color, "#000000", 0.8)};white-space:nowrap">${escapeHtml(label)}</span>`;
 }
@@ -371,6 +373,104 @@ ${slipStack(x, items, true, true)}
 </td></tr>`;
 }
 
+const PENDING_SHOWN = 5;
+
+/** "To record": classes and deadlines that ended without a result, with a link to the catch-up popup. */
+function pendingBlock(x: X, pending: DigestPending[], awaitingLate: number, appUrl: string): string {
+  const rows = pending
+    .slice(0, PENDING_SHOWN)
+    .map(
+      (p) => `<tr><td class="ruled" style="padding:7px 0;border-top:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)}">
+<div class="heading" style="font-size:14.5px;font-weight:600;line-height:1.4;color:${LIGHT.heading}">${escapeHtml(p.title)}</div>
+<div class="muted" style="font-size:13px;line-height:1.45;${TABULAR};color:${LIGHT.muted}">${escapeHtml(p.detail)}</div>
+</td></tr>`
+    )
+    .join("\n");
+  const more = pending.length > PENDING_SHOWN ? `<p class="muted" style="margin:6px 0 0;font-size:13px;color:${LIGHT.muted}">${escapeHtml(x.digest.pendingMore(pending.length - PENDING_SHOWN))}</p>` : "";
+  const late = awaitingLate > 0
+    ? `<p class="ink" style="margin:${pending.length ? "10px" : "0"} 0 0;font-size:13.5px;line-height:1.5;color:${LIGHT.ink}">${escapeHtml(x.digest.pendingLate(awaitingLate))}</p>`
+    : "";
+  return `<tr><td style="padding:0 0 22px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:${LIGHT.paper};border:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)};border-radius:2px;box-shadow:${SHADOW_PAPER}">
+<tr><td style="padding:14px 16px 4px">
+<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${escapeHtml(x.digest.pendingTitle)}</span>
+${pending.length ? `<span class="muted" style="padding-left:8px;font-size:13px;color:${LIGHT.muted}">${escapeHtml(x.digest.pendingCount(pending.length))}</span>` : ""}
+</td></tr>
+<tr><td style="padding:6px 16px 14px">
+${pending.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>${more}` : ""}
+${late}
+<p style="margin:12px 0 0;font-size:14px"><a href="${escapeHtml(`${appUrl}/?potlas=1`)}" class="heading" style="font-weight:700;color:${LIGHT.heading};text-decoration:underline">${escapeHtml(x.digest.pendingFill)}</a></p>
+</td></tr>
+</table>
+</td></tr>`;
+}
+
+function pendingText(x: X, pending: DigestPending[], awaitingLate: number, appUrl: string): string[] {
+  if (pending.length === 0 && awaitingLate === 0) return [];
+  return [
+    "",
+    x.digest.pendingTitle,
+    ...pending.slice(0, PENDING_SHOWN).map((p) => `- ${p.title}: ${p.detail}`),
+    ...(pending.length > PENDING_SHOWN ? [`- ${x.digest.pendingMore(pending.length - PENDING_SHOWN)}`] : []),
+    ...(awaitingLate > 0 ? [x.digest.pendingLate(awaitingLate)] : []),
+    `${x.digest.pendingFill}: ${appUrl}/?potlas=1`,
+  ];
+}
+
+export const GRADES_SHOWN = 6;
+
+/** Grade-alert rows on a ruled list: course (fine), text, date; danger carries the red stamp, opportunities sit on canary. */
+export function gradeRows(x: X, grades: DigestGrade[], appUrl: string): string {
+  return grades
+    .slice(0, GRADES_SHOWN)
+    .map((g) => {
+      const href = `${appUrl}/targy/${encodeURIComponent(g.courseId)}#course-requirements`;
+      const stampHtml = g.severity === "danger" ? stamp(x.grades.danger, "danger", LIGHT.paper) : g.severity === "warning" ? stamp(x.grades.warning, "warning", LIGHT.paper) : "";
+      const textHtml =
+        g.severity === "info"
+          ? `<span class="canary ink" style="display:inline;padding:1px 6px;background:${LIGHT.canary};border-radius:2px;color:${LIGHT.ink}">${escapeHtml(g.text)}</span>`
+          : escapeHtml(g.text);
+      const tone = g.severity === "danger" ? "danger" : "heading";
+      const color = g.severity === "danger" ? LIGHT.danger : LIGHT.heading;
+      return `<tr><td class="ruled" style="padding:8px 0;border-top:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)}">
+<div class="muted" style="font-size:12.5px;line-height:1.4;color:${LIGHT.muted}">${escapeHtml(g.courseName)}${stampHtml ? `<span style="display:inline-block;width:8px"></span>${stampHtml}` : ""}</div>
+<div class="${tone}" style="margin-top:2px;font-size:14.5px;font-weight:600;line-height:1.45;color:${color}"><a href="${escapeHtml(href)}" class="${tone}" style="color:${color};text-decoration:none">${textHtml}</a></div>${
+        g.due ? `\n<div class="muted" style="margin-top:2px;font-size:12.5px;${TABULAR};color:${LIGHT.muted}">${escapeHtml(formatDue(x, new Date(g.due)))}</div>` : ""
+      }
+</td></tr>`;
+    })
+    .join("\n");
+}
+
+export function gradeRowsText(x: X, grades: DigestGrade[]): string[] {
+  return [
+    ...grades.slice(0, GRADES_SHOWN).map((g) => `- ${g.courseName}: ${g.text}${g.due ? ` (${formatDue(x, new Date(g.due))})` : ""}`),
+    ...(grades.length > GRADES_SHOWN ? [`- ${x.grades.more(grades.length - GRADES_SHOWN)}`] : []),
+  ];
+}
+
+/** The digest's "Jegyek" block, after "Rögzítésre vár". */
+function gradesBlock(x: X, grades: DigestGrade[], appUrl: string): string {
+  const more = grades.length > GRADES_SHOWN ? `<p class="muted" style="margin:6px 0 0;font-size:13px;color:${LIGHT.muted}">${escapeHtml(x.grades.more(grades.length - GRADES_SHOWN))}</p>` : "";
+  return `<tr><td style="padding:0 0 22px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="paper" style="width:100%;background:${LIGHT.paper};border:1px solid ${mix(LIGHT.edge, LIGHT.paper, 0.6)};border-radius:2px;box-shadow:${SHADOW_PAPER}">
+<tr><td style="padding:14px 16px 4px">
+<span class="heading" style="${DISPLAY};font-size:19px;color:${LIGHT.heading}">${escapeHtml(x.grades.title)}</span>
+</td></tr>
+<tr><td style="padding:6px 16px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${gradeRows(x, grades, appUrl)}</table>${more}
+<p style="margin:12px 0 0;font-size:14px"><a href="${escapeHtml(`${appUrl}/`)}" class="heading" style="font-weight:700;color:${LIGHT.heading};text-decoration:underline">${escapeHtml(x.grades.open)}</a></p>
+</td></tr>
+</table>
+</td></tr>`;
+}
+
+function gradesText(x: X, grades: DigestGrade[]): string[] {
+  return grades.length === 0 ? [] : ["", x.grades.title, ...gradeRowsText(x, grades)];
+}
+
+const hasPending = (c: DigestContent) => c.pending.length > 0 || c.awaitingLate > 0;
+
 function feedNotice(x: X, name: string): string {
   return `<tr><td style="padding:0 0 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="canary" style="width:100%;background:${LIGHT.canary};border-radius:2px">
@@ -485,7 +585,7 @@ function renderDailyEmail({ content, now, appUrl, unsubscribeUrl, locale = "hu" 
 
   const summary = x.digest.dailySummary(todayItems.length, critical, tomorrowItems.length);
   const overdueLine = x.digest.overdueSentence(overdue.length);
-  const subject = x.digest.dailySubject(todayItems.length, tomorrowItems.length, overdue.length);
+  const subject = x.digest.dailySubject(todayItems.length, tomorrowItems.length, overdue.length, content.pending.length);
 
   const body = `<tr><td style="padding:0 2px 22px">
 <h1 class="heading h1" style="margin:0;${DISPLAY};font-size:44px;color:${LIGHT.heading}">${escapeHtml(dateTitle)}</h1>
@@ -512,6 +612,8 @@ ${
     : `<tr><td style="padding:0 0 14px"></td></tr>`
 }
 ${overdue.length > 0 ? overdueBlock(x, overdue) : ""}
+${hasPending(content) ? pendingBlock(x, content.pending, content.awaitingLate, appUrl) : ""}
+${content.grades.length > 0 ? gradesBlock(x, content.grades, appUrl) : ""}
 ${rest.length > 0 ? restOfWeek(x, rest) : ""}
 <tr><td style="padding:24px 0 30px">
 ${primaryButton(`${appUrl}/`, x.digest.openWeek)}
@@ -538,6 +640,8 @@ ${footer([
     ...(todayItems.length ? todayItems.map((i) => itemText(x, i)) : [`- ${x.digest.noneToday}`]),
     ...(tomorrowItems.length ? ["", x.digest.tomorrow, ...tomorrowItems.map((i) => itemText(x, i))] : []),
     ...(overdue.length ? ["", x.digest.overdue, ...overdue.map((i) => itemText(x, i))] : []),
+    ...pendingText(x, content.pending, content.awaitingLate, appUrl),
+    ...gradesText(x, content.grades),
     ...(rest.length ? ["", x.digest.restOfWeek, ...rest.map((i) => itemText(x, i))] : []),
     "",
     `${x.digest.weekText}: ${appUrl}/`,
@@ -605,6 +709,8 @@ ${escapeHtml(x.digest.emptyHint)}
 </td></tr>
 ${failingFeeds.map((name) => feedNotice(x, name)).join("\n")}
 ${overdue.length > 0 ? overdueBlock(x, overdue) : ""}
+${hasPending(content) ? pendingBlock(x, content.pending, content.awaitingLate, appUrl) : ""}
+${content.grades.length > 0 ? gradesBlock(x, content.grades, appUrl) : ""}
 ${board.join("\n")}
 <tr><td style="padding:22px 0 30px">
 ${primaryButton(`${appUrl}/radar`, x.digest.openDeadlines)}
@@ -622,6 +728,8 @@ ${footer([
     ...(overdueLine ? [overdueLine] : []),
     ...failingFeeds.map((name) => `\n${x.digest.feedWarningText(name)}`),
     ...(overdue.length ? ["", x.digest.overdue, ...overdue.map((i) => itemText(x, i))] : []),
+    ...pendingText(x, content.pending, content.awaitingLate, appUrl),
+    ...gradesText(x, content.grades),
     ...(upcoming.length ? ["", weekly ? x.digest.thisWeekText : x.months[from[1] - 1], ...upcoming.map((i) => itemText(x, i))] : []),
     "",
     `${x.digest.deadlinesText}: ${appUrl}/radar`,

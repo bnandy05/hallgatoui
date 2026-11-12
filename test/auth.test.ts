@@ -22,6 +22,8 @@ import { PENDING_ACCOUNT_TTL_SECONDS, hashToken } from "@/lib/server/auth/tokens
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import type { OutgoingEmail } from "@/lib/server/email";
 import { emptyAppData } from "./helpers";
+import { templateVoter } from "@/lib/server/ruleTemplates";
+import { templateKey } from "@/lib/rules/shared";
 
 const PW = "correct horse battery";
 
@@ -317,6 +319,16 @@ test("deleteAccount removes everything the user owns", async () => {
   await kv.sadd(`icsk:${user.id}`, `ics:${user.id}:osszes`);
   await kv.set(`dig:${user.id}`, { frequency: "heti" });
   await kv.sadd("dig:index", user.id);
+  await kv.set(`alr:${user.id}`, { kinds: {}, unsubscribeKey: "k", sent: {} });
+  await kv.sadd("alr:index", user.id);
+  // Requirement tracker: the university and the user's template confirmations.
+  await kv.set(`uni:${user.id}`, "elte");
+  const tplKey = templateKey("elte", "IP-1", "2026-27-1");
+  const mine = templateVoter(user.id);
+  await kv.set(tplKey, {
+    variants: [{ id: "v1", rules: {}, confirmers: [mine, "other-hash"], reporters: [mine], createdAt: "2026-10-01T00:00:00.000Z" }],
+  });
+  await kv.sadd(`tplu:${user.id}`, tplKey);
 
   err(await deleteAccount(s.d, user, "other@x.hu"), 400);
   ok(await deleteAccount(s.d, user, " Anna@x.hu"));
@@ -330,6 +342,13 @@ test("deleteAccount removes everything the user owns", async () => {
     assert.equal(await kv.get(key), null, key);
   }
   assert.deepEqual(await kv.smembers("dig:index"), []);
+  assert.equal(await kv.get(`alr:${user.id}`), null);
+  assert.deepEqual(await kv.smembers("alr:index"), []);
+  assert.equal(await kv.get(`uni:${user.id}`), null);
+  const left = await kv.get<{ variants: { confirmers: string[]; reporters: string[] }[] }>(tplKey);
+  assert.deepEqual(left?.variants[0].confirmers, ["other-hash"]);
+  assert.deepEqual(left?.variants[0].reporters, []);
+  assert.deepEqual(await kv.smembers(`tplu:${user.id}`), []);
   assert.deepEqual(await kv.smembers(`icsk:${user.id}`), []);
   assert.deepEqual(await kv.smembers(`usess:${user.id}`), []);
   err(await login(s.d, "anna@x.hu", PW), 401);

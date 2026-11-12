@@ -8,13 +8,14 @@ import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
+import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel, weekWorkload } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Select } from "@/components/ui/Select";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
+import { WorkloadNote } from "@/components/week/WorkloadNote";
 import { DayAgenda } from "@/components/week/DayAgenda";
 
 const NO_COURSE = "__none__";
@@ -285,6 +286,9 @@ export default function WeekRadarPage() {
                         <span className="text-body text-muted">{weekRangeLabel(week.weekStart, dateLocale(locale), t.formats.weekRange)}</span>
                       )}
                       <span className="text-small tabular-nums text-muted-dim">{t.radar.weekCount(week.items.length)}</span>
+                      <span className="text-small">
+                        <WorkloadNote workload={weekWorkload(week.items, week.weekStart)} />
+                      </span>
                     </h2>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} />
                   </section>

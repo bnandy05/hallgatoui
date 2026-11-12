@@ -2,21 +2,27 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
-import { Check, ExternalLink, Flame, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Check, ExternalLink, Flame, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { cleanCanvasTitle } from "@/lib/ical/canvas";
-import { formatRelative, isRecentlyChanged, urgencyOf } from "@/lib/radar";
+import { addStep, checklistProgress, MAX_CHECKLIST_ITEMS, MAX_CHECKLIST_TEXT, removeStep, renameStep, toggleStep } from "@/lib/checklist";
+import { EstimateField } from "@/components/EstimateField";
+import { formatEstimate, formatRelative, isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import type { Deadline } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { IconButton } from "@/components/ui/IconButton";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { DuplicateSources } from "@/components/DuplicateSources";
+import { useDeadlineUndo } from "@/lib/useDeadlineUndo";
+import { newId } from "@/lib/id";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -97,10 +103,9 @@ function DeadlineDetail({
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
+  const { removeWithUndo } = useDeadlineUndo();
   const toggleDone = useStore((s) => s.toggleDone);
   const updateDeadline = useStore((s) => s.updateDeadline);
-  const removeDeadline = useStore((s) => s.removeDeadline);
-  const removeDeadlines = useStore((s) => s.removeDeadlines);
   // Filtered outside the selector: a selector that returns a new array every time loops forever.
   const deadlines = useStore((s) => s.deadlines);
   const siblings = useMemo(
@@ -128,19 +133,19 @@ function DeadlineDetail({
   const seriesPosition = ordered ? ordered.findIndex((d) => d.id === deadline.id) + 1 : 0;
   const laterIds = ordered ? ordered.filter((d) => d.due >= deadline.due).map((d) => d.id) : [];
 
-  function handleDelete() {
+  async function handleDelete() {
     if (ordered) {
       setDeleteOpen(true);
-    } else if (confirm(t.deadlineDetail.confirmDelete)) {
+    } else {
       onClose();
-      removeDeadline(deadline.id);
+      removeWithUndo([deadline.id]);
     }
   }
 
   function deleteWith(ids: string[]) {
     setDeleteOpen(false);
     onClose();
-    removeDeadlines(ids);
+    removeWithUndo(ids);
   }
 
   return (
@@ -235,7 +240,25 @@ function DeadlineDetail({
             )}
           </Row>
         )}
+        {/* Manual deadlines set it in the form, so the row only shows a value; feed deadlines edit it here. */}
+        {(!manual || deadline.estimateMinutes) && (
+          <Row label={t.estimate.label}>
+            {manual ? (
+              <span className="tabular-nums text-foreground">{formatEstimate(deadline.estimateMinutes!, locale)}</span>
+            ) : (
+              <EstimateField
+                hideLabel
+                value={deadline.estimateMinutes}
+                onChange={(minutes) => updateDeadline(deadline.id, { estimateMinutes: minutes })}
+              />
+            )}
+          </Row>
+        )}
         <DuplicateRow deadline={deadline} />
+        <ChecklistEditor
+          list={deadline.checklist}
+          onChange={(checklist) => updateDeadline(deadline.id, { checklist })}
+        />
         {deadline.note && (
           <Row label={t.deadlineDetail.note}>
             <p className={`text-foreground ${!manual ? "line-clamp-6" : ""} whitespace-pre-line`}>{deadline.note}</p>
@@ -269,6 +292,8 @@ function DeadlineDetail({
         <Button
           type="button"
           variant={deadline.done ? "secondary" : "primary"}
+          // No undo toast here: the dialog is in the top layer, so the toast would sit behind it,
+          // and this button is its own undo.
           onClick={() => toggleDone(deadline.id)}
         >
           {deadline.done ? <RotateCcw className="h-4 w-4" /> : <Check className="h-4 w-4" />}
@@ -276,7 +301,12 @@ function DeadlineDetail({
         </Button>
       </DialogActions>
 
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} title={t.deadlineDetail.deleteSeriesTitle}>
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title={t.deadlineDetail.deleteSeriesTitle}
+        pinColor="var(--pin)"
+      >
         <p className="text-body text-foreground">
           {t.deadlineDetail.deleteSeriesText(ordered?.length ?? 0)}
         </p>
@@ -284,12 +314,17 @@ function DeadlineDetail({
           <Button type="button" variant="secondary" onClick={() => setDeleteOpen(false)}>
             {t.common.cancel}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => deleteWith([deadline.id])}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => deleteWith([deadline.id])}
+            className="!border-danger text-danger"
+          >
             {t.deadlineDetail.onlyThis}
           </Button>
           <Button
             type="button"
-            variant="primary"
+            variant="danger"
             onClick={() => deleteWith(laterIds)}
             disabled={laterIds.length < 2}
           >
@@ -311,5 +346,131 @@ function DuplicateRow({ deadline }: { deadline: Deadline }) {
         <DuplicateSources deadline={deadline} />
       </dd>
     </div>
+  );
+}
+
+/** Sub-steps of a deadline, ruled like the rest of the slip. Saves on every change; ticking all steps does not complete the deadline. */
+function ChecklistEditor({
+  list,
+  onChange,
+}: {
+  list: Deadline["checklist"];
+  onChange: (next: Deadline["checklist"]) => void;
+}) {
+  const t = useT();
+  const [draft, setDraft] = useState("");
+  const { done, total } = checklistProgress(list);
+  const full = total >= MAX_CHECKLIST_ITEMS;
+
+  function add() {
+    if (!draft.trim() || full) return;
+    onChange(addStep(list, draft, newId()));
+    setDraft("");
+  }
+
+  return (
+    <div className="border-t border-wash/[0.08] py-2.5 text-body">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-small text-muted">{t.checklist.label}</p>
+        {total > 0 && (
+          <p className="text-small tabular-nums text-muted" aria-label={t.checklist.progress(done, total)}>
+            {done}/{total}
+          </p>
+        )}
+      </div>
+      <ul className="mt-1.5">
+        {(list ?? []).map((item) => (
+          <ChecklistRow
+            key={item.id}
+            text={item.text}
+            done={item.done}
+            onToggle={() => onChange(toggleStep(list, item.id))}
+            onRename={(text) => onChange(renameStep(list, item.id, text))}
+            onRemove={() => onChange(removeStep(list, item.id))}
+          />
+        ))}
+      </ul>
+      <div className="mt-1.5 flex items-center gap-2 rounded-[var(--radius)] border-2 border-dashed border-border-strong/60 px-2.5 transition-colors hover:border-accent focus-within:border-accent">
+        <Plus className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
+        <input
+          value={draft}
+          maxLength={MAX_CHECKLIST_TEXT}
+          disabled={full}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+            if (e.key === "Escape" && draft) {
+              e.preventDefault();
+              e.stopPropagation();
+              setDraft("");
+            }
+          }}
+          aria-label={t.checklist.addAria}
+          data-no-autofocus
+          placeholder={full ? t.checklist.full(MAX_CHECKLIST_ITEMS) : t.checklist.add}
+          className="min-w-0 flex-1 bg-transparent py-2 text-body text-foreground outline-none placeholder:text-muted"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ChecklistRow({
+  text,
+  done,
+  onToggle,
+  onRename,
+  onRemove,
+}: {
+  text: string;
+  done: boolean;
+  onToggle: () => void;
+  onRename: (text: string) => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  // Local draft while typing; committed on blur or Enter (an emptied text removes the step).
+  const [value, setValue] = useState(text);
+  const [seen, setSeen] = useState(text);
+  if (seen !== text) {
+    setSeen(text);
+    setValue(text);
+  }
+
+  function commit() {
+    if (value.trim() === text) return setValue(text);
+    onRename(value);
+  }
+
+  return (
+    <li className="flex items-center gap-2 border-t border-wash/[0.08] first:border-t-0">
+      <Checkbox checked={done} onChange={onToggle} aria-label={text} />
+      <input
+        value={value}
+        maxLength={MAX_CHECKLIST_TEXT}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") {
+            // preventDefault keeps the native <dialog> from closing; stopPropagation alone does not.
+            e.preventDefault();
+            e.stopPropagation();
+            setValue(text);
+          }
+        }}
+        aria-label={t.checklist.edit}
+        data-no-autofocus
+        className={`min-w-0 flex-1 bg-transparent py-2 text-body outline-none focus-visible:underline ${
+          done ? "text-muted line-through" : "text-foreground"
+        }`}
+      />
+      <IconButton aria-label={t.checklist.remove(text)} tone="danger" onClick={onRemove}>
+        <X className="h-4 w-4" />
+      </IconButton>
+    </li>
   );
 }

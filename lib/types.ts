@@ -1,3 +1,5 @@
+import type { RequirementResult, RequirementRules } from "@/lib/rules/types";
+
 export type PlatformId = string; // built-in ids below or "custom-<id>"
 
 export interface Platform {
@@ -16,7 +18,7 @@ export interface CourseLink {
   updatedAt?: string;
 }
 
-export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "egyeb";
+export type ResourceKind = "jegyzet" | "zh" | "megoldas" | "video" | "kovetelmeny" | "egyeb";
 
 export interface Resource {
   id: string;
@@ -37,11 +39,18 @@ export interface Course {
   links: CourseLink[];
   resources: Resource[];
   matchKeywords: string[]; // used to auto-assign iCal events
+  requirements?: string; // the course's requirements as free text (documents are resources of kind "kovetelmeny")
   createdAt: string;
   updatedAt?: string;
 }
 
 export type DeadlineSource = "manual" | "ical";
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
 
 export interface Deadline {
   id: string;
@@ -58,6 +67,9 @@ export interface Deadline {
   externalUid?: string;
   previousDue?: string; // ISO, the due date before the last change reported by the feed
   dueChangedAt?: string; // ISO, when that change was noticed
+  estimateMinutes?: number; // user field (also on iCal deadlines): estimated effort, 1..MAX_ESTIMATE_MINUTES
+  // user field (also on iCal deadlines): sub-steps. The whole array is ONE field for the merge (latest edit wins).
+  checklist?: ChecklistItem[];
   seriesId?: string; // deadlines created together (several dates / repeating); informational only
   updatedAt?: string;
 }
@@ -124,6 +136,24 @@ export interface TimetableSource {
   updatedAt?: string;
 }
 
+export interface SemesterInfo {
+  start: string; // "YYYY-MM-DD", the Monday of week 1 (Budapest calendar)
+  updatedAt?: string;
+}
+
+export type AlertKind = "opportunity" | "risk" | "absence" | "change";
+export type AlertKinds = Record<AlertKind, boolean>;
+
+/** Grade-alert preferences (account-wide, synced). Missing = every kind on in the bell. */
+export interface AlertPrefs {
+  bell: AlertKinds;
+  updatedAt?: string;
+}
+
+export interface CatchUpState {
+  promptedUntil?: string; // ISO
+}
+
 export interface AppData {
   version: 1;
   courses: Course[];
@@ -135,6 +165,15 @@ export interface AppData {
   /** Imported timetable (Neptun). Defaults to []. */
   classSessions: ClassSession[];
   timetableSources: TimetableSource[];
+  /** Per-course requirement rules (one per course) and the recorded results. Default to []. */
+  requirementRules: RequirementRules[];
+  requirementResults: RequirementResult[];
+  /** Week 1 of the teaching period, for week numbers in requirement links. Optional. */
+  semester?: SemesterInfo;
+  /** When the catch-up popup last closed (account-wide, merged as the later of two). Optional. */
+  catchUp?: CatchUpState;
+  /** Which grade-alert kinds the bell shows (lib/gradeAlerts.ts). Optional; missing = all on. */
+  alertPrefs?: AlertPrefs;
   /**
    * Deletions: item id -> ISO time. Lets a merge tell "deleted elsewhere" from "never had it"
    * (courses, deadlines, custom platforms, feeds, timetable sources, links, resources). Pruned.
@@ -164,6 +203,7 @@ export interface ExportOptions {
    */
   dedupe: boolean;
   includeClasses: boolean; // also put the timetable into "összes" and the course views
+  gradeInfo: boolean; // grade notes ("24/40 kell a 4-eshez") in the descriptions of linked assessments
 }
 
 /** What the server's calendar and digest are built from (see lib/server/calendarInput.ts). */
@@ -175,4 +215,6 @@ export interface CalendarSnapshot {
   ignoredDuplicatePairs: string[];
   classSessions: ClassSession[]; // the server never re-fetches timetables
   options: ExportOptions;
+  /** For the events' "record result" links and grade notes. */
+  requirements: { rules: RequirementRules[]; results: RequirementResult[]; semester?: SemesterInfo };
 }

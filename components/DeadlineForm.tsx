@@ -12,6 +12,7 @@ import { parseQuickDeadline } from "@/lib/quickAdd";
 import { expandDueDates, MAX_SERIES, seriesTitles, wasCapped, type RepeatSpec } from "@/lib/recurrence";
 import type { Deadline } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { EstimateField } from "@/components/EstimateField";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
@@ -28,6 +29,7 @@ export interface DeadlineFormValues {
   url?: string;
   note?: string;
   critical: boolean;
+  estimateMinutes?: number;
 }
 
 export interface DeadlineFormProps {
@@ -100,6 +102,7 @@ export function DeadlineForm({
   const [url, setUrl] = useState(initial?.url ?? "");
   const [critical, setCritical] = useState(initial?.critical ?? seed?.critical ?? false);
   const [note, setNote] = useState(initial?.note ?? "");
+  const [estimate, setEstimate] = useState<number | undefined>(initial?.estimateMinutes);
   const [error, setError] = useState<string | null>(null);
 
   // Creating only: several dates or a repeat rule. Editing stays a single date.
@@ -177,6 +180,7 @@ export function DeadlineForm({
       url: normalizedUrl,
       note: note.trim() || undefined,
       critical,
+      estimateMinutes: estimate,
     };
     if (initial || dates.length <= 1) {
       const only = dates[0] ?? new Date(due);
@@ -438,6 +442,8 @@ export function DeadlineForm({
       </div>
 
       <Checkbox checked={critical} onChange={(e) => setCritical(e.target.checked)} label={t.common.critical} />
+
+      <EstimateField value={estimate} onChange={setEstimate} />
 
       <div>
         <Label htmlFor="deadline-note">{t.deadlineForm.note}</Label>

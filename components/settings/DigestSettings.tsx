@@ -7,6 +7,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { formatRelative } from "@/lib/radar";
 import { deleteDigest, fetchDigest, saveDigest } from "@/lib/subscription/client";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Pill } from "@/components/ui/Pill";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { DemoLocked } from "@/components/demo/NeedsAccount";
@@ -35,6 +36,7 @@ export function DigestSettings() {
 
 function DigestForm() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [frequency, setFrequency] = useState<DigestFrequency>("heti");
@@ -82,7 +84,12 @@ function DigestForm() {
   }
 
   async function remove() {
-    if (!confirm(t.digest.confirmUnsubscribe)) return;
+    const ok = await confirm({
+      title: t.digest.confirmUnsubscribeTitle,
+      message: t.digest.confirmUnsubscribe,
+      confirmLabel: t.digest.confirmUnsubscribeLabel,
+    });
+    if (!ok) return;
     setBusy("delete");
     setError(null);
     const result = await deleteDigest();
@@ -95,6 +102,7 @@ function DigestForm() {
 
   return (
     <form onSubmit={submit} className="sheet-paper flex flex-col gap-4 px-5 py-5">
+      {confirmDialog}
       <div>
         <p className="text-small font-semibold text-heading">{t.digest.recipient}</p>
         <p className="mt-0.5 break-all text-body text-foreground">{email}</p>
@@ -140,6 +148,7 @@ function DigestForm() {
           </Button>
         )}
       </div>
+      {confirmDialog}
     </form>
   );
 }

@@ -8,6 +8,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { formatRelative } from "@/lib/radar";
 import type { Resource, ResourceKind } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { IconButton } from "@/components/ui/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -46,6 +47,7 @@ function fromResource(resource: Resource): ResourceFormState {
 
 export function ResourceList({ courseId }: ResourceListProps) {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const addResource = useStore((s) => s.addResource);
@@ -58,7 +60,9 @@ export function ResourceList({ courseId }: ResourceListProps) {
 
   if (!course) return null;
 
-  const editingResource = course.resources.find((r) => r.id === editing);
+  // Requirement documents live in the course's "Követelmények" section.
+  const resources = course.resources.filter((r) => r.kind !== "kovetelmeny");
+  const editingResource = resources.find((r) => r.id === editing);
 
   function handleSubmit(values: Omit<Resource, "id" | "createdAt">) {
     if (!course) return;
@@ -67,15 +71,18 @@ export function ResourceList({ courseId }: ResourceListProps) {
     setEditing(null);
   }
 
-  function handleRemove(resource: Resource) {
+  async function handleRemove(resource: Resource) {
     if (!course) return;
-    if (confirm(t.linkEditor.confirmDelete)) {
-      removeResource(course.id, resource.id);
-    }
+    const ok = await confirm({
+      title: t.resources.confirmTitle,
+      message: t.resources.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) removeResource(course.id, resource.id);
   }
 
-  const sorted = [...course.resources].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const kindsInUse = KINDS.filter((kind) => course.resources.some((r) => r.kind === kind));
+  const sorted = [...resources].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const kindsInUse = KINDS.filter((kind) => resources.some((r) => r.kind === kind));
   const activeFilter = filter !== "all" && kindsInUse.includes(filter) ? filter : "all";
   const filtered = activeFilter === "all" ? sorted : sorted.filter((r) => r.kind === activeFilter);
 
@@ -93,7 +100,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
     </Dialog>
   );
 
-  if (course.resources.length === 0) {
+  if (resources.length === 0) {
     return (
       <>
         <EmptyState
@@ -114,20 +121,21 @@ export function ResourceList({ courseId }: ResourceListProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {confirmDialog}
       {kindsInUse.length > 1 && (
         <div
           role="group"
           aria-label={t.resources.type}
           className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
         >
-          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label={t.resources.all} count={course.resources.length} />
+          <FilterChip active={activeFilter === "all"} onClick={() => setFilter("all")} label={t.resources.all} count={resources.length} />
           {kindsInUse.map((kind) => (
             <FilterChip
               key={kind}
               active={activeFilter === kind}
               onClick={() => setFilter(kind)}
               label={t.resourceKinds[kind]}
-              count={course.resources.filter((r) => r.kind === kind).length}
+              count={resources.filter((r) => r.kind === kind).length}
             />
           ))}
         </div>
@@ -192,6 +200,7 @@ export function ResourceList({ courseId }: ResourceListProps) {
         </li>
       </ul>
       {dialog}
+      {confirmDialog}
     </div>
   );
 }
@@ -226,13 +235,17 @@ function FilterChip({
 
 interface ResourceFormProps {
   initial?: Resource;
+  /** Hides the type picker and saves every resource with this kind. */
+  fixedKind?: ResourceKind;
   onSubmit: (values: Omit<Resource, "id" | "createdAt">) => void;
   onCancel: () => void;
 }
 
-function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
+export function ResourceForm({ initial, fixedKind, onSubmit, onCancel }: ResourceFormProps) {
   const t = useT();
-  const [form, setForm] = useState<ResourceFormState>(() => (initial ? fromResource(initial) : emptyForm()));
+  const [form, setForm] = useState<ResourceFormState>(() =>
+    initial ? fromResource(initial) : { ...emptyForm(), kind: fixedKind ?? "jegyzet" }
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -243,12 +256,12 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
       setForm((f) => ({ ...f, error: t.linkEditor.invalidLink }));
       return;
     }
-    onSubmit({ title, url, kind: form.kind, note: form.note.trim() || undefined });
+    onSubmit({ title, url, kind: fixedKind ?? form.kind, note: form.note.trim() || undefined });
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]">
+      <div className={fixedKind ? "" : "grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]"}>
         <div>
           <Label htmlFor="resource-title">{t.resources.title}</Label>
           <Input
@@ -258,20 +271,22 @@ function ResourceForm({ initial, onSubmit, onCancel }: ResourceFormProps) {
             required
           />
         </div>
-        <div>
-          <Label htmlFor="resource-kind">{t.resources.type}</Label>
-          <Select
-            id="resource-kind"
-            value={form.kind}
-            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as ResourceKind }))}
-          >
-            {KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {t.resourceKinds[kind]}
-              </option>
-            ))}
-          </Select>
-        </div>
+        {!fixedKind && (
+          <div>
+            <Label htmlFor="resource-kind">{t.resources.type}</Label>
+            <Select
+              id="resource-kind"
+              value={form.kind}
+              onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as ResourceKind }))}
+            >
+              {KINDS.map((kind) => (
+                <option key={kind} value={kind}>
+                  {t.resourceKinds[kind]}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
 
       <div>

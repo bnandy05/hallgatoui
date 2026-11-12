@@ -12,6 +12,7 @@ import { formatRelative } from "@/lib/radar";
 import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
 import type { IcalFeed, TimetableSource } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
@@ -23,6 +24,7 @@ import { DiscoveryDialog } from "@/components/DiscoveryDialog";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { TimetableSourceItem } from "@/components/settings/TimetableSourceItem";
 import { useTimetableImport } from "@/components/settings/useTimetableImport";
+import { SemesterField } from "@/components/settings/SemesterField";
 
 const AUTO_COURSE = "";
 const DEFAULT_PLATFORM = "canvas";
@@ -56,6 +58,7 @@ function emptyForm(): FeedFormValues {
 
 export function FeedSettings() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
   const feeds = useStore((s) => s.feeds);
   const courses = useStore((s) => s.courses);
@@ -110,10 +113,14 @@ export function FeedSettings() {
     ).length;
   }
 
-  function handleMarkPastDone(feedId: string, count: number) {
-    if (confirm(t.feeds.confirmMarkPastDone(count))) {
-      markFeedPastDone(feedId);
-    }
+  async function handleMarkPastDone(feedId: string, count: number) {
+    const ok = await confirm({
+      title: t.feeds.confirmMarkPastDoneTitle,
+      message: t.feeds.confirmMarkPastDone(count),
+      confirmLabel: t.feeds.confirmMarkPastDoneLabel,
+      tone: "default",
+    });
+    if (ok) markFeedPastDone(feedId);
   }
 
   async function handleSyncOne(feedId: string) {
@@ -292,10 +299,13 @@ export function FeedSettings() {
     setEditError(null);
   }
 
-  function handleDelete(feedId: string) {
-    if (confirm(t.feeds.confirmDelete)) {
-      removeFeed(feedId);
-    }
+  async function handleDelete(feedId: string) {
+    const ok = await confirm({
+      title: t.feeds.confirmDeleteTitle,
+      message: t.feeds.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) removeFeed(feedId);
   }
 
   function platformOptions() {
@@ -395,6 +405,7 @@ export function FeedSettings() {
 
   return (
     <section id="naptarak" data-tour="feeds" className="flex flex-col gap-6">
+      {confirmDialog}
       <SectionHeading
         title={t.feeds.title}
         sub={t.feeds.sub}
@@ -523,6 +534,12 @@ export function FeedSettings() {
         </li>
       </ul>
 
+      {timetableSources.length > 0 && (
+        <div className="sheet-paper px-4 py-3.5">
+          <SemesterField />
+        </div>
+      )}
+
       <input
         ref={fileRef}
         type="file"
@@ -611,6 +628,7 @@ export function FeedSettings() {
 
       {timetable.dialogs}
       <DiscoveryDialog open={discoveryOpen} onClose={() => setDiscoveryOpen(false)} />
+      {confirmDialog}
     </section>
   );
 }

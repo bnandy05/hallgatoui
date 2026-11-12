@@ -3,7 +3,6 @@ import type { AppData } from "@/lib/types";
 import { requestLocale } from "@/lib/server/locale";
 import { errorResponse } from "@/lib/server/subscription";
 import { checkOrigin, guarded, json, readJson, requireUser } from "@/lib/server/auth/http";
-import { withoutRequirementData } from "@/lib/legacyRequirements";
 import { MAX_DATA_BYTES, saveData, validateAppData, validateExportOptions } from "@/lib/server/validate";
 
 // The signed-in user's data document: GET (optionally "only if newer than ?since=") and PUT with
@@ -18,6 +17,8 @@ const EMPTY: AppData = {
   ignoredDuplicatePairs: [],
   classSessions: [],
   timetableSources: [],
+  requirementRules: [],
+  requirementResults: [],
 };
 
 export function GET(req: Request) {
@@ -35,7 +36,7 @@ export function GET(req: Request) {
     }
     const doc = await store.getData(userId);
     if (!doc) return json({ version: 0, updatedAt: null, data: EMPTY, exportOptions: DEFAULT_EXPORT_OPTIONS });
-    return json({ version: doc.version, updatedAt: doc.updatedAt, data: withoutRequirementData(doc.data), exportOptions: doc.exportOptions });
+    return json({ version: doc.version, updatedAt: doc.updatedAt, data: doc.data, exportOptions: validateExportOptions(doc.exportOptions) });
   });
 }
 
@@ -67,7 +68,7 @@ export function PUT(req: Request) {
         conflict: true,
         version: current?.version ?? 0,
         data: current?.data ?? EMPTY,
-        exportOptions: current?.exportOptions ?? DEFAULT_EXPORT_OPTIONS,
+        exportOptions: current ? validateExportOptions(current.exportOptions) : DEFAULT_EXPORT_OPTIONS,
       },
       undefined,
       409

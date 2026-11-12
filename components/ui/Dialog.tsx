@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -9,13 +9,18 @@ export interface DialogProps {
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
-  size?: "md" | "lg";
+  size?: "md" | "lg" | "xl";
   /** Focus the first text field on touch screens too (search, where typing is the whole task). */
   focusFieldOnTouch?: boolean;
   /** Pin the sheet up: a pushpin head in this colour beside the title (a deadline's state). */
   pinColor?: string;
   /** The paper the sheet is printed on: salmon for an overdue deadline. */
   tone?: "paper" | "salmon";
+  /**
+   * A dialog with steps: the name of the step on show. Changing it starts the new step at the
+   * top, and coming back to a step returns to where it was scrolled.
+   */
+  view?: string;
 }
 
 /**
@@ -33,9 +38,44 @@ export function Dialog({
   focusFieldOnTouch = false,
   pinColor,
   tone = "paper",
+  view,
 }: DialogProps) {
   const t = useT();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const scrolls = useRef(new Map<string, number>());
+  const shownView = useRef(view);
+
+  // Each step's scroll position is kept as it goes (by the time a new step renders, the old one is
+  // already gone and the browser has clamped the position); the shown step is restored in layout,
+  // so it never flashes.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const remember = () => {
+      if (shownView.current !== undefined) scrolls.current.set(shownView.current, dialog.scrollTop);
+    };
+    // A step changes on a click or a key press inside the sheet: record the position before the
+    // handler runs too, since scroll events only arrive with the next frame.
+    dialog.addEventListener("scroll", remember, { passive: true });
+    dialog.addEventListener("click", remember, true);
+    dialog.addEventListener("keydown", remember, true);
+    return () => {
+      dialog.removeEventListener("scroll", remember);
+      dialog.removeEventListener("click", remember, true);
+      dialog.removeEventListener("keydown", remember, true);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || shownView.current === view) return;
+    shownView.current = view;
+    dialog.scrollTop = (view !== undefined && scrolls.current.get(view)) || 0;
+  }, [view]);
+
+  useEffect(() => {
+    if (!open) scrolls.current.clear();
+  }, [open]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -49,7 +89,7 @@ export function Dialog({
       if (focusFieldOnTouch || window.matchMedia("(pointer: fine)").matches) {
         dialog
           .querySelector<HTMLElement>(
-            "[data-dialog-body] :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea):not([disabled])"
+            "[data-dialog-body] :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea):not([disabled]):not([data-no-autofocus])"
           )
           ?.focus();
       }
@@ -65,15 +105,22 @@ export function Dialog({
       event.preventDefault();
       onClose();
     };
+    // The backdrop closes the sheet only when the press started on it too: selecting text in a
+    // field and letting go past the sheet's edge must not throw the form away.
+    let pressedBackdrop = false;
+    const handlePointerDown = (event: PointerEvent) => {
+      pressedBackdrop = event.target === dialog;
+    };
     const handleClick = (event: MouseEvent) => {
-      if (event.target === dialog) {
-        onClose();
-      }
+      if (event.target === dialog && pressedBackdrop) onClose();
+      pressedBackdrop = false;
     };
     dialog.addEventListener("cancel", handleCancel);
+    dialog.addEventListener("pointerdown", handlePointerDown);
     dialog.addEventListener("click", handleClick);
     return () => {
       dialog.removeEventListener("cancel", handleCancel);
+      dialog.removeEventListener("pointerdown", handlePointerDown);
       dialog.removeEventListener("click", handleClick);
     };
   }, [onClose]);
@@ -83,7 +130,11 @@ export function Dialog({
       ref={dialogRef}
       style={{ "--sheet": tone === "salmon" ? "var(--salmon)" : "var(--panel)" } as CSSProperties}
       className={`sheet top-[var(--visual-top,0px)] bottom-[var(--keyboard-inset,0px)] m-auto w-full scroll-pt-16 overflow-y-auto overscroll-contain has-[[data-dialog-actions]]:scroll-pb-20 rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[var(--shadow-dialog)] backdrop:bg-[var(--backdrop,rgba(40,48,54,0.45))] max-sm:mb-0 max-sm:max-h-[calc(var(--visual-height,100dvh)-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(var(--visual-height,100dvh)-3rem)] ${
-        size === "lg" ? "sm:max-w-[min(42rem,calc(100vw-3rem))]" : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
+        size === "xl"
+          ? "sm:max-w-[min(66rem,calc(100vw-3rem))]"
+          : size === "lg"
+            ? "sm:max-w-[min(42rem,calc(100vw-3rem))]"
+            : "sm:max-w-[min(32rem,calc(100vw-3rem))]"
       }`}
     >
       <div

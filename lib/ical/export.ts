@@ -1,6 +1,9 @@
 import ICAL from "ical.js";
-import type { ClassSession, Course, Deadline, ExportOptions, IcalFeed, Platform } from "@/lib/types";
-import { applyDedupe } from "@/lib/ical/dedupe";
+import type { ClassSession, Course, Deadline, ExportOptions, IcalFeed, Platform, SemesterInfo } from "@/lib/types";
+import type { RequirementResult, RequirementRules } from "@/lib/rules/types";
+import { applyDedupe, deadlineIdentity } from "@/lib/ical/dedupe";
+import { catchUpGroupKey, linkedInstances, type CatchUpInput } from "@/lib/catchup";
+import { assessmentNotes } from "@/lib/gradeAlerts";
 import { getPlatform, platformName } from "@/lib/platforms";
 import {
   addDays,
@@ -30,6 +33,8 @@ const UID_DOMAIN = "hallgatoireteg";
 const TIME_ZONE = "Europe/Budapest";
 const SUMMARY_WEEKS = 4; // the current week and the next three
 const STUDY_BLOCK_DAYS = 2;
+/** How far ahead an assessment gets the grade note ("24/40 kell a 4-eshez") in its description. */
+const GRADE_NOTE_DAYS = 60;
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   includeDone: false,
@@ -38,6 +43,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   studyBlocks: true,
   dedupe: true,
   includeClasses: false,
+  gradeInfo: true,
 };
 
 export interface HealthWarning {
@@ -64,6 +70,66 @@ export interface BuildCalendarInput {
   classSessions?: ClassSession[];
   /** Language of every text in the calendar; Hungarian when omitted. */
   locale?: Locale;
+  /** The requirement tracker's data: "record result" links and, with options.gradeInfo, grade notes. */
+  requirements?: { rules: RequirementRules[]; results: RequirementResult[]; semester?: SemesterInfo };
+}
+
+/**
+ * What the app can do for one event, keyed by `d:<deadlineIdentity>` or `s:<session externalUid>`:
+ * the catch-up group to open for recording a result, and the grade notes of an upcoming assessment.
+ */
+interface EventExtra {
+  recordGroup?: string;
+  notes: string[];
+}
+
+/** A merged deadline's extras: its own, or a merged copy's when the component is linked to that one. */
+function deadlineExtra(extras: Map<string, EventExtra>, d: Deadline, copies: Deadline[] | undefined): EventExtra | undefined {
+  for (const c of [d, ...(copies ?? [])]) {
+    const extra = extras.get(`d:${deadlineIdentity(c)}`);
+    if (extra) return extra;
+  }
+  return undefined;
+}
+
+/** Links only ever open a page; the change itself is confirmed there with a button. */
+function markDoneUrl(appUrl: string, d: Deadline): string {
+  return `${appUrl}/?kesz=${encodeURIComponent(deadlineIdentity(d))}`;
+}
+
+function recordUrl(appUrl: string, group: string): string {
+  return `${appUrl}/?potlas=${encodeURIComponent(group)}`;
+}
+
+function eventExtras(input: BuildCalendarInput, options: ExportOptions, locale: Locale): Map<string, EventExtra> {
+  const extras = new Map<string, EventExtra>();
+  const req = input.requirements;
+  if (!req || req.rules.length === 0) return extras;
+  const catchUp: CatchUpInput = {
+    courses: input.courses,
+    rules: req.rules,
+    results: req.results,
+    sessions: input.classSessions ?? [],
+    deadlines: input.deadlines,
+    semester: req.semester,
+    now: input.now,
+  };
+  const notes = options.gradeInfo ? assessmentNotes(catchUp, GRADE_NOTE_DAYS, locale) : new Map<string, string[]>();
+  for (const li of linkedInstances(catchUp)) {
+    const { instance } = li;
+    const key = instance.session
+      ? `s:${instance.session.externalUid}`
+      : instance.deadline
+        ? `d:${deadlineIdentity(instance.deadline)}`
+        : null;
+    if (!key) continue;
+    const group = catchUpGroupKey(li);
+    const extra = extras.get(key) ?? { notes: [] };
+    if (instance.tracked && !instance.pinned && !instance.result) extra.recordGroup = group;
+    for (const note of notes.get(group) ?? []) if (!extra.notes.includes(note)) extra.notes.push(note);
+    extras.set(key, extra);
+  }
+  return extras;
 }
 
 /** Short non-cryptographic hash (two independent 32-bit hashes, 16 hex chars). */
@@ -116,6 +182,7 @@ function buildDeadlineEvent(
   copies: Deadline[] | undefined,
   feeds: IcalFeed[],
   customPlatforms: Platform[],
+  extra: EventExtra | undefined,
   locale: Locale
 ): ICAL.Component {
   const t = getMessages(locale);
@@ -139,6 +206,7 @@ function buildDeadlineEvent(
   if (changed && d.previousDue) {
     description.push(t.ics.previousDue(formatBudapest(new Date(d.previousDue), locale)));
   }
+  if (extra && extra.notes.length > 0) description.push(t.ics.grades, ...extra.notes.map((n) => `• ${n}`));
   if (d.note) description.push(d.note);
   if (d.url) description.push(d.url);
   if (copies && copies.length > 0) {
@@ -150,6 +218,8 @@ function buildDeadlineEvent(
       })
     );
   }
+  if (appUrl && !d.done) description.push(t.ics.markDone(markDoneUrl(appUrl, d)));
+  if (appUrl && extra?.recordGroup) description.push(t.ics.record(recordUrl(appUrl, extra.recordGroup)));
   if (appUrl && course) description.push(t.ics.open(`${appUrl}/targy/${course.id}`));
   if (description.length > 0) {
     vevent.addPropertyWithValue("description", description.join("\n"));
@@ -259,8 +329,11 @@ function buildSessionEvent(
   s: ClassSession,
   course: Course | undefined,
   now: Date,
+  appUrl: string | undefined,
+  extra: EventExtra | undefined,
   locale: Locale
 ): ICAL.Component {
+  const t = getMessages(locale);
   const vevent = new ICAL.Component("vevent");
   vevent.addPropertyWithValue("uid", sessionUid(s));
   vevent.addPropertyWithValue("dtstamp", utcTime(now));
@@ -270,9 +343,11 @@ function buildSessionEvent(
   const title = `${s.subject}${s.group ? ` (${s.group})` : ""}`;
   vevent.addPropertyWithValue("summary", `${label && s.kind !== "egyeb" ? `[${label}] ` : ""}${title}`);
   if (s.location) vevent.addPropertyWithValue("location", s.location);
-  if (s.teachers.length > 0) {
-    vevent.addPropertyWithValue("description", getMessages(locale).ics.teachers(s.teachers.join(", ")));
-  }
+  const description: string[] = [];
+  if (extra && extra.notes.length > 0) description.push(t.ics.grades, ...extra.notes.map((n) => `• ${n}`));
+  if (s.teachers.length > 0) description.push(t.ics.teachers(s.teachers.join(", ")));
+  if (appUrl && extra?.recordGroup) description.push(t.ics.record(recordUrl(appUrl, extra.recordGroup)));
+  if (description.length > 0) vevent.addPropertyWithValue("description", description.join("\n"));
   if (course) vevent.addPropertyWithValue("categories", course.name);
   return vevent;
 }
@@ -328,7 +403,7 @@ export function buildCalendar(input: BuildCalendarInput): string {
   const feeds = input.feeds ?? [];
   const customPlatforms = input.customPlatforms ?? [];
   // Merge duplicates before filtering the view, so a group is judged as a whole.
-  const { visible, extras } = applyDedupe(
+  const { visible, extras: copies } = applyDedupe(
     input.deadlines,
     feeds,
     input.ignoredDuplicatePairs ?? [],
@@ -337,6 +412,7 @@ export function buildCalendar(input: BuildCalendarInput): string {
   );
   const deadlines = filterDeadlinesForView(visible, view);
   const appUrl = input.appUrl?.replace(/\/+$/, "") || undefined;
+  const extras = eventExtras(input, options, locale);
 
   const cal = new ICAL.Component("vcalendar");
   cal.addPropertyWithValue("version", "2.0");
@@ -362,7 +438,8 @@ export function buildCalendar(input: BuildCalendarInput): string {
     if (seen.has(uid)) continue; // UIDs must be unique within a calendar
     seen.add(uid);
     const course = d.courseId ? courseById.get(d.courseId) : undefined;
-    cal.addSubcomponent(buildDeadlineEvent(d, course, options, now, appUrl, extras.get(d.id), feeds, customPlatforms, locale)
+    cal.addSubcomponent(
+      buildDeadlineEvent(d, course, options, now, appUrl, copies.get(d.id), feeds, customPlatforms, deadlineExtra(extras, d, copies.get(d.id)), locale)
     );
     if (options.studyBlocks && d.critical && !d.done && dueMs > now.getTime()) {
       cal.addSubcomponent(buildStudyBlock(d, course, now, locale));
@@ -380,7 +457,7 @@ export function buildCalendar(input: BuildCalendarInput): string {
       }
       if (Number.isNaN(new Date(s.start).getTime())) continue;
       cal.addSubcomponent(
-        buildSessionEvent(s, s.courseId ? courseById.get(s.courseId) : undefined, now, locale)
+        buildSessionEvent(s, s.courseId ? courseById.get(s.courseId) : undefined, now, appUrl, extras.get(`s:${s.externalUid}`), locale)
       );
     }
   }

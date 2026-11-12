@@ -211,6 +211,7 @@ export function startSync(): () => void {
       started = true;
       retries = 0;
       store.getState().setSyncStatus("idle");
+      store.getState().setPulledThisSession(true);
       if (dirty()) schedule();
     } finally {
       starting = false;
@@ -227,6 +228,11 @@ export function startSync(): () => void {
       state.feeds !== prev.feeds ||
       state.classSessions !== prev.classSessions ||
       state.timetableSources !== prev.timetableSources ||
+      state.requirementRules !== prev.requirementRules ||
+      state.requirementResults !== prev.requirementResults ||
+      state.semester !== prev.semester ||
+      state.catchUp !== prev.catchUp ||
+      state.alertPrefs !== prev.alertPrefs ||
       state.ignoredDuplicatePairs !== prev.ignoredDuplicatePairs ||
       state.exportOptions !== prev.exportOptions;
     if (changed) schedule();

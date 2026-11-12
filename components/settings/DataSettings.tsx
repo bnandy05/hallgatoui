@@ -8,16 +8,23 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { ImportError, parseAppData } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function DataSettings() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
   const courses = useStore((s) => s.courses);
   const deadlines = useStore((s) => s.deadlines);
   const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
   const classSessions = useStore((s) => s.classSessions);
   const timetableSources = useStore((s) => s.timetableSources);
+  const requirementRules = useStore((s) => s.requirementRules);
+  const requirementResults = useStore((s) => s.requirementResults);
+  const alertPrefs = useStore((s) => s.alertPrefs);
+  const semester = useStore((s) => s.semester);
+  const catchUp = useStore((s) => s.catchUp);
   const customPlatforms = useStore((s) => s.customPlatforms);
   const feeds = useStore((s) => s.feeds);
   const importData = useStore((s) => s.importData);
@@ -33,6 +40,11 @@ export function DataSettings() {
       ignoredDuplicatePairs,
       classSessions,
       timetableSources,
+      requirementRules,
+      requirementResults,
+      ...(semester && { semester }),
+      ...(catchUp && { catchUp }),
+      ...(alertPrefs && { alertPrefs }),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -59,9 +71,12 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm(t.data.confirmRestore)) {
-        return;
-      }
+      const ok = await confirm({
+        title: t.data.confirmRestoreTitle,
+        message: t.data.confirmRestore,
+        confirmLabel: t.data.restore,
+      });
+      if (!ok) return;
 
       importData(data);
       setImportSuccess(
@@ -77,8 +92,13 @@ export function DataSettings() {
     }
   }
 
-  function handleReset() {
-    if (confirm(t.data.confirmDeleteAll)) {
+  async function handleReset() {
+    const ok = await confirm({
+      title: t.data.confirmDeleteAllTitle,
+      message: t.data.confirmDeleteAll,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();
@@ -91,6 +111,7 @@ export function DataSettings() {
 
   return (
     <section className="flex flex-col gap-6">
+      {confirmDialog}
       <SectionHeading
         title={t.data.title}
         sub={t.data.sub}
@@ -145,6 +166,7 @@ export function DataSettings() {
           {t.common.delete}
         </Button>
       </div>
+      {confirmDialog}
     </section>
   );
 }
