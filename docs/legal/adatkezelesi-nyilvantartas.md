@@ -1,6 +1,6 @@
 # Adatkezelési nyilvántartás (GDPR 30. cikk (1))
 
-Utolsó frissítés: 2026-10-16
+Utolsó frissítés: 2026-10-22
 
 > Belső dokumentum, a felügyeleti hatóság (NAIH) kérésére bemutatható. Az `/adatvedelem` oldal szövegével (`lib/privacy.ts`, magyar változat) és a tényekkel (`lib/legal.ts`) egyeznie kell: a tájékoztató minden módosításakor ezt is frissíteni kell, és a fenti dátumot átírni.
 
@@ -25,14 +25,22 @@ Közös jellemzők, ha a tevékenységnél más nincs jelölve:
 | Fiók | Email cím, a jelszó scrypt-lenyomata, a regisztráció és a megerősítés ideje | Szerződés teljesítése (6. cikk (1) b)) | A fiók törléséig; a meg nem erősített regisztráció 7 nap után automatikusan törlődik |
 | Nyelvbeállítás | Választott nyelv (hu/en), és hogy a felhasználó választotta-e ki | Szerződés teljesítése (6. cikk (1) b)) | A fiók törléséig |
 | Bejelentkezés | Munkamenet-azonosító (csak lenyomatként), létrehozás és utolsó használat ideje, user agent (legfeljebb 200 karakter), az emailben küldött egyszer használatos linkek lenyomata | Szerződés teljesítése (6. cikk (1) b)) | Munkamenet: kilépéskor vagy 90 nap használaton kívül; linkek: 30 perc (belépés, jelszó) vagy 48 óra (megerősítés, címváltás) |
-| Tanulmányi adatok | Tárgyak, linkek, határidők, órarend, megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link; hozzáférési kulcsnak minősülnek) | Szerződés teljesítése (6. cikk (1) b)) | A fiók törléséig vagy a felhasználó általi törlésig; a letöltött és előállított naptárak átmeneti másolata 15 percig |
-| Naptár feliratkozási link | Véletlen azonosító (token), amellyel a határidők (a tárgyak linkjei nélkül) lekérhetők | Szerződés teljesítése (6. cikk (1) b)) | Kikapcsolásig, a link cseréjéig vagy a fiók törléséig |
-| Email-összefoglaló | Gyakoriság, leiratkozási kulcs, utolsó küldés ideje; a levél a fiók email címére megy | Hozzájárulás (6. cikk (1) a)), bármikor visszavonható | Leiratkozásig vagy a fiók törléséig |
+| Tanulmányi adatok | Tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, a felhasználó által rögzített eredmények (pontok, jegyek, óránkénti jelenlét), az összetevők hozzárendelése órákhoz/hetekhez/határidőkhöz, a félév kezdete, határidők, órarend, megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link; hozzáférési kulcsnak minősülnek) | Szerződés teljesítése (6. cikk (1) b)) | A fiók törléséig vagy a felhasználó általi törlésig; a letöltött és előállított naptárak átmeneti másolata 15 percig |
+| Naptár feliratkozási link | Véletlen azonosító (token), amellyel a határidők (a tárgyak linkjei nélkül) lekérhetők; a követelményekhez kötött számonkéréseknél a jegyhez szükséges pontszám is (kikapcsolható) | Szerződés teljesítése (6. cikk (1) b)) | Kikapcsolásig, a link cseréjéig vagy a fiók törléséig |
+| Email-összefoglaló | Gyakoriság, leiratkozási kulcs, utolsó küldés ideje; a levél a fiók email címére megy, és felsorolja a még nem rögzített eredményű órákat és számonkéréseket is | Hozzájárulás (6. cikk (1) a)), bármikor visszavonható | Leiratkozásig vagy a fiók törléséig |
+| Jegy-figyelmeztetések e-mailben | Kiválasztott figyelmeztetés-fajták, leiratkozási kulcs, az elküldött figyelmeztetések kulcsai (`alr:<userId>`, index `alr:index`); a figyelmeztetések a tárgyak szabályaiból és a rögzített eredményekből számolódnak, a levél a fiók email címére megy, naponta legfeljebb egy sürgős levél, az összefoglalóban „Jegyek” blokk | Hozzájárulás (6. cikk (1) a)), bármikor visszavonható | Kikapcsolásig vagy a fiók törléséig; az elküldött kulcsok 30 napig |
+| Követelményrendszer beolvasása (Jev) | A beillesztett szöveg (a Jevnek legfeljebb az első 40 000 karakter megy, nem tároljuk; oktatók nevét tartalmazhatja), a tárgy neve és kódja; a Jev válaszai (választások és számok, szöveg nélkül) a kérés lenyomatához kötve, fiókfüggetlenül; a kérések számlálója a fiókhoz kötve. Név, email cím, eredmények nem kerülnek elküldésre | Szerződés teljesítése (6. cikk (1) b)) | Szöveg: csak a kérés idejéig; válaszok: 30 nap; számláló: 24 óra |
+| Tárgy-, összetevő- és ismétlődés-javaslatok (Jev) | Tárgynevek; két határidő címe, forrása és időpontja; határidők címei és összetevőnevek. Azonosító, név, email cím nincs a kérdésben; a válaszok a kérdés lenyomatához kötve | Jogos érdek (6. cikk (1) f)) | Válaszok: 30 nap; napi kérésszámláló: 24 óra |
+| Közös követelmény-sablonok és egyetem | A felhasználó egyeteme (`uni:<userId>`); az egyetem, tárgykód és félév szerinti sablonban a szabályok (megjegyzések nélkül) és a megerősítők azonosítójának visszafejthetetlen lenyomata (`tplu:<userId>` index) | Szerződés teljesítése (6. cikk (1) b)) | Az egyetem a fiók törléséig vagy módosításáig; fióktörléskor a lenyomat minden sablonból törlődik, a mások által is megerősített szabályok maradnak (nem tartalmaznak személyes adatot) |
 | Visszaélés elleni védelem | IP-cím, belépési/regisztrációs/levélküldési kísérletek számlálásához; az email címek a számlálókban csak lenyomatként | Jogos érdek (6. cikk (1) f)): a fiókok védelme jelszópróbálgatás és tömeges levélküldés ellen | Legfeljebb 1 óra |
 
 ### Az email-küldést érintő eltérések
 
-Az emailek kézbesítésénél (megerősítő, belépő, jelszó- és címváltó levelek, valamint az összefoglaló) harmadik adatfeldolgozó is részt vesz: Plus Five Five, Inc. (Resend). Kezelt adat: az email cím és a levél tartalma. A levelek az EU-ból (Írország) mennek ki; a kézbesítési adatokat és naplókat a Resend az Egyesült Államokban, legfeljebb 30 napig őrzi. Az amerikai továbbítás jogalapja a DPF megfelelőségi határozat vagy az SCC. A Resend a fenti tevékenységek közül a Fiók, a Bejelentkezés és az Email-összefoglaló levélküldéséhez kapcsolódik.
+Az emailek kézbesítésénél (megerősítő, belépő, jelszó- és címváltó levelek, az összefoglaló és a jegy-figyelmeztetések) harmadik adatfeldolgozó is részt vesz: Plus Five Five, Inc. (Resend). Kezelt adat: az email cím és a levél tartalma. A levelek az EU-ból (Írország) mennek ki; a kézbesítési adatokat és naplókat a Resend az Egyesült Államokban, legfeljebb 30 napig őrzi. Az amerikai továbbítás jogalapja a DPF megfelelőségi határozat vagy az SCC. A Resend a fenti tevékenységek közül a Fiók, a Bejelentkezés, az Email-összefoglaló és a Jegy-figyelmeztetések levélküldéséhez kapcsolódik.
+
+### A követelmény-követő (Jev) adatfeldolgozója
+
+TypeSafe AI (Jev): a beillesztett követelményrendszer nem egyértelmű mondatainak értelmezése, valamint tárgy-, összetevő- és ismétlődés-javaslatok. Kezelt adat: a mondatok, tárgy- és összetevőnevek, határidők címe/forrása/időpontja; személyes adat (név, email cím, azonosító, eredmény) nem. A szolgáltató nem teszi közzé, hol fut, saját nyilatkozata szerint a kéréseket nem használja modelltanításra. Adatfeldolgozási szerződés és harmadik országba továbbítás jogalapja: nyitott pont (lásd alább).
 
 ### Egyéb megjegyzések
 
@@ -54,5 +62,9 @@ Az emailek kézbesítésénél (megerősítő, belépő, jelszó- és címvált�
 - Naptár-letöltés védelme (SSRF): minden URL és minden átirányítás átmegy az `assertPublicUrl` ellenőrzésen (`lib/ical/ssrf.ts`).
 - Tárolás: az adatbázis az EU-ban (Frankfurt) van; a szerverfüggvények Frankfurtban futnak (`vercel.json`, `fra1`).
 - Adattakarékosság: elemzés, követés, profilalkotás nincs; a naptár-feliratkozásban a tárgyak linkjei nem szerepelnek; a levélküldési hibanapló nem tartalmazza a levél tartalmát.
-- Törlés: a fiók törlése azonnal töröl minden hozzá tartozó rekordot; a meg nem erősített regisztráció 7 nap után lejár.
+- Törlés: a fiók törlése azonnal töröl minden hozzá tartozó rekordot (a követelmény-követő `uni:<userId>` egyetemét és a közös sablonokban tárolt lenyomatot is); a meg nem erősített regisztráció 7 nap után lejár.
 - Incidenskezelés: lásd `docs/legal/incidensek.md`.
+
+## Nyitott pontok
+
+- TypeSafe AI (Jev): a telephely és az adatfeldolgozási szerződés (GDPR 28. cikk (3)) nem tisztázott; a tájékoztató ezt nyíltan közli. A tisztázásig a kérések nem tartalmaznak személyes adatot.

@@ -1,0 +1,21 @@
+Programozáselmélet – követelmények
+
+Gyakorlat
+A gyakorlatok elején röpzh-t írunk, amelyet +/- értékelünk.
+Az igazolatlan hiányzás mínusznak számít.
+4 vagy több hiányzás esetén nincs gyakorlati jegy.
+Ha a mínuszok száma meghaladja a pluszok számát, nincs gyakorlati jegy.
+
+Az előadáshoz 8 Canvas kvíz tartozik. Egy kvíz akkor teljesített, ha legalább 60%-os, és mindegyik 5 alkalommal próbálható.
+Ha valaki 5-nél kevesebb kvízt teljesít határidőre, az elővizsga jegye eggyel rosszabb.
+
+Bónuszpontból legfeljebb 8 szerezhető, és csak akkor számít bele, ha a hallgató bónusz nélkül is teljesítené a gyakorlatot.
+
+A félév során 2 zh-t írunk, mindkettő 60 pontos.
+A 2. zh (vagy pótzh-ja) eredményének legalább 20 pontnak kell lennie.
+A beszámított két zh összegének legalább 40 pontnak kell lennie.
+A gyakorlati jegy: (zh1 + zh2 + bónusz) egész osztva 20-szal.
+A pótzh a két zh közül a rosszabbat váltja ki, akkor is, ha a pótzh eredménye rosszabb.
+
+Vizsga
+A vizsga szóbeli, vagy Canvas elővizsga, amelyen legfeljebb jó (4) érhető el.

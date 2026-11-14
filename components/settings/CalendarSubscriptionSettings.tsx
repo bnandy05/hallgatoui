@@ -5,6 +5,7 @@ import { CalendarPlus, Download, Loader2, RefreshCw, ShieldAlert } from "lucide-
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { parseView, viewParam } from "@/lib/ical/views";
+import { userExceptions } from "@/lib/ical/dedupe";
 import {
   createCalendarToken,
   deleteCalendarToken,
@@ -14,6 +15,7 @@ import {
   subscriptionPath,
 } from "@/lib/subscription/client";
 import { Button, buttonClasses } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { CopyField } from "@/components/ui/CopyField";
@@ -26,10 +28,11 @@ type Busy = "create" | "rotate" | "delete" | null;
 
 export function CalendarSubscriptionSettings() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const courses = useStore((s) => s.courses);
   const exportOptions = useStore((s) => s.exportOptions);
   const setExportOptions = useStore((s) => s.setExportOptions);
-  const ignoredCount = useStore((s) => s.ignoredDuplicatePairs.length);
+  const ignoredCount = useStore((s) => userExceptions(s.ignoredDuplicatePairs).length);
   const clearIgnoredDuplicates = useStore((s) => s.clearIgnoredDuplicates);
   // The demo has no account, so no subscription link (and no request for one).
   const demo = useDemoMode();
@@ -65,17 +68,23 @@ export function CalendarSubscriptionSettings() {
     setBusy(null);
   }
 
-  function handleRotate() {
-    if (!confirm(t.calendarExport.confirmRotate)) {
-      return;
-    }
+  async function handleRotate() {
+    const ok = await confirm({
+      title: t.calendarExport.confirmRotateTitle,
+      message: t.calendarExport.confirmRotate,
+      confirmLabel: t.calendarExport.confirmRotateLabel,
+    });
+    if (!ok) return;
     void run("rotate", rotateCalendarToken);
   }
 
-  function handleDisable() {
-    if (!confirm(t.calendarExport.confirmDisable)) {
-      return;
-    }
+  async function handleDisable() {
+    const ok = await confirm({
+      title: t.calendarExport.confirmDisableTitle,
+      message: t.calendarExport.confirmDisable,
+      confirmLabel: t.calendarExport.confirmDisableLabel,
+    });
+    if (!ok) return;
     void run("delete", async () => {
       const message = await deleteCalendarToken();
       return message ? { error: message } : { token: null };
@@ -94,6 +103,7 @@ export function CalendarSubscriptionSettings() {
 
   return (
     <section id="naptar-exportalas" className="flex flex-col gap-8">
+      {confirmDialog}
       <SectionHeading
         title={t.calendarExport.title}
         sub={t.calendarExport.sub}
@@ -243,6 +253,12 @@ export function CalendarSubscriptionSettings() {
             label={t.calendarExport.studyBlocks}
             description={t.calendarExport.studyBlocksHint}
           />
+          <Switch
+            checked={exportOptions.gradeInfo}
+            onChange={(v) => setExportOptions({ gradeInfo: v })}
+            label={t.calendarExport.gradeInfo}
+            description={t.calendarExport.gradeInfoHint}
+          />
         </div>
       </div>
 
@@ -268,6 +284,7 @@ export function CalendarSubscriptionSettings() {
           </Button>
         </div>
       )}
+      {confirmDialog}
     </section>
   );
 }

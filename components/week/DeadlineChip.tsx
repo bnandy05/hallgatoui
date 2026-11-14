@@ -2,16 +2,18 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { format } from "date-fns";
-import { Flame } from "lucide-react";
+import { Flame, ListChecks } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { isRecentlyChanged, urgencyOf } from "@/lib/radar";
+import { checklistProgress } from "@/lib/checklist";
+import { formatEstimate, isRecentlyChanged, urgencyOf } from "@/lib/radar";
 import { deadlineAnchorId } from "@/lib/search";
 import type { Deadline } from "@/lib/types";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DeadlineDetailDialog } from "@/components/DeadlineItem";
 import { DuplicateSources } from "@/components/DuplicateSources";
+import { useDeadlineUndo } from "@/lib/useDeadlineUndo";
 
 export interface DeadlineChipProps {
   deadline: Deadline;
@@ -20,8 +22,6 @@ export interface DeadlineChipProps {
   showCourse?: boolean;
   /** Show the date instead of only the time (the overdue gutter spans several days). */
   showDate?: boolean;
-  /** Position in a grid of slips, so they are pinned up one after another on load. */
-  index?: number;
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -31,25 +31,35 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * when overdue or critical, gone when done (the slip then hangs loose). A hairline along the
  * bottom edge is as long as the time left in the coming week.
  */
-export function DeadlineChip({ deadline, now, showCourse = true, showDate = false, index }: DeadlineChipProps) {
+export function DeadlineChip({ deadline, now, showCourse = true, showDate = false }: DeadlineChipProps) {
   const t = useT();
   const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
-  const toggleDone = useStore((s) => s.toggleDone);
+  const { toggleDoneWithUndo } = useDeadlineUndo();
   const [open, setOpen] = useState(false);
   const slipRef = useRef<HTMLDivElement>(null);
   const wasDone = useRef(deadline.done);
 
-  // Ticking off pulls the pin and lets the slip swing; unticking pins it back. Only on a change,
-  // so slips that load already done just hang there. Set on the node: no re-render, and it stays
-  // (the end frame is the resting state) so the entrance animation never replays. Before paint,
-  // so the done slip's own entrance never shows for a frame.
+  // Run the unpin or repin only after the status changes, then return to the resting CSS.
   useLayoutEffect(() => {
     if (wasDone.current === deadline.done) return;
     wasDone.current = deadline.done;
     const node = slipRef.current;
     if (!node || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    node.dataset.motion = deadline.done ? "unpin" : "repin";
+    const motion = deadline.done ? "unpin" : "repin";
+    const settle = (event: AnimationEvent) => {
+      if (event.target !== node || event.animationName !== `slip-${motion}`) return;
+      delete node.dataset.motion;
+      removeListeners();
+    };
+    function removeListeners() {
+      node?.removeEventListener("animationend", settle);
+      node?.removeEventListener("animationcancel", settle);
+    }
+    node.addEventListener("animationend", settle);
+    node.addEventListener("animationcancel", settle);
+    node.dataset.motion = motion;
+    return removeListeners;
   }, [deadline.done]);
 
   const urgency = urgencyOf(deadline, now);
@@ -57,6 +67,9 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   const hot = overdue || urgency === "critical";
   const due = new Date(deadline.due);
   const changed = deadline.previousDue && isRecentlyChanged(deadline, now);
+  const { done: checklistDone, total: checklistTotal } = deadline.done
+    ? { done: 0, total: 0 }
+    : checklistProgress(deadline.checklist);
   // A done slip's pin is on its way out: it keeps the colour it had, so it doesn't flash as it goes.
   const wasHot = deadline.done && ["overdue", "critical"].includes(urgencyOf({ ...deadline, done: false }, now));
   const pinColor = hot || wasHot ? "var(--pin)" : (course?.color ?? "var(--border-strong)");
@@ -68,7 +81,6 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
       ref={slipRef}
       id={deadlineAnchorId(deadline.id)}
       data-done={deadline.done}
-      style={index === undefined ? undefined : ({ "--i": index } as CSSProperties)}
       className={`slip group px-2.5 pb-2.5 pt-3 ${overdue && !deadline.done ? "bg-salmon" : "bg-card"}`}
     >
       <span
@@ -79,7 +91,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
       <div className="flex items-start gap-2">
         <Checkbox
           checked={deadline.done}
-          onChange={() => toggleDone(deadline.id)}
+          onChange={() => toggleDoneWithUndo(deadline.id)}
           aria-label={deadline.done ? t.week.markNotDone(deadline.title) : t.week.markDone(deadline.title)}
         />
         <div className="min-w-0 flex-1">
@@ -101,9 +113,25 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
             {deadline.critical && !deadline.done && (
               <Flame className="h-3.5 w-3.5 shrink-0 text-danger" aria-label={t.common.critical} />
             )}
+            {deadline.estimateMinutes && !deadline.done && (
+              <span className="shrink-0 tabular-nums" title={t.estimate.label}>
+                {formatEstimate(deadline.estimateMinutes, locale)}
+              </span>
+            )}
+            {checklistTotal > 0 && (
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 tabular-nums"
+                title={t.checklist.progress(checklistDone, checklistTotal)}
+              >
+                <ListChecks className="h-3 w-3" aria-hidden="true" />
+                <span aria-label={t.checklist.progress(checklistDone, checklistTotal)}>
+                  {checklistDone}/{checklistTotal}
+                </span>
+              </span>
+            )}
             {changed && <span className="shrink-0 font-semibold text-warning">{t.week.changed}</span>}
             {showCourse && course && (
-              <span className="min-w-0 basis-full truncate text-muted" title={course.name}>
+              <span className="line-clamp-2 min-w-0 basis-full text-muted [overflow-wrap:anywhere]" title={course.name}>
                 {course.name}
               </span>
             )}

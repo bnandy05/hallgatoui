@@ -13,5 +13,5 @@ export function makeDeadline(overrides: Partial<Deadline> = {}): Deadline {
 }
 
 export function emptyAppData(): AppData {
-  return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [] };
+  return { version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], ignoredDuplicatePairs: [], classSessions: [], timetableSources: [], requirementRules: [], requirementResults: [] };
 }

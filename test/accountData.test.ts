@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
 import { saveData, validateAppData, validateExportOptions } from "@/lib/server/validate";
+import { MAX_REQUIREMENTS_CHARS } from "@/lib/importData";
 import type { AppData } from "@/lib/types";
 import { emptyAppData, makeCourse, makeDeadline, makeFeed } from "./helpers";
 
@@ -33,6 +34,23 @@ test("validateAppData keeps a valid full document", () => {
   assert.equal(data.feeds.length, 1);
 });
 
+test("validateAppData keeps course requirements, caps them and drops non-text", () => {
+  const data = fullData();
+  data.courses[0] = { ...data.courses[0], requirements: "2 ZH, egyenként legalább 40%" };
+  data.courses.push(
+    { ...makeCourse("c2", "Prog"), requirements: "x".repeat(MAX_REQUIREMENTS_CHARS + 50) },
+    // @ts-expect-error deliberately malformed
+    { ...makeCourse("c3", "Matek"), requirements: { evil: true } },
+    { ...makeCourse("c4", "Fizika"), requirements: "   " }
+  );
+  const valid = validateAppData(data);
+  assert.ok(valid);
+  assert.equal(valid.courses[0].requirements, "2 ZH, egyenként legalább 40%");
+  assert.equal(valid.courses[1].requirements?.length, MAX_REQUIREMENTS_CHARS);
+  assert.equal("requirements" in valid.courses[2], false);
+  assert.equal("requirements" in valid.courses[3], false);
+});
+
 test("validateAppData rejects a deadline without due, and non-objects", () => {
   const bad = fullData();
   // @ts-expect-error deliberately malformed
@@ -52,15 +70,16 @@ test("validateAppData strips unsafe links and feeds", () => {
   assert.deepEqual(valid.feeds.map((f) => f.id), ["feed-1"]);
 });
 
-test("validateAppData applies the caps", () => {
+test("validateAppData rejects over-limit active timetables instead of truncating", () => {
   const tooManyFeeds = { ...fullData(), feeds: Array.from({ length: 21 }, (_, i) => makeFeed({ id: `f${i}` })) };
   assert.equal(validateAppData(tooManyFeeds), null);
   const session = (i: number) => ({
     id: `s${i}`, sourceId: "t", externalUid: `u${i}`, subject: "A", subjectKey: "a",
     start: "2026-10-06T08:00:00.000Z", end: "2026-10-06T09:40:00.000Z", kind: "ora", teachers: [], courseId: null,
   });
-  const many = { ...emptyAppData(), classSessions: Array.from({ length: 1600 }, (_, i) => session(i)) };
-  assert.equal(validateAppData(many)!.classSessions.length, 1500);
+  const atLimit = { ...emptyAppData(), classSessions: Array.from({ length: 1500 }, (_, i) => session(i)) };
+  assert.equal(validateAppData(atLimit)?.classSessions.length, 1500);
+  assert.equal(validateAppData({ ...atLimit, classSessions: [...atLimit.classSessions, session(1500)] }), null);
 });
 
 test("validateExportOptions fills defaults", () => {
@@ -102,4 +121,29 @@ test("validateAppData caps and filters the ignored duplicate pairs", () => {
   const data = validateAppData({ ...emptyAppData(), ignoredDuplicatePairs: [...pairs, 42, null] })!;
   assert.equal(data.ignoredDuplicatePairs.length, 2000);
   assert.ok(data.ignoredDuplicatePairs.every((p) => typeof p === "string"));
+});
+
+test("calendar links, semester and catch-up time survive parseAppData; bad ones are dropped", async () => {
+  const { parseAppData } = await import("@/lib/importData");
+  const { RULE_TEMPLATES } = await import("@/lib/rules/fixtures");
+  const course = { id: "c", name: "Prog", color: "#000000", links: [], resources: [], matchKeywords: [], createdAt: "2026-09-01T00:00:00.000Z" };
+  const rules = {
+    ...RULE_TEMPLATES[1].rules,
+    id: "rules:c",
+    courseId: "c",
+    source: "template",
+    calendarLinks: { jelen: { mode: "sessions", selector: { groups: ["6"] } }, zh1: { mode: "sessions", selector: {} } },
+  };
+  const data = parseAppData({
+    version: 1, courses: [course], deadlines: [], customPlatforms: [], feeds: [],
+    requirementRules: [rules],
+    semester: { start: "2026-09-09", updatedAt: "2026-10-01T00:00:00.000Z" },
+    catchUp: { promptedUntil: "2026-10-05T10:00:00.000Z" },
+  });
+  assert.deepEqual(data.requirementRules[0].calendarLinks, { jelen: { mode: "sessions", selector: { groups: ["6"] } } });
+  assert.deepEqual(data.semester, { start: "2026-09-07", updatedAt: "2026-10-01T00:00:00.000Z" });
+  assert.deepEqual(data.catchUp, { promptedUntil: "2026-10-05T10:00:00.000Z" });
+  const bad = parseAppData({ version: 1, courses: [], deadlines: [], customPlatforms: [], feeds: [], semester: { start: "x" }, catchUp: { promptedUntil: 5 } });
+  assert.equal(bad.semester, undefined);
+  assert.equal(bad.catchUp, undefined);
 });

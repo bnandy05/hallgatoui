@@ -74,6 +74,7 @@ const HU: TermsContent = {
         "A határidők és az órarend abból származnak, amit te viszel be, és a harmadik fél által szolgáltatott naptárakból. Hiányosak, elavultak, duplikáltak vagy hibásak lehetnek: a naptár-források leállhatnak, a szinkronizálás ütközhet.",
         "A hivatalos rendszer (Neptun, Canvas, Moodle, a tárgy saját közleményei) mindig az irányadó. A határidőket ott kell ellenőrizned.",
         "Az email-összefoglaló, az emlékeztetők és a naptár-feliratkozás kényelmi funkciók, a kézbesítésükért és a pontos időzítésükért nem vállalunk garanciát.",
+        "A követelményrendszer automatikus (mesterséges intelligenciával segített) beolvasása javaslat: a szabályokat és a pontszámokat te hagyod jóvá, és te felelsz azért, hogy megfeleljenek a tárgy hivatalos követelményeinek. A szolgáltatás által számolt pontok, jegyek, jelenlét és a hátralévő lehetőségek tájékoztató jellegűek, helyességükért nem vállalunk garanciát; a tárgy hivatalos értékelése mindig az irányadó.",
       ],
     },
     {
@@ -83,6 +84,7 @@ const HU: TermsContent = {
         "Automatizált hozzáférés vagy adatgyűjtés nem megengedett, kivéve a saját naptáralkalmazásod feliratkozását a saját naptáradra.",
         "Mások személyes adatát csak akkor vidd be, ha ez szükséges.",
         "A naptár-hivatkozások a tieid, a feliratkozási linked megosztásáért te felelsz.",
+        "A közös követelmény-sablonokat a felhasználók adják: a tartalmukat nem ellenőrizzük, és nem vállalunk felelősséget a helyességükért. Csak olyan szabályokat oszthatsz meg, amelyeket átnéztél, és nem sérthetik mások jogait.",
       ],
     },
     {
@@ -184,6 +186,7 @@ const EN: TermsContent = {
         "Deadlines and timetables come from what you enter and from calendars provided by third parties. They can be incomplete, outdated, duplicated or wrong: calendar sources can fail and synchronisation can conflict.",
         "The official system (Neptun, Canvas, Moodle, the course's own announcements) is always authoritative. You must check deadlines there.",
         "Email digests, reminders and the calendar subscription are conveniences. Their delivery and timing are not guaranteed.",
+        "Automatic (AI-assisted) reading of a course's requirements is a suggestion: you approve the rules and the points, and you are responsible for making sure they match the course's official requirements. The points, grades, attendance and remaining options the service calculates are for guidance only, and we do not guarantee that they are correct; the course's official assessment is always authoritative.",
       ],
     },
     {
@@ -193,6 +196,7 @@ const EN: TermsContent = {
         "Automated access or scraping is not allowed, except for your own calendar app subscribing to your own calendar.",
         "Only enter other people's personal data where necessary.",
         "Calendar links are your own, and you are responsible for sharing your subscription link.",
+        "Shared requirement templates are contributed by users: we do not verify their content and are not responsible for their accuracy. Only share rules you have reviewed, and they must not infringe others' rights.",
       ],
     },
     {

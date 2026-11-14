@@ -22,7 +22,7 @@ export function validateAppData(value: unknown): AppData | null {
   } catch {
     return null; // wrong shape; a crash on a null item lands here too
   }
-  if (data.feeds.length > MAX_FEEDS) return null;
+  if (data.feeds.length > MAX_FEEDS || data.classSessions.length > MAX_CLASS_SESSIONS) return null;
   const feedsOk = data.feeds.every(
     (f) => isObject(f) && typeof f.id === "string" && f.id.length > 0 && f.id.length <= 100 && typeof f.name === "string"
   );
@@ -30,7 +30,7 @@ export function validateAppData(value: unknown): AppData | null {
     (p) => isObject(p) && typeof p.id === "string" && typeof p.name === "string" && typeof p.color === "string"
   );
   if (!feedsOk || !platformsOk) return null;
-  return { ...data, classSessions: data.classSessions.slice(0, MAX_CLASS_SESSIONS) };
+  return data;
 }
 
 /** Defaults for anything missing, as the calendar snapshot always did. */
@@ -43,6 +43,7 @@ export function validateExportOptions(value: unknown): ExportOptions {
     studyBlocks: o.studyBlocks !== false,
     dedupe: o.dedupe !== false,
     includeClasses: o.includeClasses === true,
+    gradeInfo: o.gradeInfo !== false,
   };
 }
 

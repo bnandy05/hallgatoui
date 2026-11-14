@@ -14,6 +14,7 @@ import { FeedSettings } from "@/components/settings/FeedSettings";
 import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DigestSettings } from "@/components/settings/DigestSettings";
+import { GradeAlertSettings } from "@/components/settings/GradeAlertSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
@@ -29,6 +30,8 @@ const HASH_ALIASES: Record<string, SectionKey> = {
   "naptar-elofizetes": "exportalas",
   "naptar-exportalas": "exportalas",
   hirlevel: "ertesitesek",
+  jegyriaszto: "ertesitesek",
+  egyetem: "fiok",
 };
 const HASH_EVENT = "settings-hash";
 
@@ -221,6 +224,7 @@ export default function WeekSettingsPage() {
                 <div className="flex flex-col gap-10">
                   <NotificationSettings />
                   <DigestSettings />
+                  <GradeAlertSettings />
                 </div>
               </TabPanel>
               <TabPanel id="megjelenes" active={active === "megjelenes"}>

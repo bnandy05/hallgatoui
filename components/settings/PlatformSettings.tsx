@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n/I18nProvider";
 import { BUILT_IN_PLATFORMS, platformName } from "@/lib/platforms";
 import { COURSE_COLORS } from "@/lib/colors";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Input } from "@/components/ui/Input";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -16,6 +17,7 @@ const DEFAULT_CUSTOM_COLOR = COURSE_COLORS[4];
 
 export function PlatformSettings() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const customPlatforms = useStore((s) => s.customPlatforms);
   const addCustomPlatform = useStore((s) => s.addCustomPlatform);
   const updateCustomPlatform = useStore((s) => s.updateCustomPlatform);
@@ -33,14 +35,18 @@ export function PlatformSettings() {
     setNewColor(DEFAULT_CUSTOM_COLOR);
   }
 
-  function handleRemove(id: string) {
-    if (confirm(t.platformSettings.confirmDelete)) {
-      removeCustomPlatform(id);
-    }
+  async function handleRemove(id: string) {
+    const ok = await confirm({
+      title: t.platformSettings.confirmTitle,
+      message: t.platformSettings.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) removeCustomPlatform(id);
   }
 
   return (
     <section className="flex flex-col gap-6">
+      {confirmDialog}
       <SectionHeading
         title={t.platformSettings.title}
         sub={t.platformSettings.sub}
@@ -113,6 +119,7 @@ export function PlatformSettings() {
           ))}
         </ul>
       </div>
+      {confirmDialog}
     </section>
   );
 }

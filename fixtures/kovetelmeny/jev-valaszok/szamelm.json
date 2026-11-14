@@ -1,0 +1,198 @@
+{
+  "course": "Bevezetés a számításelméletbe",
+  "candidates": [
+    {
+      "id": "c3",
+      "text": "50%",
+      "value": 50,
+      "percent": true,
+      "context": "i a minimális szintet (általában 50%-ot vagy 40%-ot a feladat típusátó"
+    }
+  ],
+  "answers": {
+    "grade_types": {
+      "type": "choice",
+      "choice": "practice_and_exam",
+      "confidence": 0.95
+    },
+    "attendance_mandatory": {
+      "type": "noul",
+      "noul": 0.98
+    },
+    "has_quick_tests": {
+      "type": "noul",
+      "noul": 0.18
+    },
+    "has_assignment": {
+      "type": "noul",
+      "noul": 0.16
+    },
+    "has_theory_test_in_semester": {
+      "type": "noul",
+      "noul": 0.19
+    },
+    "has_retake": {
+      "type": "noul",
+      "noul": 0.99
+    },
+    "has_offered_exam_grade": {
+      "type": "noul",
+      "noul": 0.12
+    },
+    "zh_scoring": {
+      "type": "choice",
+      "choice": "points",
+      "confidence": 0.7
+    },
+    "grade_calculation": {
+      "type": "choice",
+      "choice": "not_described",
+      "confidence": 0.99
+    },
+    "zh_count": {
+      "type": "choice",
+      "choice": "n2",
+      "confidence": 1
+    },
+    "quick_test_count": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.51
+    },
+    "assignment_count": {
+      "type": "choice",
+      "choice": "n2",
+      "confidence": 0.55
+    },
+    "zh_max_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.95
+    },
+    "zh_min_points": {
+      "type": "choice",
+      "choice": "c3",
+      "confidence": 0.39
+    },
+    "quick_test_total_max": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.88
+    },
+    "quick_test_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.68
+    },
+    "assignment_points_on_time": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.96
+    },
+    "theory_test_pass_threshold": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.48
+    },
+    "final_total_max": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.99
+    },
+    "grade2_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.81
+    },
+    "grade3_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.99
+    },
+    "grade4_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1
+    },
+    "grade5_min_points": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1
+    }
+  },
+  "expected": {
+    "grade_types": [
+      "practice_and_exam"
+    ],
+    "attendance_mandatory": [
+      true
+    ],
+    "has_quick_tests": [
+      false
+    ],
+    "has_assignment": [
+      false
+    ],
+    "has_theory_test_in_semester": [
+      false
+    ],
+    "has_retake": [
+      true
+    ],
+    "has_offered_exam_grade": [
+      false
+    ],
+    "zh_scoring": [
+      "points",
+      "not_described"
+    ],
+    "grade_calculation": [
+      "not_described",
+      "other"
+    ],
+    "zh_count": [
+      "2"
+    ],
+    "quick_test_count": [
+      "none"
+    ],
+    "assignment_count": [
+      "none"
+    ],
+    "zh_max_points": [
+      "none"
+    ],
+    "zh_min_points": [
+      "50%",
+      "40%",
+      "none"
+    ],
+    "quick_test_total_max": [
+      "none"
+    ],
+    "quick_test_min_points": [
+      "none"
+    ],
+    "assignment_points_on_time": [
+      "none"
+    ],
+    "theory_test_pass_threshold": [
+      "none"
+    ],
+    "final_total_max": [
+      "none"
+    ],
+    "grade2_min_points": [
+      "none"
+    ],
+    "grade3_min_points": [
+      "none"
+    ],
+    "grade4_min_points": [
+      "none"
+    ],
+    "grade5_min_points": [
+      "none"
+    ]
+  }
+}

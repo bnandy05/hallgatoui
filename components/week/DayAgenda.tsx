@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { format, isSameDay, startOfDay } from "date-fns";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
@@ -28,7 +27,7 @@ export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayA
 
   return (
     <div className="flex flex-col gap-2">
-      {days.map((day, i) => {
+      {days.map((day) => {
         const today = isSameDay(day.date, now);
         const past = !today && day.date < todayStart;
         return (
@@ -36,7 +35,6 @@ export function DayAgenda({ weekStart, deadlines, now, showCourse = true }: DayA
             key={day.date.toISOString()}
             aria-label={`${format(day.date, t.formats.weekdayMonthDay, { locale: dl })}${today ? t.week.todaySuffix : ""}`}
             aria-current={today ? "date" : undefined}
-            style={{ "--i": i } as CSSProperties}
             className={`relative grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 rounded-[var(--radius-slip)] px-3 pb-4 pt-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4 ${
               today ? "bg-canary-soft" : past ? "bg-strip-past" : "bg-strip"
             }`}

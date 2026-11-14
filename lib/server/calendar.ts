@@ -194,6 +194,7 @@ export async function renderCalendar(
     customPlatforms,
     ignoredDuplicatePairs: input.ignoredDuplicatePairs,
     classSessions: input.classSessions,
+    requirements: input.requirements,
     locale,
   });
 

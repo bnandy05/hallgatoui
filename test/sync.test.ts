@@ -95,3 +95,23 @@ test("rematch assigns deadlines synced before their course existed (Canvas befor
   const fixed = rematchDeadlines(before, [makeFeed({ courseId: "c-other" })], later);
   assert.ok(fixed.every((d) => d.courseId === null), "feeds with a fixed course are left alone");
 });
+
+test("re-sync keeps the user's estimateMinutes", () => {
+  const first = sync([]).deadlines;
+  const target = first.find((d) => d.externalUid === "event-assignment-512897")!;
+  const edited = first.map((d) => (d.id === target.id ? { ...d, estimateMinutes: 150 } : d));
+  const again = sync(edited).deadlines;
+  assert.equal(again.find((d) => d.id === target.id)!.estimateMinutes, 150);
+});
+
+test("re-sync keeps the user's checklist", () => {
+  const first = sync([]).deadlines;
+  const target = first.find((d) => d.externalUid === "event-assignment-512897")!;
+  const checklist = [
+    { id: "s1", text: "Read the brief", done: true },
+    { id: "s2", text: "Write", done: false },
+  ];
+  const edited = first.map((d) => (d.id === target.id ? { ...d, checklist } : d));
+  const again = sync(edited).deadlines;
+  assert.deepEqual(again.find((d) => d.id === target.id)!.checklist, checklist);
+});

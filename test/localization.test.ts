@@ -12,7 +12,8 @@ import { buildSearchItems } from "@/lib/search";
 import { pickLocale } from "@/lib/i18n";
 import { privacyContent } from "@/lib/privacy";
 import { termsContent } from "@/lib/terms";
-import { HOSTING, MINIMUM_AGE, PRIVACY_UPDATED, RESEND_RETENTION_DAYS, TERMS_UPDATED } from "@/lib/legal";
+import { SURVEY_MAX_DOC_CHARS } from "@/lib/rules/extract/survey/questions";
+import { HOSTING, JEV_CACHE_DAYS, JEV_MAX_TEXT_CHARS, JEV_PROCESSOR, MINIMUM_AGE, PRIVACY_UPDATED, RESEND_RETENTION_DAYS, TERMS_UPDATED } from "@/lib/legal";
 import { requestLocale, userLocale } from "@/lib/server/locale";
 import { createMemoryAccountStore } from "@/lib/server/account/memoryStore";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/ical/export";
@@ -302,7 +303,14 @@ test("the privacy notice exists in both languages and names the language data an
     assert.ok(c.purposes.items[0].data.includes(String(MINIMUM_AGE)));
     assert.ok(c.cookies.text.includes("service worker"));
     assert.ok(c.sub.includes(PRIVACY_UPDATED));
+    assert.ok(c.processors.items.some((p) => p.name === JEV_PROCESSOR));
+    assert.ok(c.purposes.items.some((p) => p.data.includes(JEV_PROCESSOR)));
+    assert.ok(c.purposes.items.some((p) => p.until.includes(String(JEV_CACHE_DAYS))));
+    assert.ok(c.purposes.items.length >= 10);
   }
+  assert.equal(JEV_MAX_TEXT_CHARS, SURVEY_MAX_DOC_CHARS);
+  assert.ok(hu.purposes.items.some((p) => p.what === "Követelményrendszer beolvasása"));
+  assert.ok(en.purposes.items.some((p) => p.what === "Reading requirements"));
 });
 
 test("the terms exist in both languages with the same structure, date and provider facts", () => {

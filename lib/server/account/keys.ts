@@ -7,3 +7,4 @@ export const userSessionsKey = (userId: string) => `usess:${userId}`;
 export const tokenKey = (hash: string) => `tok:${hash}`;
 export const dataKey = (userId: string) => `data:${userId}`;
 export const dataVersionKey = (userId: string) => `datav:${userId}`;
+export const dataSemesterKey = (userId: string) => `datat:${userId}`;

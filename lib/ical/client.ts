@@ -4,6 +4,9 @@ import { useStore } from "@/lib/store";
 import type { IcalEventDTO } from "@/lib/ical/types";
 
 const STALE_MS = 60 * 60 * 1000; // 1 hour
+const RETRY_AFTER_MS = 60_000;
+const inFlight = new Map<string, Promise<void>>();
+const lastFailure = new Map<string, number>();
 
 interface IcalApiResponse {
   events?: IcalEventDTO[];
@@ -27,7 +30,7 @@ export class SignedOutError extends Error {}
 const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
 /** Fetches and parses a feed via the server-side /api/ical route (CORS proxy). */
-export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
+export async function fetchFeed(url: string, signal?: AbortSignal): Promise<IcalEventDTO[]> {
   if (isOffline()) throw new NetworkError(currentMessages().errors.no_connection);
   let res: Response;
   try {
@@ -35,6 +38,7 @@ export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ url }),
+      signal,
     });
   } catch {
     throw new NetworkError(currentMessages().errors.no_connection);
@@ -55,20 +59,39 @@ export async function fetchFeed(url: string): Promise<IcalEventDTO[]> {
  * Syncs a single feed by id, reading and writing the store directly via
  * getState() so it can run outside of React (e.g. from AppShell's effect).
  */
-export async function syncFeed(feedId: string): Promise<void> {
-  const { feeds, applyFeedSync, updateFeed } = useStore.getState();
+export function syncFeed(feedId: string, automatic = false): Promise<void> {
+  const { feeds, ownerUserId, semesterNumber } = useStore.getState();
   const feed = feeds.find((f) => f.id === feedId);
-  if (!feed || isDemoFeedId(feed.id)) return;
-
-  try {
-    const events = await fetchFeed(feed.url);
-    applyFeedSync(feedId, events);
-  } catch (err) {
-    // No connection or an expired session says nothing about the feed (and lastError is a synced change): skip quietly.
-    if (err instanceof NetworkError || err instanceof SignedOutError) return;
-    const message = err instanceof Error ? err.message : currentMessages().errors.ical_unreachable;
-    updateFeed(feedId, { lastError: message });
+  if (!feed || isOffline() || isDemoFeedId(feed.id)) return Promise.resolve();
+  const key = JSON.stringify([ownerUserId, semesterNumber, feedId, feed.url]);
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+  const now = Date.now();
+  for (const [failedKey, at] of lastFailure) {
+    if (now - at >= RETRY_AFTER_MS) lastFailure.delete(failedKey);
   }
+  if (automatic && lastFailure.has(key)) return Promise.resolve();
+
+  const currentStore = () => {
+    const current = useStore.getState();
+    return current.ownerUserId === ownerUserId && current.semesterNumber === semesterNumber &&
+      current.feeds.some((f) => f.id === feedId && f.url === feed.url)
+      ? current : null;
+  };
+  const refresh = fetchFeed(feed.url).then((events) => {
+    currentStore()?.applyFeedSync(feedId, events);
+    lastFailure.delete(key);
+  }).catch((err: unknown) => {
+    // Retry a connection failure immediately on reconnect. It says nothing about the source.
+    if (err instanceof NetworkError || err instanceof SignedOutError) return;
+    const current = currentStore();
+    if (!current) return;
+    lastFailure.set(key, Date.now());
+    const message = err instanceof Error ? err.message : currentMessages().errors.ical_unreachable;
+    current.updateFeed(feedId, { lastError: message });
+  }).finally(() => inFlight.delete(key));
+  inFlight.set(key, refresh);
+  return refresh;
 }
 
 /**
@@ -86,5 +109,5 @@ export async function syncAllFeeds(opts?: { staleOnly?: boolean }): Promise<void
     return now - new Date(feed.lastSyncedAt).getTime() > STALE_MS;
   });
 
-  await Promise.all(targets.map((feed) => syncFeed(feed.id)));
+  await Promise.all(targets.map((feed) => syncFeed(feed.id, opts?.staleOnly)));
 }

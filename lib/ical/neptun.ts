@@ -5,6 +5,7 @@ import { normalizeCourseName } from "@/lib/ical/canvas";
 import { matchCourseInText } from "@/lib/ical/match";
 import { normalizeSearch } from "@/lib/text";
 import { budapestDate, budapestInstant, mondayOf } from "@/lib/ical/budapest";
+import { SEMESTER_GAP_MS, parseYmd, proposeSemesterStartAt } from "@/lib/timetable/semester";
 
 // Neptun timetable export: a static .ics, one VEVENT per class meeting, no RRULE, UTC times,
 // SUMMARY "<subject> ( - <group>) - <teachers ;-separated> - <type>". Pure, no store.
@@ -14,6 +15,8 @@ export type ParsedSession = Omit<ClassSession, "id" | "sourceId" | "courseId">;
 const LESSON_TYPES = new Set(["lesson", "tanora", "ora", "eloadas", "gyakorlat", "labor"]);
 const EXAM_TYPES = new Set(["exam", "vizsga"]);
 const OTHER_TYPES = new Set(["other event", "egyeb esemeny", "egyeb"]);
+/** How far back past classes are kept (and imported) at most: half a year. */
+const KEEP_PAST_MS = 183 * 24 * 60 * 60 * 1000;
 
 function kindOfType(type: string): SessionKind | null {
   const key = normalizeSearch(type);
@@ -107,14 +110,52 @@ export function isNeptunCalendar(events: IcalEventDTO[], text?: string): boolean
   return recognised / events.length >= 0.6;
 }
 
-/** Monday 00:00 Budapest time of the week containing `now`: older sessions are not imported. */
+/** Monday 00:00 Budapest time of the week containing `now` (the "tracked since" date of catch-up). */
 export function timetableCutoff(now: Date): Date {
   return budapestInstant(mondayOf(budapestDate(now)), 0, 0);
 }
 
-/** Current-week and future sessions only (holidays follow the same rule). */
-export function upcomingSessions(parsed: ParsedSession[], now: Date): ParsedSession[] {
-  const cutoff = timetableCutoff(now).getTime();
+function ymdInstant(ymd: string): Date | null {
+  const parsed = parseYmd(ymd);
+  return parsed ? budapestInstant(parsed, 0, 0) : null;
+}
+
+/**
+ * Where an import starts: the whole current semester, never an earlier term. The semester's
+ * first week is detected from the export (a break of three weeks separates terms); a stored
+ * semester start counts only when it belongs to the same term (in the exam period, when the
+ * export only points at the next term, it counts as is). Never later than this week's Monday
+ * (this week's exams still come in) and never more than half a year back.
+ */
+export function importFloor(parsed: Pick<ParsedSession, "kind" | "start">[], now: Date, storedStart?: string | null): Date {
+  const weekStart = timetableCutoff(now).getTime();
+  const detectedYmd = proposeSemesterStartAt(parsed, now);
+  const detected = detectedYmd ? ymdInstant(detectedYmd) : null;
+  const stored = storedStart ? ymdInstant(storedStart) : null;
+  // A detected start after this week is the next term (exam period or break): it says nothing about the stored one.
+  const current = detected && detected.getTime() <= weekStart ? detected.getTime() : null;
+  let floor = weekStart;
+  if (current !== null) floor = current;
+  if (stored && stored.getTime() <= weekStart && (current === null || stored.getTime() >= current - SEMESTER_GAP_MS)) {
+    floor = Math.min(floor, stored.getTime());
+  }
+  return new Date(Math.max(floor, now.getTime() - KEEP_PAST_MS));
+}
+
+/** The stored semester start (a Monday) belongs to a previous term: it is over a gap before the detected one. */
+export function isStaleSemester(storedStart: string, detected: string): boolean {
+  const stored = ymdInstant(storedStart);
+  const found = ymdInstant(detected);
+  return !!stored && !!found && stored.getTime() < found.getTime() - SEMESTER_GAP_MS;
+}
+
+/**
+ * Sessions that end at or after `from` (default: this week's Monday), holidays included.
+ * `from` comes from `importFloor`.
+ */
+export function upcomingSessions(parsed: ParsedSession[], now: Date, from?: Date): ParsedSession[] {
+  const weekStart = timetableCutoff(now).getTime();
+  const cutoff = from && from.getTime() < weekStart ? from.getTime() : weekStart;
   return parsed.filter((s) => new Date(s.end).getTime() >= cutoff);
 }
 
@@ -143,15 +184,75 @@ export function summarizeSubjects(sessions: Pick<ParsedSession, "kind" | "subjec
     .sort((a, b) => a.subject.localeCompare(b.subject, "hu"));
 }
 
+/** Mapping key of one Neptun group of a subject (Ea and Gy as separate courses). */
+export function groupMappingKey(subjectKey: string, group: string): string {
+  return `${subjectKey}|${group}`;
+}
+
+/** The subject a mapping key belongs to (`subjectKey` or `subjectKey|group`). */
+export function mappingSubjectKey(key: string): string {
+  const at = key.lastIndexOf("|");
+  return at === -1 ? key : key.slice(0, at);
+}
+
+/**
+ * The course of a session from its source's mapping: a group entry (`subjectKey|group`) wins
+ * over the subject entry. undefined = not mapped yet, null = skipped.
+ */
+export function mappedCourse(
+  source: Pick<TimetableSource, "subjectCourses">,
+  s: Pick<ClassSession, "subjectKey" | "group">
+): string | null | undefined {
+  if (s.group) {
+    const byGroup = source.subjectCourses[groupMappingKey(s.subjectKey, s.group)];
+    if (byGroup !== undefined) return byGroup;
+  }
+  return source.subjectCourses[s.subjectKey];
+}
+
+/** Whether the subject is mapped group by group. */
+export function isSplitByGroup(subjectCourses: Record<string, string | null>, subjectKey: string): boolean {
+  return Object.keys(subjectCourses).some((k) => k !== subjectKey && mappingSubjectKey(k) === subjectKey);
+}
+
+/**
+ * Applies mapping decisions. A whole-subject decision replaces every earlier entry of that
+ * subject (whole or per group); a group decision replaces the subject's whole entry and that
+ * group's, and leaves its other groups alone (a re-import only asks about new groups).
+ */
+export function applyMappingDecisions(
+  previous: Record<string, string | null>,
+  mapping: Record<string, string | null>
+): Record<string, string | null> {
+  const wholeSubjects = new Set(Object.keys(mapping).filter((k) => mappingSubjectKey(k) === k));
+  const groupSubjects = new Set(Object.keys(mapping).filter((k) => mappingSubjectKey(k) !== k).map(mappingSubjectKey));
+  const kept = Object.entries(previous).filter(([k]) => {
+    const subject = mappingSubjectKey(k);
+    if (wholeSubjects.has(subject)) return false;
+    if (k === subject && groupSubjects.has(subject)) return false;
+    return true;
+  });
+  return { ...Object.fromEntries(kept), ...mapping };
+}
+
+export interface MergeTimetableOptions {
+  now: Date;
+  /** Week 1 of the semester: earlier stored sessions are dropped. */
+  semesterStart?: Date;
+}
+
 /**
  * Replaces the sessions of `source` with the freshly parsed ones (upsert by externalUid, so
- * ids stay stable) and takes each session's course from `source.subjectCourses`. Sessions of
- * other sources are kept as they are.
+ * ids stay stable) and takes each session's course from the source's mapping. Sessions of
+ * other sources are kept as they are. With `opts`, stored sessions of this source that ended
+ * before this week (the import brings the whole current semester) are kept back to the semester
+ * start, or half a year without one: attendance and results refer to them.
  */
 export function mergeTimetableImport(
   source: TimetableSource,
   parsed: ParsedSession[],
-  existing: ClassSession[]
+  existing: ClassSession[],
+  opts?: MergeTimetableOptions
 ): ClassSession[] {
   const previousByUid = new Map<string, ClassSession>();
   for (const s of existing) if (s.sourceId === source.id) previousByUid.set(s.externalUid, s);
@@ -165,10 +266,23 @@ export function mergeTimetableImport(
       ...p,
       id: previousByUid.get(p.externalUid)?.id ?? newId(),
       sourceId: source.id,
-      courseId: p.kind === "szunnap" ? null : (source.subjectCourses[p.subjectKey] ?? null),
+      courseId: p.kind === "szunnap" ? null : (mappedCourse(source, p) ?? null),
     });
   }
-  return [...existing.filter((s) => s.sourceId !== source.id), ...next];
+
+  const kept: ClassSession[] = [];
+  if (opts) {
+    const cutoff = timetableCutoff(opts.now).getTime();
+    const floor = opts.semesterStart?.getTime() ?? opts.now.getTime() - KEEP_PAST_MS;
+    for (const s of previousByUid.values()) {
+      if (seen.has(s.externalUid)) continue;
+      const end = new Date(s.end).getTime();
+      if (end < cutoff && new Date(s.start).getTime() >= floor) {
+        kept.push({ ...s, courseId: s.kind === "szunnap" ? null : (mappedCourse(source, s) ?? null) });
+      }
+    }
+  }
+  return [...existing.filter((s) => s.sourceId !== source.id), ...kept, ...next];
 }
 
 /** Re-applies a source's subject mapping to its sessions. */
@@ -178,7 +292,7 @@ export function applySubjectMapping(
 ): ClassSession[] {
   return sessions.map((s) =>
     s.sourceId === source.id && s.kind !== "szunnap"
-      ? { ...s, courseId: source.subjectCourses[s.subjectKey] ?? null }
+      ? { ...s, courseId: mappedCourse(source, s) ?? null }
       : s
   );
 }
@@ -202,17 +316,21 @@ export function nextSessionFor(
 export function visibleSessions(sessions: ClassSession[], sources: TimetableSource[]): ClassSession[] {
   const bySource = new Map(sources.map((s) => [s.id, s]));
   return sessions.filter(
-    (s) => s.kind === "szunnap" || bySource.get(s.sourceId)?.subjectCourses[s.subjectKey] !== null
+    (s) => {
+      if (s.kind === "szunnap") return true;
+      const source = bySource.get(s.sourceId);
+      return !source || mappedCourse(source, s) !== null;
+    }
   );
 }
 
-/** Subjects of classes that have no mapping entry at all (neither a course nor "skip"). */
+/** Subjects (and groups) of classes that have no mapping entry at all (neither a course nor "skip"). */
 export function unmappedSubjects(sessions: ClassSession[], sources: TimetableSource[]): SubjectInfo[] {
   const bySource = new Map(sources.map((s) => [s.id, s]));
   return summarizeSubjects(
     sessions.filter((s) => {
       const source = bySource.get(s.sourceId);
-      return !!source && s.kind !== "szunnap" && source.subjectCourses[s.subjectKey] === undefined;
+      return !!source && s.kind !== "szunnap" && mappedCourse(source, s) === undefined;
     })
   );
 }

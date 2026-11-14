@@ -6,7 +6,7 @@ import type {
   StoredToken,
   StoredUser,
 } from "@/lib/server/account/store";
-import { dataKey, dataVersionKey, emailKey, sessionKey, tokenKey, userKey, userSessionsKey } from "@/lib/server/account/keys";
+import { dataKey, dataSemesterKey, dataVersionKey, emailKey, sessionKey, tokenKey, userKey, userSessionsKey } from "@/lib/server/account/keys";
 
 // In-memory AccountStore for dev without Redis and for tests. Server-only.
 
@@ -71,13 +71,17 @@ export function createMemoryAccountStoreOver(kv: Kv): AccountStore {
         if (current !== baseVersion) {
           return { ok: false as const, current: await kv.get<DataDoc>(dataKey(userId)) };
         }
+        const previousTerm = (await kv.get<number>(dataSemesterKey(userId))) ?? 0;
+        const term = next.data.semesterNumber ?? 0;
+        if (term < previousTerm) return { ok: false as const, current: null, staleSemester: true as const };
         const version = baseVersion + 1;
         await kv.set(dataKey(userId), { ...next, version });
         await kv.set(dataVersionKey(userId), version);
+        if (term > previousTerm) await kv.set(dataSemesterKey(userId), term);
         return { ok: true as const, version };
       }),
     async deleteData(userId) {
-      await kv.del(dataKey(userId), dataVersionKey(userId));
+      await kv.del(dataKey(userId), dataVersionKey(userId), dataSemesterKey(userId));
     },
   };
 }

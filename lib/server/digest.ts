@@ -1,19 +1,24 @@
 import { randomBytes } from "node:crypto";
 import {
   collectDigest,
+  digestGradesFrom,
+  digestPendingFrom,
   digestPeriodKey,
   shouldSendDigest,
   type DigestFrequency,
   type DigestStatus,
 } from "@/lib/digest";
+import { filterAlerts, gradeAlerts } from "@/lib/gradeAlerts";
+import type { StoredAlerts } from "@/lib/server/gradeAlerts";
 import { renderDigestEmail } from "@/lib/digestEmail";
 import type { AccountStore } from "@/lib/server/account/store";
 import { userLocale } from "@/lib/server/locale";
 import { loadLiveDeadlines } from "@/lib/server/calendar";
 import { calendarInput } from "@/lib/server/calendarInput";
+import { awaitingResults, pendingInputs } from "@/lib/catchup";
 import { sendEmail, type OutgoingEmail } from "@/lib/server/email";
 import type { Kv } from "@/lib/server/kv";
-import { DIGEST_INDEX_KEY, digKey } from "@/lib/server/subscription";
+import { DIGEST_INDEX_KEY, alrKey, digKey } from "@/lib/server/subscription";
 
 // Server side of the email digest: settings stored per account (the address is the account's
 // confirmed email) and the daily send. Server-only.
@@ -110,6 +115,19 @@ export async function runDigest(
   const input = calendarInput(doc);
   const locale = userLocale(user);
   const { deadlines, warnings } = await loadLiveDeadlines(kv, userId, input, now, locale);
+  // Requirement results still to record, from the same pure functions as the app's popup.
+  const catchUp = {
+    courses: doc.data.courses,
+    rules: doc.data.requirementRules ?? [],
+    results: doc.data.requirementResults ?? [],
+    sessions: input.classSessions,
+    deadlines,
+    semester: doc.data.semester,
+    now,
+  };
+  // "Jegyek": only with the grade-alert opt-in, and only the kinds switched on for email.
+  const alerts = await kv.get<StoredAlerts>(alrKey(userId));
+  const grades = alerts ? digestGradesFrom(filterAlerts(gradeAlerts(catchUp, locale), alerts.kinds), doc.data.courses) : [];
   const content = collectDigest({
     frequency: digest.frequency,
     courses: input.courses,
@@ -119,6 +137,9 @@ export async function runDigest(
     dedupe: input.options.dedupe,
     failingFeeds: warnings.map((w) => w.feedName),
     classSessions: input.classSessions,
+    pending: digestPendingFrom(pendingInputs(catchUp), doc.data.courses, locale),
+    awaitingLate: awaitingResults(catchUp).filter((a) => a.overdue).length,
+    grades,
     now,
   });
 

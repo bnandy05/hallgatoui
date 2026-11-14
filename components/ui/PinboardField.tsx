@@ -8,17 +8,17 @@ import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 const NEUTRAL_PIN = "var(--pin-neutral)"; // resolved to a colour by the engine
 const CONTENT_MAX = 1240; // the page column; slips behind it are drawn much fainter
 const IN_COLUMN_ALPHA = 0.3;
-const PIN_MS = 1000; // held up, laid on the felt, pinned
-const GLOW_MS = 2600; // a fresh slip behind the column stays a little clearer for a moment
-const FALL_MS = 1150;
-const STAGGER_MS = 140; // several done at once go up one after another
-const MAX_ANIMATED = 12; // a bulk change (a feed sync) pins the rest up instantly
+const PIN_MS = 440;
+const HIGHLIGHT_MS = 640;
+const FALL_MS = 440;
+const STAGGER_MS = 48;
+const MAX_ANIMATED = 5;
 const MAX_SLOTS = 600;
 // First open in a session: the felt fills up behind the page, after the notices have gone up.
 const INTRO_KEY = "hallgatoireteg-felt-intro";
-const INTRO_DELAY_MS = 520;
-const INTRO_SPAN_MS = 1500; // the whole cascade, however many slips
-const INTRO_MAX = 36; // older slips beyond this are simply there
+const INTRO_DELAY_MS = 80;
+const INTRO_SPAN_MS = 240;
+const INTRO_MAX = 8;
 
 /** One open task on the felt. Its slot index alone decides where it hangs. */
 interface Slip {
@@ -143,7 +143,7 @@ export function PinboardField() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const baked = document.createElement("canvas");
     const bctx = baked.getContext("2d")!;
 
@@ -263,14 +263,14 @@ export function PinboardField() {
       const pinScale =
         k <= 0 ? 0 : k < 0.55 ? lerp(1.9, 0.9, easeOutCubic(k / 0.55)) : lerp(0.9, 1, easeOutCubic((k - 0.55) / 0.45));
       drawSlip(ctx!, p, s.pin, {
-        alpha: easeOutCubic(clamp01(t / 260)),
-        dy: (1 - lay) * -30,
+        alpha: easeOutCubic(clamp01(t / 130)),
+        dy: (1 - lay) * -18,
         dx: (1 - lay) * 6,
         angle: p.angle + (1 - lay) * (p.angle >= 0 ? 0.2 : -0.2) + rock,
         lift: 1 - lay,
         pinScale,
         pinAlpha: easeOutCubic(clamp01(k / 0.3)),
-        glow: s.quiet ? 0 : 1 - easeOutCubic(clamp01((t - PIN_MS) / (GLOW_MS - PIN_MS))),
+        glow: s.quiet ? 0 : 1 - easeOutCubic(clamp01((t - PIN_MS) / (HIGHLIGHT_MS - PIN_MS))),
       });
     }
 
@@ -296,7 +296,7 @@ export function PinboardField() {
       let busy = false;
       let settled = false;
       for (const s of slips) {
-        if (s.pinAt !== 0 && now - s.pinAt >= (s.quiet ? PIN_MS : GLOW_MS)) {
+        if (s.pinAt !== 0 && now - s.pinAt >= (s.quiet ? PIN_MS : HIGHLIGHT_MS)) {
           s.pinAt = 0;
           settled = true;
         }
@@ -324,7 +324,16 @@ export function PinboardField() {
       if (!raf) raf = requestAnimationFrame(frame);
     }
 
+    function settleMotion() {
+      if (!motionPreference.matches) return;
+      for (const slip of slips) slip.pinAt = 0;
+      falling = [];
+      bake();
+      kick();
+    }
+
     function sync(doneIds: string[], colorOf: (id: string) => string) {
+      const reduced = motionPreference.matches;
       const now = performance.now();
       const done = new Set(doneIds);
       if (known === null) {
@@ -341,7 +350,7 @@ export function PinboardField() {
         }
         const firstAnimated = intro ? Math.max(0, known.length - INTRO_MAX) : known.length;
         const animated = known.length - firstAnimated;
-        const step = animated > 0 ? Math.min(90, INTRO_SPAN_MS / animated) : 0;
+        const step = animated > 0 ? Math.min(STAGGER_MS, INTRO_SPAN_MS / animated) : 0;
         slips = known.map((id, slot) => ({
           slot,
           pin: colorOf(id),
@@ -365,13 +374,9 @@ export function PinboardField() {
         const s = slips.pop()!;
         if (s.pinAt !== 0 && s.pinAt > now) continue; // still queued, never went up
         if (s.pinAt === 0) rebake = true;
-        if (reduced) {
-          extraHoles.push({ slot: s.slot });
-          rebake = true;
-        } else {
-          falling.push({ slot: s.slot, pin: s.pin, at: now });
-          extraHoles.push({ slot: s.slot });
-        }
+        extraHoles.push({ slot: s.slot });
+        if (reduced) rebake = true;
+        else falling.push({ slot: s.slot, pin: s.pin, at: now });
       }
       if (extraHoles.length > 120) extraHoles = extraHoles.slice(-120);
 
@@ -419,6 +424,7 @@ export function PinboardField() {
     bake();
     kick();
     engine.current = { sync };
+    motionPreference.addEventListener("change", settleMotion);
     window.addEventListener("resize", onResize);
     return () => {
       themeObserver.disconnect();
@@ -431,6 +437,7 @@ export function PinboardField() {
       }
       cancelAnimationFrame(raf);
       window.clearTimeout(resizeTimer);
+      motionPreference.removeEventListener("change", settleMotion);
       window.removeEventListener("resize", onResize);
     };
   }, []);

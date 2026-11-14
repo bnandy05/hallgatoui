@@ -15,7 +15,7 @@ export interface WeekNavProps {
 export function WeekNav({ weekStart, currentWeekStart, onChange }: WeekNavProps) {
   const t = useT();
   const isCurrent = weekStart.getTime() === currentWeekStart.getTime();
-  const iconButton = buttonClasses({ variant: "secondary", size: "sm", className: "!px-2" });
+  const iconButton = buttonClasses({ variant: "secondary", size: "sm", className: "!px-2 pointer-coarse:size-11" });
   return (
     <div className="flex items-center gap-1.5" role="group" aria-label={t.week.pickWeek}>
       <button
@@ -30,7 +30,7 @@ export function WeekNav({ weekStart, currentWeekStart, onChange }: WeekNavProps)
         type="button"
         disabled={isCurrent}
         onClick={() => onChange(currentWeekStart)}
-        className={buttonClasses({ variant: "secondary", size: "sm" })}
+        className={buttonClasses({ variant: "secondary", size: "sm", className: "pointer-coarse:min-h-11" })}
       >
         {t.week.thisWeek}
       </button>

@@ -43,7 +43,7 @@ export interface DataDoc {
   exportOptions: ExportOptions;
 }
 
-export type CasResult = { ok: true; version: number } | { ok: false; current: DataDoc | null };
+export type CasResult = { ok: true; version: number } | { ok: false; current: DataDoc | null; staleSemester?: true };
 
 export interface AccountStore {
   getUser(id: string): Promise<StoredUser | null>;

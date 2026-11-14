@@ -3,17 +3,31 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useStore, type SubjectDecision } from "@/lib/store";
 import {
+  mappedCourse,
   parseNeptunEvents,
   summarizeSubjects,
+  importFloor,
+  isStaleSemester,
+  isNeptunCalendar,
+  timetableCutoff,
   upcomingSessions,
   type ParsedSession,
 } from "@/lib/ical/neptun";
+import { normalizeSemesterStart, proposeSemesterStartAt } from "@/lib/timetable/semester";
+import { parseIcs } from "@/lib/ical/parse";
 import type { IcalEventDTO } from "@/lib/ical/types";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { TimetableMappingDialog } from "@/components/TimetableMappingDialog";
+import { Button } from "@/components/ui/Button";
+import { Dialog, DialogActions } from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface PendingImport {
   parsed: ParsedSession[];
+  /** Import floor (ISO). */
+  from: string;
   sourceId?: string;
   url?: string;
 }
@@ -25,15 +39,23 @@ export interface TimetableImportOptions {
   url?: string;
 }
 
+/** The semester start is asked first, from the whole export, so this semester's past weeks come too. */
+interface SemesterQuestion {
+  events: IcalEventDTO[];
+  opts: TimetableImportOptions;
+  proposal: string;
+}
+
 export interface TimetableImport {
   /** Starts an import of Neptun events. Returns an error message, or null when it went (or is going) well. */
   importEvents: (events: IcalEventDTO[], opts?: TimetableImportOptions) => string | null;
+  importFile: (file: File, opts?: TimetableImportOptions, signal?: AbortSignal) => Promise<string | null>;
   editMapping: (sourceId: string) => void;
   /** The mapping dialogs; render once. */
   dialogs: ReactNode;
 }
 
-/** Timetable import orchestration: future-only filter, subject mapping dialog, store import. */
+/** Timetable import orchestration: current-semester filter, subject mapping dialog, store import. */
 export function useTimetableImport(): TimetableImport {
   const t = useT();
   const sessions = useStore((s) => s.classSessions);
@@ -43,23 +65,39 @@ export function useTimetableImport(): TimetableImport {
 
   const [pending, setPending] = useState<PendingImport | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [semesterQuestion, setSemesterQuestion] = useState<SemesterQuestion | null>(null);
 
-  /** Subjects the dialog has to ask about: all of them, or only the new ones on a re-import. */
+  /** Subjects (and groups) the dialog has to ask about: all of them, or only the new ones on a re-import. */
   function subjectsToAsk(p: PendingImport) {
-    const known = p.sourceId
-      ? useStore.getState().timetableSources.find((s) => s.id === p.sourceId)?.subjectCourses
-      : undefined;
-    return summarizeSubjects(p.parsed).filter((s) => !known || known[s.subjectKey] === undefined);
+    const known = knownMapping(p);
+    return summarizeSubjects(p.parsed.filter((s) => mappedCourse({ subjectCourses: known }, s) === undefined));
   }
 
-  function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}): string | null {
+  function knownMapping(p: PendingImport): Record<string, string | null> {
+    return (p.sourceId ? useStore.getState().timetableSources.find((s) => s.id === p.sourceId)?.subjectCourses : undefined) ?? {};
+  }
+
+  function importEvents(events: IcalEventDTO[], opts: TimetableImportOptions = {}, askSemester = true): string | null {
     const all = parseNeptunEvents(events);
     if (all.length === 0) return t.timetable.empty;
-    const parsed = upcomingSessions(all, new Date());
+    // The whole current semester comes (attendance refers to its past weeks), never an earlier term.
+    const now = new Date();
+    const semester = useStore.getState().semester;
+    if (askSemester) {
+      const proposal = proposeSemesterStartAt(all, now);
+      // A proposal after this week is the next term (exam period): only asked when nothing is stored.
+      const current = proposal !== null && Date.parse(proposal) <= timetableCutoff(now).getTime() + DAY_MS;
+      if (proposal && (!semester || (current && isStaleSemester(semester.start, proposal)))) {
+        setSemesterQuestion({ events, opts, proposal });
+        return null;
+      }
+    }
+    const floor = importFloor(all, now, semester?.start);
+    const parsed = upcomingSessions(all, now, floor);
     if (parsed.length === 0) return t.timetable.noUpcoming;
-    const next: PendingImport = { parsed, sourceId: opts.sourceId, url: opts.url };
+    const next: PendingImport = { parsed, from: floor.toISOString(), sourceId: opts.sourceId, url: opts.url };
     if (subjectsToAsk(next).length === 0) {
-      importTimetable({ sourceId: next.sourceId, name: t.timetable.sourceName, url: next.url }, next.parsed, {});
+      importTimetable({ sourceId: next.sourceId, name: t.timetable.sourceName, url: next.url, from: next.from }, next.parsed, {});
     } else {
       setPending(next);
     }
@@ -72,17 +110,28 @@ export function useTimetableImport(): TimetableImport {
     [sessions, editingId]
   );
 
+  function answerSemester(start: string | null) {
+    const question = semesterQuestion;
+    setSemesterQuestion(null);
+    if (!question) return;
+    if (start) useStore.getState().setSemester(start);
+    importEvents(question.events, question.opts, false);
+  }
+
   const dialogs = (
     <>
+      <Dialog open={semesterQuestion !== null} onClose={() => answerSemester(null)} title={t.timetable.semesterTitle}>
+        {semesterQuestion && <SemesterStep proposal={semesterQuestion.proposal} onAnswer={answerSemester} />}
+      </Dialog>
       <TimetableMappingDialog
         open={pending !== null}
         onClose={() => setPending(null)}
         title={t.timetable.mappingTitle}
         subjects={pending ? subjectsToAsk(pending) : []}
-        initial={{}}
+        initial={pending ? knownMapping(pending) : {}}
         onConfirm={(decisions: Record<string, SubjectDecision>) => {
           if (!pending) return;
-          importTimetable({ sourceId: pending.sourceId, name: t.timetable.sourceName, url: pending.url }, pending.parsed, decisions);
+          importTimetable({ sourceId: pending.sourceId, name: t.timetable.sourceName, url: pending.url, from: pending.from }, pending.parsed, decisions);
         }}
       />
       <TimetableMappingDialog
@@ -98,5 +147,42 @@ export function useTimetableImport(): TimetableImport {
     </>
   );
 
-  return { importEvents, editMapping: setEditingId, dialogs };
+  async function importFile(file: File, opts?: TimetableImportOptions, signal?: AbortSignal) {
+    try {
+      // Read locally so a student's timetable file never leaves the browser.
+      const text = await file.text();
+      if (signal?.aborted) return null;
+      const events = parseIcs(text);
+      if (!isNeptunCalendar(events, text)) return t.feeds.notNeptun;
+      return importEvents(events, opts);
+    } catch {
+      return t.feeds.fileUnreadable;
+    }
+  }
+
+  return { importEvents, importFile, editMapping: setEditingId, dialogs };
+}
+
+/** Week 1 of the teaching period, proposed from the timetable; week numbers count from it. */
+function SemesterStep({ proposal, onAnswer }: { proposal: string; onAnswer: (start: string | null) => void }) {
+  const t = useT();
+  const [draft, setDraft] = useState(proposal);
+  const normalized = draft ? normalizeSemesterStart(draft) : null;
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-body text-muted">{t.timetable.semesterIntro}</p>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-body font-semibold text-heading">{t.semesterField.label}</span>
+        <Input type="date" value={draft} onChange={(e) => setDraft(e.target.value)} className="!w-auto" />
+      </label>
+      <DialogActions>
+        <Button type="button" variant="secondary" onClick={() => onAnswer(null)}>
+          {t.timetable.semesterSkip}
+        </Button>
+        <Button type="button" disabled={!normalized} onClick={() => onAnswer(normalized)}>
+          {t.common.save}
+        </Button>
+      </DialogActions>
+    </div>
+  );
 }

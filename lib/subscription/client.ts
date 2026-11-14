@@ -4,12 +4,14 @@ import { visibleSessions } from "@/lib/ical/neptun";
 import { buildCalendar } from "@/lib/ical/export";
 import { useStore } from "@/lib/store";
 import type { DigestFrequency, DigestStatus } from "@/lib/digest";
+import type { AlertKinds } from "@/lib/types";
 
 // Browser side of the account's calendar subscription and email digest. Both live on the server
 // under the signed-in account; these wrappers never throw, errors come back as messages in the UI language.
 
 const CALENDAR_API = "/api/fiok/naptar";
 const DIGEST_API = "/api/fiok/hirlevel";
+const ALERTS_API = "/api/fiok/jegyriaszto";
 const genericError = () => currentMessages().errors.calendar_export;
 const networkError = () => currentMessages().errors.network;
 
@@ -71,8 +73,19 @@ export async function deleteCalendarToken(): Promise<string | null> {
 
 /** One-time .ics download built in the browser; works without a subscription or server. */
 export function downloadCalendar(): void {
-  const { courses, deadlines, exportOptions, feeds, customPlatforms, ignoredDuplicatePairs, classSessions, timetableSources } =
-    useStore.getState();
+  const {
+    courses,
+    deadlines,
+    exportOptions,
+    feeds,
+    customPlatforms,
+    ignoredDuplicatePairs,
+    classSessions,
+    timetableSources,
+    requirementRules,
+    requirementResults,
+    semester,
+  } = useStore.getState();
   const ics = buildCalendar({
     courses,
     deadlines,
@@ -83,6 +96,7 @@ export function downloadCalendar(): void {
     customPlatforms,
     ignoredDuplicatePairs,
     classSessions: visibleSessions(classSessions, timetableSources),
+    requirements: { rules: requirementRules, results: requirementResults, semester },
     locale: currentLocale(),
   });
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
@@ -127,3 +141,28 @@ export function saveDigest(frequency: DigestFrequency): Promise<DigestResult> {
 export function deleteDigest(): Promise<DigestResult> {
   return digestRequest("DELETE");
 }
+
+/** `error` is set on failure; otherwise `kinds` (null when emailed grade alerts are off). */
+export interface AlertEmailResult {
+  kinds?: AlertKinds | null;
+  email?: string;
+  available?: boolean;
+  error?: string;
+}
+
+async function alertsRequest(method: "GET" | "PUT" | "DELETE", body?: unknown): Promise<AlertEmailResult> {
+  const res = await request(ALERTS_API, method, body);
+  if (failed(res)) return { error: res.error };
+  if (method === "DELETE") return { kinds: null };
+  try {
+    const json = (await res.json()) as { alerts?: { kinds?: AlertKinds } | null; email?: string; available?: boolean };
+    return { kinds: json.alerts?.kinds ?? null, email: json.email, available: json.available };
+  } catch {
+    return { error: genericError() };
+  }
+}
+
+export const fetchAlertEmail = () => alertsRequest("GET");
+/** Creates or updates the emailed grade alerts; all kinds off turns them off. */
+export const saveAlertEmail = (kinds: AlertKinds) => alertsRequest("PUT", { kinds });
+export const deleteAlertEmail = () => alertsRequest("DELETE");

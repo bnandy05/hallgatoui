@@ -8,6 +8,7 @@ import { BUILT_IN_PLATFORMS, getPlatform, platformName } from "@/lib/platforms";
 import { linkHost, normalizeLinkUrl } from "@/lib/url";
 import type { CourseLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -29,6 +30,7 @@ function emptyForm(defaultPlatformId: string): LinkFormState {
 
 export function LinkEditor({ courseId }: LinkEditorProps) {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const customPlatforms = useStore((s) => s.customPlatforms);
   const addLink = useStore((s) => s.addLink);
@@ -88,10 +90,13 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
     setEditingId(null);
   }
 
-  function handleRemove(linkId: string) {
-    if (confirm(t.linkEditor.confirmDelete)) {
-      removeLink(courseId, linkId);
-    }
+  async function handleRemove(linkId: string) {
+    const ok = await confirm({
+      title: t.linkEditor.confirmTitle,
+      message: t.linkEditor.confirmDelete,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) removeLink(courseId, linkId);
   }
 
   const platformOptions = (
@@ -148,6 +153,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {confirmDialog}
       {course.links.length > 0 && (
         <ul className="-mx-1 divide-y divide-border/70">
           {course.links.map((link, index) => {
@@ -260,6 +266,7 @@ export function LinkEditor({ courseId }: LinkEditorProps) {
           {t.linkEditor.newLink}
         </button>
       )}
+      {confirmDialog}
     </div>
   );
 }

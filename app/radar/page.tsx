@@ -1,20 +1,22 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { dateLocale } from "@/lib/i18n";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
-import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel } from "@/lib/radar";
+import { groupByWeek, isCritical, isRecentlyChanged, urgencyOf, weekRangeLabel, weekWorkload } from "@/lib/radar";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Select } from "@/components/ui/Select";
 import { DeadlineChip } from "@/components/week/DeadlineChip";
+import { WorkloadNote } from "@/components/week/WorkloadNote";
 import { DayAgenda } from "@/components/week/DayAgenda";
 
 const NO_COURSE = "__none__";
@@ -42,7 +44,7 @@ export default function WeekRadarPage() {
   const [criticalOnly, setCriticalOnly] = useState(false);
   const [platformFilter, setPlatformFilter] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [now] = useState(() => new Date());
+  const now = useMinuteNow();
 
   const courseChips = useMemo(() => {
     const chips = courses.map((c) => ({ id: c.id, name: c.name, color: c.color }));
@@ -263,19 +265,18 @@ export default function WeekRadarPage() {
                       <span className="text-small font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
-                      {overdue.map((d, i) => (
-                        <DeadlineChip key={d.id} deadline={d} now={now} showDate index={i} />
+                      {overdue.map((d) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showDate />
                       ))}
                     </div>
                   </section>
                 )}
 
-                {weeks.map((week, wi) => (
+                {weeks.map((week) => (
                   <section
                     key={week.weekStart.toISOString()}
                     className="flex flex-col gap-3"
                     aria-label={week.label}
-                    style={{ "--seq": wi + 1 } as CSSProperties}
                   >
                     <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="font-display text-headline text-heading">
@@ -285,6 +286,9 @@ export default function WeekRadarPage() {
                         <span className="text-body text-muted">{weekRangeLabel(week.weekStart, dateLocale(locale), t.formats.weekRange)}</span>
                       )}
                       <span className="text-small tabular-nums text-muted-dim">{t.radar.weekCount(week.items.length)}</span>
+                      <span className="text-small">
+                        <WorkloadNote workload={weekWorkload(week.items, week.weekStart)} />
+                      </span>
                     </h2>
                     <DayAgenda weekStart={week.weekStart} deadlines={week.items} now={now} />
                   </section>

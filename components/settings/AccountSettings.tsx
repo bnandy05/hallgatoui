@@ -13,6 +13,7 @@ import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { UniversitySettings } from "@/components/settings/UniversitySettings";
 
 type Notice = { tone: "ok" | "bad"; text: string } | null;
 
@@ -55,6 +56,8 @@ export function AccountSettings() {
         </Card>
         <EmailForm />
       </section>
+
+      <UniversitySettings />
 
       <PasswordForm hasPassword={hasPassword} onSet={() => setHasPassword(true)} />
 

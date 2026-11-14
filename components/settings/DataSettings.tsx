@@ -3,23 +3,21 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { format } from "date-fns";
 import { Download, Sparkles, Trash2, Upload } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { selectPayload, useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { ImportError, parseAppData } from "@/lib/importData";
-import type { AppData } from "@/lib/types";
+import { downloadBackup } from "@/lib/downloadBackup";
+import { useDemoMode } from "@/lib/useDemoMode";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { SemesterArchiveSettings } from "./SemesterArchiveSettings";
 
 export function DataSettings() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const locale = useLocale();
-  const courses = useStore((s) => s.courses);
-  const deadlines = useStore((s) => s.deadlines);
-  const ignoredDuplicatePairs = useStore((s) => s.ignoredDuplicatePairs);
-  const classSessions = useStore((s) => s.classSessions);
-  const timetableSources = useStore((s) => s.timetableSources);
-  const customPlatforms = useStore((s) => s.customPlatforms);
-  const feeds = useStore((s) => s.feeds);
+  const demo = useDemoMode();
   const importData = useStore((s) => s.importData);
   const resetAll = useStore((s) => s.resetAll);
   const loadDemo = useStore((s) => s.loadDemo);
@@ -29,22 +27,9 @@ export function DataSettings() {
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   function handleExport() {
-    const data: AppData = { version: 1, courses, deadlines, customPlatforms, feeds,
-      ignoredDuplicatePairs,
-      classSessions,
-      timetableSources,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hallgatoi-reteg-${format(new Date(), "yyyy-MM-dd")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const { tombstones: _tombstones, ...data } = selectPayload(useStore.getState()).data;
+    void _tombstones;
+    downloadBackup(data, `hallgatoi-reteg-${format(new Date(), "yyyy-MM-dd")}.json`);
   }
 
   async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
@@ -59,9 +44,12 @@ export function DataSettings() {
       const json = JSON.parse(text);
       const data = parseAppData(json);
 
-      if (!confirm(t.data.confirmRestore)) {
-        return;
-      }
+      const ok = await confirm({
+        title: t.data.confirmRestoreTitle,
+        message: t.data.confirmRestore,
+        confirmLabel: t.data.restore,
+      });
+      if (!ok) return;
 
       importData(data);
       setImportSuccess(
@@ -77,8 +65,13 @@ export function DataSettings() {
     }
   }
 
-  function handleReset() {
-    if (confirm(t.data.confirmDeleteAll)) {
+  async function handleReset() {
+    const ok = await confirm({
+      title: t.data.confirmDeleteAllTitle,
+      message: t.data.confirmDeleteAll,
+      confirmLabel: t.common.delete,
+    });
+    if (ok) {
       setImportError(null);
       setImportSuccess(null);
       resetAll();
@@ -91,6 +84,7 @@ export function DataSettings() {
 
   return (
     <section className="flex flex-col gap-6">
+      {confirmDialog}
       <SectionHeading
         title={t.data.title}
         sub={t.data.sub}
@@ -134,6 +128,8 @@ export function DataSettings() {
           </Button>
         </div>
       </div>
+
+      {!demo && <SemesterArchiveSettings />}
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-dashed border-danger/40 px-5 py-4">
         <div className="min-w-0">

@@ -105,6 +105,42 @@ export function weekSummary(
   };
 }
 
+/** Above this many estimated minutes a week is shown on canary paper (informational, never red). */
+export const HEAVY_WEEK_MINUTES = 20 * 60;
+export const MAX_ESTIMATE_MINUTES = 7 * 24 * 60;
+
+/** Estimated effort of the open deadlines due in the seven days from `weekStart`. */
+export function weekWorkload(
+  deadlines: Deadline[],
+  weekStart: Date
+): { minutes: number; estimated: number; unestimated: number; heavy: boolean } {
+  const startMs = weekStart.getTime();
+  const endMs = addDays(weekStart, 7).getTime();
+  let minutes = 0;
+  let estimated = 0;
+  let unestimated = 0;
+  for (const d of deadlines) {
+    if (d.done) continue;
+    const ms = new Date(d.due).getTime();
+    if (ms < startMs || ms >= endMs) continue;
+    if (d.estimateMinutes && d.estimateMinutes > 0) {
+      minutes += d.estimateMinutes;
+      estimated++;
+    } else {
+      unestimated++;
+    }
+  }
+  return { minutes, estimated, unestimated, heavy: minutes > HEAVY_WEEK_MINUTES };
+}
+
+/** "~45 p", "~2 ó", "~1,5 ó" (en: "~45 min", "~2 h", "~1.5 h"). */
+export function formatEstimate(minutes: number, locale: AppLocale = "hu"): string {
+  const e = getMessages(locale).estimate;
+  if (minutes < 60) return e.minutes(Math.max(1, Math.round(minutes)));
+  const hours = Math.round((minutes / 60) * 10) / 10;
+  return e.hours(locale === "hu" ? String(hours).replace(".", ",") : String(hours));
+}
+
 export function nextDeadlineFor(
   courseId: string | null,
   deadlines: Deadline[],
