@@ -77,12 +77,12 @@ function TabBar({ pathname }: { pathname: string }) {
 function Wordmark() {
   const t = useT();
   return (
-    <Link href="/" className="group relative flex shrink-0 items-center gap-2.5 pr-1 text-heading">
-      <span aria-hidden="true" className="relative block h-[22px] w-[18px]">
+    <Link href="/" className="group relative flex min-w-0 items-center gap-2.5 pr-1 text-heading sm:shrink-0">
+      <span aria-hidden="true" className="relative block h-[22px] w-[18px] shrink-0">
         <span className="absolute inset-x-0 bottom-0 top-[5px] rounded-[var(--radius-slip)] bg-card shadow-[var(--shadow-paper)] transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:-rotate-3" />
         <span className="pin left-[3.5px] top-0" />
       </span>
-      <span className="font-display text-subhead leading-none tracking-[0.005em]">
+      <span className="font-display text-subhead leading-none tracking-[0.005em] max-[360px]:text-title">
         {t.shell.brand}
       </span>
     </Link>
@@ -101,7 +101,7 @@ function NewDeadlineButton() {
         onClick={() => setOpen(true)}
         aria-label={t.shell.newDeadline}
         data-tour="new-deadline"
-        className={buttonClasses({ size: "sm", className: "max-md:!h-9 !px-2.5 sm:!px-3" })}
+        className={buttonClasses({ size: "sm", className: "max-md:!h-9 !px-2.5 sm:!px-3 pointer-coarse:min-h-11 pointer-coarse:max-sm:min-w-11" })}
       >
         <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">{t.shell.newDeadline}</span>
@@ -175,7 +175,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             {!bare && <SyncStatus compact />}
             {dataReady && !bare && <RemindersMenu />}
             <ThemeToggle />

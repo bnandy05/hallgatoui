@@ -143,11 +143,10 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
       </p>
 
       <ol className="flex flex-col gap-4">
-        {slice.map((group, i) => (
+        {slice.map((group) => (
           <CatchUpSlip
             key={group.key}
             group={group}
-            index={i}
             color={courseById.get(group.courseId)?.color}
             courseName={courseById.get(group.courseId)?.name}
             byId={byId}
@@ -211,7 +210,6 @@ function itemFor(field: CatchUpField, patch: ResultPatch, locale: Locale): Param
 
 function CatchUpSlip({
   group,
-  index,
   color,
   courseName,
   byId,
@@ -221,7 +219,6 @@ function CatchUpSlip({
   labelOf,
 }: {
   group: CatchUpGroup;
-  index: number;
   color?: string;
   courseName?: string;
   byId: Map<string, RequirementResult>;
@@ -244,7 +241,6 @@ function CatchUpSlip({
   return (
     <li
       data-done={done}
-      style={{ "--i": index } as CSSProperties}
       className={`slip px-4 pb-3 pt-4 ${late && !done ? "bg-salmon" : "bg-card"}`}
     >
       <span aria-hidden="true" className="pin -top-[4px] left-[14px]" style={{ "--pin-color": color ?? "var(--border-strong)" } as CSSProperties} />

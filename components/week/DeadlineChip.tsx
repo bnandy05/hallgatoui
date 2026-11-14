@@ -22,8 +22,6 @@ export interface DeadlineChipProps {
   showCourse?: boolean;
   /** Show the date instead of only the time (the overdue gutter spans several days). */
   showDate?: boolean;
-  /** Position in a grid of slips, so they are pinned up one after another on load. */
-  index?: number;
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -33,7 +31,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * when overdue or critical, gone when done (the slip then hangs loose). A hairline along the
  * bottom edge is as long as the time left in the coming week.
  */
-export function DeadlineChip({ deadline, now, showCourse = true, showDate = false, index }: DeadlineChipProps) {
+export function DeadlineChip({ deadline, now, showCourse = true, showDate = false }: DeadlineChipProps) {
   const t = useT();
   const locale = useLocale();
   const course = useStore((s) => s.courses.find((c) => c.id === deadline.courseId));
@@ -42,16 +40,26 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
   const slipRef = useRef<HTMLDivElement>(null);
   const wasDone = useRef(deadline.done);
 
-  // Ticking off pulls the pin and lets the slip swing; unticking pins it back. Only on a change,
-  // so slips that load already done just hang there. Set on the node: no re-render, and it stays
-  // (the end frame is the resting state) so the entrance animation never replays. Before paint,
-  // so the done slip's own entrance never shows for a frame.
+  // Run the unpin or repin only after the status changes, then return to the resting CSS.
   useLayoutEffect(() => {
     if (wasDone.current === deadline.done) return;
     wasDone.current = deadline.done;
     const node = slipRef.current;
     if (!node || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    node.dataset.motion = deadline.done ? "unpin" : "repin";
+    const motion = deadline.done ? "unpin" : "repin";
+    const settle = (event: AnimationEvent) => {
+      if (event.target !== node || event.animationName !== `slip-${motion}`) return;
+      delete node.dataset.motion;
+      removeListeners();
+    };
+    function removeListeners() {
+      node?.removeEventListener("animationend", settle);
+      node?.removeEventListener("animationcancel", settle);
+    }
+    node.addEventListener("animationend", settle);
+    node.addEventListener("animationcancel", settle);
+    node.dataset.motion = motion;
+    return removeListeners;
   }, [deadline.done]);
 
   const urgency = urgencyOf(deadline, now);
@@ -73,7 +81,6 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
       ref={slipRef}
       id={deadlineAnchorId(deadline.id)}
       data-done={deadline.done}
-      style={index === undefined ? undefined : ({ "--i": index } as CSSProperties)}
       className={`slip group px-2.5 pb-2.5 pt-3 ${overdue && !deadline.done ? "bg-salmon" : "bg-card"}`}
     >
       <span
@@ -124,7 +131,7 @@ export function DeadlineChip({ deadline, now, showCourse = true, showDate = fals
             )}
             {changed && <span className="shrink-0 font-semibold text-warning">{t.week.changed}</span>}
             {showCourse && course && (
-              <span className="min-w-0 basis-full truncate text-muted" title={course.name}>
+              <span className="line-clamp-2 min-w-0 basis-full text-muted [overflow-wrap:anywhere]" title={course.name}>
                 {course.name}
               </span>
             )}

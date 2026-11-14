@@ -50,12 +50,11 @@ export function AppearanceSettings() {
 
       <fieldset className="grid gap-4 sm:grid-cols-3">
         <legend className="sr-only">{t.appearance.themeLegend}</legend>
-        {PREFS.map((pref, i) => {
+        {PREFS.map((pref) => {
           const checked = theme === pref;
           return (
             <label
               key={pref}
-              style={{ "--i": i } as CSSProperties}
               className={`sheet-paper group relative flex cursor-pointer flex-col overflow-hidden transition-shadow duration-150 hover:shadow-[var(--shadow-lift)] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-4 has-[:focus-visible]:outline-accent ${
                 checked ? "outline-2 outline-offset-0 outline-accent" : ""
               }`}

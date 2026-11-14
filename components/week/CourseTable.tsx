@@ -49,7 +49,7 @@ function Launcher({ link }: { link: CourseLink }) {
 }
 
 /** One course as an index card pinned to the board: what's next, and its platforms one tap away. */
-function CourseCard({ course, now, index }: { course: Course; now: Date; index: number }) {
+function CourseCard({ course, now }: { course: Course; now: Date }) {
   const t = useT();
   const locale = useLocale();
   const { visible: deadlines } = useDedupedDeadlines();
@@ -74,7 +74,7 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
   }, [rules, allResults, course.id, now, locale]);
 
   return (
-    <li className="slip flex min-w-0 flex-col bg-card px-4 pb-3.5 pt-4" style={{ "--i": index } as CSSProperties}>
+    <li className="slip flex min-w-0 flex-col bg-card px-4 pb-3.5 pt-4">
       <span aria-hidden="true" className="pin -top-[4px] left-4" style={{ "--pin-color": course.color } as CSSProperties} />
 
       <div className="flex items-start gap-2">
@@ -171,8 +171,8 @@ function CourseCard({ course, now, index }: { course: Course; now: Date; index: 
 export function CourseTable({ courses, now }: { courses: Course[]; now: Date }) {
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(16.5rem,1fr))] gap-x-4 gap-y-5">
-      {courses.map((course, i) => (
-        <CourseCard key={course.id} course={course} now={now} index={i} />
+      {courses.map((course) => (
+        <CourseCard key={course.id} course={course} now={now} />
       ))}
     </ul>
   );

@@ -336,18 +336,17 @@ export function CourseWeekDetail({ id }: { id: string }) {
                       <span className="text-small font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h3>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
-                      {overdue.map((d, i) => (
-                        <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate index={i} />
+                      {overdue.map((d) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showCourse={false} showDate />
                       ))}
                     </div>
                   </section>
                 )}
-                {weeks.map((week, wi) => (
+                {weeks.map((week) => (
                   <section
                     key={week.weekStart.toISOString()}
                     aria-label={week.label}
                     className="flex flex-col gap-3"
-                    style={{ "--seq": wi + 1 } as CSSProperties}
                   >
                     <h3 className="flex flex-wrap items-baseline gap-x-3">
                       <span className="font-display text-subhead text-heading">

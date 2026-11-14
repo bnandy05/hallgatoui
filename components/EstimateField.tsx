@@ -9,12 +9,13 @@ import { Pill } from "@/components/ui/Pill";
 export interface EstimateFieldProps {
   value: number | undefined;
   onChange: (minutes: number | undefined) => void;
+  onInputValidityChange?: (invalid: boolean) => void;
   /** Hide the visible label (the detail dialog already has a row label). */
   hideLabel?: boolean;
 }
 
 /** Optional effort estimate: preset chips plus a free number of hours. Empty means none. */
-export function EstimateField({ value, onChange, hideLabel = false }: EstimateFieldProps) {
+export function EstimateField({ value, onChange, onInputValidityChange, hideLabel = false }: EstimateFieldProps) {
   const t = useT();
   const presets = t.estimate.presets;
   const isPreset = value !== undefined && presets.some((p) => p.minutes === value);
@@ -46,6 +47,7 @@ export function EstimateField({ value, onChange, hideLabel = false }: EstimateFi
             active={value === p.minutes}
             onClick={() => {
               setText("");
+              onInputValidityChange?.(false);
               onChange(value === p.minutes ? undefined : p.minutes);
             }}
           >
@@ -62,7 +64,10 @@ export function EstimateField({ value, onChange, hideLabel = false }: EstimateFi
           aria-label={t.estimate.freeHours}
           placeholder={t.estimate.freeHours}
           value={text}
-          onChange={(e) => handleText(e.target.value)}
+          onChange={(e) => {
+            handleText(e.target.value);
+            onInputValidityChange?.(!e.target.validity.valid);
+          }}
           className="!w-32"
         />
       </div>

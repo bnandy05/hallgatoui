@@ -142,11 +142,10 @@ export function ResourceList({ courseId }: ResourceListProps) {
       )}
 
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-x-4 gap-y-5">
-        {filtered.map((resource, i) => (
+        {filtered.map((resource) => (
           <li
             key={resource.id}
             className="slip flex min-w-0 flex-col bg-card px-4 pb-2 pt-4"
-            style={{ "--i": i } as CSSProperties}
           >
             <span
               aria-hidden="true"

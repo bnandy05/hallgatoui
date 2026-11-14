@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { Flame, SlidersHorizontal } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useDataReady } from "@/lib/useDataReady";
@@ -265,19 +265,18 @@ export default function WeekRadarPage() {
                       <span className="text-small font-semibold tabular-nums text-danger">{overdue.length}</span>
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3">
-                      {overdue.map((d, i) => (
-                        <DeadlineChip key={d.id} deadline={d} now={now} showDate index={i} />
+                      {overdue.map((d) => (
+                        <DeadlineChip key={d.id} deadline={d} now={now} showDate />
                       ))}
                     </div>
                   </section>
                 )}
 
-                {weeks.map((week, wi) => (
+                {weeks.map((week) => (
                   <section
                     key={week.weekStart.toISOString()}
                     className="flex flex-col gap-3"
                     aria-label={week.label}
-                    style={{ "--seq": wi + 1 } as CSSProperties}
                   >
                     <h2 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="font-display text-headline text-heading">

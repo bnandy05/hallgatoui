@@ -220,7 +220,7 @@ export function FeedSettings() {
       )}
 
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-x-4 gap-y-5">
-        {feeds.map((feed, i) => {
+        {feeds.map((feed) => {
           const platform = getPlatform(feed.platformId, customPlatforms);
           const course = feed.courseId ? courses.find((c) => c.id === feed.courseId) : null;
           const isSyncing = syncingIds.has(feed.id);
@@ -230,7 +230,6 @@ export function FeedSettings() {
             <li
               key={feed.id}
               className="slip flex min-w-0 flex-col gap-3 bg-card px-4 pb-3 pt-4"
-              style={{ "--i": i } as CSSProperties}
             >
               <span
                 aria-hidden="true"

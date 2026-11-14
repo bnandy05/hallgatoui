@@ -10,10 +10,10 @@ export interface CheckboxProps extends Omit<ComponentProps<"input">, "type" | "c
 /** A drawn tick box: paper with a toner edge, filled with toner and a tick when checked. The native input sits on top, so keyboard, forms and screen readers behave as usual. */
 export function Checkbox({ label, description, className = "", ...props }: CheckboxProps) {
   const box = (
-    <span className="relative mt-px inline-flex h-[18px] w-[18px] shrink-0">
+    <span className={`relative mt-px inline-flex size-[18px] shrink-0 ${label ? "" : "pointer-coarse:mx-[5px] pointer-coarse:my-1.5"}`}>
       <input
         type="checkbox"
-        className="peer absolute -left-2 -top-2 z-10 m-0 h-[calc(100%+16px)] w-[calc(100%+16px)] cursor-pointer appearance-none opacity-0 disabled:cursor-default"
+        className={`peer absolute -left-2 -top-2 z-10 m-0 size-[34px] cursor-pointer appearance-none opacity-0 disabled:cursor-default ${label ? "" : "pointer-coarse:-left-[13px] pointer-coarse:-top-[13px] pointer-coarse:size-11"}`}
         {...props}
       />
       <span

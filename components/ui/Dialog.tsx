@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -41,6 +41,7 @@ export function Dialog({
   view,
 }: DialogProps) {
   const t = useT();
+  const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scrolls = useRef(new Map<string, number>());
   const shownView = useRef(view);
@@ -77,7 +78,7 @@ export function Dialog({
     if (!open) scrolls.current.clear();
   }, [open]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) {
@@ -93,9 +94,10 @@ export function Dialog({
           )
           ?.focus();
       }
-    } else if (!open && dialog.open) {
-      dialog.close();
     }
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open, focusFieldOnTouch]);
 
   useEffect(() => {
@@ -128,6 +130,7 @@ export function Dialog({
   return (
     <dialog
       ref={dialogRef}
+      aria-labelledby={titleId}
       style={{ "--sheet": tone === "salmon" ? "var(--salmon)" : "var(--panel)" } as CSSProperties}
       className={`sheet top-[var(--visual-top,0px)] bottom-[var(--keyboard-inset,0px)] m-auto w-full scroll-pt-16 overflow-y-auto overscroll-contain has-[[data-dialog-actions]]:scroll-pb-20 rounded-[var(--radius-slip)] bg-[var(--sheet)] p-0 text-foreground shadow-[var(--shadow-dialog)] backdrop:bg-[var(--backdrop,rgba(40,48,54,0.45))] max-sm:mb-0 max-sm:max-h-[calc(var(--visual-height,100dvh)-2.5rem)] max-sm:max-w-full max-sm:rounded-b-none sm:max-h-[calc(var(--visual-height,100dvh)-3rem)] ${
         size === "xl"
@@ -149,12 +152,12 @@ export function Dialog({
             style={{ "--pin-color": pinColor } as CSSProperties}
           />
         )}
-        <h2 className="font-display min-w-0 self-center py-1.5 text-subhead text-heading [overflow-wrap:anywhere]">{title}</h2>
+        <h2 id={titleId} className="font-display min-w-0 self-center py-1.5 text-subhead text-heading [overflow-wrap:anywhere]">{title}</h2>
         <button
           type="button"
           aria-label={t.ui.close}
           onClick={onClose}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors hover:bg-wash/[0.06] hover:text-heading"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted transition-colors hover:bg-wash/[0.06] hover:text-heading pointer-coarse:size-11"
         >
           <X className="h-5 w-5" />
         </button>
@@ -172,7 +175,7 @@ export function DialogActions({ children }: { children: ReactNode }) {
   return (
     <div
       data-dialog-actions
-      className="sticky bottom-0 z-[1] -mx-5 mt-2 flex flex-wrap justify-end gap-2 border-t border-border bg-[var(--sheet)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 max-sm:[&>*]:flex-1"
+      className="sticky bottom-0 z-[1] -mx-5 mt-2 flex flex-wrap justify-end gap-2 border-t border-border bg-[var(--sheet)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 max-sm:[&>*]:flex-1 pointer-coarse:[&>button]:min-h-11"
     >
       {children}
     </div>

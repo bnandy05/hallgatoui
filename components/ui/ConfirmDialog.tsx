@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { Button, buttonClasses } from "./Button";
 import { Dialog, DialogActions } from "./Dialog";
@@ -12,6 +13,7 @@ export interface ConfirmDialogProps {
   title: ReactNode;
   message?: ReactNode;
   confirmLabel: ReactNode;
+  cancelLabel?: ReactNode;
   /** `danger` pins the sheet with the red pin and prints the confirm button in danger ink. */
   tone?: "danger" | "default";
   busy?: boolean;
@@ -28,6 +30,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel,
   tone = "default",
   busy = false,
 }: ConfirmDialogProps) {
@@ -37,7 +40,7 @@ export function ConfirmDialog({
       {message && <div className="text-body text-foreground">{message}</div>}
       <DialogActions>
         <CancelButton onClick={onClose} disabled={busy}>
-          {t.common.cancel}
+          {cancelLabel ?? t.common.cancel}
         </CancelButton>
         <Button type="button" variant={tone === "danger" ? "danger" : "primary"} onClick={onConfirm} disabled={busy}>
           {confirmLabel}
@@ -67,6 +70,7 @@ export interface ConfirmOptions {
   title: ReactNode;
   message?: ReactNode;
   confirmLabel: ReactNode;
+  cancelLabel?: ReactNode;
   tone?: "danger" | "default";
 }
 
@@ -81,9 +85,11 @@ export function useConfirm(): { confirm: (options: ConfirmOptions) => Promise<bo
   const resolver = useRef<((value: boolean) => void) | null>(null);
 
   const settle = useCallback((value: boolean) => {
-    resolver.current?.(value);
+    const resolve = resolver.current;
     resolver.current = null;
-    setOpen(false);
+    // Let the native dialog restore focus before the caller can close its own dialog.
+    flushSync(() => setOpen(false));
+    resolve?.(value);
   }, []);
 
   const confirm = useCallback((next: ConfirmOptions) => {
@@ -103,6 +109,7 @@ export function useConfirm(): { confirm: (options: ConfirmOptions) => Promise<bo
       title={options.title}
       message={options.message}
       confirmLabel={options.confirmLabel}
+      cancelLabel={options.cancelLabel}
       tone={options.tone ?? "danger"}
     />
   ) : null;

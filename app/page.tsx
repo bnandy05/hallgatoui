@@ -32,9 +32,9 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function HomeSkeleton() {
   return (
-    <div className="grid gap-2 lg:grid-cols-7">
+    <div className="grid gap-2 xl:grid-cols-7">
       {Array.from({ length: 7 }, (_, i) => (
-        <div key={i} className="h-16 rounded-[var(--radius-slip)] bg-strip/80 lg:h-60" />
+        <div key={i} className="h-16 rounded-[var(--radius-slip)] bg-strip/80 xl:h-60" />
       ))}
     </div>
   );
@@ -197,7 +197,6 @@ export default function WeekHome() {
               sessions={showClasses ? classSessions : undefined}
               now={now}
               gutter
-              intro
               emptyDay={t.home.emptyDay}
               label={t.home.boardLabel(range)}
             />
@@ -227,7 +226,7 @@ export default function WeekHome() {
       </section>
 
       {hydrated && (
-        <section className="flex flex-col gap-6" aria-labelledby="courses-heading" style={{ "--seq": 3 } as CSSProperties}>
+        <section className="flex flex-col gap-6" aria-labelledby="courses-heading">
           <SectionHeading
             id="courses-heading"
             title={t.home.courses}

@@ -193,108 +193,30 @@ a {
   transform: translateY(-1px);
 }
 
-/* ── Week board motion ─────────────────────────────────────────────────────────────
-   Everything animates *from* a hidden keyframe with `backwards` fill, so the resting
-   state is the plain, visible markup and a skipped animation changes nothing. */
-
-/* Pinning up: every slip is held a little above the board, laid against the felt and pressed
-   flat, then its pin goes in. Runs once per mount, so a slip that appears later (a new deadline,
-   a filter change) is pinned up on its own.
-   Load order: the felt and the day strips are already there; the notices go up in reading order.
-   A section sets --seq (0 = lead notice, 1, 2…, 140ms apart); siblings inside it set --i and
-   follow 45ms apart, capped. Headings are printed on the felt and never wait. */
-.slip,
-.sheet-paper {
-  --pin-at: calc(min(var(--seq, 0), 4) * 140ms + min(var(--i, 0), 10) * 45ms);
-}
-.slip {
-  animation: slip-pin 0.62s var(--ease-out-expo) backwards;
-  animation-delay: var(--pin-at);
-}
-.slip > .pin {
-  animation: pin-press 0.46s var(--ease-out-expo) backwards;
-  animation-delay: calc(var(--pin-at) + 230ms);
-}
-/* A slip that is already done arrives as it rests: no pin, laid on the felt already crooked.
-   (Before the data-motion rules below, so ticking and unticking still win.) */
-.slip[data-done="true"] {
-  animation-name: slip-lay;
-}
-.slip[data-done="true"] > .pin {
-  animation: none;
-}
-@keyframes slip-lay {
-  0% {
-    opacity: 0;
-    transform: translate(2px, -12px) rotate(-3.4deg) scale(1.03);
-    box-shadow: var(--shadow-held);
-  }
-  45% {
-    opacity: 0.72;
-  }
-}
-/* The lead board pins its days up column by column, left to right. */
-[data-board-motion="intro"] > .board-col .slip {
-  --pin-at: calc(min(var(--seq, 0), 4) * 140ms + var(--i, 0) * 55ms + 80ms);
-}
-/* A whole sheet is heavier than a slip: it is laid flat with less swing and pinned at its corners. */
-.sheet-paper {
-  animation: sheet-pin 0.7s var(--ease-out-expo) backwards;
-  animation-delay: var(--pin-at);
-}
-dialog .sheet-paper {
-  animation: none;
-}
-@keyframes sheet-pin {
-  0% {
-    opacity: 0;
-    transform: translateY(-12px) rotate(-0.9deg) scale(1.012);
-    box-shadow: var(--shadow-held-sheet);
-  }
-  40% {
-    opacity: 1;
-  }
-  72% {
-    transform: translateY(1px) rotate(0.15deg);
-  }
-}
-@keyframes slip-pin {
-  0% {
-    opacity: 0;
-    transform: translate(2px, -16px) rotate(-3.2deg) scale(1.035);
-    box-shadow: var(--shadow-held);
-  }
-  45% {
-    opacity: 1;
-  }
-  70% {
-    transform: translate(0, 1px) rotate(0.35deg) scale(0.996);
-  }
-}
+/* The pin press belongs to an action: restoring a slip or opening a pinned sheet. */
 @keyframes pin-press {
   0% {
     opacity: 0;
-    transform: translate(-3px, -12px) scale(1.8);
-    box-shadow: var(--pin-cast-held);
+    transform: translateY(-7px) scale(1.4);
   }
-  60% {
+  65% {
     opacity: 1;
-    transform: translate(0, 0) scale(0.86);
+    transform: scale(0.94);
   }
 }
 
 /* Ticking off and back (set from DeadlineChip for one run, so a done slip doesn't swing on load). */
 .slip[data-motion="unpin"] {
-  animation: slip-unpin 0.9s var(--ease-out) both;
+  animation: slip-unpin 0.38s var(--ease-out) both;
 }
 .slip[data-motion="unpin"] > .pin {
-  animation: pin-pull 0.34s var(--ease-out) both;
+  animation: pin-pull 0.19s var(--ease-out) both;
 }
 .slip[data-motion="repin"] {
-  animation: slip-repin 0.55s var(--ease-out-expo) both;
+  animation: slip-repin 0.26s var(--ease-out-expo) both;
 }
 .slip[data-motion="repin"] > .pin {
-  animation: pin-press 0.42s var(--ease-out-expo) 0.12s backwards;
+  animation: pin-press 0.22s var(--ease-out-expo) 0.04s backwards;
 }
 /* Freed from its pin, the slip swings about its other corner and settles crooked. */
 @keyframes slip-unpin {
@@ -302,14 +224,8 @@ dialog .sheet-paper {
     transform: none;
     opacity: 1;
   }
-  28% {
-    transform: rotate(-4.6deg) translateY(3px);
-  }
-  52% {
-    transform: rotate(-1.2deg) translateY(1px);
-  }
-  74% {
-    transform: rotate(-2.8deg) translateY(2px);
+  44% {
+    transform: rotate(-3.8deg) translateY(3px);
   }
   100% {
     transform: rotate(-2.2deg) translateY(2px);
@@ -346,31 +262,23 @@ dialog .sheet-paper {
   }
 }
 
-/* Week navigation slides the columns; their slips are already up, they don't re-pin. */
-[data-board-motion="next"] > .board-col .slip,
-[data-board-motion="prev"] > .board-col .slip,
-[data-board-motion="next"] > .board-col .slip > .pin,
-[data-board-motion="prev"] > .board-col .slip > .pin {
-  animation: none;
+/* The new week moves in together so the relationship between its days stays clear. */
+[data-board-motion="next"] {
+  animation: board-from-next 0.2s var(--ease-out-expo);
 }
-
-/* Week navigation: the board stays put, the days slide in from the side you moved to. */
-[data-board-motion="next"] > .board-col {
-  animation: board-from-next 0.34s var(--ease-out-expo) backwards;
-}
-[data-board-motion="prev"] > .board-col {
-  animation: board-from-prev 0.34s var(--ease-out-expo) backwards;
+[data-board-motion="prev"] {
+  animation: board-from-prev 0.2s var(--ease-out-expo);
 }
 @keyframes board-from-next {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(14px);
   }
 }
 @keyframes board-from-prev {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-14px);
   }
 }
 
@@ -390,18 +298,18 @@ dialog .sheet-paper {
 
 /* Dialogs are pinned up: they drop a few pixels into place; the backdrop fades. */
 dialog.sheet[open] {
-  animation: sheet-in 0.3s var(--ease-out-expo);
+  animation: sheet-in 0.2s var(--ease-out-expo);
 }
 dialog.sheet[open]::backdrop {
-  animation: backdrop-in 0.24s var(--ease-out);
+  animation: backdrop-in 0.16s var(--ease-out);
 }
-dialog.sheet[open] .pin {
-  animation: pin-press 0.44s var(--ease-out-expo) 0.16s backwards;
+dialog.sheet[open] > :first-child > .pin {
+  animation: pin-press 0.22s var(--ease-out-expo) 0.04s backwards;
 }
 @keyframes sheet-in {
   from {
     opacity: 0;
-    transform: translateY(-10px) rotate(-0.6deg);
+    transform: translateY(-6px) rotate(-0.3deg);
   }
 }
 @keyframes backdrop-in {
@@ -412,13 +320,13 @@ dialog.sheet[open] .pin {
 /* Narrow screens: dialogs are sheets drawn up from the bottom edge, within thumb reach. */
 @media (max-width: 639px) {
   dialog.sheet[open] {
-    animation: sheet-up 0.34s var(--ease-out-expo);
+    animation: sheet-up 0.24s var(--ease-out-expo);
   }
 }
 @keyframes sheet-up {
   from {
     opacity: 0.6;
-    transform: translateY(48px);
+    transform: translateY(24px);
   }
 }
 
@@ -495,19 +403,20 @@ dialog.sheet[open] .pin {
   .lift-sm:hover {
     transform: none !important;
   }
-  [data-board-motion] > .board-col,
-  .slip,
-  .slip > .pin,
-  .sheet-paper,
-  dialog.sheet[open] .pin {
-    animation: board-fade 0.2s linear backwards !important;
-    animation-delay: 0s !important;
+  .slip[data-motion],
+  .slip[data-motion] > .pin,
+  dialog.sheet[open] > :first-child > .pin {
+    animation: none;
+  }
+  [data-board-motion] {
+    animation: backdrop-in 0.12s linear;
   }
   .slip,
   .pin {
     transition: opacity 0.2s linear, background-color 0.2s linear;
   }
-  .slip[data-done="true"] {
+  .slip[data-done="true"],
+  .slip[data-done="true"] > .pin {
     transform: none;
   }
   .strike {

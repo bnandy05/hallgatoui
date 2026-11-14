@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { addWeeks, format } from "date-fns";
-import { Plus, Wand2, X } from "lucide-react";
+import { ChevronRight, Plus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { normalizeLinkUrl } from "@/lib/url";
 import { dateLocale } from "@/lib/i18n";
@@ -18,7 +18,6 @@ import { DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
-import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import { Textarea } from "@/components/ui/Textarea";
 
 export interface DeadlineFormValues {
@@ -36,6 +35,7 @@ export interface DeadlineFormProps {
   initial?: Deadline;
   defaultCourseId?: string | null;
   initialQuickText?: string;
+  dirtyRef: RefObject<boolean>;
   /** One item when editing or creating a single deadline, several for a series. */
   onSubmit: (values: DeadlineFormValues[]) => void;
   onCancel: () => void;
@@ -65,20 +65,32 @@ function toLocalInput(iso: string): string {
   return format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
 }
 
+function FormSummary({ label, value }: { label: string; value?: string }) {
+  return (
+    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 text-body font-semibold text-heading hover:text-foreground [&::-webkit-details-marker]:hidden">
+      <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted motion-safe:transition-transform group-open:rotate-90" />
+      <span>{label}</span>
+      {value && <span className="ml-auto text-right text-fine font-medium text-muted">{value}</span>}
+    </summary>
+  );
+}
+
 export function DeadlineForm({
   initial,
   defaultCourseId,
   initialQuickText,
+  dirtyRef,
   onSubmit,
   onCancel,
 }: DeadlineFormProps) {
   const t = useT();
+  const id = useId();
   const dl = dateLocale(useLocale());
   const repeatTabs = [
     { id: "once", label: t.deadlineForm.tabOnce },
     { id: "dates", label: t.deadlineForm.tabDates },
     { id: "every", label: t.deadlineForm.tabEvery },
-  ];
+  ] as const;
   const courses = useStore((s) => s.courses);
   const customPlatforms = useStore((s) => s.customPlatforms);
 
@@ -89,7 +101,10 @@ export function DeadlineForm({
       : null
   );
   const [quickText, setQuickText] = useState(initialQuickText ?? "");
+  const quickDetails = useRef<HTMLDetailsElement>(null);
+  const optionalDetails = useRef<HTMLDetailsElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initial?.title ?? seed?.title ?? "");
   const [courseId, setCourseId] = useState<string>(
@@ -103,7 +118,8 @@ export function DeadlineForm({
   const [critical, setCritical] = useState(initial?.critical ?? seed?.critical ?? false);
   const [note, setNote] = useState(initial?.note ?? "");
   const [estimate, setEstimate] = useState<number | undefined>(initial?.estimateMinutes);
-  const [error, setError] = useState<string | null>(null);
+  const [estimateInvalid, setEstimateInvalid] = useState(false);
+  const [urlInvalid, setUrlInvalid] = useState(false);
 
   // Creating only: several dates or a repeat rule. Editing stays a single date.
   const [mode, setMode] = useState<RepeatMode>("once");
@@ -114,6 +130,20 @@ export function DeadlineForm({
   const [count, setCount] = useState("6");
   const [until, setUntil] = useState("");
   const [numbered, setNumbered] = useState(true);
+
+  const draft = JSON.stringify({
+    title, courseId, due, platformId, url, critical, note, estimate, estimateInvalid, quickText,
+    mode, extraDates, interval, unit, endKind, count, until, numbered,
+  });
+  const [originalDraft] = useState(draft);
+  useLayoutEffect(() => {
+    dirtyRef.current = draft !== originalDraft;
+    return () => { dirtyRef.current = false; };
+  }, [dirtyRef, draft, originalDraft]);
+
+  useLayoutEffect(() => {
+    if (urlInvalid) urlRef.current?.focus();
+  }, [urlInvalid]);
 
   const dueDate = parseLocal(due);
   const spec = useMemo<RepeatSpec>(() => {
@@ -150,6 +180,7 @@ export function DeadlineForm({
     if (parsed.due) setDue(toDueInput(parsed.due));
     if (parsed.courseId) setCourseId(parsed.courseId);
     if (parsed.critical) setCritical(true);
+    if (quickDetails.current) quickDetails.current.open = false;
     titleRef.current?.focus();
   }
 
@@ -162,13 +193,15 @@ export function DeadlineForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedTitle = title.trim();
-    if (!trimmedTitle || !due) return;
+    if (!trimmedTitle || !dueDate) return;
 
     let normalizedUrl: string | undefined;
     if (url.trim()) {
       const normalized = normalizeLinkUrl(url);
       if (!normalized) {
-        setError(t.deadlineForm.invalidLink);
+        if (optionalDetails.current) optionalDetails.current.open = true;
+        if (urlInvalid) urlRef.current?.focus();
+        setUrlInvalid(true);
         return;
       }
       normalizedUrl = normalized;
@@ -183,7 +216,7 @@ export function DeadlineForm({
       estimateMinutes: estimate,
     };
     if (initial || dates.length <= 1) {
-      const only = dates[0] ?? new Date(due);
+      const only = dates[0] ?? dueDate;
       onSubmit([{ ...base, title: trimmedTitle, due: only.toISOString() }]);
       return;
     }
@@ -192,74 +225,31 @@ export function DeadlineForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {!initial && (
-        <div>
-          <Label htmlFor="deadline-quick">{t.deadlineForm.quickAdd}</Label>
-          <div className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 shrink-0 text-muted-dim" aria-hidden="true" />
-            <Input
-              id="deadline-quick"
-              value={quickText}
-              onChange={(e) => setQuickText(e.target.value)}
-              onKeyDown={handleQuickKeyDown}
-              placeholder={t.deadlineForm.quickPlaceholder}
-              autoFocus
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={applyQuick}
-              disabled={!parsed}
-            >
-              {t.deadlineForm.fill}
-            </Button>
-          </div>
-          {!parsed && (
-            <p className="mt-1.5 text-fine text-muted">
-              {t.deadlineForm.quickHelpBefore}<span className="font-semibold">!</span>{t.deadlineForm.quickHelpAfter}
-            </p>
-          )}
-          {parsed && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-fine text-muted">
-              {parsed.title && <span className="font-medium text-foreground">{parsed.title}</span>}
-              {parsed.due && (
-                <span>· {format(parsed.due, t.formats.yearMonthDayWeekdayTime, { locale: dl })}</span>
-              )}
-              {parsedCourse && (
-                <span className="inline-flex items-center gap-1">
-                  ·
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: parsedCourse.color }}
-                  />
-                  {parsedCourse.name}
-                </span>
-              )}
-              {parsed.critical && <span className="text-danger">· {t.common.critical}</span>}
-            </div>
-          )}
-        </div>
-      )}
-
+    <form
+      onSubmit={handleSubmit}
+      onInvalidCapture={(event) => {
+        const section = (event.target as HTMLElement).closest("details");
+        if (section) section.open = true;
+      }}
+      className="flex flex-col gap-4"
+    >
       <div>
-        <Label htmlFor="deadline-title">{t.deadlineForm.title}</Label>
+        <Label htmlFor={`${id}-title`}>{t.deadlineForm.title}</Label>
         <Input
-          id="deadline-title"
+          id={`${id}-title`}
           ref={titleRef}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          autoFocus={Boolean(initial)}
+          pattern={".*\\S.*"}
         />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="deadline-course">{t.deadlineForm.course}</Label>
+          <Label htmlFor={`${id}-course`}>{t.deadlineForm.course}</Label>
           <Select
-            id="deadline-course"
+            id={`${id}-course`}
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
           >
@@ -272,9 +262,9 @@ export function DeadlineForm({
           </Select>
         </div>
         <div>
-          <Label htmlFor="deadline-due">{t.deadlineForm.due}</Label>
+          <Label htmlFor={`${id}-due`}>{t.deadlineForm.due}</Label>
           <Input
-            id="deadline-due"
+            id={`${id}-due`}
             type="datetime-local"
             value={due}
             onChange={(e) => setDue(e.target.value)}
@@ -283,176 +273,253 @@ export function DeadlineForm({
         </div>
       </div>
 
-      {!initial && (
-        <div className="flex flex-col gap-3">
-          <Tabs
-            label={t.deadlineForm.repeat}
-            items={repeatTabs}
-            value={mode}
-            onChange={(id) => setMode(id as RepeatMode)}
-          />
-          <TabPanel id="dates" active={mode === "dates"} className="flex flex-col gap-2">
-            {extraDates.map((value, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  type="datetime-local"
-                  aria-label={t.deadlineForm.extraDate(i + 1)}
-                  value={value}
-                  onChange={(e) =>
-                    setExtraDates((list) => list.map((v, j) => (j === i ? e.target.value : v)))
-                  }
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={t.deadlineForm.removeExtraDate(i + 1)}
-                  onClick={() => setExtraDates((list) => list.filter((_, j) => j !== i))}
+      <div>
+        {!initial && (
+          <details className="group border-t border-border">
+            <FormSummary label={t.deadlineForm.repeat} value={repeatTabs.find((tab) => tab.id === mode)?.label} />
+            <div className="flex flex-col gap-3 pb-4 pt-1">
+              <Select aria-label={t.deadlineForm.repeat} value={mode} onChange={(e) => setMode(e.target.value as RepeatMode)}>
+                {repeatTabs.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+              </Select>
+              {mode === "dates" && (
+                <div className="flex flex-col gap-2">
+                  {extraDates.map((value, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        type="datetime-local"
+                        aria-label={t.deadlineForm.extraDate(i + 1)}
+                        value={value}
+                        onChange={(e) =>
+                          setExtraDates((list) => list.map((v, j) => (j === i ? e.target.value : v)))
+                        }
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="pointer-coarse:min-h-11"
+                        aria-label={t.deadlineForm.removeExtraDate(i + 1)}
+                        onClick={() => setExtraDates((list) => list.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="pointer-coarse:min-h-11"
+                      onClick={() =>
+                        setExtraDates((list) => {
+                          const last = parseLocal(list[list.length - 1] ?? due) ?? new Date();
+                          return [...list, toDueInput(addWeeks(last, 1))];
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                      {t.deadlineForm.addDate}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {mode === "every" && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
+                    <span>{t.deadlineForm.every}</span>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={52}
+                      aria-label={t.deadlineForm.frequency}
+                      value={interval}
+                      onChange={(e) => setIntervalValue(e.target.value)}
+                      className="!w-20"
+                    />
+                    <Select
+                      aria-label={t.deadlineForm.unit}
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value as "day" | "week")}
+                      className="!w-auto"
+                    >
+                      <option value="week">{t.deadlineForm.weekUnit}</option>
+                      <option value="day">{t.deadlineForm.dayUnit}</option>
+                    </Select>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
+                    <Select
+                      aria-label={t.deadlineForm.end}
+                      value={endKind}
+                      onChange={(e) => setEndKind(e.target.value as "count" | "until")}
+                      className="!w-auto"
+                    >
+                      <option value="count">{t.deadlineForm.endCount}</option>
+                      <option value="until">{t.deadlineForm.endUntil}</option>
+                    </Select>
+                    {endKind === "count" ? (
+                      <>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={MAX_SERIES}
+                          aria-label={t.deadlineForm.countLabel}
+                          value={count}
+                          onChange={(e) => setCount(e.target.value)}
+                          className="!w-20"
+                        />
+                        <span>{t.deadlineForm.times}</span>
+                      </>
+                    ) : (
+                      <Input
+                        type="date"
+                        aria-label={t.deadlineForm.lastDay}
+                        value={until}
+                        onChange={(e) => setUntil(e.target.value)}
+                        required
+                        className="!w-auto"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              {dates.length > 1 && (
+                <div className="flex flex-col gap-1.5">
+                  <Checkbox checked={numbered} onChange={(e) => setNumbered(e.target.checked)} label={t.deadlineForm.numbered} />
+                  <p className="text-fine text-muted" aria-live="polite">
+                    {t.deadlineForm.seriesPreview(dates.length, previewDates)}
+                    {capped && t.deadlineForm.cappedAt(MAX_SERIES)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </details>
+        )}
+
+        <details ref={optionalDetails} className="group border-t border-border">
+          <FormSummary label={t.deadlineForm.details} value={critical ? t.common.critical : undefined} />
+          <div className="flex flex-col gap-4 pb-4 pt-1">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor={`${id}-platform`}>{t.deadlineForm.platform}</Label>
+                <Select
+                  id={`${id}-platform`}
+                  value={platformId}
+                  onChange={(e) => setPlatformId(e.target.value)}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
+                  <option value="">{t.deadlineForm.noPlatform}</option>
+                  <optgroup label={t.deadlineForm.builtIn}>
+                    {BUILT_IN_PLATFORMS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {platformName(p, t.platforms.other)}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customPlatforms.length > 0 && (
+                    <optgroup label={t.deadlineForm.custom}>
+                      {customPlatforms.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </Select>
               </div>
-            ))}
+              <div>
+                <Label htmlFor={`${id}-url`}>{t.deadlineForm.link}</Label>
+                <Input
+                  id={`${id}-url`}
+                  ref={urlRef}
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setUrlInvalid(false);
+                  }}
+                  inputMode="url"
+                  aria-invalid={urlInvalid || undefined}
+                  aria-describedby={urlInvalid ? `${id}-url-error` : undefined}
+                  className={urlInvalid ? "!border-danger" : undefined}
+                  placeholder="https://…"
+                />
+                <p id={`${id}-url-error`} role="alert" className="mt-1 text-fine text-danger empty:mt-0">
+                  {urlInvalid && t.deadlineForm.invalidLink}
+                </p>
+              </div>
+            </div>
+
+            <Checkbox checked={critical} onChange={(e) => setCritical(e.target.checked)} label={t.common.critical} />
+
+            <EstimateField
+              value={estimate}
+              onChange={setEstimate}
+              onInputValidityChange={setEstimateInvalid}
+            />
+
             <div>
+              <Label htmlFor={`${id}-note`}>{t.deadlineForm.note}</Label>
+              <Textarea
+                id={`${id}-note`}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+        </details>
+
+        {!initial && (
+        <details ref={quickDetails} className="group border-t border-border open:pb-3">
+            <FormSummary label={t.deadlineForm.quickAdd} />
+            <div className="flex items-center gap-2 pt-1">
+              <Input
+                id={`${id}-quick`}
+                aria-label={t.deadlineForm.quickAdd}
+                value={quickText}
+                onChange={(e) => setQuickText(e.target.value)}
+                onKeyDown={handleQuickKeyDown}
+                placeholder={t.deadlineForm.quickPlaceholder}
+                className="min-w-0"
+              />
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
-                onClick={() =>
-                  setExtraDates((list) => {
-                    const last = parseLocal(list[list.length - 1] ?? due) ?? new Date();
-                    return [...list, toDueInput(addWeeks(last, 1))];
-                  })
-                }
+                className="pointer-coarse:min-h-11"
+                onClick={applyQuick}
+                disabled={!parsed}
               >
-                <Plus className="h-4 w-4" />
-                {t.deadlineForm.addDate}
+                {t.deadlineForm.fill}
               </Button>
             </div>
-          </TabPanel>
-          <TabPanel id="every" active={mode === "every"} className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
-              <span>{t.deadlineForm.every}</span>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={52}
-                aria-label={t.deadlineForm.frequency}
-                value={interval}
-                onChange={(e) => setIntervalValue(e.target.value)}
-                className="!w-20"
-              />
-              <Select
-                aria-label={t.deadlineForm.unit}
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as "day" | "week")}
-                className="!w-auto"
-              >
-                <option value="week">{t.deadlineForm.weekUnit}</option>
-                <option value="day">{t.deadlineForm.dayUnit}</option>
-              </Select>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-body text-foreground">
-              <Select
-                aria-label={t.deadlineForm.end}
-                value={endKind}
-                onChange={(e) => setEndKind(e.target.value as "count" | "until")}
-                className="!w-auto"
-              >
-                <option value="count">{t.deadlineForm.endCount}</option>
-                <option value="until">{t.deadlineForm.endUntil}</option>
-              </Select>
-              {endKind === "count" ? (
-                <>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={MAX_SERIES}
-                    aria-label={t.deadlineForm.countLabel}
-                    value={count}
-                    onChange={(e) => setCount(e.target.value)}
-                    className="!w-20"
-                  />
-                  <span>{t.deadlineForm.times}</span>
-                </>
-              ) : (
-                <Input
-                  type="date"
-                  aria-label={t.deadlineForm.lastDay}
-                  value={until}
-                  onChange={(e) => setUntil(e.target.value)}
-                  required
-                  className="!w-auto"
-                />
-              )}
-            </div>
-          </TabPanel>
-          {dates.length > 1 && (
-            <div className="flex flex-col gap-1.5">
-              <Checkbox checked={numbered} onChange={(e) => setNumbered(e.target.checked)} label={t.deadlineForm.numbered} />
-              <p className="text-fine text-muted" aria-live="polite">
-                {t.deadlineForm.seriesPreview(dates.length, previewDates)}
-                {capped && t.deadlineForm.cappedAt(MAX_SERIES)}
+            {!parsed && (
+              <p className="mt-1.5 text-fine text-muted">
+                {t.deadlineForm.quickHelpBefore}<span className="font-semibold">!</span>{t.deadlineForm.quickHelpAfter}
               </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="deadline-platform">{t.deadlineForm.platform}</Label>
-          <Select
-            id="deadline-platform"
-            value={platformId}
-            onChange={(e) => setPlatformId(e.target.value)}
-          >
-            <option value="">{t.deadlineForm.noPlatform}</option>
-            <optgroup label={t.deadlineForm.builtIn}>
-              {BUILT_IN_PLATFORMS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {platformName(p, t.platforms.other)}
-                </option>
-              ))}
-            </optgroup>
-            {customPlatforms.length > 0 && (
-              <optgroup label={t.deadlineForm.custom}>
-                {customPlatforms.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </optgroup>
             )}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="deadline-url">{t.deadlineForm.link}</Label>
-          <Input
-            id="deadline-url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://…"
-          />
-          {error && <p className="mt-1 text-fine text-danger">{error}</p>}
-        </div>
-      </div>
-
-      <Checkbox checked={critical} onChange={(e) => setCritical(e.target.checked)} label={t.common.critical} />
-
-      <EstimateField value={estimate} onChange={setEstimate} />
-
-      <div>
-        <Label htmlFor="deadline-note">{t.deadlineForm.note}</Label>
-        <Textarea
-          id="deadline-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-        />
+            {parsed && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-fine text-muted">
+                {parsed.title && <span className="font-medium text-foreground">{parsed.title}</span>}
+                {parsed.due && (
+                  <span>· {format(parsed.due, t.formats.yearMonthDayWeekdayTime, { locale: dl })}</span>
+                )}
+                {parsedCourse && (
+                  <span className="inline-flex items-center gap-1">
+                    ·
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: parsedCourse.color }}
+                    />
+                    {parsedCourse.name}
+                  </span>
+                )}
+                {parsed.critical && <span className="text-danger">· {t.common.critical}</span>}
+              </div>
+            )}
+          </details>
+        )}
       </div>
 
       <DialogActions>

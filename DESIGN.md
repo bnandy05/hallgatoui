@@ -163,7 +163,7 @@ components:
 
 The app is the faculty corridor notice board with the noise taken out. A cool grey-blue felt ground carries white copy-paper sheets and slips; every deadline is a slip hung from a round pushpin, and the pin is the state. Coloured copy paper does the rest of the signalling: canary for today, salmon for overdue, sky for classes. Type is black toner. Headings are set like a printed notice, in heavy condensed Archivo; everything else is normal-width Archivo at working size.
 
-Time is the spine. The week board runs Monday to Sunday as seven lighter felt strips, with an overdue gutter on salmon paper at the left when something is late. Density is moderate: one board, one "Következő" notice that owns focus, one sheet for the course list. Behind every page a canvas draws faint ghost slips in the colours of the student's real open deadlines, swaying in a corridor draught; one falls off every few seconds and another is pinned up elsewhere.
+Time is the spine. The week board runs Monday to Sunday in lighter felt strips, with overdue work grouped on salmon paper. One “Következő” notice owns focus above the week, and a course list follows it. The background canvas shows faint slips in the colours of the student's open deadlines. It animates briefly when those deadlines change and rests between changes.
 
 The world is flat in colour and comes in two lightings of the same board: daylight (the default look) and after hours (dark), chosen by the system unless the student picks one. It rejects the dark dashboard with neon accents it replaced, and the generic white SaaS calendar. Depth comes from paper physically sitting on felt (soft, short, cool-tinted shadows), never from gradients, glows or glass.
 
@@ -321,7 +321,7 @@ Top-bar links are 36px tall, 14px semibold, Muted Ink; hover a 60% paper wash; t
 A Copy Paper slip with 2px corners and the paper shadow, hung from a pin near its top-left. The pin carries state: the course colour while open, Pushpin Red when overdue or critical, removed when done. An open overdue slip is printed on Salmon. A 2px bar along the bottom edge is as long as the time left within the coming week (red-tinted when hot). Ticking it off draws a strike through the title, pops the pin up and away, and lets the slip hang loose: tilted -2.2deg, 2px lower, at 72% opacity.
 
 ### Week Board (signature)
-Day strips of lighter felt; today is Canary Soft with a red pin at the top, holidays are Sky, past days are a step darker. On first load the slips are pinned up column by column, left to right (55ms stagger per column, pins pressing in after their slip); changing week slides the days in 24px from the side you moved to.
+Day strips use lighter felt, with Canary Soft and a red pin for today, Sky for holidays and a darker strip for past days. From 80rem the week runs across seven columns, with a salmon gutter when deadlines are overdue. At narrower widths the days stack, with earlier settled days of the current week behind a disclosure. Previous weeks show their populated days directly. A week change moves the board 14px from the side the student chose.
 
 ### Switches, copy fields, ruled lists
 - **Switch** (`components/ui/Switch.tsx`): settings toggles are a label with a one-line description and a 40x24 switch, Toner Ink track when on, Paper Inset with a Paper Edge Strong outline when off. Groups of switches sit on one sheet, ruled by hairlines.
@@ -352,17 +352,18 @@ Generated from the rule set, so every valid rule set reads the same. **Standing:
 
 **Confirmations** (`components/ui/ConfirmDialog.tsx`, `useConfirm()`): never the browser's `confirm()`. A short sheet with a title, one sentence and a Cancel / confirm row; destructive questions take the red pin and the danger button, the rest the primary. Cancel holds the focus with a mouse, so Enter never destroys. A single deadline is deleted without asking, behind an undo toast instead.
 
-**Undo toast** (`components/ui/Toast.tsx`, `showToast`): one slip at a time, pinned in Toner Ink, bottom centre (above the tab bar on phones), pinned up like any slip and faded under reduced motion. One line of text, a `.link-text` "Visszavonás" and a close button; it leaves after 6s unless hovered or focused. Only for actions taken on the board (ticking a slip, deleting), never from inside a dialog, which sits above it.
+**Undo toast** (`components/ui/Toast.tsx`, `showToast`): one slip at a time, pinned in Toner Ink, bottom centre (above the tab bar on phones), with text, a `.link-text` "Visszavonás" and a close button; it leaves after 6s unless hovered or focused. Only for actions taken on the board (ticking a slip, deleting), never from inside a dialog, which sits above it.
 
 **Estimates** (`EstimateField`, `WorkloadNote`): a deadline's "~2 ó" sits in the slip's meta line while it is open; a week with estimates shows "~9 ó becsült munka" beside its heading in Muted Ink, on Canary paper above 20 h. Workload is never red.
 
 **Checklist** (`ChecklistEditor` in the deadline detail, `lib/checklist.ts`): up to 20 ruled steps, each a `Checkbox`, text that edits in place and a delete `IconButton`, closed by a dashed "Új lépés" slot (Enter adds). It saves on every change and never completes the deadline. An open slip shows "2/5" with a list-checks icon in Muted Ink in its meta line, beside the estimate.
 
 ### Pinboard Field (signature)
-A fixed full-viewport canvas behind every page: pinholes, and one faint slip for every finished task (deduplicated deadlines with `done`), pinned in its course colour. The felt is a record of work done. Each slip has a fixed slot (a Halton sequence: on wide screens the gutters fill first and every fifth slip goes behind the column), so slips keep their places across visits and resizes. Ticking a task off pins a new slip up in the next slot: held above the felt, laid flat, then the pin goes in and the slip rocks once (1s; several at once follow 140ms apart, and a bulk change animates 12 and places the rest). Unticking (or deleting a done task) takes down the most recent slip, whichever task it was: the pin pops, the slip swings free and drops, and a pinhole stays. Behind the 1240px column slips are drawn at 30% with no pins (a fresh one stays clearer for about 2.6s). Settled slips are baked into a cached bitmap, so the canvas only animates while something moves. Under reduced motion changes appear and disappear without movement.
+A fixed full-viewport canvas behind every page shows pinholes and faint slips for open deadlines, pinned in their course colours. Each slip has a fixed slot and the wide-screen gutters fill first. Adding or reopening a deadline pins up a slip, while completing or removing one leaves a pinhole. The first visit in a session pins up to eight slips, with the rest already in place. Settled slips are drawn to a cached bitmap. Reduced motion settles the canvas immediately, even when enabled during an animation.
 
 ### Slip motion
-Loading a page is someone pinning up the morning's notices. The felt, the day strips and the headings are already there (skeletons are bare felt strips, never a pulse); then the notices go up in reading order. Every `.slip` is pinned up when it mounts: it drops 16px from slightly above the felt with a larger shadow, overshoots flat, and its pin presses in about 230ms later. A `.sheet-paper` is heavier: 12px, less swing, 0.7s. A slip that is already done arrives as it rests: no pin, laid down already crooked at 72% (`slip-lay`), so it never pins up and then unpins. A section sets `--seq` (lead notice 0, home board 1, home courses 3, radar and course weeks 1 + their index; capped at 4, 140ms apart) and siblings inside it set `--i` (grids, day strips, board columns, `DeadlineChip index`) and follow 45ms apart, capped at 10. Tab panels only fade, since their sheets pin themselves. On the first open of a session the felt's done-task slips are pinned up too, 0.5s in, over at most 1.5s (the 36 most recent; older ones are simply there), without the lingering highlight; later visits in the session show them settled. Ticking a deadline off (`DeadlineChip` sets `data-motion="unpin"` once, so slips that load done don't swing) pulls the pin and lets the slip swing about its far corner before settling crooked; unticking (`repin`) straightens it and presses the pin back. Dialog pins press in as the sheet lands. Week navigation slides the columns without re-pinning their slips.
+
+Slips and sheets are visible as soon as they render. Completing a deadline pulls out its pin and swings the slip into its settled position over 380ms. Reopening it straightens the slip and presses the pin back. Dialogs land in 200–240ms and changing weeks takes 200ms. Reduced motion uses short fades for navigation and opening a sheet, with completion shown by the checkmark, missing pin and strike-through.
 
 ## Do's and Don'ts
 
@@ -372,7 +373,7 @@ Loading a page is someone pinning up the morning's notices. The felt, the day st
 - **Do** make Toner Ink the primary button and active-control colour, with Copy Paper text on it.
 - **Do** head pages and sections with `SectionHeading`: a condensed heavy title and at most one line of subtext.
 - **Do** use tabular figures for times, dates and counts.
-- **Do** keep motion physical and short (0.24 to 0.65s on the page, up to about 1s for the felt; ease-out-expo) and give every animation a cross-fade under `prefers-reduced-motion`.
+- **Do** keep routine motion short and preserve state feedback under `prefers-reduced-motion`.
 - **Do** write concise, professional Hungarian UI copy.
 
 ### Don't:
