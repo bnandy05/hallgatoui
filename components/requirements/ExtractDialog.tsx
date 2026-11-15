@@ -6,6 +6,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { isDemoMode } from "@/lib/demoMode";
 import { extractRules, MAX_EXTRACT_CHARS, type Answers } from "@/lib/rules/extract";
 import { emptySurvey, SURVEY_MAX_DOC_CHARS, type SurveyDraft } from "@/lib/rules/extract/survey";
+import { documentCourseCode, requirementCourseCode } from "@/lib/rules/courseCode";
 import type { SubjectRules } from "@/lib/rules/types";
 import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
@@ -34,7 +35,7 @@ const MIN_CHARS = 40;
 type Step =
   | { kind: "paste" }
   | { kind: "loading" }
-  | { kind: "survey"; draft: SurveyDraft; truncated: boolean; notice?: string }
+  | { kind: "survey"; draft: SurveyDraft; truncated: boolean; notice?: string; manual?: boolean }
   | { kind: "parser" };
 
 type Pdf = { name: string; reading: boolean; error?: string; chars?: number };
@@ -48,8 +49,11 @@ function isDraft(v: unknown): v is SurveyDraft {
 
 export function ExtractForm({
   course,
+  detectedCode,
+  onDetectedCode,
+  onReviewShared,
   replacing,
-  canShare,
+  sharingAvailable,
   onSave,
   onManual,
   onCancel,
@@ -58,9 +62,12 @@ export function ExtractForm({
   startEmpty = false,
 }: {
   course: { name: string; code?: string };
+  detectedCode?: string;
+  onDetectedCode: (code?: string) => void;
+  onReviewShared?: () => void;
   replacing: boolean;
-  canShare: boolean;
-  onSave: (rules: SubjectRules, share: boolean) => void;
+  sharingAvailable: boolean;
+  onSave: (rules: SubjectRules, details: { code?: string; share: boolean; source: "extracted" | "manual" }) => void;
   /** Continue in the JSON, starting from the rules the review builds when it builds any. */
   onManual: (rules?: SubjectRules) => void;
   onCancel: () => void;
@@ -76,16 +83,26 @@ export function ExtractForm({
   const locale = useLocale();
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>(() =>
-    startEmpty ? { kind: "survey", draft: emptySurvey(locale), truncated: false } : { kind: "paste" }
+    startEmpty ? { kind: "survey", draft: emptySurvey(locale), truncated: false, manual: true } : { kind: "paste" }
   );
   const [mine, setMine] = useState<Answers>({});
-  const [share, setShare] = useState(true);
+  const [share, setShare] = useState(false);
   const [pdf, setPdf] = useState<Pdf | null>(null);
   const request = useRef<AbortController | null>(null);
+  const documentCode = useMemo(() => documentCourseCode(text), [text]);
+  const courseCode = requirementCourseCode(course.code) ?? documentCode ?? detectedCode;
+  const manual = step.kind === "survey" && step.manual === true;
+  const canShare = sharingAvailable && !!courseCode && !manual;
+  const isDirty = text.trim().length > 0 || pdf?.reading === true || step.kind === "survey" || step.kind === "parser";
+
+  function saveReview(rules: SubjectRules, share: boolean) {
+    onSave(rules, { code: courseCode, share: canShare && share, source: manual ? "manual" : "extracted" });
+  }
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => onWide?.(step.kind === "survey"), [step.kind, onWide]);
-  useEffect(() => onDirty?.(step.kind === "survey" || step.kind === "parser"), [step.kind, onDirty]);
+  useEffect(() => onDirty?.(isDirty), [isDirty, onDirty]);
+  useEffect(() => onDetectedCode(documentCode ?? undefined), [documentCode, onDetectedCode]);
 
   async function handlePdf(file: File | undefined) {
     if (!file) return;
@@ -113,12 +130,12 @@ export function ExtractForm({
   function fallback() {
     setMine({});
     if (extractRules(text, {}, new Date(), locale).ok) setStep({ kind: "parser" });
-    else setStep({ kind: "survey", draft: emptySurvey(locale), truncated: false, notice: t.unavailable });
+    else setStep({ kind: "survey", draft: emptySurvey(locale), truncated: false, notice: t.unavailable, manual: true });
   }
 
   function fillByHand() {
     setMine({});
-    setStep({ kind: "survey", draft: emptySurvey(locale), truncated: false });
+    setStep({ kind: "survey", draft: emptySurvey(locale), truncated: false, manual: true });
   }
 
   async function analyse() {
@@ -132,7 +149,7 @@ export function ExtractForm({
       const res = await fetch("/api/kovetelmeny/elemzes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text, course: { name: course.name, ...(course.code ? { code: course.code } : {}) } }),
+        body: JSON.stringify({ text, course: { name: course.name, ...(courseCode ? { code: courseCode } : {}) } }),
         signal: controller.signal,
       });
       const data = res.ok ? ((await res.json()) as { survey?: unknown; truncated?: boolean }) : null;
@@ -175,10 +192,10 @@ export function ExtractForm({
         draft={step.draft}
         truncated={step.truncated}
         notice={step.notice}
-        manual={startEmpty && !step.notice}
+        manual={manual}
         canShare={canShare}
         replacing={replacing}
-        onSave={onSave}
+        onSave={saveReview}
         onBack={back}
         onManual={onManual}
       />
@@ -216,6 +233,14 @@ export function ExtractForm({
           </div>
         )}
 
+        {!course.code && courseCode && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <p className="text-small text-muted" role="status">{t.detectedCode(courseCode)}</p>
+            {onReviewShared && (
+              <Button type="button" variant="secondary" size="sm" onClick={onReviewShared}>{t.reviewShared}</Button>
+            )}
+          </div>
+        )}
         <p className="text-fine text-muted">
           {isDemoMode() ? t.privacyDemo : t.privacy}
           {replacing && t.replacing}
@@ -383,7 +408,7 @@ export function ExtractForm({
             {t.manualSetup}
           </Button>
         )}
-        <Button type="button" disabled={!rules || open > 0} onClick={() => rules && onSave(rules, canShare && share)}>
+        <Button type="button" disabled={!rules || open > 0} onClick={() => rules && saveReview(rules, share)}>
           {tc.save}
         </Button>
       </DialogActions>

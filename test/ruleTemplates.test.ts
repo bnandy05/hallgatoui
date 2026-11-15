@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  bestVariant,
+  rankedVariants,
   confirmVariant,
   normalizeSemester,
   normalizeSubjectCode,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/rules/shared";
 import { RULE_TEMPLATES } from "@/lib/rules/fixtures";
 import { createMemoryKv } from "@/lib/server/kv";
-import { confirmTemplate, findTemplate, forgetTemplateUser, reportTemplate, templateVoter, uniKey } from "@/lib/server/ruleTemplates";
+import { confirmTemplate, findTemplates, forgetTemplateUser, reportTemplate, templateVoter, uniKey, recordTemplateUse } from "@/lib/server/ruleTemplates";
 
 const NOW = new Date("2026-10-05T12:00:00Z");
 const A = RULE_TEMPLATES[0].rules;
@@ -44,40 +44,62 @@ test("confirmations: one vote per user, the most-confirmed variant wins, reports
   let t = confirmVariant(null, A, "u1", NOW);
   t = confirmVariant(t, A, "u2", NOW);
   t = confirmVariant(t, B, "u3", NOW);
-  assert.equal(bestVariant(t)!.id, rulesHash(A));
-  assert.equal(bestVariant(t)!.confirmers.length, 2);
+  assert.equal(rankedVariants(t, "reader")[0]!.id, rulesHash(A));
+  assert.equal(rankedVariants(t, "reader")[0]!.confirmers.length, 2);
   t = confirmVariant(t, B, "u1", NOW); // u1 moves to B
-  assert.deepEqual(t.variants.map((v) => v.confirmers.length), [1, 2]);
-  assert.equal(bestVariant(t)!.id, rulesHash(B));
+  assert.equal(t.variants.find((v) => v.id === rulesHash(A))!.confirmers.length, 1);
+  assert.equal(rankedVariants(t, "reader")[0]!.id, rulesHash(B));
   t = reportVariant(t, rulesHash(B), "u4");
   t = reportVariant(t, rulesHash(B), "u5");
-  assert.equal(bestVariant(t)!.id, rulesHash(A));
+  assert.equal(rankedVariants(t, "reader")[0]!.id, rulesHash(A));
 });
 
-test("server: look up, fall back to last term, report, forget a deleted account", async () => {
+test("server: ranked options, historical fallback, scoped reporting, and account deletion", async () => {
   const kv = createMemoryKv();
-  assert.equal(await findTemplate(kv, "alice", "elte", "IP-1", "2026-27-1"), null);
-  assert.equal(await confirmTemplate(kv, "alice", "elte", "IP-1", "2025-26-2", A, NOW), null);
-  const old = await findTemplate(kv, "bob", "elte", "IP-1", "2026-27-1");
-  assert.equal(old?.previous, true);
-  assert.equal(old?.confirmations, 1);
-  assert.equal(old?.mine, false);
-  assert.equal(await findTemplate(kv, "bob", "bme", "IP-1", "2026-27-1"), null, "another university never sees it");
+  const term = "2026-27-1";
+  const oldTerm = "2022-23-1";
+  const find = (user: string, uni = "elte", semester = term) => findTemplates(kv, user, uni, ["IP-1"], semester, term);
+  assert.deepEqual(await find("alice"), []);
+  assert.equal(await confirmTemplate(kv, "alice", "elte", "IP-1", oldTerm, A, NOW), null);
+  assert.deepEqual(await find("alice"), [], "a user's sole submission is not offered back to them");
+  const [old] = await find("bob");
+  assert.equal(old.previous, true);
+  assert.equal(old.semester, oldTerm);
+  assert.equal(old.confirmations, 1);
+  assert.deepEqual(await find("bob", "bme"), [], "another university never sees it");
 
-  await confirmTemplate(kv, "bob", "elte", "IP-1", "2026-27-1", A, NOW);
-  const cur = await findTemplate(kv, "bob", "elte", "IP-1", "2026-27-1");
-  assert.equal(cur?.previous, false);
-  assert.equal(cur?.mine, true);
-  assert.equal(await confirmTemplate(kv, "bob", "elte", "IP-1", "2026-27-1", { nope: 1 }, NOW), "bad_rules");
+  assert.equal(await recordTemplateUse(kv, "bob", "elte", "IP-1", oldTerm, old.variantId, NOW), true);
+  assert.equal(await recordTemplateUse(kv, "bob", "elte", "IP-1", oldTerm, old.variantId, NOW), true);
+  assert.equal((await find("carol"))[0].confirmations, 2, "repeated imports count once");
+  assert.equal(await kv.get("tpl:elte:IP-1:2026-27-1"), null, "an import cannot republish an old variant in a new term");
+  assert.equal((await find("carol", "elte", oldTerm))[0].previous, true, "even an archived course carries the past term warning");
+
+  await Promise.all([
+    confirmTemplate(kv, "alice", "elte", "IP-1", term, A, NOW),
+    confirmTemplate(kv, "bob", "elte", "IP-1", term, A, NOW),
+    confirmTemplate(kv, "carol", "elte", "IP-1", term, B, NOW),
+    confirmTemplate(kv, "dave", "elte", "IP-1", term, A, NOW),
+  ]);
+  const current = await find("reader");
+  assert.deepEqual(current.map((v) => [v.variantId, v.confirmations, v.previous]), [
+    [rulesHash(A), 3, false], [rulesHash(B), 1, false],
+  ]);
+  assert.equal(await confirmTemplate(kv, "bob", "elte", "IP-1", term, { nope: 1 }, NOW), "bad_rules");
 
   const raw = JSON.stringify(await kv.get("tpl:elte:IP-1:2026-27-1"));
   assert.ok(!raw.includes("bob"), "user ids are stored hashed");
   assert.ok(raw.includes(templateVoter("bob")));
 
-  assert.equal(await reportTemplate(kv, "carol", "elte", "IP-1", "2026-27-1", cur!.variantId), true);
+  assert.equal(await reportTemplate(kv, "reader", "elte", "IP-1", term, current[0].variantId), true);
+  assert.equal(await reportTemplate(kv, "reader", "elte", "IP-1", term, current[0].variantId), true);
+  assert.deepEqual((await find("reader")).map((v) => v.variantId), [rulesHash(B)]);
+  assert.equal((await find("another"))[0].variantId, rulesHash(A), "the popularity of a supported version survives one report");
+
   await kv.set(uniKey("bob"), "elte");
   await forgetTemplateUser(kv, "bob");
-  assert.equal(await kv.get("tpl:elte:IP-1:2026-27-1"), null, "a variant nobody backs is dropped");
+  assert.equal((await find("alice"))[0].confirmations, 2);
   assert.equal(await kv.get(uniKey("bob")), null);
-  assert.ok(await kv.get("tpl:elte:IP-1:2025-26-2"), "alice's template stays");
+  assert.ok(await kv.get("tpl:elte:IP-1:2022-23-1"), "alice's historical rules stay");
+  await forgetTemplateUser(kv, "carol");
+  assert.equal((await find("another")).length, 1, "a variant nobody backs is dropped");
 });

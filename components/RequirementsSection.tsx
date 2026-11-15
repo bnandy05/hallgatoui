@@ -78,7 +78,7 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <RulesPanel courseId={course.id} />
+      <RulesPanel key={course.id} courseId={course.id} />
       <div className="sheet-paper px-5 py-4 sm:px-6">
         <h3 className="font-display text-subhead text-heading">{t.heading}</h3>
         {text ? (

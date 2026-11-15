@@ -126,10 +126,10 @@ const HU: PrivacyContent = {
         until: `A válaszok ${JEV_CACHE_DAYS} napig, a napi kérésszámláló ${JEV_COUNTER_HOURS} óráig.`,
       },
       {
-        what: "Közös követelmény-sablonok",
-        data: "Ha megadod az egyetemed, és egy tárgy beolvasott vagy átvett szabályait elmented, a szabályok (az összetevők, a pontozás és a jegyszámítás, megjegyzések nélkül) az egyetem, a tárgykód és a félév szerint közös sablonba kerülnek, amelyet az egyetemed hallgatói ugyanezzel a tárgykóddal átvehetnek. A sablonban nincs név, email cím vagy eredmény; a fiókod azonosítójának visszafejthetetlen lenyomatát tároljuk, hogy ne számoljunk kétszer. A megosztást a beolvasáskor kikapcsolhatod.",
+        what: "Megosztott követelmények",
+        data: "Ha megosztod a beolvasott és átnézett követelményeket, az egyetemed hallgatói a tárgykód és a félév alapján átvehetik a pontozási szabályokat. A közös változat csak a szabályokat tartalmazza. A dokumentum, a megjegyzések, az eredményeid és a naptárkapcsolataid privátak maradnak. Megosztáskor, átvételkor vagy hibajelzéskor a fiókod azonosítójának visszafejthetetlen lenyomatát tároljuk, hogy fiókonként egyszer számoljunk.",
         basis: "Szerződés teljesítése (6. cikk (1) b)).",
-        until: "Az egyetemed a fiókod törléséig vagy módosításáig marad meg. A fiók törlésekor a lenyomatodat minden sablonból töröljük; a mások által is megerősített szabályok megmaradnak, mert nem tartalmaznak rólad adatot.",
+        until: "Az egyetemed a fiókod törléséig vagy módosításáig marad meg. A fiók törlésekor a lenyomatodat minden változatból töröljük. A mások által is használt szabályok megmaradnak.",
       },
       {
         what: "Visszaélés elleni védelem",
@@ -275,10 +275,10 @@ const EN: PrivacyContent = {
         until: `The answers for ${JEV_CACHE_DAYS} days, the daily request counter for ${JEV_COUNTER_HOURS} hours.`,
       },
       {
-        what: "Shared requirement templates",
-        data: "If you give your university and save the rules of a course that were read or taken over, the rules (the components, scoring and grading, without notes) go into a shared template by university, subject code and semester, which students of your university can take over for the same subject code. The template holds no name, email address or result; we store an irreversible hash of your account identifier so that we do not count twice. You can turn sharing off when reading the requirements.",
+        what: "Shared requirements",
+        data: "If you share the requirements you read and reviewed, students at your university can import the grading rules by course code and semester. The shared version excludes the document, notes, your results and calendar links. When you share, import or report a version, we store an irreversible hash of your account identifier so each account counts once.",
         basis: "Performance of a contract (Art. 6(1)(b)).",
-        until: "Your university is kept until you delete the account or change it. When you delete the account, your hash is removed from every template; rules that others have also confirmed remain, because they hold no data about you.",
+        until: "Your university is kept until you delete the account or change it. When you delete the account, we remove your hash from every version. Rules that others use remain available.",
       },
       {
         what: "Abuse protection",

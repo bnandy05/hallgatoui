@@ -752,7 +752,7 @@ export const hu = {
       },
       requirements: {
         title: "Követelmények és jegyszámítás",
-        body: "A tárgy pontozási szabályait beolvashatod a követelményrendszerből, sablonból vagy kézzel is beállíthatod. A rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez. Itt az Analízis szabályai és néhány eredmény látható; a Jev-es beolvasás csak fiókkal működik, a bemutatóban a szövegminták alapján dolgozunk.",
+        body: "A tárgy pontozási szabályait beolvashatod a követelményrendszerből, átveheted más hallgatóktól vagy kézzel is beállíthatod. A rögzített eredményeidből kiszámoljuk, hol állsz és mi kell a jegyhez. Itt az Analízis szabályai és néhány eredmény látható; a Jev-es beolvasás csak fiókkal működik, a bemutatóban a szövegminták alapján dolgozunk.",
       },
       newDeadline: {
         title: "Új határidő",
@@ -900,7 +900,8 @@ export const hu = {
     jev_unavailable: "A Jev most nem válaszolt, próbáld újra később",
     university_required: "Előbb állítsd be az egyetemed",
     template_rate_limited: "Túl sok módosítás, próbáld újra később",
-    template_not_found: "Nincs ilyen sablon",
+    template_not_found: "Ez a megosztott változat már nem érhető el",
+    template_limit: "Ehhez a félévhez már vannak többen használt változatok",
     bad_rules: "Érvénytelen szabályok",
     rules_too_large: "Túl nagy szabályrendszer",
     sync_retrying: "Nem sikerült menteni, újrapróbáljuk",

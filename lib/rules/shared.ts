@@ -4,6 +4,7 @@
 // lib/server/ruleTemplates.ts. A template holds no personal data; confirmers are hashed ids,
 // kept only so nobody is counted twice (and removed when their account is deleted).
 
+import { budapestDate } from "@/lib/ical/budapest";
 import type { SubjectRules } from "./types";
 
 export const UNIVERSITIES: { id: string; name: string }[] = [
@@ -34,6 +35,20 @@ export interface TemplateVariant {
 
 export interface StoredTemplate {
   variants: TemplateVariant[];
+}
+
+export interface TemplateOffer {
+  code: string;
+  variantId: string;
+  rules: SubjectRules;
+  confirmations: number;
+  semester: string;
+  previous: boolean;
+}
+
+export interface SharedRequirementOptions {
+  university: string | null;
+  offers: TemplateOffer[];
 }
 
 /** A university id from the list, or a slug of "egyéb" free text ("Egyéb: Pázmány" → "x-pazmany"). */
@@ -73,14 +88,13 @@ export function normalizeSubjectCode(input: unknown): string | null {
  */
 export function normalizeSemester(input: unknown, now: Date): string {
   if (typeof input === "string") {
-    const m = /(20\d{2})\s*[/-]\s*(?:20)?(\d{2})\s*[/-]?\s*(1|2|osz|ősz|tavasz)?/i.exec(input.trim());
-    if (m) {
+    const m = /\b(20\d{2})\s*[/–-]\s*(?:20)?(\d{2})(?!\d)\s*[/–-]?\s*(1|2|osz|ősz|tavasz)?/i.exec(input.trim());
+    if (m && (Number(m[1]) + 1) % 100 === Number(m[2])) {
       const term = m[3] === "2" || /tavasz/i.test(m[3] ?? "") ? 2 : 1;
       return `${m[1]}-${m[2]}-${term}`;
     }
   }
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;
+  const [year, month] = budapestDate(now);
   const start = month >= 9 ? year : year - 1;
   const term = month >= 9 || month === 1 ? 1 : 2;
   return `${start}-${String((start + 1) % 100).padStart(2, "0")}-${term}`;
@@ -142,19 +156,26 @@ export function rulesHash(rules: SubjectRules): string {
   return `${(h1 >>> 0).toString(16).padStart(8, "0")}${(h2 >>> 0).toString(16).padStart(8, "0")}`;
 }
 
-const score = (v: TemplateVariant) => v.confirmers.length - v.reporters.length;
+const hasSupport = (v: TemplateVariant) => v.confirmers.length > v.reporters.length;
 
-/** The variant to offer: most confirmations minus reports; ties go to the older one. Null if all are net-negative. */
-export function bestVariant(t: StoredTemplate | null): TemplateVariant | null {
-  if (!t?.variants.length) return null;
-  const sorted = [...t.variants].sort((a, b) => score(b) - score(a) || a.createdAt.localeCompare(b.createdAt));
-  return score(sorted[0]) > 0 ? sorted[0] : null;
+function compareVariants(a: TemplateVariant, b: TemplateVariant): number {
+  return b.confirmers.length - a.confirmers.length ||
+    a.reporters.length - b.reporters.length ||
+    a.createdAt.localeCompare(b.createdAt) ||
+    a.id.localeCompare(b.id);
+}
+
+/** Only versions backed by other students, ordered by distinct accounts using them. */
+export function rankedVariants(t: StoredTemplate | null, who: string): TemplateVariant[] {
+  return (t?.variants ?? [])
+    .filter((v) => hasSupport(v) && !v.reporters.includes(who) && v.confirmers.some((c) => c !== who))
+    .sort(compareVariants);
 }
 
 /**
  * Adds the user's confirmation: +1 on the variant with the same rules, or a new variant. A user
  * counts for one variant only (confirming another moves their vote). Over MAX_VARIANTS, the
- * lowest-scoring other variant is evicted.
+ * least supported variant is evicted.
  */
 export function confirmVariant(t: StoredTemplate | null, rules: SubjectRules, who: string, now: Date): StoredTemplate {
   const shared = shareableRules(rules);
@@ -167,11 +188,11 @@ export function confirmVariant(t: StoredTemplate | null, rules: SubjectRules, wh
   const existing = variants.find((v) => v.id === id);
   if (existing) existing.confirmers.push(who);
   else variants.push({ id, rules: shared, confirmers: [who], reporters: [], createdAt: now.toISOString() });
-  while (variants.length > MAX_VARIANTS) {
-    const victim = variants.filter((v) => v.id !== id).sort((a, b) => score(a) - score(b) || b.createdAt.localeCompare(a.createdAt))[0];
-    variants.splice(variants.indexOf(victim), 1);
-  }
-  return { variants: variants.filter((v) => v.confirmers.length > 0) };
+  const kept = variants.filter((v) => v.confirmers.length > 0)
+    .sort((a, b) => Number(hasSupport(b)) - Number(hasSupport(a)) || compareVariants(a, b))
+    .slice(0, MAX_VARIANTS);
+  // A new submission cannot evict a more established version or move a vote if it was rejected.
+  return kept.some((v) => v.id === id) ? { variants: kept } : (t ?? { variants: [] });
 }
 
 /** "Hibás a sablon": the user's report on a variant (their confirmation of it is withdrawn). */

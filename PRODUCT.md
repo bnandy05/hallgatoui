@@ -36,12 +36,12 @@ One layer above all the university systems: every course's links, materials, dea
 
 ## Requirement tracker
 
-What the student needs for a grade, and where they stand. Each course can carry its grading rules (components, scoring, limits, conditions, retakes), set up from the requirements document, from a template (built-in or shared by students of the same university) or by hand. The student records results as the semester goes (points, grades, attendance per class), and the course page shows each grade's reachable range, the conditions still open, and "what do I need for a 4". Components are tied to the calendar (classes from the Neptun timetable, deadlines from the feeds), so a class or test that ended without a result is asked about in a catch-up popup, in the bell and in the digest.
+What the student needs for a grade, and where they stand. Each course can carry its grading rules (components, scoring, limits, conditions, retakes), set up from the requirements document, from reviewed document imports shared by students at the same university or by hand. The student records results as the semester goes (points, grades, attendance per class), and the course page shows each grade's reachable range, the conditions still open, and "what do I need for a 4". Components are tied to the calendar (classes from the Neptun timetable, deadlines from the feeds), so a class or test that ended without a result is asked about in a catch-up popup, in the bell and in the digest.
 
 - The rules decide; the student confirms. Reading a document is a suggestion: the AI (TypeSafe's Jev) only picks answers and numbers from the text, code builds the rules, and every doubtful field waits on Canary paper for the student. Rules that fail validation are never saved.
-- Nothing needs the AI: templates and the by-hand form always work, and the privacy notice promises it.
+- Students can import shared requirements or fill in the form by hand without AI.
 - Computed grades are guidance, not a promise (the terms say so); the course's official rules win.
-- Results never sit inside the rules, and a shared template never carries anyone's results or calendar links.
+- Results never sit inside the rules, and a shared version never carries anyone's results or calendar links.
 
 ## Voice
 

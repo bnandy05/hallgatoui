@@ -10,6 +10,8 @@ export interface Kv {
   /** Stores a JSON value that expires after ttlSeconds (omitted: it never expires). */
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
   del(...keys: string[]): Promise<void>;
+  /** Replaces a JSON value if it still matches, updating a set index in the same operation. */
+  compareAndSet(key: string, previous: unknown, next: unknown, indexKey: string, historyKey: string, term: string): Promise<boolean>;
   /** Resets the expiry of an existing key. */
   expire(key: string, ttlSeconds: number): Promise<void>;
   /** Increments a counter; a new counter expires after ttlSeconds. Returns the new value. */
@@ -66,7 +68,27 @@ function buildMemoryKv(store: Map<string, MemoryEntry>, sets: Map<string, Set<st
       });
     },
     async del(...keys) {
-      for (const key of keys) store.delete(key);
+      for (const key of keys) {
+        store.delete(key);
+        sets.delete(key);
+      }
+    },
+    async compareAndSet(key, previous, next, indexKey, historyKey, term) {
+      if (live(key)?.value !== (previous === null ? undefined : JSON.stringify(previous))) return false;
+      if (next === null) store.delete(key);
+      else store.set(key, { value: JSON.stringify(next), expiresAt: Infinity });
+      const indexed = sets.get(indexKey) ?? new Set<string>();
+      const terms = sets.get(historyKey) ?? new Set<string>();
+      if (next === null) {
+        indexed.delete(key);
+        terms.delete(term);
+      } else {
+        indexed.add(key);
+        terms.add(term);
+      }
+      sets.set(indexKey, indexed);
+      sets.set(historyKey, terms);
+      return true;
     },
     async expire(key, ttlSeconds) {
       const entry = live(key);
@@ -107,6 +129,24 @@ export function createRedisKv(url: string, token: string): Kv {
     },
     async del(...keys) {
       if (keys.length > 0) await redis.del(...keys);
+    },
+    async compareAndSet(key, previous, next, indexKey, historyKey, term) {
+      const result = await redis.eval(
+        `if (redis.call('GET', KEYS[1]) or '') ~= ARGV[1] then return 0 end
+        if ARGV[2] == '' then
+          redis.call('DEL', KEYS[1])
+          redis.call('SREM', KEYS[2], KEYS[1])
+          redis.call('SREM', KEYS[3], ARGV[3])
+        else
+          redis.call('SET', KEYS[1], ARGV[2])
+          redis.call('SADD', KEYS[2], KEYS[1])
+          redis.call('SADD', KEYS[3], ARGV[3])
+        end
+        return 1`,
+        [key, indexKey, historyKey],
+        [previous === null ? "" : JSON.stringify(previous), next === null ? "" : JSON.stringify(next), term]
+      );
+      return Number(result) === 1;
     },
     async expire(key, ttlSeconds) {
       await redis.expire(key, ttlSeconds);

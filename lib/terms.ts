@@ -84,7 +84,7 @@ const HU: TermsContent = {
         "Automatizált hozzáférés vagy adatgyűjtés nem megengedett, kivéve a saját naptáralkalmazásod feliratkozását a saját naptáradra.",
         "Mások személyes adatát csak akkor vidd be, ha ez szükséges.",
         "A naptár-hivatkozások a tieid, a feliratkozási linked megosztásáért te felelsz.",
-        "A közös követelmény-sablonokat a felhasználók adják: a tartalmukat nem ellenőrizzük, és nem vállalunk felelősséget a helyességükért. Csak olyan szabályokat oszthatsz meg, amelyeket átnéztél, és nem sérthetik mások jogait.",
+        "A megosztott követelményeket a felhasználók adják: a tartalmukat nem ellenőrizzük, és nem vállalunk felelősséget a helyességükért. Csak olyan szabályokat oszthatsz meg, amelyeket átnéztél, és nem sérthetik mások jogait.",
       ],
     },
     {
@@ -196,7 +196,7 @@ const EN: TermsContent = {
         "Automated access or scraping is not allowed, except for your own calendar app subscribing to your own calendar.",
         "Only enter other people's personal data where necessary.",
         "Calendar links are your own, and you are responsible for sharing your subscription link.",
-        "Shared requirement templates are contributed by users: we do not verify their content and are not responsible for their accuracy. Only share rules you have reviewed, and they must not infringe others' rights.",
+        "Shared requirements are contributed by users: we do not verify their content and are not responsible for their accuracy. Only share rules you have reviewed, and they must not infringe others' rights.",
       ],
     },
     {

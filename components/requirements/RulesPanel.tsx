@@ -7,14 +7,15 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { flagText } from "@/lib/rules/flags";
 import { getMessages, type Locale } from "@/lib/i18n";
 import { evaluate, type ComponentEval } from "@/lib/rules/engine";
-import { RULE_TEMPLATES, ruleTemplate } from "@/lib/rules/fixtures";
+import { isDemoMode } from "@/lib/demoMode";
+import { documentCourseCode, linkedCourseCode, requirementCourseCode } from "@/lib/rules/courseCode";
+import { normalizeSemester, type TemplateOffer } from "@/lib/rules/shared";
 import type { RequirementResult, RequirementRules, RetakeSlot, RuleComponent, Scale, SubjectRules } from "@/lib/rules/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
-import { Select } from "@/components/ui/Select";
 import { ExtractForm } from "@/components/requirements/ExtractDialog";
-import { SharedTemplateOffer, TemplateReview, useSharedTemplate, type TemplateOffer } from "@/components/requirements/SharedTemplate";
+import { SharedRequirementsOffer, SharedRequirementsReview, useSharedRequirements } from "@/components/requirements/SharedRequirements";
 import {
   AssignmentInput,
   AttendanceInput,
@@ -36,7 +37,7 @@ import { RulesSolver } from "./RulesSolver";
 import { RulesJsonForm } from "./RulesJsonForm";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
-// The checked part of the requirements: a rule set (from a template, read from the document or
+// The checked part of the requirements: a rule set (imported, read from the document or
 // written as JSON), the student's results against it, the standing of every grade, "what do I
 // need" answers and the rules read back. Everything below is generated from the rules, so any
 // valid rule set lays out the same way.
@@ -55,12 +56,23 @@ const rulesJson = (rules: SubjectRules) => JSON.stringify(rules, null, 2);
 type RulesView = "extract" | "json";
 
 export function RulesPanel({ courseId }: { courseId: string }) {
-  const t = useT().rulesPanel;
+  const tAll = useT();
+  const t = tAll.rulesPanel;
   const rules = useStore((s) => s.requirementRules.find((r) => r.courseId === courseId));
   const allResults = useStore((s) => s.requirementResults);
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
-  const shared = useSharedTemplate(course);
+  const feeds = useStore((s) => s.feeds);
+  const semesterStart = useStore((s) => s.semester?.start);
+  const updateCourse = useStore((s) => s.updateCourse);
+  const code = requirementCourseCode(course?.code) ? course?.code : undefined;
+  const detectedCode = useMemo(() => {
+    if (!course || course.code) return undefined;
+    return documentCourseCode(course.requirements ?? "") ?? linkedCourseCode(course, feeds) ?? undefined;
+  }, [course, feeds]);
+  const semester = course?.semester || (semesterStart ? normalizeSemester(undefined, new Date(semesterStart)) : undefined);
+  const [draftCode, setDraftCode] = useState<string>();
+  const shared = useSharedRequirements(code ?? draftCode ?? detectedCode, semester);
   const { confirm: ask, dialog: confirmDialog } = useConfirm();
 
   const [view, setView] = useState<RulesView | null>(null);
@@ -71,7 +83,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const [extractDirty, setExtractDirty] = useState(false);
   const [json, setJson] = useState<{ initial: string; back: boolean; fromForm: boolean } | null>(null);
   const [jsonDirty, setJsonDirty] = useState(false);
-  const [offer, setOffer] = useState<TemplateOffer | null>(null);
+  const [review, setReview] = useState<TemplateOffer[] | null>(null);
+  const [pendingShare, setPendingShare] = useState<{ rules: SubjectRules; code: string; error?: string } | null>(null);
 
   const results = useMemo(
     () => (rules ? allResults.filter((r) => r.courseId === courseId) : EMPTY_RESULTS),
@@ -84,6 +97,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
     setExtractWide(false);
     setExtractEmpty(false);
     setExtractDirty(false);
+    setDraftCode(undefined);
     setJson(null);
     setJsonDirty(false);
   }
@@ -115,9 +129,22 @@ export function RulesPanel({ courseId }: { courseId: string }) {
     setView("json");
   }
 
+  function rememberCode(discovered: string | undefined) {
+    if (discovered && !useStore.getState().courses.find((c) => c.id === courseId)?.code) {
+      updateCourse(courseId, { code: discovered });
+    }
+  }
+
   function save(next: SubjectRules, source: RequirementRules["source"]) {
     setRequirementRules(courseId, { ...next, source });
+    setPendingShare(null);
     closeAll();
+  }
+
+  async function publish(next: SubjectRules, subjectCode: string) {
+    setPendingShare({ rules: next, code: subjectCode });
+    const error = await shared.publish(subjectCode, next);
+    setPendingShare(error ? { rules: next, code: subjectCode, error } : null);
   }
 
   const title = view === "json" ? t.jsonTitle : extractWide ? (extractEmpty ? t.manualTitle : t.reviewTitle) : t.extractTitle;
@@ -133,12 +160,18 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       {extractMounted && (
         <div hidden={view !== "extract"}>
           <ExtractForm
-            course={{ name: course?.name ?? t.courseFallback, ...(course?.code ? { code: course.code } : {}) }}
+            course={{ name: course?.name ?? t.courseFallback, code }}
+            detectedCode={detectedCode}
+            onDetectedCode={setDraftCode}
+            onReviewShared={!code && draftCode && shared.state?.offers.length
+              ? () => setReview(shared.state?.offers ?? null)
+              : undefined}
             replacing={!!rules}
-            canShare={shared.canShare}
-            onSave={(next, share) => {
-              if (share) shared.publish(next);
-              save(next, "extracted");
+            sharingAvailable={!!shared.state?.university}
+            onSave={(next, details) => {
+              rememberCode(details.code);
+              save(next, details.source);
+              if (details.share && details.code) void publish(next, details.code);
             }}
             onManual={(built) => openJson(built, true)}
             onCancel={requestClose}
@@ -161,31 +194,36 @@ export function RulesPanel({ courseId }: { courseId: string }) {
     </Dialog>
   );
 
-  const templateDialog = (
-    <Dialog open={offer !== null} onClose={() => setOffer(null)} title={t.sharedTemplate} size="lg">
-      {offer && (
-        <TemplateReview
-          offer={offer}
-          onSave={() => {
-            setRequirementRules(courseId, { ...offer.rules, source: "template", templateId: `shared:${offer.variantId}` });
-            shared.publish(offer.rules);
-            setOffer(null);
-          }}
-          onReport={() => {
-            void shared.report(offer);
-            setOffer(null);
-            openExtract();
-          }}
-          onCancel={() => setOffer(null)}
-        />
-      )}
-    </Dialog>
-  );
-
   const dialogs = (
     <>
       {rulesDialog}
-      {templateDialog}
+      {review && (
+        <SharedRequirementsReview
+          offers={review}
+          onImport={async (offer) => {
+            const error = await shared.use(offer);
+            if (error) return error;
+            rememberCode(draftCode ?? detectedCode);
+            setRequirementRules(courseId, {
+              ...offer.rules,
+              source: "template",
+              templateId: `shared:${offer.semester}:${offer.variantId}`,
+            });
+            setReview(null);
+            closeAll();
+            return null;
+          }}
+          onReport={async (offer) => {
+            const error = await shared.report(offer);
+            if (error) return error;
+            const remaining = review.filter((v) => v.variantId !== offer.variantId);
+            setReview(remaining.length ? remaining : null);
+            shared.reload();
+            return null;
+          }}
+          onCancel={() => setReview(null)}
+        />
+      )}
       {confirmDialog}
     </>
   );
@@ -195,10 +233,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       <div className="sheet-paper flex flex-col px-5 py-5 sm:px-6">
         <h3 className="font-display text-subhead text-heading">{t.heading}</h3>
         <p className="mt-1.5 max-w-[62ch] text-body text-muted">{t.intro}</p>
-        {course && (
-          <div className="mt-4 empty:hidden">
-            <SharedTemplateOffer course={course} shared={shared} onReview={setOffer} />
-          </div>
+        {course && !isDemoMode() && (
+          <SharedRequirementsOffer code={code ?? detectedCode} shared={shared} onReview={() => setReview(shared.state?.offers ?? null)} />
         )}
         <div className="mt-4 flex flex-col">
           <SetupRow title={t.fromDocTitle} text={t.fromDocText}>
@@ -206,14 +242,6 @@ export function RulesPanel({ courseId }: { courseId: string }) {
               <FileText className="h-4 w-4" aria-hidden />
               {t.read}
             </Button>
-          </SetupRow>
-          <SetupRow title={t.templateTitle} text={t.templateText}>
-            <TemplatePicker
-              onPick={(id) => {
-                const template = ruleTemplate(id);
-                if (template) setRequirementRules(courseId, { ...template.rules, source: "template", templateId: id });
-              }}
-            />
           </SetupRow>
           <SetupRow title={t.manualTitle} text={t.manualText}>
             <div className="flex flex-wrap gap-2">
@@ -234,14 +262,28 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   }
 
   return (
-    <RulesView
-      courseId={courseId}
-      rules={rules}
-      results={results}
-      onEditJson={() => openJson(undefined, false)}
-      onExtract={() => openExtract()}
-      dialogs={dialogs}
-    />
+    <>
+      {pendingShare && (
+        <div className="sheet-paper mb-4 flex flex-wrap items-center gap-3 px-4 py-3">
+          <p className="flex-1 text-small text-muted" role={pendingShare.error ? "alert" : "status"}>
+            {pendingShare.error ? tAll.sharedTemplate.publishFailed(pendingShare.error) : tAll.sharedTemplate.publishing}
+          </p>
+          {pendingShare.error && (
+            <Button type="button" variant="secondary" size="sm" onClick={() => void publish(pendingShare.rules, pendingShare.code)}>
+              {tAll.sharedTemplate.retry}
+            </Button>
+          )}
+        </div>
+      )}
+      <RulesView
+        courseId={courseId}
+        rules={rules}
+        results={results}
+        onEditJson={() => openJson(undefined, false)}
+        onExtract={() => openExtract()}
+        dialogs={dialogs}
+      />
+    </>
   );
 }
 
@@ -254,25 +296,6 @@ function SetupRow({ title, text, children }: { title: string; text: string; chil
         <p className="mt-0.5 text-small text-muted">{text}</p>
       </div>
       {children}
-    </div>
-  );
-}
-
-function TemplatePicker({ onPick }: { onPick: (id: string) => void }) {
-  const t = useT().rulesPanel;
-  const [picked, setPicked] = useState(RULE_TEMPLATES[0]?.id ?? "");
-  return (
-    <div className="flex w-full min-w-0 gap-2 sm:w-auto">
-      <Select aria-label={t.templateLabel} value={picked} onChange={(e) => setPicked(e.target.value)} className="min-w-0 flex-1 sm:!w-64">
-        {RULE_TEMPLATES.map((tpl) => (
-          <option key={tpl.id} value={tpl.id}>
-            {tpl.name} ({tpl.university})
-          </option>
-        ))}
-      </Select>
-      <Button type="button" variant="secondary" onClick={() => onPick(picked)} disabled={!picked}>
-        {t.useTemplate}
-      </Button>
     </div>
   );
 }
@@ -303,7 +326,6 @@ function RulesView({
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const set = useResultSetter(courseId);
   const evaluation = useMemo(() => evaluate(rules, results, new Date(), locale), [rules, results, locale]);
-  const template = rules.templateId ? ruleTemplate(rules.templateId) : undefined;
   const openFlags = rules.flags.filter((f) => !f.resolved);
 
   const byComponent = useMemo(() => {
@@ -451,13 +473,11 @@ function RulesView({
   const recorded = counted.reduce((n, c) => n + c.recorded + c.na, 0);
   const total = counted.reduce((n, c) => n + c.total, 0);
 
-  const source = template
-    ? t.sourceTemplate(template.name, template.university)
-    : rules.source === "extracted"
-      ? t.sourceExtracted
-      : rules.templateId?.startsWith("shared:")
-        ? t.sourceShared
-        : t.sourceOwn;
+  const source = rules.source === "extracted"
+    ? t.sourceExtracted
+    : rules.templateId?.startsWith("shared:")
+      ? t.sourceShared
+      : rules.source === "template" ? t.sourceTemplate : t.sourceOwn;
 
   return (
     <div className="@container flex flex-col gap-4">

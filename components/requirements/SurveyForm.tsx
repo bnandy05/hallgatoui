@@ -78,7 +78,7 @@ export function SurveyForm({
   const SECTIONS = useMemo(() => sections(locale), [locale]);
   const [values, setValues] = useState<SurveyValues>(() => surveyValues(draft));
   const [confirmed, setConfirmed] = useState<ReadonlySet<FieldId>>(new Set());
-  const [share, setShare] = useState(true);
+  const [share, setShare] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const resolved = (id: FieldId) => !draft.fields[id].flagged || confirmed.has(id);

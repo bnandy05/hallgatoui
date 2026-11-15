@@ -1,10 +1,10 @@
-// The demo's requirement tracker data: the Calculus I template (lib/rules/fixtures.ts) as the
-// rules of one demo course, a few recorded results and, in English, the template's labels
+// The demo's requirement tracker data: the Calculus I sample (lib/rules/demoFixture.ts) as the
+// rules of one demo course, a few recorded results and, in English, the sample's labels
 // translated by id (the fixtures are Hungarian documents' rules; the structure, ids and formulas
-// stay exactly the template's). Pure.
+// stay the same). Pure.
 
 import type { Locale } from "@/lib/i18n/locales";
-import { ruleTemplate } from "@/lib/rules/fixtures";
+import { calculusDemoRules } from "@/lib/rules/demoFixture";
 import { resultId, type RequirementResult, type RequirementRules, type SubjectRules } from "@/lib/rules/types";
 
 export const DEMO_RULES_COURSE_ID = "demo-course-anal";
@@ -55,12 +55,10 @@ function translate(rules: SubjectRules): SubjectRules {
 
 /** Rules and results of the demo course; `now` stamps them. */
 export function buildDemoRequirements(now: Date, locale: Locale): { rules: RequirementRules[]; results: RequirementResult[] } {
-  const template = ruleTemplate(TEMPLATE_ID);
-  if (!template) return { rules: [], results: [] };
   const courseId = DEMO_RULES_COURSE_ID;
   const stamp = now.toISOString();
   const rules: RequirementRules = {
-    ...(locale === "en" ? translate(template.rules) : structuredClone(template.rules)),
+    ...(locale === "en" ? translate(calculusDemoRules) : structuredClone(calculusDemoRules)),
     id: `rules:${courseId}`,
     courseId,
     source: "template",

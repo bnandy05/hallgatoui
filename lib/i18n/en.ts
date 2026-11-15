@@ -752,7 +752,7 @@ export const en: Messages = {
       },
       requirements: {
         title: "Requirements and grading",
-        body: "You can read a course's scoring rules from its requirements document, start from a template or set them up by hand. From the results you record we calculate where you stand and what you need for the grade. Here you see the Calculus rules with a few results; reading with Jev needs an account, so the demo works from text patterns.",
+        body: "You can read a course's scoring rules from its requirements document, import rules shared by other students or set them up by hand. From the results you record we calculate where you stand and what you need for the grade. Here you see the Calculus rules with a few results; reading with Jev needs an account, so the demo works from text patterns.",
       },
       newDeadline: {
         title: "New deadline",
@@ -900,7 +900,8 @@ export const en: Messages = {
     jev_unavailable: "Jev did not answer just now, try again later",
     university_required: "Set your university first",
     template_rate_limited: "Too many changes, try again later",
-    template_not_found: "No such template",
+    template_not_found: "This shared version is unavailable",
+    template_limit: "There are already more widely used versions for this semester",
     bad_rules: "Invalid rules",
     rules_too_large: "The rule set is too large",
     sync_retrying: "Could not save, trying again",
