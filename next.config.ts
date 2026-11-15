@@ -1,4 +1,6 @@
+import { networkInterfaces } from "node:os";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -32,4 +34,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default function config(phase: string): NextConfig {
+  if (phase !== PHASE_DEVELOPMENT_SERVER) return nextConfig;
+
+  // Allow the exact network addresses advertised for local development on another device.
+  const allowedDevOrigins = Object.values(networkInterfaces())
+    .flatMap((addresses) => addresses ?? [])
+    .filter(({ family, internal }) => family === "IPv4" && !internal)
+    .map(({ address }) => address);
+
+  return { ...nextConfig, allowedDevOrigins };
+}
