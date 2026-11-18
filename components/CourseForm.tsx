@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { COURSE_COLORS } from "@/lib/colors";
-import type { Course } from "@/lib/types";
+import { parseCourseCodes } from "@/lib/rules/courseCode";
+import type { Course, CourseCode, CourseKind } from "@/lib/types";
 
 export interface CourseFormValues {
   name: string;
   code?: string;
+  codes?: CourseCode[];
+  kind?: CourseKind;
   semester?: string;
   color: string;
   matchKeywords: string[];
@@ -28,6 +31,7 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
   const t = useT();
   const [name, setName] = useState(initial?.name ?? "");
   const [code, setCode] = useState(initial?.code ?? "");
+  const [kind, setKind] = useState<CourseKind | "">(initial?.kind ?? "");
   const [semester, setSemester] = useState(initial?.semester ?? "");
   const [color, setColor] = useState(initial?.color ?? defaultColor);
   const [matchKeywords, setMatchKeywords] = useState(
@@ -45,6 +49,8 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
     onSubmit({
       name: trimmedName,
       code: code.trim() || undefined,
+      codes: parseCourseCodes(code),
+      kind: kind || undefined,
       semester: semester.trim() || undefined,
       color,
       matchKeywords: keywords,
@@ -82,6 +88,17 @@ export function CourseForm({ initial, defaultColor, onSubmit, onCancel }: Course
             placeholder="2026/27/1"
           />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="course-kind">{t.requirementSystem.courseKind}</Label>
+        <select id="course-kind" className="w-full rounded-[var(--radius)] border border-border bg-card px-3 py-2 text-body text-heading" value={kind} onChange={(e) => setKind(e.target.value as CourseKind | "")}>
+          <option value="">{t.requirementSystem.unspecified}</option>
+          <option value="Ea">{t.requirementSystem.lecture}</option>
+          <option value="Gy">{t.requirementSystem.practice}</option>
+          <option value="Lab">{t.requirementSystem.lab}</option>
+        </select>
+        <p className="mt-1 text-small text-muted">{t.requirementSystem.codeHint}</p>
       </div>
 
       <div>

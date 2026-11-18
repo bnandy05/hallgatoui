@@ -1,5 +1,6 @@
 // Attendance shares the requirement result ledger. Standalone groups use deterministic IDs;
 // linking requirements moves those answers to the real component instead of counting twice.
+import { componentCourseIds, rulesForCourse, systemCourseIds } from "@/lib/rules/system";
 import type { AttendancePrefs, ClassSession, Course, SemesterInfo } from "@/lib/types";
 import type { AttendanceComponent, RequirementResult, RequirementRules } from "@/lib/rules/types";
 import { resultId } from "@/lib/rules/types";
@@ -39,7 +40,7 @@ export const isAttendanceResult = (r: RequirementResult) => r.value?.kind === "a
 export function attendanceGroups(input: AttendanceInput): AttendanceGroup[] {
   const out: AttendanceGroup[] = [];
   for (const course of input.courses) {
-    const rules = input.rules.find((r) => r.courseId === course.id);
+    const rules = rulesForCourse(input.rules, course.id);
     const results = input.results.filter((r) => r.courseId === course.id);
     const sessions = input.sessions.filter((s) => s.courseId === course.id && s.kind === "ora");
     const covered = new Set<string>();
@@ -47,8 +48,10 @@ export function attendanceGroups(input: AttendanceInput): AttendanceGroup[] {
     for (const target of rules?.components ?? []) {
       if (target.kind !== "attendance") continue;
       componentIds.add(target.id);
+      const assigned = componentCourseIds(rules!, target.id);
+      if (!assigned.includes(course.id)) continue;
       const instances = resolveInstances(target, rules?.calendarLinks?.[target.id], {
-        courseId: course.id, sessions, deadlines: [], results, semester: input.semester,
+        courseId: rules!.courseId, courseIds: assigned, sessions: input.sessions, deadlines: [], results: input.results, semester: input.semester,
       });
       for (const i of instances) {
         if (i.session || i.result) covered.add(i.key);
@@ -56,7 +59,7 @@ export function attendanceGroups(input: AttendanceInput): AttendanceGroup[] {
       }
       const max = course.attendanceLimits?.[target.id];
       const effective = !target.limit && max !== undefined ? { ...target, limit: { maxAbsences: max, countExcused: true, onExceed: "none" as const } } : target;
-      out.push({ courseId: course.id, target: effective, instances, linked: true, limitFromRules: !!target.limit });
+      out.push({ courseId: rules!.courseId, target: effective, instances, linked: true, limitFromRules: !!target.limit });
     }
     const byGroup = new Map<string, AttendanceGroup>();
     const group = (id: string, label: string) => {
@@ -86,7 +89,7 @@ export function attendanceGroups(input: AttendanceInput): AttendanceGroup[] {
       if (componentIds.has(r.componentId) || !isAttendanceResult(r) || covered.has(r.instanceKey) || seen.has(r.instanceKey)) continue;
       group(r.componentId, course.name).instances.push({ key: r.instanceKey, at: r.at, end: r.at, result: r, tracked: false, pinned: true });
     }
-    if (out.every((g) => g.courseId !== course.id) && byGroup.size === 0) group(MANUAL_ATTENDANCE, course.name);
+    if (!out.some((g) => (g.courseId === course.id || g.courseId === rules?.courseId)) && byGroup.size === 0) group(MANUAL_ATTENDANCE, course.name);
     out.push(...byGroup.values());
   }
   return out;
@@ -119,12 +122,12 @@ export function reconcileAttendance(input: AttendanceInput): RequirementResult[]
   const consumed = new Set<string>();
   for (const rules of input.rules) {
     const activeIds = new Set(rules.components.filter((c) => c.kind === "attendance").map((c) => c.id));
-    const candidates = input.results.filter((r) => r.courseId === rules.courseId && !activeIds.has(r.componentId) && isAttendanceResult(r));
+    const candidates = input.results.filter((r) => systemCourseIds(rules).includes(r.courseId) && (r.courseId !== rules.courseId || !activeIds.has(r.componentId)) && isAttendanceResult(r));
     if (!candidates.length) continue;
     for (const target of rules.components) {
       if (target.kind !== "attendance" || !rules.calendarLinks?.[target.id]) continue;
       const instances = resolveInstances(target, rules.calendarLinks[target.id], {
-        courseId: rules.courseId, sessions: input.sessions, deadlines: [], semester: input.semester, results: input.results,
+        courseId: rules.courseId, courseIds: componentCourseIds(rules, target.id), sessions: input.sessions, deadlines: [], semester: input.semester, results: input.results,
       });
       for (const instance of instances) {
         if (instance.pinned) continue;
@@ -133,7 +136,7 @@ export function reconcileAttendance(input: AttendanceInput): RequirementResult[]
         if (!previous) continue;
         if (!instance.result || (previous.updatedAt ?? "") > (instance.result.updatedAt ?? "")) {
           const id = resultId(rules.courseId, target.id, instance.key);
-          additions.set(id, { ...previous, id, componentId: target.id, instanceKey: instance.key });
+          additions.set(id, { ...previous, id, courseId: rules.courseId, componentId: target.id, instanceKey: instance.key });
         }
         matches.forEach((r) => consumed.add(r.id));
       }

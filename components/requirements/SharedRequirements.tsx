@@ -16,9 +16,11 @@ import { RulesPreview } from "./RulesPreview";
 
 const endpoint = "/api/kovetelmeny/sablon";
 
-export function useSharedRequirements(code: string | undefined, semester: string | undefined) {
+export function useSharedRequirements(code: string | string[] | undefined, semester: string | undefined) {
   const t = useT();
-  const query = new URLSearchParams({ kod: code ?? "", felev: semester ?? "" }).toString();
+  const params = new URLSearchParams({ felev: semester ?? "" });
+  for (const value of Array.isArray(code) ? code : [code ?? ""]) params.append("kod", value);
+  const query = params.toString();
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<{ query: string; attempt: number; data: SharedRequirementOptions | null }>();
 
@@ -81,7 +83,7 @@ export function SharedRequirementsOffer({
   shared,
   onReview,
 }: {
-  code: string | undefined;
+  code: string | string[] | undefined;
   shared: ReturnType<typeof useSharedRequirements>;
   onReview: () => void;
 }) {
@@ -98,7 +100,7 @@ export function SharedRequirementsOffer({
           <Link href="/beallitasok#egyetem" className="link-text">{t.noUniversityLink}</Link>
           {t.noUniversityAfter}
         </>
-      ) : !requirementCourseCode(code) ? t.noCode : t.empty;
+      ) : !(Array.isArray(code) ? code.some((c) => requirementCourseCode(c)) : requirementCourseCode(code)) ? t.noCode : t.empty;
     return (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-4">
         <p className="min-w-0 text-small text-muted" role="status">{status}</p>

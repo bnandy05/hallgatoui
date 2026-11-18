@@ -1,3 +1,4 @@
+import { requirementSystemEn } from "./requirementSystem.en";
 import { attendanceEn } from "./attendance.en";
 import type { Messages } from "./index";
 import { plural } from "./plural";
@@ -7,6 +8,7 @@ import { trackerEn } from "./tracker.en";
 
 export const en: Messages = {
   attendance: attendanceEn,
+  requirementSystem: requirementSystemEn,
   meta: {
     manifestDescription: "Courses, deadlines and links in one place.",
     description: "Courses, deadlines and links in one place, on top of Neptun, Canvas, Moodle and Teams.",

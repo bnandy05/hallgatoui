@@ -35,6 +35,7 @@ export interface Instance {
 
 export interface InstanceContext {
   courseId: string;
+  courseIds?: string[];
   sessions: ClassSession[]; // visible sessions of every course
   deadlines: Deadline[];
   semester?: SemesterInfo;
@@ -43,8 +44,8 @@ export interface InstanceContext {
 
 const MINUTE_MS = 60 * 1000;
 
-function matches(s: ClassSession, courseId: string, sel: SessionSelector | undefined, semester: SemesterInfo | undefined, useWeeks: boolean): boolean {
-  if (s.courseId !== courseId) return false;
+function matches(s: ClassSession, courseIds: string[], sel: SessionSelector | undefined, semester: SemesterInfo | undefined, useWeeks: boolean): boolean {
+  if (!s.courseId || !courseIds.includes(s.courseId)) return false;
   const kinds = sel?.kinds?.length ? sel.kinds : ["ora"];
   if (!(kinds as string[]).includes(s.kind)) return false;
   if (sel?.groups?.length && !(s.group && sel.groups.includes(s.group))) return false;
@@ -70,7 +71,7 @@ function byIdentity(deadlines: Deadline[]): Map<string, Deadline> {
 /** The instance of week `week`: its first matching class, or the whole week as a placeholder. */
 function weekInstance(key: string, week: number, link: { selector?: SessionSelector }, ctx: InstanceContext): Omit<Instance, "tracked" | "pinned"> {
   const session = ctx.sessions
-    .filter((s) => matches(s, ctx.courseId, link.selector, ctx.semester, false))
+    .filter((s) => matches(s, ctx.courseIds ?? [ctx.courseId], link.selector, ctx.semester, false))
     .filter((s) => ctx.semester && semesterWeek(ctx.semester, new Date(s.start)) === week)
     .sort((a, b) => a.start.localeCompare(b.start))[0];
   if (session) return { ...fromSession(key, session, ctx.semester), week };
@@ -109,7 +110,7 @@ export function resolveInstances(target: LinkTarget, link: ComponentLink | undef
     if (link?.mode === "weeks") {
       base = weekInstance(SINGLE_KEY, link.weeks[0], link, ctx);
     } else if (link?.mode === "deadlines") {
-      const d = byIdentity(ctx.deadlines).get(link.identities[0]);
+      const d = byIdentity(ctx.deadlines.filter((d) => !!d.courseId && (ctx.courseIds ?? [ctx.courseId]).includes(d.courseId))).get(link.identities[0]);
       if (d) base = fromDeadline(SINGLE_KEY, d);
     }
     add(base, link ? tracked(base.end, since) : false);
@@ -119,7 +120,7 @@ export function resolveInstances(target: LinkTarget, link: ComponentLink | undef
     const limit = link.limit ?? (target.kind === "series" ? target.count : undefined);
     let counted = 0;
     const picked = ctx.sessions
-      .filter((s) => matches(s, ctx.courseId, link.selector, ctx.semester, true))
+      .filter((s) => matches(s, ctx.courseIds ?? [ctx.courseId], link.selector, ctx.semester, true))
       .sort((a, b) => a.start.localeCompare(b.start));
     const seen = new Set<string>();
     for (const s of picked) {
@@ -134,7 +135,7 @@ export function resolveInstances(target: LinkTarget, link: ComponentLink | undef
   } else if (link.mode === "weeks") {
     for (const week of link.weeks) add(weekInstance(`w:${week}`, week, link, ctx));
   } else {
-    const deadlines = byIdentity(ctx.deadlines);
+    const deadlines = byIdentity(ctx.deadlines.filter((d) => !!d.courseId && (ctx.courseIds ?? [ctx.courseId]).includes(d.courseId)));
     for (const identity of link.identities) {
       const d = deadlines.get(identity);
       if (d) add(fromDeadline(`d:${identity}`, d));

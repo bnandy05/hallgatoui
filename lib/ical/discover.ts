@@ -1,3 +1,5 @@
+import { normalizeSemester } from "@/lib/rules/shared";
+import { parseCourseCodes } from "@/lib/rules/courseCode";
 import type { Course, CourseLink, DiscoveredContext, IcalFeed } from "@/lib/types";
 import { formatKindLabel, normalizeCourseName } from "@/lib/ical/canvas";
 import { matchCourseInText } from "@/lib/ical/match";
@@ -104,24 +106,28 @@ export function autoLinkContexts(courses: Course[], feed: IcalFeed): { courses: 
   const skip = new Set([...(feed.ignoredContexts ?? []), ...(feed.linkedContexts ?? [])]);
   const added = new Map<string, { url: string; context: DiscoveredContext }[]>();
   const linked: string[] = [];
+  const metadata = new Map<string, DiscoveredContext[]>();
 
   for (const context of feed.discovered ?? []) {
-    if (skip.has(context.key) || !context.courseUrl) continue;
-    const url = normalizeLinkUrl(context.courseUrl);
+    if (feed.ignoredContexts?.includes(context.key)) continue;
     const courseId = feed.courseId ?? matchCourseInText(context.label, courses);
     const course = courseId ? courses.find((c) => c.id === courseId) : undefined;
-    if (!url || !course) continue;
+    if (!course) continue;
+    if (course.semester && context.semester && normalizeSemester(course.semester, new Date()) !== normalizeSemester(context.semester, new Date())) continue;
+    metadata.set(course.id, [...(metadata.get(course.id) ?? []), context]);
+    if (skip.has(context.key) || !context.courseUrl) continue;
+    const url = normalizeLinkUrl(context.courseUrl);
+    if (!url) continue;
     linked.push(context.key);
     const pending = added.get(course.id) ?? [];
     if (course.links.some((l) => l.url === url) || pending.some((p) => p.url === url)) continue;
     added.set(course.id, [...pending, { url, context }]);
   }
-  if (added.size === 0) return { courses, linked };
-
-  return {
-    courses: courses.map((course) => {
-      const pending = added.get(course.id);
-      if (!pending) return course;
+  const next = courses.map((course) => {
+      const pending = added.get(course.id) ?? [];
+      const imported = (metadata.get(course.id) ?? []).flatMap((context) => parseCourseCodes(context.code).map((c) => ({ ...c, ...(context.kind && { kind: context.kind }) })));
+      const fillIdentity = !course.code && imported.length > 0;
+      if (pending.length === 0 && !fillIdentity) return course;
       const canvasCount = course.links.filter((l) => l.platformId === "canvas").length + pending.length;
       const links: CourseLink[] = pending.map(({ url, context }) => ({
         id: newId(),
@@ -129,8 +135,9 @@ export function autoLinkContexts(courses: Course[], feed: IcalFeed): { courses: 
         url,
         label: canvasCount > 1 && context.kind ? formatKindLabel(context.kind) : undefined,
       }));
-      return { ...course, links: [...course.links, ...links] };
-    }),
-    linked,
-  };
+      return { ...course, links: [...course.links, ...links],
+        ...(fillIdentity && { code: imported.map((c) => c.raw ?? c.code).join(", "), codes: imported }),
+      };
+    });
+  return { courses: next.every((c, i) => c === courses[i]) ? courses : next, linked };
 }

@@ -1,3 +1,4 @@
+import { resolveOverlappingSystems } from "@/lib/rules/system";
 import type { AlertPrefs, AttendancePrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterArchive, SemesterData, SemesterInfo } from "@/lib/types";
 import { emptySemester, selectSemester } from "@/lib/semesterArchive";
 import { syncNow } from "@/lib/sync/clock";
@@ -243,6 +244,10 @@ const withOptional = <K extends string, V>(key: K, value: V | undefined) =>
   value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
 function mergeSemesterData(b: SemesterData, l: SemesterData, r: SemesterData, tombstones: Record<string, string>, now: string): SemesterData {
+  const rawRules = mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true);
+  const requirementResults = mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones);
+  const requirementRules = resolveOverlappingSystems(rawRules, requirementResults);
+  for (const rule of rawRules) if (!requirementRules.some((r) => r.id === rule.id)) tombstones[rule.id] = now;
   const merged = mergeById(b.deadlines, l.deadlines, r.deadlines, tombstones);
   const collapsed = collapseFeedDuplicates(merged, new Set(r.deadlines.map((d) => d.id)));
   for (const id of collapsed.dropped) tombstones[id] = now;
@@ -253,8 +258,8 @@ function mergeSemesterData(b: SemesterData, l: SemesterData, r: SemesterData, to
     timetableSources: mergeById(b.timetableSources, l.timetableSources, r.timetableSources, tombstones),
     classSessions: mergeByIdPlain(b.classSessions, l.classSessions, r.classSessions),
     // Rules merge as a whole so two edits cannot mix into an invalid rule set.
-    requirementRules: mergeById(b.requirementRules ?? [], l.requirementRules ?? [], r.requirementRules ?? [], tombstones, true),
-    requirementResults: mergeById(b.requirementResults ?? [], l.requirementResults ?? [], r.requirementResults ?? [], tombstones),
+    requirementRules,
+    requirementResults,
     ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
     ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
     ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),

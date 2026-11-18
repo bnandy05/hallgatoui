@@ -164,6 +164,12 @@ export interface SubjectRules {
 export interface RequirementRules extends SubjectRules {
   id: string; // "rules:<courseId>"
   courseId: string;
+  /** One canonical ledger, visible from each member course. Missing = just courseId. */
+  courseIds?: string[];
+  /** Explicit teaching-course assignment per component/retake. Empty = needs review. */
+  componentCourses?: Record<string, string[]>;
+  /** Read-only snapshots retained when populated trackers are joined. Never shared publicly. */
+  previousSystems?: { rules: Omit<RequirementRules, "previousSystems">; results: RequirementResult[] }[];
   source: "manual" | "template" | "extracted";
   templateId?: string;
   /** The student's calendar links per component or retake id (lib/rules/links.ts). */

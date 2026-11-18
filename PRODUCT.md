@@ -42,7 +42,7 @@ After-class check-ins default on, start from first activation (no historical pop
 
 ## Requirement tracker
 
-What the student needs for a grade, and where they stand. Each course can carry its grading rules (components, scoring, limits, conditions, retakes), set up from the requirements document, from reviewed document imports shared by students at the same university or by hand. The student records results as the semester goes (points, grades, attendance per class), and the course page shows each grade's reachable range, the conditions still open, and "what do I need for a 4". Components are tied to the calendar (classes from the Neptun timetable, deadlines from the feeds), so a class or test that ended without a result is asked about in a catch-up popup, in the bell and in the digest.
+What the student needs for a grade, and where they stand. A requirement system can serve one course or explicitly connected lecture/practice/lab courses. Connected courses keep separate pages, timetables, resources, deadlines and attendance. The system has one canonical result ledger and per-component teaching-course assignments; unknown assignments stay unlinked until reviewed. Each course can carry its grading rules (components, scoring, limits, conditions, retakes), set up from the requirements document, from reviewed document imports shared by students at the same university or by hand. The student records results as the semester goes (points, grades, attendance per class), and the course page shows each grade's reachable range, the conditions still open, and "what do I need for a 4". Components are tied to the calendar (classes from the Neptun timetable, deadlines from the feeds), so a class or test that ended without a result is asked about in a catch-up popup, in the bell and in the digest.
 
 - The rules decide; the student confirms. Reading a document is a suggestion: the AI (TypeSafe's Jev) only picks answers and numbers from the text, code builds the rules, and every doubtful field waits on Canary paper for the student. Rules that fail validation are never saved.
 - Students can import shared requirements or fill in the form by hand without AI.
@@ -56,3 +56,9 @@ Concise, professional Hungarian. Plain functional copy: headings name the thing 
 ## Accessibility
 
 Respect `prefers-reduced-motion`. Keep AA contrast for text, and keep everything keyboard-reachable.
+
+## Shared requirement systems
+
+Course identity preserves individual official subject codes, section/group numbers, raw imported labels, and an optional lecture/practice/lab type. Legacy comma-separated codes remain readable. Timetable imports never invent missing official codes; matching Canvas metadata or student review can supply them. Multi-code requirement documents and shared-template lookup support every confirmed code.
+
+Reading or importing rules ends with a course-scope review. Students can also connect existing course trackers, select the grading system to use, assign each component/retake to a member course or all members, and explicitly choose conflicting results. Old systems and original results remain as private read-only history. Different scoring definitions are never mixed. Shared grade calculations appear on both course pages, with relevant results first and an All results toggle. Class matching follows explicit component assignments; prompts group by the actual class, while edits use the canonical ledger. Deleting the original owner rehomes a shared system to a surviving course. Backups and semester archives retain memberships and history. Concurrent overlapping joins keep one active system, preserve the other version in history, and request review. Public rule templates omit membership, calendar links and all private history/results.

@@ -1,4 +1,6 @@
 import type { AppData, AttendancePrefs, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterArchive, SemesterInfo, TimetableSource } from "@/lib/types";
+import { resolveOverlappingSystems } from "@/lib/rules/system";
+import { parseCourseCodes } from "@/lib/rules/courseCode";
 import { normalizeLinkUrl } from "@/lib/url";
 import { validateRules } from "@/lib/rules/validate";
 import { linksFrom } from "@/lib/rules/links";
@@ -21,8 +23,17 @@ function isHttpUrl(value: unknown): boolean {
 
 /** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs; caps free text. */
 function sanitizeUrls(data: AppData): AppData {
-  const courses = data.courses.map(({ requirements, attendanceLimits, attendanceReminders, ...c }) => ({
+  const courses = data.courses.map(({ requirements, attendanceLimits, attendanceReminders, codes, kind, ...c }) => ({
     ...c,
+    ...(kind === "Ea" || kind === "Gy" || kind === "Lab" ? { kind } : {}),
+    ...(Array.isArray(codes) && { codes: codes.slice(0, 20).flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const parsed = parseCourseCodes(typeof entry.code === "string" ? entry.code : undefined)[0];
+      return parsed ? [{ ...parsed, ...(typeof entry.group === "string" && entry.group.length <= 40 && { group: entry.group }),
+        ...(typeof entry.raw === "string" && { raw: entry.raw.slice(0, 100) }),
+        ...(["Ea", "Gy", "Lab"].includes(entry.kind ?? "") && { kind: entry.kind }),
+      }] : [];
+    }) }),
     ...(typeof attendanceReminders === "boolean" && { attendanceReminders }),
     ...(attendanceLimits && typeof attendanceLimits === "object" && !Array.isArray(attendanceLimits) && { attendanceLimits: Object.fromEntries(
       Object.entries(attendanceLimits).filter(([key, v]) => /^[a-z][a-z0-9_]{0,39}$/.test(key) && Number.isInteger(v) && v >= 0 && v <= 200).slice(0, 100)
@@ -123,7 +134,7 @@ function sourcesFrom(value: unknown): TimetableSource[] {
 
 
 /** Keeps the rule sets that pass the rules validator, one per course. */
-function requirementRulesFrom(value: unknown, courseIds: Set<string>): RequirementRules[] {
+function requirementRulesFrom(value: unknown, courseIds: Set<string>, results: RequirementResult[]): RequirementRules[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const out: RequirementRules[] = [];
@@ -133,7 +144,12 @@ function requirementRulesFrom(value: unknown, courseIds: Set<string>): Requireme
     if (typeof o.courseId !== "string" || !courseIds.has(o.courseId) || seen.has(o.courseId)) continue;
     const checked = validateRules(o);
     if (!checked.ok) continue;
+    const members = Array.isArray(o.courseIds) ? [...new Set([o.courseId, ...o.courseIds.filter((id): id is string => typeof id === "string" && courseIds.has(id))])].slice(0, 20) : [o.courseId];
     seen.add(o.courseId);
+    const componentCourses = o.componentCourses && typeof o.componentCourses === "object" ? Object.fromEntries(
+      Object.entries(o.componentCourses).filter(([id]) => [...checked.rules.components, ...checked.rules.retakes].some((c) => c.id === id))
+        .map(([id, ids]) => [id, Array.isArray(ids) ? [...new Set(ids.filter((value): value is string => typeof value === "string" && members.includes(value)))] : []])
+    ) : undefined;
     const calendarLinks = linksFrom(o.calendarLinks, checked.rules);
     const ids = new Set([...checked.rules.components.map((c) => c.id), ...checked.rules.retakes.map((r) => r.id)]);
     const autoLinked = Array.isArray(o.autoLinked) ? [...new Set(o.autoLinked.filter((x): x is string => typeof x === "string" && ids.has(x)))] : [];
@@ -143,12 +159,32 @@ function requirementRulesFrom(value: unknown, courseIds: Set<string>): Requireme
       ...(autoLinked.length > 0 && { autoLinked }),
       id: `rules:${o.courseId}`,
       courseId: o.courseId,
+      ...(members.length > 1 && { courseIds: members }),
+      ...(componentCourses && { componentCourses }),
+      ...(Array.isArray(o.previousSystems) && { previousSystems: o.previousSystems.flatMap((entry) => {
+        if (!entry || typeof entry !== "object" || !entry.rules || typeof entry.rules.courseId !== "string") return [];
+        const old = validateRules(entry.rules);
+        if (!old.ok) return [];
+        const owner = entry.rules.courseId;
+        const oldMembers = [...new Set([owner, ...(Array.isArray(entry.rules.courseIds) ? entry.rules.courseIds.filter((id: unknown): id is string => typeof id === "string" && id.length <= 100) : [])])];
+        const oldLinks = linksFrom(entry.rules.calendarLinks, old.rules);
+        const oldScopes = entry.rules.componentCourses && typeof entry.rules.componentCourses === "object" ? Object.fromEntries(
+          Object.entries(entry.rules.componentCourses).filter(([id]) => [...old.rules.components, ...old.rules.retakes].some((c) => c.id === id)).map(([id, ids]) =>
+            [id, Array.isArray(ids) ? ids.filter((value: unknown): value is string => typeof value === "string" && oldMembers.includes(value)) : []])
+        ) : undefined;
+        return [{ rules: { ...old.rules, id: `rules:${owner}`, courseId: owner,
+          source: entry.rules.source === "template" || entry.rules.source === "extracted" ? entry.rules.source : "manual" as const,
+          ...(oldMembers.length > 1 && { courseIds: oldMembers }), ...(oldLinks && { calendarLinks: oldLinks }), ...(oldScopes && { componentCourses: oldScopes }),
+          ...(typeof entry.rules.templateId === "string" && { templateId: entry.rules.templateId.slice(0, 100) }),
+          ...(typeof entry.rules.updatedAt === "string" && { updatedAt: entry.rules.updatedAt.slice(0, 40) }),
+        }, results: requirementResultsFrom(entry.results, new Set([owner])) }];
+      }) }),
       source: o.source === "template" || o.source === "extracted" ? o.source : "manual",
       ...(typeof o.templateId === "string" && o.templateId.length <= 100 && { templateId: o.templateId }),
       ...(typeof o.updatedAt === "string" && { updatedAt: o.updatedAt }),
     });
   }
-  return out;
+  return resolveOverlappingSystems(out, results);
 }
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -331,7 +367,7 @@ export function parseAppData(json: unknown): AppData {
     feeds: data.feeds as AppData["feeds"],
     classSessions: sessionsFrom(data.classSessions),
     timetableSources: sourcesFrom(data.timetableSources),
-    requirementRules: requirementRulesFrom(data.requirementRules, new Set(data.courses.map((c) => c.id))),
+    requirementRules: requirementRulesFrom(data.requirementRules, new Set(data.courses.map((c) => c.id)), requirementResultsFrom(data.requirementResults, new Set(data.courses.map((c) => c.id)))),
     requirementResults: requirementResultsFrom(data.requirementResults, new Set(data.courses.map((c) => c.id))),
     tombstones: tombstonesFrom(data.tombstones),
     ...optional("semester", semesterFrom(data.semester)),

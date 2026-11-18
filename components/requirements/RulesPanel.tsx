@@ -8,7 +8,10 @@ import { flagText } from "@/lib/rules/flags";
 import { getMessages, type Locale } from "@/lib/i18n";
 import { evaluate, type ComponentEval } from "@/lib/rules/engine";
 import { isDemoMode } from "@/lib/demoMode";
-import { documentCourseCode, linkedCourseCode, requirementCourseCode } from "@/lib/rules/courseCode";
+import { courseCodes, documentCourseCode, linkedCourseCode, linkedCourseCodes } from "@/lib/rules/courseCode";
+import { componentCourseIds, rulesForCourse, systemCourseIds } from "@/lib/rules/system";
+import { RequirementSystemDialog, RequirementSystemHistory } from "./RequirementSystemDialog";
+import Link from "next/link";
 import { normalizeSemester, type TemplateOffer } from "@/lib/rules/shared";
 import type { RequirementResult, RequirementRules, RetakeSlot, RuleComponent, Scale, SubjectRules } from "@/lib/rules/types";
 import { Badge } from "@/components/ui/Badge";
@@ -58,21 +61,26 @@ type RulesView = "extract" | "json";
 export function RulesPanel({ courseId }: { courseId: string }) {
   const tAll = useT();
   const t = tAll.rulesPanel;
-  const rules = useStore((s) => s.requirementRules.find((r) => r.courseId === courseId));
+  const rules = useStore((s) => rulesForCourse(s.requirementRules, courseId));
   const allResults = useStore((s) => s.requirementResults);
-  const setRequirementRules = useStore((s) => s.setRequirementRules);
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
+  const courses = useStore((s) => s.courses);
+  const [systemSetup, setSystemSetup] = useState<{ draft?: RequirementRules; codes?: string[]; share?: boolean } | null>(null);
   const feeds = useStore((s) => s.feeds);
   const semesterStart = useStore((s) => s.semester?.start);
   const updateCourse = useStore((s) => s.updateCourse);
-  const code = requirementCourseCode(course?.code) ? course?.code : undefined;
+  const knownCodes = course ? courseCodes(course) : [];
+  const code = knownCodes[0];
   const detectedCode = useMemo(() => {
     if (!course || course.code) return undefined;
     return documentCourseCode(course.requirements ?? "") ?? linkedCourseCode(course, feeds) ?? undefined;
   }, [course, feeds]);
   const semester = course?.semester || (semesterStart ? normalizeSemester(undefined, new Date(semesterStart)) : undefined);
   const [draftCode, setDraftCode] = useState<string>();
-  const shared = useSharedRequirements(code ?? draftCode ?? detectedCode, semester);
+  const memberCourses = courses.filter((c) => rules ? systemCourseIds(rules).includes(c.id) : c.id === courseId);
+  const sharedCodes = [...new Set([...memberCourses.flatMap((c) => courseCodes(c)), ...memberCourses.flatMap((c) => linkedCourseCodes(c, feeds))])];
+  const [draftCodes, setDraftCodes] = useState<string[]>([]);
+  const shared = useSharedRequirements(sharedCodes.length ? sharedCodes : draftCodes.length ? draftCodes : draftCode ?? detectedCode, semester);
   const { confirm: ask, dialog: confirmDialog } = useConfirm();
 
   const [view, setView] = useState<RulesView | null>(null);
@@ -87,8 +95,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const [pendingShare, setPendingShare] = useState<{ rules: SubjectRules; code: string; error?: string } | null>(null);
 
   const results = useMemo(
-    () => (rules ? allResults.filter((r) => r.courseId === courseId) : EMPTY_RESULTS),
-    [allResults, courseId, rules]
+    () => (rules ? allResults.filter((r) => r.courseId === rules.courseId) : EMPTY_RESULTS),
+    [allResults, rules]
   );
 
   function closeAll() {
@@ -136,9 +144,11 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   }
 
   function save(next: SubjectRules, source: RequirementRules["source"]) {
-    setRequirementRules(courseId, { ...next, source });
+    const draft: RequirementRules = { ...next, id: rules?.id ?? `rules:${courseId}`, courseId: rules?.courseId ?? courseId, source,
+      ...(rules?.courseIds && { courseIds: rules.courseIds }), ...(rules?.componentCourses && { componentCourses: rules.componentCourses }) };
     setPendingShare(null);
     closeAll();
+    setSystemSetup({ draft });
   }
 
   async function publish(next: SubjectRules, subjectCode: string) {
@@ -163,15 +173,17 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             course={{ name: course?.name ?? t.courseFallback, code }}
             detectedCode={detectedCode}
             onDetectedCode={setDraftCode}
-            onReviewShared={!code && draftCode && shared.state?.offers.length
+            onDetectedCodes={setDraftCodes}
+            onReviewShared={!code && (draftCode || draftCodes.length > 0) && shared.state?.offers.length
               ? () => setReview(shared.state?.offers ?? null)
               : undefined}
             replacing={!!rules}
             sharingAvailable={!!shared.state?.university}
             onSave={(next, details) => {
-              rememberCode(details.code);
-              save(next, details.source);
-              if (details.share && details.code) void publish(next, details.code);
+              const draft: RequirementRules = { ...next, id: rules?.id ?? `rules:${courseId}`, courseId: rules?.courseId ?? courseId, source: details.source,
+                ...(rules?.courseIds && { courseIds: rules.courseIds }), ...(rules?.componentCourses && { componentCourses: rules.componentCourses }) };
+              closeAll();
+              setSystemSetup({ draft, codes: details.codes, share: details.share });
             }}
             onManual={(built) => openJson(built, true)}
             onCancel={requestClose}
@@ -197,6 +209,12 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const dialogs = (
     <>
       {rulesDialog}
+      {systemSetup && <RequirementSystemDialog courseId={courseId} draft={systemSetup.draft} documentCodes={systemSetup.codes}
+        onCancel={() => setSystemSetup(null)} onDone={(configured, codes) => {
+          const sharing = systemSetup.share;
+          setSystemSetup(null);
+          if (sharing && codes.length) void publish(subjectRulesOf(configured), codes.join(","));
+        }} />}
       {review && (
         <SharedRequirementsReview
           offers={review}
@@ -204,11 +222,11 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             const error = await shared.use(offer);
             if (error) return error;
             rememberCode(draftCode ?? detectedCode);
-            setRequirementRules(courseId, {
-              ...offer.rules,
-              source: "template",
-              templateId: `shared:${offer.semester}:${offer.variantId}`,
-            });
+            const draft: RequirementRules = { ...offer.rules, id: rules?.id ?? `rules:${courseId}`, courseId: rules?.courseId ?? courseId,
+              source: "template", templateId: `shared:${offer.semester}:${offer.variantId}`,
+              ...(rules?.courseIds && { courseIds: rules.courseIds }),
+              ...(rules?.componentCourses && { componentCourses: rules.componentCourses }) };
+            setSystemSetup({ draft });
             setReview(null);
             closeAll();
             return null;
@@ -233,6 +251,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
       <div className="sheet-paper flex flex-col px-5 py-5 sm:px-6">
         <h3 className="font-display text-subhead text-heading">{t.heading}</h3>
         <p className="mt-1.5 max-w-[62ch] text-body text-muted">{t.intro}</p>
+        <Button variant="secondary" className="mt-4 self-start max-sm:h-auto max-sm:whitespace-normal max-sm:py-2" onClick={() => setSystemSetup({})}>{tAll.requirementSystem.connect}</Button>
         {course && !isDemoMode() && (
           <SharedRequirementsOffer code={code ?? detectedCode} shared={shared} onReview={() => setReview(shared.state?.offers ?? null)} />
         )}
@@ -263,6 +282,13 @@ export function RulesPanel({ courseId }: { courseId: string }) {
 
   return (
     <>
+      <div className="sheet-paper flex flex-wrap items-start justify-between gap-4 px-5 py-4">
+        <div className="min-w-0"><h3 className="text-lead font-semibold text-heading">{systemCourseIds(rules).length > 1 ? tAll.requirementSystem.title : tAll.requirementSystem.members}</h3>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-small">{memberCourses.map((c) => <Link key={c.id} className="link-text" href={`/targy/${c.id}#course-requirements`}>{c.name}</Link>)}</div>
+          {systemCourseIds(rules).length > 1 && <p className="mt-2 text-small text-muted">{tAll.requirementSystem.sameRules}</p>}
+        </div>
+        <Button variant="secondary" size="sm" className="max-sm:h-auto max-sm:whitespace-normal max-sm:py-2" onClick={() => setSystemSetup({})}>{tAll.requirementSystem.manage}</Button>
+      </div>
       {pendingShare && (
         <div className="sheet-paper mb-4 flex flex-wrap items-center gap-3 px-4 py-3">
           <p className="flex-1 text-small text-muted" role={pendingShare.error ? "alert" : "status"}>
@@ -276,13 +302,15 @@ export function RulesPanel({ courseId }: { courseId: string }) {
         </div>
       )}
       <RulesView
-        courseId={courseId}
+        courseId={rules.courseId}
+        viewedCourseId={courseId}
         rules={rules}
         results={results}
         onEditJson={() => openJson(undefined, false)}
         onExtract={() => openExtract()}
         dialogs={dialogs}
       />
+      <RequirementSystemHistory rules={rules} />
     </>
   );
 }
@@ -306,6 +334,7 @@ type LedgerGroup = { id: string; title: string; items: ReactNode[] };
 
 function RulesView({
   courseId,
+  viewedCourseId,
   rules,
   results,
   onEditJson,
@@ -313,6 +342,7 @@ function RulesView({
   dialogs,
 }: {
   courseId: string;
+  viewedCourseId: string;
   rules: RequirementRules;
   results: RequirementResult[];
   onEditJson: () => void;
@@ -326,6 +356,8 @@ function RulesView({
   const setRequirementRules = useStore((s) => s.setRequirementRules);
   const set = useResultSetter(courseId);
   const evaluation = useMemo(() => evaluate(rules, results, new Date(), locale), [rules, results, locale]);
+  const [showAll, setShowAll] = useState(false);
+  const relatedComponents = new Set(rules.components.filter((c) => (componentCourseIds(rules, c.id).length === 0 || componentCourseIds(rules, c.id).includes(viewedCourseId))).map((c) => c.id));
   const openFlags = rules.flags.filter((f) => !f.resolved);
 
   const byComponent = useMemo(() => {
@@ -344,7 +376,7 @@ function RulesView({
   }
 
   async function removeRules() {
-    if (await ask({ title: t.removeTitle, message: t.removeMessage, confirmLabel: tAll.common.delete })) {
+    if (await ask({ title: t.removeTitle, message: systemCourseIds(rules).length > 1 ? tAll.requirementSystem.removeShared : t.removeMessage, confirmLabel: tAll.common.delete })) {
       setRequirementRules(courseId, null);
     }
   }
@@ -453,8 +485,8 @@ function RulesView({
 
   // The ledger, grouped by kind: what is written, what is handed in, the small items, presence.
   const groups: LedgerGroup[] = [];
-  const of = <K extends RuleComponent["kind"]>(kind: K) => rules.components.filter((c): c is Extract<RuleComponent, { kind: K }> => c.kind === kind);
-  const exams = [...of("exam").map(componentRow), ...rules.retakes.map(retakeRow)].filter(Boolean);
+  const of = <K extends RuleComponent["kind"]>(kind: K) => rules.components.filter((c): c is Extract<RuleComponent, { kind: K }> => c.kind === kind && (showAll || systemCourseIds(rules).length === 1 || relatedComponents.has(c.id)));
+  const exams = [...of("exam").map(componentRow), ...rules.retakes.filter((r) => showAll || systemCourseIds(rules).length === 1 || componentCourseIds(rules, r.id).includes(viewedCourseId)).map(retakeRow)].filter(Boolean);
   if (exams.length) groups.push({ id: "exam", title: t.groupExams, items: exams });
   const assignments = of("assignment");
   if (assignments.length) groups.push({ id: "assignment", title: t.groupAssignments, items: assignments.map(componentRow) });
@@ -523,6 +555,7 @@ function RulesView({
           )}
         </div>
         <p className="mt-0.5 text-small text-muted">{t.ledgerHint}</p>
+        {systemCourseIds(rules).length > 1 && <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowAll(!showAll)}>{showAll ? tAll.requirementSystem.relevant : tAll.requirementSystem.allResults}</Button>}
         {groups.map((g) => (
           <div key={g.id} className="mt-4">
             {groups.length > 1 && <h4 className="pb-1.5 text-small font-semibold text-muted">{g.title}</h4>}

@@ -400,6 +400,7 @@ export const rulesHu = {
    * UI renders them with these functions in the current language (`flagText`).
    */
   flags: {
+    sharedSystemConflict: "Több eszközön eltérő kurzuskapcsolatok jöttek létre. Ellenőrizd a közös szabályokat; a többi változat és eredményei az előzményekben megmaradtak.",
     countMissing1: (label: string) => `A(z) ${label} darabszáma nincs megadva; 1 feltételezve.`,
     countMissing12: (label: string) => `A(z) ${label} darabszáma nincs megadva; 12 feltételezve (órarendből pontosítható).`,
     belowMinFail: (min: number) => `${min} pont alatt elégtelen (1) feltételezve.`,

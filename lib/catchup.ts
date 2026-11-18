@@ -4,6 +4,7 @@
 // stored time is the account-level `catchUp.promptedUntil`, which decides whether the popup opens
 // by itself. Pure, so the server's email digest uses the same functions.
 
+import { componentCourseIds } from "@/lib/rules/system";
 import { standaloneAttendance, attendancePromptAllowed } from "@/lib/attendance";
 import type { AttendancePrefs, ClassSession, Course, Deadline, SemesterInfo } from "@/lib/types";
 import { deadlineIdentity } from "@/lib/ical/dedupe";
@@ -59,7 +60,7 @@ export function linkedInstances(input: Omit<CatchUpInput, "now">): LinkedInstanc
       if (!link) continue;
       const scale = retakeScale(rules, target);
       if (target.kind === "retake" && !scale) continue;
-      for (const instance of resolveInstances(target, link, ctx)) {
+      for (const instance of resolveInstances(target, link, { ...ctx, courseIds: componentCourseIds(rules, target.id) })) {
         out.push({ courseId: rules.courseId, target, link, instance, ...(scale && { scale }) });
       }
     }
@@ -98,8 +99,8 @@ export interface CatchUpGroup {
  */
 export function catchUpGroupKey(li: Pick<LinkedInstance, "courseId" | "target" | "instance">): string {
   const { instance } = li;
-  if (instance.session) return `${li.courseId}|s:${instance.session.externalUid}`;
-  if (instance.deadline) return `${li.courseId}|d:${deadlineIdentity(instance.deadline)}`;
+  if (instance.session) return `${instance.session.courseId ?? li.courseId}|s:${instance.session.externalUid}`;
+  if (instance.deadline) return `${instance.deadline.courseId ?? li.courseId}|d:${deadlineIdentity(instance.deadline)}`;
   return `${li.courseId}|${li.target.id}|${instance.key}`;
 }
 
@@ -114,14 +115,14 @@ export function pendingInputs(input: CatchUpInput, linked = linkedInstances(inpu
   const groups = new Map<string, CatchUpGroup>();
   for (const li of linked) {
     if (!needsInput(li, input.now)) continue;
-    if (li.target.kind === "attendance" && input.attendancePrefs && !attendancePromptAllowed(input, li.courseId, li.instance.end!)) continue;
+    if (li.target.kind === "attendance" && input.attendancePrefs && !attendancePromptAllowed(input, li.instance.session?.courseId ?? li.courseId, li.instance.end!)) continue;
     const key = catchUpGroupKey(li);
     let group = groups.get(key);
     if (!group) {
       const { instance } = li;
       group = {
         key,
-        courseId: li.courseId,
+        courseId: instance.session?.courseId ?? instance.deadline?.courseId ?? li.courseId,
         end: instance.end!,
         fields: [],
         ...(instance.at && { at: instance.at }),

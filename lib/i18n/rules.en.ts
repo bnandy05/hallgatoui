@@ -386,6 +386,7 @@ export const rulesEn: Messages["rules"] = {
   },
 
   flags: {
+    sharedSystemConflict: "Different course connections were saved on multiple devices. Review the shared rules; other versions and their results remain in the history.",
     countMissing1: (label) => `The number of ${label} is not given; assuming 1.`,
     countMissing12: (label) => `The number of ${label} is not given; assuming 12 (can be refined from the timetable).`,
     belowMinFail: (min) => `Assuming a fail (1) below ${min} points.`,

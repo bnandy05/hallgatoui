@@ -11,6 +11,7 @@ import { useDedupedDeadlines } from "@/lib/useDedupedDeadlines";
 import { getPlatform, platformName } from "@/lib/platforms";
 import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
+import { rulesForCourse } from "@/lib/rules/system";
 import { courseStanding } from "@/lib/rules/standing";
 import type { Course, CourseLink } from "@/lib/types";
 import { AttendanceOverview } from "@/components/attendance/AttendanceOverview";
@@ -67,8 +68,8 @@ function CourseCard({ course, now }: { course: Course; now: Date }) {
   const extra = course.links.length - MAX_LAUNCHERS;
   // Only once something is recorded: before that every course would read "1–5".
   const standing = useMemo(() => {
-    const own = rules.find((r) => r.courseId === course.id);
-    const results = allResults.filter((r) => r.courseId === course.id);
+    const own = rulesForCourse(rules, course.id);
+    const results = allResults.filter((r) => r.courseId === own?.courseId);
     const standing = own && results.some((r) => r.state === "recorded") ? courseStanding(own, results, now, locale) : null;
     // "1–5" with nothing at risk says nothing yet.
     return standing && (standing.grade !== "1–5" || standing.risk) ? standing : null;

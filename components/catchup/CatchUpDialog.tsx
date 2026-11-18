@@ -4,6 +4,7 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import type { Locale, Messages } from "@/lib/i18n";
+import { rulesForCourse } from "@/lib/rules/system";
 import { canAwait, type CatchUpField, type CatchUpGroup } from "@/lib/catchup";
 import { instanceLabel, instanceSnapshot, shortDayLabel } from "@/lib/rules/instances";
 import { resultId, type RequirementResult } from "@/lib/rules/types";
@@ -96,7 +97,7 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
   const open = visible.filter((g) => !g.fields.every((f) => fieldHasResult(f, byId)));
 
   const labelOf = (courseId: string, id: string) =>
-    rules.find((r) => r.courseId === courseId)?.components.find((c) => c.id === id)?.label ?? id;
+    rulesForCourse(rules, courseId)?.components.find((c) => c.id === id)?.label ?? id;
 
   function save(field: CatchUpField, patch: ResultPatch) {
     setItems([itemFor(field, patch, locale)]);

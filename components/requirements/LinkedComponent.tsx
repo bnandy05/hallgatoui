@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { CalendarCheck, CalendarPlus, ChevronDown, X } from "lucide-react";
+import { componentCourseIds, rulesForCourse, systemCourseIds } from "@/lib/rules/system";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { instanceLabel, instanceSnapshot, resolveInstances, type Instance } from "@/lib/rules/instances";
@@ -73,13 +74,15 @@ export function LinkedComponent({
   const sessions = useStore((s) => s.classSessions);
   const deadlines = useStore((s) => s.deadlines);
   const semester = useStore((s) => s.semester);
+  const courses = useStore((s) => s.courses);
+  const system = useStore((s) => rulesForCourse(s.requirementRules, courseId));
   const setItems = useStore((s) => s.setRequirementResults);
   const [editing, setEditing] = useState(false);
   const now = useMinuteNow();
 
   const instances = useMemo(
-    () => (link ? resolveInstances(target, link, { courseId, sessions, deadlines, semester, results }) : []),
-    [link, target, courseId, sessions, deadlines, semester, results]
+    () => (link ? resolveInstances(target, link, { courseId, courseIds: system ? componentCourseIds(system, target.id) : undefined, sessions, deadlines, semester, results }) : []),
+    [link, target, courseId, sessions, deadlines, semester, results, system]
   );
 
   const linkable = linkModes(target).length > 0;
@@ -112,6 +115,9 @@ export function LinkedComponent({
         </p>
       )}
       {"note" in target && target.note && <p className="mt-0.5 text-fine leading-snug text-muted-dim">{target.note}</p>}
+      {system && systemCourseIds(system).length > 1 && <p className={`mt-1 text-fine ${componentCourseIds(system, target.id).length ? "text-muted" : "text-warning"}`}>
+        {componentCourseIds(system, target.id).length ? componentCourseIds(system, target.id).map((id) => courses.find((c) => c.id === id)?.name ?? id).join(" · ") : t.requirementSystem.unassigned}
+      </p>}
     </div>
   );
   const linkButton = linkable && (

@@ -34,6 +34,8 @@ export interface Course {
   id: string;
   name: string;
   code?: string;
+  codes?: CourseCode[];
+  kind?: CourseKind;
   semester?: string;
   color: string;
   links: CourseLink[];
@@ -44,6 +46,13 @@ export interface Course {
   attendanceLimits?: Record<string, number>; // per attendance group; confirmed by the student
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface CourseCode {
+  code: string;
+  group?: string;
+  raw?: string;
+  kind?: CourseKind;
 }
 
 export type DeadlineSource = "manual" | "ical";

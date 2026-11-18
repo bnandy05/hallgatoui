@@ -84,3 +84,17 @@ test("autoLinkContexts returns the same array when nothing changes", () => {
   assert.equal(result.courses, courses);
   assert.deepEqual(result.linked, []);
 });
+
+test("Canvas metadata backfills codes even for already-linked timetable courses and keeps manual codes", () => {
+  const dm = makeCourse("dm", "Diszkrét matematika I", ["Diszkrét matematika I"]);
+  const feed = syncedFeed();
+  const first = autoLinkContexts([dm], feed);
+  assert.equal(first.courses[0].codes?.length, 2);
+  const withoutCodes = { ...first.courses[0], code: undefined, codes: undefined };
+  const again = autoLinkContexts([withoutCodes], { ...feed, linkedContexts: first.linked });
+  assert.equal(again.courses[0].codes?.length, 2);
+  assert.equal(again.linked.length, 0);
+  assert.equal(again.courses[0].links.length, 2);
+  const manual = { ...withoutCodes, code: "MANUAL-101" };
+  assert.equal(autoLinkContexts([manual], { ...feed, linkedContexts: first.linked }).courses[0].code, "MANUAL-101");
+});

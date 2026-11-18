@@ -387,3 +387,7 @@ Slips and sheets are visible as soon as they render. Completing a deadline pulls
 ## Attendance surfaces
 
 Course cards carry a compact attendance link with a count, remaining allowance, and explicit unrecorded classes. The course page places attendance before deadlines on a Copy Paper sheet: separate groups, an ordinary text count, dated history, and inline limit/date forms. Warning Amber marks one remaining absence; Danger Red marks an exhausted or exceeded allowance, always with text. Calendar classes retain Sky paper and gain Present / Absent controls after their end. The existing catch-up sheet uses two adjacent attendance actions with an inline Undo inside the modal; excused absence and clearing live under More options. Global and per-course check-in controls use the existing Switch.
+
+## Shared requirements
+
+The requirement section begins with a Copy Paper summary naming every connected course and a Manage action. The scope-review dialog uses a course checklist, editable code fields, per-component course selects, and explicit result-conflict choices. Related-course suggestions require a deliberate selection. Unassigned components carry a Canary explanation and generate no class reminders. Shared grade outcomes remain visible on either course; the result ledger defaults to that course’s items with an All results control. Previous systems use read-only disclosures, separate from the active result controls.

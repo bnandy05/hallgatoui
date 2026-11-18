@@ -2,15 +2,46 @@ import type { AppStore, StoreSet } from "@/lib/store";
 import { resultId, type RequirementResult, type RequirementRules } from "@/lib/rules/types";
 import { normalizeSemesterStart } from "@/lib/timetable/semester";
 import { reconcileAttendance } from "@/lib/attendance";
+import { componentCourseIds, planRequirementSystem, rulesForCourse, sameSemester, systemCourseIds } from "@/lib/rules/system";
 import { syncNow } from "@/lib/sync/clock";
 
 type RequirementActions = Pick<AppStore,
-  "setAttendancePrefs" | "reconcileAttendance" | "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
+  "configureRequirementSystem" | "setAttendancePrefs" | "reconcileAttendance" | "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
   "setComponentLink" | "applyAutoLinks" | "setSemester" | "markCatchUpPrompted" | "setBellAlertKinds"
 >;
 
 export function requirementActions(set: StoreSet): RequirementActions {
   return {
+    configureRequirementSystem: (selected, members, scopes, choices = {}) => {
+      let saved = false;
+      set((state) => {
+        const owner = state.courses.find((c) => c.id === selected.courseId);
+        if (!owner || members.length > 20 || !members.includes(owner.id) || members.some((id) => !state.courses.some((c) => c.id === id && sameSemester(c, owner)))) return state;
+        const plan = planRequirementSystem(state.requirementRules, state.requirementResults, selected, members, scopes, choices);
+        if (systemCourseIds(plan.rules).some((id) => !members.includes(id)) || plan.conflicts.some((c) => !c.options.some((o) => o.id === choices[c.key]))) return state;
+        const affectedIds = new Set(plan.affected.map((r) => r.id));
+        const isOwned = (r: RequirementResult) => plan.affected.some((s) => s.courseId === r.courseId && [...s.components, ...s.retakes].some((c) => c.id === r.componentId));
+        const used = new Set(plan.consumedIds);
+        const historicalAttendance = state.requirementResults.filter((r) => isOwned(r) && plan.affected.some((s) => s.courseId === r.courseId && s.components.some((c) => c.id === r.componentId && c.kind === "attendance")) && !used.has(r.id)).map((r) => {
+          let hash = 2166136261;
+          for (const c of `${r.courseId}|${r.componentId}`) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+          const componentId = `attendance_legacy_${(hash >>> 0).toString(36)}`;
+          const original = plan.affected.find((s) => s.courseId === r.courseId)!;
+          const scope = componentCourseIds(original, r.componentId);
+          const session = r.instanceKey.startsWith("s:") ? state.classSessions.find((s) => s.externalUid === r.instanceKey.slice(2)) : undefined;
+          const courseId = session?.courseId ?? (scope.length === 1 ? scope[0] : r.courseId);
+          return { ...r, courseId, componentId, id: resultId(courseId, componentId, r.instanceKey) };
+        });
+        saved = true;
+        return {
+          requirementRules: [...state.requirementRules.filter((r) => !affectedIds.has(r.id)), {
+            ...plan.rules, id: `rules:${selected.courseId}`, previousSystems: plan.previousSystems,
+          }],
+          requirementResults: [...state.requirementResults.filter((r) => !isOwned(r) && !plan.results.some((v) => v.id === r.id)), ...historicalAttendance, ...plan.results],
+        };
+      });
+      return saved;
+    },
     setAttendancePrefs: (enabled) => set((state) => ({ attendancePrefs: {
       enabled, since: state.attendancePrefs?.since ?? syncNow(), updatedAt: syncNow(),
     } })),
@@ -21,8 +52,9 @@ export function requirementActions(set: StoreSet): RequirementActions {
     }),
     setRequirementRules: (courseId, rules) => {
       set((state) => {
-        const id = `rules:${courseId}`;
-        const previous = state.requirementRules.find((r) => r.id === id);
+        const previous = rulesForCourse(state.requirementRules, courseId);
+        const owner = previous?.courseId ?? courseId;
+        const id = `rules:${owner}`;
         const rest = state.requirementRules.filter((r) => r.id !== id);
         if (!rules) return { requirementRules: rest };
         const { updatedAt: _u, calendarLinks: _l, autoLinked: _a, ...clean } = rules as RequirementRules;
@@ -38,7 +70,10 @@ export function requirementActions(set: StoreSet): RequirementActions {
         const next: RequirementRules = {
           ...clean,
           id,
-          courseId,
+          courseId: owner,
+          ...(previous?.courseIds && { courseIds: previous.courseIds }),
+          ...(previous?.componentCourses && { componentCourses: Object.fromEntries(Object.entries(previous.componentCourses).filter(([id]) => ids.has(id))) }),
+          ...(previous?.previousSystems && { previousSystems: previous.previousSystems }),
           ...(kept.length > 0 && { calendarLinks: Object.fromEntries(kept) }),
           ...(decided.length > 0 && { autoLinked: decided }),
         };
@@ -47,10 +82,12 @@ export function requirementActions(set: StoreSet): RequirementActions {
     },
     setRequirementResult: (courseId, componentId, instanceKey, patch) => {
       set((state) => {
-        const id = resultId(courseId, componentId, instanceKey);
+        const system = rulesForCourse(state.requirementRules, courseId);
+        const owner = system && [...system.components, ...system.retakes].some((c) => c.id === componentId) ? system.courseId : courseId;
+        const id = resultId(owner, componentId, instanceKey);
         const rest = state.requirementResults.filter((r) => r.id !== id);
         if (!patch) return { requirementResults: rest };
-        const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
+        const result: RequirementResult = { id, courseId: owner, componentId, instanceKey, ...patch };
         if (result.state !== "recorded") delete result.value;
         return { requirementResults: [...rest, result] };
       });
@@ -60,12 +97,14 @@ export function requirementActions(set: StoreSet): RequirementActions {
       set((state) => {
         const byId = new Map(state.requirementResults.map((r) => [r.id, r]));
         for (const { courseId, componentId, instanceKey, patch } of items) {
-          const id = resultId(courseId, componentId, instanceKey);
+          const system = rulesForCourse(state.requirementRules, courseId);
+          const owner = system && [...system.components, ...system.retakes].some((c) => c.id === componentId) ? system.courseId : courseId;
+          const id = resultId(owner, componentId, instanceKey);
           if (!patch) {
             byId.delete(id);
             continue;
           }
-          const result: RequirementResult = { id, courseId, componentId, instanceKey, ...patch };
+          const result: RequirementResult = { id, courseId: owner, componentId, instanceKey, ...patch };
           if (result.state !== "recorded") delete result.value;
           byId.set(id, result);
         }
@@ -74,7 +113,7 @@ export function requirementActions(set: StoreSet): RequirementActions {
     },
     setComponentLink: (courseId, componentId, link) => {
       set((state) => {
-        const rules = state.requirementRules.find((r) => r.courseId === courseId);
+        const rules = rulesForCourse(state.requirementRules, courseId);
         if (!rules) return state;
         const links = { ...rules.calendarLinks };
         if (link) links[componentId] = link;
@@ -89,7 +128,7 @@ export function requirementActions(set: StoreSet): RequirementActions {
     },
     applyAutoLinks: (courseId, links) => {
       set((state) => {
-        const rules = state.requirementRules.find((r) => r.courseId === courseId);
+        const rules = rulesForCourse(state.requirementRules, courseId);
         if (!rules) return state;
         const fresh = Object.entries(links).filter(([cid]) => !rules.calendarLinks?.[cid] && !rules.autoLinked?.includes(cid));
         if (fresh.length === 0) return state;

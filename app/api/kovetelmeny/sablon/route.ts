@@ -1,4 +1,4 @@
-import { requirementCourseCode } from "@/lib/rules/courseCode";
+import { parseCourseCodes, requirementCourseCode } from "@/lib/rules/courseCode";
 import { normalizeSemester, normalizeSubjectCode, type SharedRequirementOptions } from "@/lib/rules/shared";
 import { guarded, json, mutation, requireUser } from "@/lib/server/auth/http";
 import { confirmTemplate, findTemplates, reportTemplate, uniKey, recordTemplateUse } from "@/lib/server/ruleTemplates";
@@ -13,13 +13,13 @@ export function GET(req: Request) {
     const kv = auth.deps.store.kv;
     const university = await kv.get<string>(uniKey(auth.user.id));
     const params = new URL(req.url).searchParams;
-    const rawCode = params.get("kod") ?? undefined;
-    const code = requirementCourseCode(rawCode);
+    const rawCodes = params.getAll("kod").slice(0, 20);
+    const normalized = [...new Set(rawCodes.flatMap((raw) => parseCourseCodes(raw).map((c) => c.code)))];
     const result: SharedRequirementOptions = { university, offers: [] };
-    if (university && code) {
+    if (university && normalized.length) {
       // Older shares could include a Canvas section number in the normalized code.
-      const legacy = normalizeSubjectCode(rawCode);
-      const codes = legacy && legacy !== code ? [code, legacy] : [code];
+      const legacy = rawCodes.filter((raw) => requirementCourseCode(raw)).map(normalizeSubjectCode).filter((s): s is string => !!s);
+      const codes = [...new Set([...normalized, ...legacy])].slice(0, 40);
       const now = new Date();
       const semester = normalizeSemester(params.get("felev"), now);
       result.offers = await findTemplates(kv, auth.user.id, university, codes, semester, normalizeSemester(undefined, now));
@@ -39,8 +39,9 @@ export function POST(req: Request) {
     const kv = auth.deps.store.kv;
     const university = await kv.get<string>(uniKey(auth.user.id));
     if (!university) return errorResponse(locale, "university_required", 400);
-    const code = requirementCourseCode(typeof m.body.kod === "string" ? m.body.kod : undefined);
-    if (!code) return errorResponse(locale, "bad_subject_code", 400);
+    const codes = parseCourseCodes(typeof m.body.kod === "string" ? m.body.kod : undefined).map((c) => c.code);
+    const code = codes[0];
+    if (!code || codes.length > 20) return errorResponse(locale, "bad_subject_code", 400);
     const now = new Date();
     const semester = normalizeSemester(m.body.felev, now);
     if ((await kv.incr(`rl:tpl:${auth.user.id}`, 24 * 60 * 60)) > DAILY_WRITES) {
@@ -53,7 +54,10 @@ export function POST(req: Request) {
         : typeof variantId === "string" && await recordTemplateUse(kv, auth.user.id, university, code, semester, variantId, now);
       return ok ? json({ ok: true }) : errorResponse(locale, "template_not_found", 404);
     }
-    const error = await confirmTemplate(kv, auth.user.id, university, code, semester, m.body.rules, now);
-    return error ? errorResponse(locale, error, 400) : json({ ok: true });
+    for (const alias of [...new Set(codes)]) {
+      const error = await confirmTemplate(kv, auth.user.id, university, alias, semester, m.body.rules, now);
+      if (error) return errorResponse(locale, error, 400);
+    }
+    return json({ ok: true });
   });
 }

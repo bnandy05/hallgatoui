@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { componentCourseIds, rulesForCourse } from "@/lib/rules/system";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { timetableCutoff } from "@/lib/ical/neptun";
@@ -75,13 +76,15 @@ function LinkForm({
   const modes = linkModes(target);
   const multi = isMultiInstance(target);
 
-  const sessions = useMemo(() => allSessions.filter((s) => s.courseId === courseId), [allSessions, courseId]);
+  const ruleSet = useStore((s) => rulesForCourse(s.requirementRules, courseId));
+  const assigned = useMemo(() => ruleSet ? componentCourseIds(ruleSet, target.id) : [courseId], [ruleSet, target.id, courseId]);
+  const sessions = useMemo(() => allSessions.filter((s) => !!s.courseId && assigned.includes(s.courseId)), [allSessions, assigned]);
   const groups = useMemo(() => [...new Set(sessions.map((s) => s.group).filter((g): g is string => !!g))].sort(), [sessions]);
   const weekdays = useMemo(() => [...new Set(sessions.filter((s) => s.kind === "ora").map((s) => isoWeekday(budapestDate(new Date(s.start)))))].sort(), [sessions]);
   const hasExams = sessions.some((s) => s.kind === "vizsga");
   const courseDeadlines = useMemo(
-    () => deadlines.filter((d) => d.courseId === courseId).sort((a, b) => a.due.localeCompare(b.due)),
-    [deadlines, courseId]
+    () => deadlines.filter((d) => !!d.courseId && assigned.includes(d.courseId)).sort((a, b) => a.due.localeCompare(b.due)),
+    [deadlines, assigned]
   );
 
   // Children mount per open: initialise from the current link.
@@ -90,10 +93,9 @@ function LinkForm({
   const [selector, setSelector] = useState<SessionSelector>(initialSelector);
   const [limit, setLimit] = useState(link?.mode === "sessions" && link.limit ? String(link.limit) : "");
   const [weeksText, setWeeksText] = useState(link?.mode === "weeks" ? link.weeks.join(", ") : "");
-  const ruleSet = useStore((s) => s.requirementRules.find((r) => r.courseId === courseId));
   const targets = useMemo(() => (ruleSet ? linkTargets(ruleSet) : [target]), [ruleSet, target]);
   // Kind words and numbers first; only when they find nothing does Jev get the course's deadlines.
-  const [local] = useState(() => localDeadlineMatches(target, targets, courseId, deadlines).map(deadlineIdentity));
+  const [local] = useState(() => localDeadlineMatches(target, targets, courseId, courseDeadlines.map((d) => ({ ...d, courseId }))).map(deadlineIdentity));
   const [picked, setPicked] = useState<Set<string>>(() => {
     if (link?.mode === "deadlines") return new Set(link.identities);
     return new Set(multi ? local : local.slice(0, 1));
@@ -149,8 +151,8 @@ function LinkForm({
 
   const preview = useMemo(() => {
     if (!draft) return [];
-    return resolveInstances(target, draft, { courseId, sessions: allSessions, deadlines, semester, results: [] });
-  }, [draft, target, courseId, allSessions, deadlines, semester]);
+    return resolveInstances(target, draft, { courseId, courseIds: assigned, sessions: allSessions, deadlines, semester, results: [] });
+  }, [draft, target, courseId, assigned, allSessions, deadlines, semester]);
 
   const needsSemester = !semester && (mode === "weeks" || (mode === "sessions" && (selector.fromWeek || selector.toWeek)));
 

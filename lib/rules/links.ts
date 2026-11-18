@@ -3,6 +3,7 @@
 // Neptun groups and feed deadlines), so they live next to the rules in
 // RequirementRules.calendarLinks and never in a shared template. Pure.
 
+import { componentCourseIds } from "./system";
 import { normalizeSearch } from "@/lib/text";
 import { deadlineIdentity } from "@/lib/ical/dedupe";
 import type { Deadline } from "@/lib/types";
@@ -157,7 +158,7 @@ export function defaultLinks(
  * (numbered "n:" keys) is left alone too: a link would move them aside as "Kapcsolat nélküli eredmények".
  */
 export function autoLinks(
-  rules: { courseId: string; components: RuleComponent[]; calendarLinks?: Record<string, ComponentLink>; autoLinked?: string[] },
+  rules: { courseId: string; courseIds?: string[]; componentCourses?: Record<string, string[]>; components: RuleComponent[]; calendarLinks?: Record<string, ComponentLink>; autoLinked?: string[] },
   sessions: { courseId: string | null; kind: string; group?: string }[],
   deadlines: Deadline[],
   results: { courseId: string; componentId: string; instanceKey: string }[],
@@ -168,11 +169,17 @@ export function autoLinks(
   const multi = new Set(rules.components.filter(isMultiInstance).map((c) => c.id));
   for (const r of results) if (r.courseId === rules.courseId && multi.has(r.componentId) && r.instanceKey.startsWith("n:")) skip.add(r.componentId);
   if (rules.components.every((c) => skip.has(c.id))) return {};
-  const own = sessions.filter((s) => s.courseId === rules.courseId);
-  return {
-    ...defaultLinks(rules.components, skip, own, since),
-    ...defaultDeadlineLinks(rules.components, skip, rules.courseId, deadlines, since),
-  };
+  const out: Record<string, ComponentLink> = {};
+  for (const component of rules.components) {
+    const assigned = componentCourseIds(rules, component.id);
+    if (assigned.length === 0) continue;
+    const own = sessions.filter((s) => !!s.courseId && assigned.includes(s.courseId));
+    Object.assign(out, defaultLinks([component], skip, own, since));
+    // Deadline matching uses the component's assigned courses, with one canonical owner.
+    const scoped = deadlines.filter((d) => !!d.courseId && assigned.includes(d.courseId)).map((d) => ({ ...d, courseId: rules.courseId }));
+    Object.assign(out, defaultDeadlineLinks([component], skip, rules.courseId, scoped, since));
+  }
+  return out;
 }
 
 /** The rule components and retake slots as link targets, in display order. */

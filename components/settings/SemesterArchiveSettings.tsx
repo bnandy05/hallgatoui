@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Archive, ChevronRight, Download, Trash2 } from "lucide-react";
+import { rulesForCourse } from "@/lib/rules/system";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { evaluate } from "@/lib/rules/engine";
@@ -134,8 +135,8 @@ function ArchiveEntry({ entry, formattedDate, onDownload, onRemove }: {
               <li key={course.id}>
                 <ArchivedCourse
                   course={course}
-                  rules={requirementRules.find((item) => item.courseId === course.id)}
-                  results={resultsByCourse.get(course.id) ?? []}
+                  rules={rulesForCourse(requirementRules, course.id)}
+                  results={resultsByCourse.get(rulesForCourse(requirementRules, course.id)?.courseId ?? course.id) ?? []}
                   archivedAt={entry.archivedAt}
                 />
               </li>

@@ -1,6 +1,6 @@
 import { normalizeCourseName } from "@/lib/ical/canvas";
 import { normalizeSemester, normalizeSubjectCode } from "@/lib/rules/shared";
-import type { Course, IcalFeed } from "@/lib/types";
+import type { Course, CourseCode, IcalFeed } from "@/lib/types";
 
 /** Canvas can append the section number to the subject code. */
 export function requirementCourseCode(raw: string | undefined): string | null {
@@ -9,22 +9,46 @@ export function requirementCourseCode(raw: string | undefined): string | null {
   return normalizeSubjectCode(section?.[1] ?? raw);
 }
 
+/** Preserve each imported identity separately from its section/group and original label. */
+export function parseCourseCodes(raw: string | undefined): CourseCode[] {
+  if (!raw) return [];
+  return raw.split(/[,;\n]+/).flatMap((value) => {
+    const text = value.trim();
+    const match = /^([\w./-]*[0-9][\w./-]*)[ \t]+(\d{1,4})$/.exec(text);
+    const code = requirementCourseCode(text);
+    return code ? [{ code, ...(match && { group: match[2] }), raw: text }] : [];
+  });
+}
+
+export function courseCodes(course: Pick<Course, "code" | "codes">): string[] {
+  return [...new Set((course.codes?.length ? course.codes : parseCourseCodes(course.code)).map((c) => requirementCourseCode(c.code)).filter((s): s is string => !!s))];
+}
+
+export function documentCourseCodes(text: string): string[] {
+  const lines = text.normalize("NFC").split(/\r?\n/);
+  const found = new Set<string>();
+  for (let n = 0; n < lines.length; n++) {
+    const label = /(?:\b(?:tantárgy|tárgy|kurzus)[ \t]*(?:kódja|kód)(?:ok|jai)?|\b(?:course|subject|module)[ \t]+codes?)\b[ \t]*[:：=–—-]?[ \t]*/iu.exec(lines[n]);
+    if (!label) continue;
+    const tail = lines[n].slice(label.index + label[0].length).trim() || lines[n + 1]?.trim() || "";
+    for (const raw of tail.split(/\s*(?:[,;&]|\bés\b|\band\b)\s*/iu)) {
+      const token = /^[\p{L}\d][\p{L}\d_.\/-]{2,29}/u.exec(raw)?.[0]?.replace(/[.]$/, "");
+      if (!token || !/[a-z]/i.test(token) || !/\d/.test(token)) continue;
+      const code = requirementCourseCode(token);
+      if (code) found.add(code);
+    }
+  }
+  return [...found];
+}
+
 /** Labelled code fields in requirement documents, including PDF text split across two lines. */
 export function documentCourseCode(text: string): string | null {
-  const label = /(?:\b(?:tantárgy|tárgy|kurzus)[ \t]*(?:kódja|kód)|\b(?:course|subject|module)[ \t]+code)\b[ \t]*(?:[:：=–—-][ \t]*|[ \t]+|\r?\n)[ \t]*(?:\r?\n[ \t]*)?([\p{L}\d][\p{L}\d_.\/-]{2,29})(?![\p{L}\d_.\/-])([^\r\n]*)/giu;
-  const found = new Set<string>();
-  for (const match of text.normalize("NFC").matchAll(label)) {
-    const raw = match[1];
-    if (!/[a-z]/i.test(raw) || !/\d/.test(raw)) continue;
-    if (/^\s*(?:[,;/&]|és\b|and\b)\s*[a-z\d_.\/-]*\d/i.test(match[2])) return null;
-    const code = requirementCourseCode(raw.replace(/[.]$/, ""));
-    if (code) found.add(code);
-  }
-  return found.size === 1 ? [...found][0] : null;
+  const found = documentCourseCodes(text);
+  return found.length === 1 ? found[0] : null;
 }
 
 /** Use linked Canvas metadata only when it points to one subject code. */
-export function linkedCourseCode(course: Course, feeds: IcalFeed[]): string | null {
+export function linkedCourseCodes(course: Course, feeds: IcalFeed[]): string[] {
   const urls = new Set(course.links.map((link) => link.url));
   const keywords = new Set(course.matchKeywords.map(normalizeCourseName));
   const codes = new Set<string>();
@@ -44,5 +68,10 @@ export function linkedCourseCode(course: Course, feeds: IcalFeed[]): string | nu
       if (code) codes.add(code);
     }
   }
-  return codes.size === 1 ? [...codes][0] : null;
+  return [...codes];
+}
+
+export function linkedCourseCode(course: Course, feeds: IcalFeed[]): string | null {
+  const codes = linkedCourseCodes(course, feeds);
+  return codes.length === 1 ? codes[0] : null;
 }

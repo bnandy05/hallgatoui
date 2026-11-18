@@ -33,6 +33,8 @@ import { syncNow } from "@/lib/sync/clock";
 import { stampChanges, type Stamped } from "@/lib/sync/stamp";
 import { storePersistence } from "@/lib/store/persistence";
 import { timetableActions } from "@/lib/store/timetable";
+import { parseCourseCodes } from "@/lib/rules/courseCode";
+import { removeRequirementCourse } from "@/lib/rules/system";
 import { requirementActions } from "@/lib/store/requirements";
 import { archiveSemester, emptySemester, selectSemester } from "@/lib/semesterArchive";
 
@@ -161,6 +163,7 @@ export interface AppStore extends AppData {
   ) => void;
   removeResource: (courseId: string, resourceId: string) => void;
 
+  configureRequirementSystem: (selected: RequirementRules, members: string[], scopes: Record<string, string[]>, choices?: Record<string, string>) => boolean;
   setAttendancePrefs: (enabled: boolean) => void;
   reconcileAttendance: () => void;
 
@@ -406,7 +409,7 @@ export const useStore = create<AppStore>()(
       },
       updateCourse: (id, patch) => {
         set((state) => {
-          const courses = state.courses.map((c) => (c.id === id ? { ...c, ...patch } : c));
+          const courses = state.courses.map((c) => (c.id === id ? { ...c, ...patch, ...("code" in patch && !("codes" in patch) && { codes: parseCourseCodes(patch.code) }) } : c));
           return { courses, deadlines: rematchDeadlines(state.deadlines, state.feeds, courses) };
         });
       },
@@ -428,8 +431,7 @@ export const useStore = create<AppStore>()(
               Object.entries(src.subjectCourses).filter(([, courseId]) => courseId !== id)
             ),
           })),
-          requirementRules: state.requirementRules.filter((r) => r.courseId !== id),
-          requirementResults: state.requirementResults.filter((r) => r.courseId !== id),
+          ...removeRequirementCourse(state.requirementRules, state.requirementResults, id),
         }));
       },
 
@@ -715,6 +717,8 @@ export const useStore = create<AppStore>()(
                   id: newId(),
                   name: decision.name,
                   code: codes.length > 0 ? codes.join(", ") : undefined,
+                  codes: items.flatMap((i) => parseCourseCodes(i.context.code).map((c) => ({ ...c, ...(i.context.kind && { kind: i.context.kind }) }))),
+                  ...(items.length === 1 && items[0].context.kind && { kind: items[0].context.kind }),
                   semester: items[0]?.context.semester,
                   color: pickCourseColor(state.courses.length + created),
                   links,
@@ -733,6 +737,11 @@ export const useStore = create<AppStore>()(
                 return {
                   ...c,
                   matchKeywords: [...c.matchKeywords, ...newKeywords],
+                  ...(!c.code && items.some((i) => i.context.code) && {
+                    code: items.flatMap((i) => i.context.code ? [i.context.code] : []).join(", "),
+                    codes: items.flatMap((i) => parseCourseCodes(i.context.code)),
+                  }),
+                  ...(!c.kind && items.length === 1 && items[0].context.kind && { kind: items[0].context.kind }),
                   links: [...c.links, ...links.filter((l) => !knownUrls.has(l.url))],
                 };
               });

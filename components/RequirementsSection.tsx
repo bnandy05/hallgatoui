@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import { rulesForCourse, systemCourseIds } from "@/lib/rules/system";
 import { useStore } from "@/lib/store";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { MAX_REQUIREMENTS_CHARS } from "@/lib/importData";
@@ -25,6 +26,10 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
   const t = tAll.requirementsSection;
   const { confirm: ask, dialog: confirmDialog } = useConfirm();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
+  const courses = useStore((s) => s.courses);
+  const rules = useStore((s) => rulesForCourse(s.requirementRules, courseId));
+  const source = courses.find((c) => c.id === rules?.courseId) ?? course;
+  const memberIds = rules ? systemCourseIds(rules) : [courseId];
   const updateCourse = useStore((s) => s.updateCourse);
   const addResource = useStore((s) => s.addResource);
   const updateResource = useStore((s) => s.updateResource);
@@ -34,33 +39,33 @@ export function RequirementsSection({ courseId }: { courseId: string }) {
   // null: closed; "new": adding; otherwise the id of the document being edited.
   const [editingDoc, setEditingDoc] = useState<string | null>(null);
 
-  if (!course) return null;
+  if (!course || !source) return null;
 
-  const docs = course.resources
+  const docs = courses.filter((c) => memberIds.includes(c.id)).flatMap((c) => c.resources.map((r) => ({ ...r, ownerId: c.id })))
     .filter((r) => r.kind === "kovetelmeny")
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const editing = docs.find((r) => r.id === editingDoc);
-  const text = course.requirements?.trim() ?? "";
+  const text = source.requirements?.trim() ?? "";
 
   function saveDoc(values: Omit<Resource, "id" | "createdAt">) {
     if (!course) return;
-    if (editing) updateResource(course.id, editing.id, values);
-    else addResource(course.id, values);
+    if (editing) updateResource(editing.ownerId, editing.id, values);
+    else addResource(source!.id, values);
     setEditingDoc(null);
   }
 
   async function removeDoc(doc: Resource) {
     if (!course) return;
-    if (await ask({ title: t.removeDocTitle, confirmLabel: tAll.common.delete })) removeResource(course.id, doc.id);
+    if (await ask({ title: t.removeDocTitle, confirmLabel: tAll.common.delete })) removeResource(docs.find((r) => r.id === doc.id)?.ownerId ?? course.id, doc.id);
   }
 
   const dialogs = (
     <>
       <Dialog open={textOpen} onClose={() => setTextOpen(false)} title={t.textTitle}>
         <RequirementsForm
-          initial={course.requirements ?? ""}
+          initial={source.requirements ?? ""}
           onSubmit={(value) => {
-            updateCourse(course.id, { requirements: value || undefined });
+            updateCourse(source.id, { requirements: value || undefined });
             setTextOpen(false);
           }}
           onCancel={() => setTextOpen(false)}

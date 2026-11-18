@@ -6,7 +6,7 @@ import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import { isDemoMode } from "@/lib/demoMode";
 import { extractRules, MAX_EXTRACT_CHARS, type Answers } from "@/lib/rules/extract";
 import { emptySurvey, SURVEY_MAX_DOC_CHARS, type SurveyDraft } from "@/lib/rules/extract/survey";
-import { documentCourseCode, requirementCourseCode } from "@/lib/rules/courseCode";
+import { documentCourseCode, documentCourseCodes, requirementCourseCode } from "@/lib/rules/courseCode";
 import type { SubjectRules } from "@/lib/rules/types";
 import { Button } from "@/components/ui/Button";
 import { DialogActions } from "@/components/ui/Dialog";
@@ -51,6 +51,7 @@ export function ExtractForm({
   course,
   detectedCode,
   onDetectedCode,
+  onDetectedCodes,
   onReviewShared,
   replacing,
   sharingAvailable,
@@ -64,10 +65,11 @@ export function ExtractForm({
   course: { name: string; code?: string };
   detectedCode?: string;
   onDetectedCode: (code?: string) => void;
+  onDetectedCodes?: (codes: string[]) => void;
   onReviewShared?: () => void;
   replacing: boolean;
   sharingAvailable: boolean;
-  onSave: (rules: SubjectRules, details: { code?: string; share: boolean; source: "extracted" | "manual" }) => void;
+  onSave: (rules: SubjectRules, details: { code?: string; codes?: string[]; share: boolean; source: "extracted" | "manual" }) => void;
   /** Continue in the JSON, starting from the rules the review builds when it builds any. */
   onManual: (rules?: SubjectRules) => void;
   onCancel: () => void;
@@ -80,6 +82,7 @@ export function ExtractForm({
 }) {
   const t = useT().extractDialog;
   const tc = useT().common;
+  const ts = useT().requirementSystem;
   const locale = useLocale();
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>(() =>
@@ -89,20 +92,22 @@ export function ExtractForm({
   const [share, setShare] = useState(false);
   const [pdf, setPdf] = useState<Pdf | null>(null);
   const request = useRef<AbortController | null>(null);
+  const documentCodes = useMemo(() => documentCourseCodes(text), [text]);
   const documentCode = useMemo(() => documentCourseCode(text), [text]);
   const courseCode = requirementCourseCode(course.code) ?? documentCode ?? detectedCode;
   const manual = step.kind === "survey" && step.manual === true;
-  const canShare = sharingAvailable && !!courseCode && !manual;
+  const canShare = sharingAvailable && (!!courseCode || documentCodes.length > 0) && !manual;
   const isDirty = text.trim().length > 0 || pdf?.reading === true || step.kind === "survey" || step.kind === "parser";
 
   function saveReview(rules: SubjectRules, share: boolean) {
-    onSave(rules, { code: courseCode, share: canShare && share, source: manual ? "manual" : "extracted" });
+    onSave(rules, { code: courseCode, codes: documentCodes, share: canShare && share, source: manual ? "manual" : "extracted" });
   }
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => onWide?.(step.kind === "survey"), [step.kind, onWide]);
   useEffect(() => onDirty?.(isDirty), [isDirty, onDirty]);
   useEffect(() => onDetectedCode(documentCode ?? undefined), [documentCode, onDetectedCode]);
+  useEffect(() => onDetectedCodes?.(documentCodes), [documentCodes, onDetectedCodes]);
 
   async function handlePdf(file: File | undefined) {
     if (!file) return;
@@ -233,6 +238,9 @@ export function ExtractForm({
           </div>
         )}
 
+        {documentCodes.length > 1 && <div className="flex flex-wrap items-center gap-3"><p className="text-small text-muted" role="status">{ts.detectedCodes}: {documentCodes.join(", ")}</p>
+          {onReviewShared && <Button variant="secondary" size="sm" onClick={onReviewShared}>{t.reviewShared}</Button>}
+        </div>}
         {!course.code && courseCode && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-small text-muted" role="status">{t.detectedCode(courseCode)}</p>

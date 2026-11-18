@@ -29,3 +29,14 @@ test("uses matching, same-semester Canvas contexts and leaves ambiguous codes un
   assert.equal(linkedCourseCode(course, [{ ...feed, discovered: [{ ...context, semester: "2025/26/1" }] }]), null);
   assert.equal(linkedCourseCode(course, [{ ...feed, discovered: [context, { ...context, key: "canvas:13", code: "IP-18AN1E 1" }] }]), null);
 });
+
+test("multiple codes remain individual identities with section numbers preserved separately", async () => {
+  const { courseCodes, parseCourseCodes, documentCourseCodes } = await import("@/lib/rules/courseCode");
+  assert.deepEqual(parseCourseCodes("IP-18AN1E 1, IP-18AN1G 4"), [
+    { code: "IP-18AN1E", group: "1", raw: "IP-18AN1E 1" },
+    { code: "IP-18AN1G", group: "4", raw: "IP-18AN1G 4" },
+  ]);
+  assert.deepEqual(courseCodes({ code: "IP-18AN1E 1, IP-18AN1G 4" }), ["IP-18AN1E", "IP-18AN1G"]);
+  assert.deepEqual(documentCourseCodes("Tárgykódok: IP-18AN1E, IP-18AN1G"), ["IP-18AN1E", "IP-18AN1G"]);
+  assert.deepEqual(documentCourseCodes("Course code:\nIP-18AN1E\nSubject code: IP-18AN1G"), ["IP-18AN1E", "IP-18AN1G"]);
+});
