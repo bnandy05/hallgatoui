@@ -74,6 +74,7 @@ export function NotificationScheduler() {
         sessions: state.classSessions,
         deadlines: state.deadlines,
         semester: state.semester,
+        attendancePrefs: state.attendancePrefs,
         now,
       };
       const linked = linkedInstances(catchUpInput);

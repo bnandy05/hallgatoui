@@ -383,3 +383,7 @@ Slips and sheets are visible as soon as they render. Completing a deadline pulls
 - **Don't** pin a class chip or give it a shadow; classes are taped flat.
 - **Don't** use red for anything that is not now, late, critical or destructive.
 - **Don't** branch components on the theme or hard-code a colour for one lighting; add or adjust a token in both blocks of `app/tokens.css`.
+
+## Attendance surfaces
+
+Course cards carry a compact attendance link with a count, remaining allowance, and explicit unrecorded classes. The course page places attendance before deadlines on a Copy Paper sheet: separate groups, an ordinary text count, dated history, and inline limit/date forms. Warning Amber marks one remaining absence; Danger Red marks an exhausted or exceeded allowance, always with text. Calendar classes retain Sky paper and gain Present / Absent controls after their end. The existing catch-up sheet uses two adjacent attendance actions with an inline Undo inside the modal; excused absence and clearing live under More options. Global and per-course check-in controls use the existing Switch.

@@ -40,6 +40,8 @@ export interface Course {
   resources: Resource[];
   matchKeywords: string[]; // used to auto-assign iCal events
   requirements?: string; // the course's requirements as free text (documents are resources of kind "kovetelmeny")
+  attendanceReminders?: boolean; // missing = on; never disables manual recording
+  attendanceLimits?: Record<string, number>; // per attendance group; confirmed by the student
   createdAt: string;
   updatedAt?: string;
 }
@@ -154,6 +156,12 @@ export interface CatchUpState {
   promptedUntil?: string; // ISO
 }
 
+export interface AttendancePrefs {
+  enabled: boolean;
+  since: string; // activation: older classes are available in history without prompting
+  updatedAt?: string;
+}
+
 export interface SemesterData {
   courses: Course[];
   deadlines: Deadline[];
@@ -170,6 +178,7 @@ export interface SemesterData {
   semester?: SemesterInfo;
   /** When the catch-up popup last closed (account-wide, merged as the later of two). Optional. */
   catchUp?: CatchUpState;
+  attendancePrefs?: AttendancePrefs;
 }
 
 export interface SemesterArchive {

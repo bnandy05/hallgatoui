@@ -12,6 +12,7 @@ import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { FeedSettings } from "@/components/settings/FeedSettings";
 import { CalendarSubscriptionSettings } from "@/components/settings/CalendarSubscriptionSettings";
+import { AttendanceSettings } from "@/components/settings/AttendanceSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { DigestSettings } from "@/components/settings/DigestSettings";
 import { GradeAlertSettings } from "@/components/settings/GradeAlertSettings";
@@ -31,6 +32,7 @@ const HASH_ALIASES: Record<string, SectionKey> = {
   "naptar-exportalas": "exportalas",
   hirlevel: "ertesitesek",
   jegyriaszto: "ertesitesek",
+  jelenlet: "ertesitesek",
   egyetem: "fiok",
 };
 const HASH_EVENT = "settings-hash";
@@ -222,6 +224,7 @@ export default function WeekSettingsPage() {
               </TabPanel>
               <TabPanel id="ertesitesek" active={active === "ertesitesek"}>
                 <div className="flex flex-col gap-10">
+                  <AttendanceSettings />
                   <NotificationSettings />
                   <DigestSettings />
                   <GradeAlertSettings />

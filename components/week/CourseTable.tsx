@@ -13,6 +13,7 @@ import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, nextDeadlineFor, urgencyOf, type Urgency } from "@/lib/radar";
 import { courseStanding } from "@/lib/rules/standing";
 import type { Course, CourseLink } from "@/lib/types";
+import { AttendanceOverview } from "@/components/attendance/AttendanceOverview";
 import { CourseDialog } from "@/components/CourseDialog";
 import { LinkEditor } from "@/components/LinkEditor";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -133,6 +134,8 @@ function CourseCard({ course, now }: { course: Course; now: Date }) {
           </Link>
         )}
       </div>
+
+      <AttendanceOverview courseId={course.id} now={now} />
 
       <div className="mt-auto flex flex-wrap items-center gap-1 pt-3">
         {course.links.slice(0, MAX_LAUNCHERS).map((link) => (

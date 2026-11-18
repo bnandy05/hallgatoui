@@ -1,4 +1,4 @@
-import type { AlertPrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterArchive, SemesterData, SemesterInfo } from "@/lib/types";
+import type { AlertPrefs, AttendancePrefs, AppData, CatchUpState, Deadline, ExportOptions, SemesterArchive, SemesterData, SemesterInfo } from "@/lib/types";
 import { emptySemester, selectSemester } from "@/lib/semesterArchive";
 import { syncNow } from "@/lib/sync/clock";
 import { mergeTombstones, pruneTombstones } from "@/lib/sync/tombstones";
@@ -213,6 +213,15 @@ function mergeAlertPrefs(base?: AlertPrefs, local?: AlertPrefs, remote?: AlertPr
   return (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
 }
 
+function mergeAttendancePrefs(base?: AttendancePrefs, local?: AttendancePrefs, remote?: AttendancePrefs): AttendancePrefs | undefined {
+  const winner = same(remote, base) ? local : same(local, base) ? remote :
+    (local?.updatedAt ?? "") > (remote?.updatedAt ?? "") ? local : remote;
+  if (!winner) return undefined;
+  // Two devices can activate concurrently; preserve the earliest activation.
+  const since = [local?.since, remote?.since].filter((s): s is string => !!s).sort()[0];
+  return { ...winner, since: since ?? winner.since };
+}
+
 /** When the catch-up popup was last closed: the later of the two. */
 function mergeCatchUp(local?: CatchUpState, remote?: CatchUpState): CatchUpState | undefined {
   const l = local?.promptedUntil ?? "";
@@ -249,6 +258,7 @@ function mergeSemesterData(b: SemesterData, l: SemesterData, r: SemesterData, to
     ignoredDuplicatePairs: mergeSet(b.ignoredDuplicatePairs, l.ignoredDuplicatePairs, r.ignoredDuplicatePairs),
     ...withOptional("semester", mergeSemester(b.semester, l.semester, r.semester)),
     ...withOptional("catchUp", mergeCatchUp(l.catchUp, r.catchUp)),
+    ...withOptional("attendancePrefs", mergeAttendancePrefs(b.attendancePrefs, l.attendancePrefs, r.attendancePrefs)),
   };
 }
 

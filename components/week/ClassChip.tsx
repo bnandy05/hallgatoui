@@ -1,5 +1,8 @@
 "use client";
 
+import { AttendanceRecord } from "@/components/attendance/AttendanceSection";
+import { useAttendance } from "@/lib/useAttendance";
+import { useMinuteNow } from "@/lib/useMinuteNow";
 import { format } from "date-fns";
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n/I18nProvider";
@@ -18,6 +21,10 @@ export interface ClassChipProps {
 export function ClassChip({ session, showCourse = true }: ClassChipProps) {
   const t = useT();
   const course = useStore((s) => s.courses.find((c) => c.id === session.courseId));
+  const groups = useAttendance(session.courseId ?? "");
+  const now = useMinuteNow();
+  const group = session.kind === "ora" && new Date(session.end) <= now ? groups.find((g) => g.instances.some((i) => i.session?.externalUid === session.externalUid)) : undefined;
+  const instance = group?.instances.find((i) => i.session?.externalUid === session.externalUid);
   const start = new Date(session.start);
   const end = new Date(session.end);
   const mapped = course !== undefined;
@@ -47,6 +54,7 @@ export function ClassChip({ session, showCourse = true }: ClassChipProps) {
           )}
         </p>
         <p className="line-clamp-2 [overflow-wrap:anywhere]">{title}</p>
+        {group && instance && <div className="mt-2"><AttendanceRecord group={group} instance={instance} compact /></div>}
       </div>
     </div>
   );

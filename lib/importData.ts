@@ -1,4 +1,4 @@
-import type { AppData, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterArchive, SemesterInfo, TimetableSource } from "@/lib/types";
+import type { AppData, AttendancePrefs, CatchUpState, ClassSession, Course, Deadline, IcalFeed, SemesterArchive, SemesterInfo, TimetableSource } from "@/lib/types";
 import { normalizeLinkUrl } from "@/lib/url";
 import { validateRules } from "@/lib/rules/validate";
 import { linksFrom } from "@/lib/rules/links";
@@ -21,8 +21,12 @@ function isHttpUrl(value: unknown): boolean {
 
 /** Re-validates every user-visible URL so a crafted backup can't inject unsafe hrefs; caps free text. */
 function sanitizeUrls(data: AppData): AppData {
-  const courses = data.courses.map(({ requirements, ...c }) => ({
+  const courses = data.courses.map(({ requirements, attendanceLimits, attendanceReminders, ...c }) => ({
     ...c,
+    ...(typeof attendanceReminders === "boolean" && { attendanceReminders }),
+    ...(attendanceLimits && typeof attendanceLimits === "object" && !Array.isArray(attendanceLimits) && { attendanceLimits: Object.fromEntries(
+      Object.entries(attendanceLimits).filter(([key, v]) => /^[a-z][a-z0-9_]{0,39}$/.test(key) && Number.isInteger(v) && v >= 0 && v <= 200).slice(0, 100)
+    ) }),
     ...(typeof requirements === "string" && requirements.trim()
       ? { requirements: requirements.slice(0, MAX_REQUIREMENTS_CHARS) }
       : {}),
@@ -231,6 +235,13 @@ function catchUpFrom(value: unknown): CatchUpState | undefined {
   return typeof at === "string" && at.length <= 40 && Number.isFinite(Date.parse(at)) ? { promptedUntil: at } : undefined;
 }
 
+function attendancePrefsFrom(value: unknown): AttendancePrefs | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const o = value as Record<string, unknown>;
+  if (typeof o.enabled !== "boolean" || typeof o.since !== "string" || o.since.length > 40 || !Number.isFinite(Date.parse(o.since))) return undefined;
+  return { enabled: o.enabled, since: o.since, ...(typeof o.updatedAt === "string" && { updatedAt: o.updatedAt }) };
+}
+
 const optional = <K extends string, V>(key: K, value: V | undefined) => (value === undefined ? {} : ({ [key]: value } as Record<K, V>));
 
 const MAX_TOMBSTONES = 5000;
@@ -325,6 +336,7 @@ export function parseAppData(json: unknown): AppData {
     tombstones: tombstonesFrom(data.tombstones),
     ...optional("semester", semesterFrom(data.semester)),
     ...optional("catchUp", catchUpFrom(data.catchUp)),
+    ...optional("attendancePrefs", attendancePrefsFrom(data.attendancePrefs)),
     ...optional("alertPrefs", alertPrefsFrom(data.alertPrefs)),
     ...(semesterNumber > 0 && { semesterNumber }),
     ...(archives.length > 0 && { semesterArchives: archives }),

@@ -1,3 +1,4 @@
+import { attendanceHu } from "./attendance.hu";
 // The source dictionary. Grouped by area, accessed as `t.nav.week`; strings with variables or
 // counts are functions. `en.ts` is typed against this file, so a missing or extra key fails the build.
 
@@ -6,6 +7,7 @@ import { rulesHu } from "./rules.hu";
 import { trackerHu } from "./tracker.hu";
 
 export const hu = {
+  attendance: attendanceHu,
   meta: {
     manifestDescription: "Tárgyak, határidők és linkek egy helyen.",
     description: "Tárgyak, határidők és linkek egy helyen – a Neptun, a Canvas, a Moodle és a Teams mellé.",

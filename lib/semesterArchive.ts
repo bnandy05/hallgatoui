@@ -11,10 +11,10 @@ export function emptySemester(): SemesterData {
 
 export function selectSemester(data: SemesterData): SemesterData {
   const { courses, deadlines, feeds, ignoredDuplicatePairs = [], classSessions = [], timetableSources = [],
-    requirementRules = [], requirementResults = [], semester, catchUp } = data;
+    requirementRules = [], requirementResults = [], semester, catchUp, attendancePrefs } = data;
   return {
     courses, deadlines, feeds, ignoredDuplicatePairs, classSessions, timetableSources,
-    requirementRules, requirementResults, ...(semester && { semester }), ...(catchUp && { catchUp }),
+    requirementRules, requirementResults, ...(semester && { semester }), ...(catchUp && { catchUp }), ...(attendancePrefs && { attendancePrefs }),
   };
 }
 
@@ -33,6 +33,7 @@ export function archiveSemester(data: AppData, name: string, archivedAt: string)
     ...emptySemester(),
     semester: undefined,
     catchUp: undefined,
+    attendancePrefs: data.attendancePrefs ? { ...data.attendancePrefs, since: archivedAt, updatedAt: archivedAt } : undefined,
     semesterNumber: number + 1,
     semesterArchives: [...(data.semesterArchives ?? []), { number, name: label, archivedAt, data: selectSemester(data) }],
   };

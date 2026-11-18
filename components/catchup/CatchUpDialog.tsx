@@ -8,6 +8,8 @@ import { canAwait, type CatchUpField, type CatchUpGroup } from "@/lib/catchup";
 import { instanceLabel, instanceSnapshot, shortDayLabel } from "@/lib/rules/instances";
 import { resultId, type RequirementResult } from "@/lib/rules/types";
 import { budapestTime } from "@/lib/ical/budapest";
+import { useAttendance } from "@/lib/useAttendance";
+import { attendanceSummary } from "@/lib/attendance";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { InstanceInput, type ResultPatch } from "@/components/requirements/InstanceInput";
@@ -186,6 +188,7 @@ function CatchUpBody({ groups, onClose }: { groups: CatchUpGroup[]; onClose: () 
       )}
 
       <DialogActions>
+        <Button type="button" variant="ghost" onClick={onClose}>{t.attendance.later}</Button>
         {slice.some((g) => g.fields.some((f) => f.target.kind === "attendance" && !fieldHasResult(f, byId))) && (
           <Button type="button" variant="ghost" onClick={allPresent} className="sm:mr-auto">
             {t.catchUp.allPresent}
@@ -229,6 +232,7 @@ function CatchUpSlip({
 }) {
   const t = useT();
   const locale = useLocale();
+  const attendance = useAttendance(group.courseId);
   const done = group.fields.every((f) => fieldHasResult(f, byId));
   const cancelled = group.fields.every((f) => byId.get(resultId(f.courseId, f.target.id, f.instance.key))?.state === "na");
   const title = groupTitle(group);
@@ -251,14 +255,22 @@ function CatchUpSlip({
           </span>
           <span className="mt-0.5 block text-fine tabular-nums text-muted">{groupWhen(group, t, locale)}</span>
         </legend>
+        {group.fields.some((f) => f.target.kind === "attendance") && <p className="mt-3 text-small font-semibold text-heading">{t.attendance.checkIn}</p>}
         <div className="mt-3 flex flex-col divide-y divide-border">
           {group.fields.map((f) => {
             const result = byId.get(resultId(f.courseId, f.target.id, f.instance.key));
             const awaiting = result?.state === "pending";
             return (
-              <div key={f.target.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
-                <span className="min-w-[7rem] text-small font-semibold text-heading">{f.target.label}</span>
-                <span className="flex flex-1 flex-wrap items-center gap-2">
+              <div key={f.target.id} className={f.target.kind === "attendance" ? "flex flex-col items-start gap-2 py-2.5" : "flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5"}>
+                <span className="min-w-[7rem] text-small font-semibold text-heading">{f.target.label}
+                  {f.target.kind === "attendance" && (() => {
+                    const g = attendance.find((a) => a.target.id === f.target.id);
+                    if (!g) return null;
+                    const summary = attendanceSummary(g, new Date());
+                    return <span className={`mt-1 block text-fine tabular-nums ${summary.tone === "danger" ? "text-danger" : summary.tone === "warning" ? "text-warning" : "text-muted"}`}>{t.attendance.absences(summary.absences, summary.limit)}{summary.remaining !== undefined && ` · ${t.attendance.remaining(summary.remaining)}`}</span>;
+                  })()}
+                </span>
+                <div className="flex flex-1 flex-wrap items-center gap-2">
                   {awaiting && <span className="rounded-[var(--radius)] bg-canary px-2 py-1 text-fine font-semibold text-heading">{t.catchUp.awaiting}</span>}
                   <InstanceInput
                     target={f.target}
@@ -268,7 +280,7 @@ function CatchUpSlip({
                     onChange={(patch) => onSave(f, patch)}
                     labelOf={labelOf}
                   />
-                </span>
+                </div>
               </div>
             );
           })}

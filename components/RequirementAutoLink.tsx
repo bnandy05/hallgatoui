@@ -15,17 +15,22 @@ export function RequirementAutoLink() {
   const sessions = useStore((s) => s.classSessions);
   const results = useStore((s) => s.requirementResults);
   const pulled = useStore((s) => s.pulledThisSession);
+  const attendancePrefs = useStore((s) => s.attendancePrefs);
+  const setAttendancePrefs = useStore((s) => s.setAttendancePrefs);
+  const reconcileAttendance = useStore((s) => s.reconcileAttendance);
   const applyAutoLinks = useStore((s) => s.applyAutoLinks);
   const { visible } = useDedupedDeadlines();
 
   useEffect(() => {
     if (!pulled) return;
+    if (!attendancePrefs) setAttendancePrefs(true);
+    reconcileAttendance();
     const since = timetableCutoff(new Date()).toISOString();
     for (const r of rules) {
       const links = autoLinks(r, sessions, visible, results, since);
       if (Object.keys(links).length > 0) applyAutoLinks(r.courseId, links);
     }
-  }, [pulled, rules, sessions, visible, results, applyAutoLinks]);
+  }, [pulled, rules, sessions, visible, results, applyAutoLinks, attendancePrefs, setAttendancePrefs, reconcileAttendance]);
 
   return null;
 }

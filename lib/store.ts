@@ -51,6 +51,7 @@ function withDataDefaults(data: AppData): AppData {
     tombstones: data.tombstones ?? {},
     semester: data.semester,
     catchUp: data.catchUp,
+    attendancePrefs: data.attendancePrefs,
     alertPrefs: data.alertPrefs,
     semesterNumber: data.semesterNumber,
     semesterArchives: data.semesterArchives,
@@ -159,6 +160,9 @@ export interface AppStore extends AppData {
     patch: Partial<Omit<Resource, "id">>
   ) => void;
   removeResource: (courseId: string, resourceId: string) => void;
+
+  setAttendancePrefs: (enabled: boolean) => void;
+  reconcileAttendance: () => void;
 
   // requirement rules and results
   /** Sets (or with null removes) a course's rule set. Its results stay, so a re-pick keeps them. */
@@ -341,6 +345,7 @@ export const useStore = create<AppStore>()(
           ...emptyAppData(),
           semester: undefined,
           catchUp: undefined,
+          attendancePrefs: undefined,
           alertPrefs: undefined,
           semesterNumber: undefined,
           semesterArchives: undefined,
@@ -793,7 +798,7 @@ export const useStore = create<AppStore>()(
       // ---- data ----
       importData: (data) => {
         set((state) => ({
-          semester: undefined, catchUp: undefined, alertPrefs: undefined, semesterArchives: undefined,
+          semester: undefined, catchUp: undefined, attendancePrefs: undefined, alertPrefs: undefined, semesterArchives: undefined,
           ...data,
           semesterNumber: Math.max(state.semesterNumber ?? 0, data.semesterNumber ?? 0) || undefined,
         }));
@@ -809,12 +814,13 @@ export const useStore = create<AppStore>()(
         rawSet((state) => ({ semesterArchives: state.semesterArchives?.filter((a) => a.number !== number) }));
       },
       resetAll: () => {
-        set(() => ({ ...emptyAppData(), semester: undefined, catchUp: undefined, alertPrefs: undefined, semesterArchives: undefined, notifiedKeys: [] }));
+        set(() => ({ ...emptyAppData(), semester: undefined, catchUp: undefined, attendancePrefs: undefined, alertPrefs: undefined, semesterArchives: undefined, notifiedKeys: [] }));
       },
       startDemo: (locale) => {
         rawSet({
           ...emptyAppData(),
           ...buildShowcaseData(new Date(), locale),
+          attendancePrefs: undefined,
           alertPrefs: undefined,
           semesterNumber: undefined,
           semesterArchives: undefined,

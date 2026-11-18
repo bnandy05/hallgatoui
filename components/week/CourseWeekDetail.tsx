@@ -16,6 +16,7 @@ import { linkHost } from "@/lib/url";
 import { nextSessionFor } from "@/lib/ical/neptun";
 import { formatRelative, groupByWeek, isCritical, nextDeadlineFor, urgencyOf, weekRangeLabel } from "@/lib/radar";
 import type { ClassSession, CourseLink } from "@/lib/types";
+import { AttendanceSection } from "@/components/attendance/AttendanceSection";
 import { CourseDialog } from "@/components/CourseDialog";
 import { DeadlineDialog } from "@/components/DeadlineDialog";
 import { LinkEditor } from "@/components/LinkEditor";
@@ -147,8 +148,8 @@ export function CourseWeekDetail({ id }: { id: string }) {
   useEffect(() => {
     if (!hydrated) return;
     const scroll = () => {
-      if (window.location.hash !== "#course-requirements") return;
-      document.getElementById("course-requirements")?.scrollIntoView({
+      if (!["#course-requirements", "#course-attendance"].includes(window.location.hash)) return;
+      document.getElementById(window.location.hash.slice(1))?.scrollIntoView({
         block: "start",
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
@@ -310,6 +311,7 @@ export function CourseWeekDetail({ id }: { id: string }) {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-14">
+          <AttendanceSection course={course} now={now} />
           <Section
             id="course-deadlines"
             title={t.course.deadlines}

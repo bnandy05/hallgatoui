@@ -1,0 +1,22 @@
+import type { Messages } from "./index";
+export const attendanceEn: Messages["attendance"] = {
+  title: "Attendance",
+  subtitle: "Record each class in one tap and keep your absences in sight.",
+  present: "Present", absent: "Absent", excused: "Excused absence", cancelled: "Class cancelled",
+  unrecorded: "Unrecorded", more: "More options", clear: "Clear record",
+  saved: "Attendance saved", cleared: "Record cleared", undo: "Undo",
+  absences: (n, limit) => limit === undefined ? `${n} ${n === 1 ? "absence" : "absences"}` : `${n} / ${limit} absences`,
+  remaining: (n) => n < 0 ? `${-n} over the absence limit` : n === 0 ? "No absences remaining" : `${n} ${n === 1 ? "absence" : "absences"} remaining`,
+  missing: (n) => `${n} ${n === 1 ? "class" : "classes"} still unrecorded`,
+  setLimit: "Set absence limit", editLimit: "Edit limit", limitLabel: "Allowed absences",
+  limitHint: "3 is a suggestion. Check the course’s official attendance rules.",
+  fromRules: "From course requirements", editRules: "Edit requirements",
+  save: "Save", cancel: "Cancel", noLimit: "Remove limit",
+  history: "Classes and history", noHistory: "No past classes yet. Classes appear automatically from your timetable, or you can add a past class.",
+  add: "Add a past class", date: "Class date", invalidDate: "Choose today or an earlier date.",
+  showOlder: "Show older classes", hideOlder: "Show fewer classes",
+  reminders: "After-class check-ins", remindersHint: "Ask about finished classes when you open the app or while you’re using it. History stays editable at any time.",
+  courseReminders: "Check in for this course", courseRemindersHint: "Also follows your global check-in setting.",
+  settingsHint: "Track attendance even without requirements. Check-ins start from activation; you can fill in older classes in the history.",
+  checkIn: "Were you at this class?", open: "Attendance and absences", later: "Later",
+};

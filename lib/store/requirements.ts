@@ -1,15 +1,24 @@
 import type { AppStore, StoreSet } from "@/lib/store";
 import { resultId, type RequirementResult, type RequirementRules } from "@/lib/rules/types";
 import { normalizeSemesterStart } from "@/lib/timetable/semester";
+import { reconcileAttendance } from "@/lib/attendance";
 import { syncNow } from "@/lib/sync/clock";
 
 type RequirementActions = Pick<AppStore,
-  "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
+  "setAttendancePrefs" | "reconcileAttendance" | "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
   "setComponentLink" | "applyAutoLinks" | "setSemester" | "markCatchUpPrompted" | "setBellAlertKinds"
 >;
 
 export function requirementActions(set: StoreSet): RequirementActions {
   return {
+    setAttendancePrefs: (enabled) => set((state) => ({ attendancePrefs: {
+      enabled, since: state.attendancePrefs?.since ?? syncNow(), updatedAt: syncNow(),
+    } })),
+    reconcileAttendance: () => set((state) => {
+      const results = reconcileAttendance({ courses: state.courses, sessions: state.classSessions,
+        rules: state.requirementRules, results: state.requirementResults, semester: state.semester });
+      return results === state.requirementResults ? state : { requirementResults: results };
+    }),
     setRequirementRules: (courseId, rules) => {
       set((state) => {
         const id = `rules:${courseId}`;

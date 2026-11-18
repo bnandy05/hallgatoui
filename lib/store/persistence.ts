@@ -77,6 +77,7 @@ export const storePersistence: PersistOptions<AppStore, Partial<AppStore>> = {
     tombstones: state.tombstones,
     semester: state.semester,
     catchUp: state.catchUp,
+    attendancePrefs: state.attendancePrefs,
     alertPrefs: state.alertPrefs,
     semesterNumber: state.semesterNumber,
     semesterArchives: state.semesterArchives,

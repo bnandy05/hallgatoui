@@ -4,7 +4,8 @@
 // stored time is the account-level `catchUp.promptedUntil`, which decides whether the popup opens
 // by itself. Pure, so the server's email digest uses the same functions.
 
-import type { ClassSession, Course, Deadline, SemesterInfo } from "@/lib/types";
+import { standaloneAttendance, attendancePromptAllowed } from "@/lib/attendance";
+import type { AttendancePrefs, ClassSession, Course, Deadline, SemesterInfo } from "@/lib/types";
 import { deadlineIdentity } from "@/lib/ical/dedupe";
 import { resolveInstances, type Instance } from "@/lib/rules/instances";
 import { linkTargets, type ComponentLink, type LinkTarget } from "@/lib/rules/links";
@@ -22,6 +23,7 @@ export interface CatchUpInput {
   deadlines: Deadline[];
   semester?: SemesterInfo;
   now: Date;
+  attendancePrefs?: AttendancePrefs;
 }
 
 export interface LinkedInstance {
@@ -62,6 +64,7 @@ export function linkedInstances(input: Omit<CatchUpInput, "now">): LinkedInstanc
       }
     }
   }
+  if (input.attendancePrefs) out.push(...standaloneAttendance(input));
   return out;
 }
 
@@ -111,6 +114,7 @@ export function pendingInputs(input: CatchUpInput, linked = linkedInstances(inpu
   const groups = new Map<string, CatchUpGroup>();
   for (const li of linked) {
     if (!needsInput(li, input.now)) continue;
+    if (li.target.kind === "attendance" && input.attendancePrefs && !attendancePromptAllowed(input, li.courseId, li.instance.end!)) continue;
     const key = catchUpGroupKey(li);
     let group = groups.get(key);
     if (!group) {

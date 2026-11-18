@@ -33,10 +33,11 @@ export function useCatchUpData(): CatchUpData {
   const sessions = useStore((s) => s.classSessions);
   const deadlines = useStore((s) => s.deadlines);
   const semester = useStore((s) => s.semester);
+  const attendancePrefs = useStore((s) => s.attendancePrefs);
   const now = useMinuteNow();
 
   return useMemo(() => {
-    const input = { courses, rules, results, sessions, deadlines, semester, now };
+    const input = { courses, rules, results, sessions, deadlines, semester, attendancePrefs, now };
     const linked = linkedInstances(input);
     return {
       linked,
@@ -46,5 +47,5 @@ export function useCatchUpData(): CatchUpData {
       input,
       now,
     };
-  }, [courses, rules, results, sessions, deadlines, semester, now]);
+  }, [courses, rules, results, sessions, deadlines, semester, attendancePrefs, now]);
 }

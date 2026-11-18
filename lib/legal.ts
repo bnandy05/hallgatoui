@@ -9,7 +9,7 @@ export const CONTROLLER = {
 };
 
 /** Date of the last change to the notice, shown on it (YYYY-MM-DD). */
-export const PRIVACY_UPDATED = "2026-10-22";
+export const PRIVACY_UPDATED = "2026-11-18";
 
 /** How long the keys of already-sent grade-alert emails are kept, in days (SENT_KEEP_DAYS in lib/server/gradeAlerts.ts, which imports this). */
 export const GRADE_ALERT_SENT_DAYS = 30;

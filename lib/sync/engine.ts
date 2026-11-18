@@ -232,6 +232,7 @@ export function startSync(): () => void {
       state.requirementResults !== prev.requirementResults ||
       state.semester !== prev.semester ||
       state.catchUp !== prev.catchUp ||
+      state.attendancePrefs !== prev.attendancePrefs ||
       state.alertPrefs !== prev.alertPrefs ||
       state.semesterNumber !== prev.semesterNumber ||
       state.semesterArchives !== prev.semesterArchives ||

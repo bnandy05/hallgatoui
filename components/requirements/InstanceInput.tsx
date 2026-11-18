@@ -1,5 +1,7 @@
 "use client";
 
+import { AttendanceChoices } from "@/components/attendance/AttendanceChoices";
+
 import type { ReactNode } from "react";
 import { useLocale, useT } from "@/lib/i18n/I18nProvider";
 import type { LinkTarget } from "@/lib/rules/links";
@@ -34,7 +36,6 @@ function Choice({ active, onClick, children, tone }: { active: boolean; onClick:
   );
 }
 
-const ATTENDANCE = ["present", "excused", "unexcused"] as const;
 
 export function InstanceInput({
   target,
@@ -60,21 +61,7 @@ export function InstanceInput({
 
   switch (target.kind) {
     case "attendance": {
-      const status = value?.kind === "attendance" ? value.status : undefined;
-      return (
-        <span role="group" aria-label={label} className="flex flex-wrap gap-1.5">
-          {ATTENDANCE.map((a) => (
-            <Choice
-              key={a}
-              active={status === a}
-              tone={a === "unexcused" ? "danger" : undefined}
-              onClick={() => recorded(status === a ? null : { kind: "attendance", status: a })}
-            >
-              {t[a]}
-            </Choice>
-          ))}
-        </span>
-      );
+      return <AttendanceChoices result={result} label={label} onChange={onChange} allowCancel={false} />;
     }
     case "series": {
       const scoring = target.scoring;

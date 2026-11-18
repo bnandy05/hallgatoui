@@ -91,7 +91,7 @@ const HU: PrivacyContent = {
       },
       {
         what: "Tanulmányi adatok",
-        data: "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, óránkénti jelenlét), hogy melyik összetevő melyik órádhoz, hetéhez vagy határidődhöz tartozik, a félév kezdete, határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
+        data: "Amit te viszel be vagy importálsz: tárgyak, linkek, a tárgyak követelményei és pontozási szabályai, az általad rögzített eredmények (pontok, jegyek, óránkénti jelenlét, hiányzások és elmaradt órák), a saját hiányzási határaid és a jelenléti rákérdezések beállításai, hogy melyik összetevő melyik órádhoz, hetéhez vagy határidődhöz tartozik, a félév kezdete, határidők, órarend, valamint a megadott naptár-hivatkozások (Canvas, Moodle, Neptun iCal link). A naptár-hivatkozás a forrásrendszerben hozzáférési kulcsként működik, ezért úgy kezeljük, mint egy jelszót: nem jelenítjük meg mások számára, és csak a naptár letöltésére használjuk.",
         basis: "Szerződés teljesítése (6. cikk (1) b)).",
         until: "A fiók törléséig, vagy amíg nem törlöd őket. A forrásokból letöltött naptárak és az előállított naptárfájlok átmeneti másolata 15 percig marad meg.",
       },
@@ -240,7 +240,7 @@ const EN: PrivacyContent = {
       },
       {
         what: "Study data",
-        data: "What you enter or import: courses, links, the requirements and scoring rules of courses, the results you record (points, grades, attendance per class), which component belongs to which class, week or deadline, the start of the semester, deadlines, timetable, and the calendar links you provide (Canvas, Moodle, Neptun iCal link). A calendar link works as an access key in the source system, so we treat it like a password: we do not show it to others and use it only to download the calendar.",
+        data: "What you enter or import: courses, links, the requirements and scoring rules of courses, the results you record (points, grades, attendance per class, absences and cancelled classes), your absence limits and attendance check-in preferences, which component belongs to which class, week or deadline, the start of the semester, deadlines, timetable, and the calendar links you provide (Canvas, Moodle, Neptun iCal link). A calendar link works as an access key in the source system, so we treat it like a password: we do not show it to others and use it only to download the calendar.",
         basis: "Performance of a contract (Art. 6(1)(b)).",
         until: "Until the account is deleted or you delete them. Temporary copies of calendars downloaded from the sources and of generated calendar files are kept for 15 minutes.",
       },
