@@ -681,6 +681,7 @@ export function validateRules(value: unknown, locale: Locale = "hu"): ValidateRe
     if (o) outcomes.push(o);
   });
 
+  const examEligibility = gates(ctx, root.examEligibility, "examEligibility");
   const flags: RuleFlag[] = [];
   ctx.arr(root.flags, "flags", RULE_LIMITS.flags).forEach((r, i) => {
     const p = `flags[${i}]`;
@@ -752,6 +753,11 @@ export function validateRules(value: unknown, locale: Locale = "hu"): ValidateRe
   });
   if (ctx.errors.length) return { ok: false, errors: ctx.errors };
 
-  const rules: SubjectRules = { schemaVersion: 1, components, retakes, derived, tables, outcomes, flags };
+  const eligibilityScope = makeScope(names, { derivedUpTo: derived.length, outcomesUpTo: outcomes.length, allowTaken: true, allowTables: true }, locale);
+  examEligibility?.forEach((g, i) => checkRefs(ctx, g.test, `examEligibility[${i}].test`, eligibilityScope));
+  if (ctx.errors.length) return { ok: false, errors: ctx.errors };
+
+  const rules: SubjectRules = { schemaVersion: 1, components, retakes, derived, tables, outcomes, flags,
+    ...(examEligibility?.length && { examEligibility }) };
   return { ok: true, rules, warnings: [...ctx.warnings, ...polarityWarnings(rules, locale)] };
 }

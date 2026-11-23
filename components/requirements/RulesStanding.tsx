@@ -31,7 +31,8 @@ function OutcomeStanding({ outcome, wide }: { outcome: OutcomeEval; wide: boolea
   const t = tAll.rulesPanel;
   const gateText = tAll.rulesBreakdown.gate;
   const gradeWord = (g: number | null) => (g === null || g === 0 ? t.noGrade : String(g));
-  const statusText = { final: t.outcomeFinal, provisional: t.outcomeProvisional, open: t.outcomeOpen }[outcome.status];
+  const offeredUnavailable = outcome.kind === "megajanlott" && outcome.best === 0;
+  const statusText = offeredUnavailable ? tAll.trackerPlanning.outcomeBlocked : { final: t.outcomeFinal, provisional: t.outcomeProvisional, open: t.outcomeOpen }[outcome.status];
   const { status, current, best, worst } = outcome;
   const lo = Math.min(worst, best);
   const hi = Math.max(worst, best);

@@ -112,3 +112,95 @@ test("new document rules go through scope review before being saved for both cou
   await page.getByRole("textbox", { name: "ZH", exact: true }).waitFor();
   assert.deepEqual(h.errors, []);
 });
+
+test("weekly actions, exam admission, temporary grades, rule preview and course separation work together", { timeout: 120_000 }, async (t) => {
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_EXECUTABLE_PATH }); t.after(() => browser.close());
+  const initial = seed();
+  initial.requirementRules = [{ ...rules("ea"), courseIds: ["ea", "gy"], componentCourses: { jelen: ["gy"], zh: ["gy"], retake: ["gy"] },
+    retakes: [{ id: "retake", label: "ZH retake", targets: ["zh"], pick: "worse", mode: "ifBetter" }],
+    calendarLinks: { jelen: { mode: "sessions", selector: {} }, zh: { mode: "deadlines", identities: ["manual:upcoming-zh"] } } }];
+  initial.requirementResults = [];
+  initial.deadlines = [{ id: "upcoming-zh", title: "Upcoming ZH", due: "2026-11-20T08:00:00Z", source: "manual", done: false, critical: false, courseId: "gy" }];
+  const h = await setup(browser, initial); const { page } = h;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(origin);
+  const actions = page.getByRole("region", { name: "What should I do next?" });
+  const action = actions.getByRole("link").filter({ hasText: "Analízis I Gy" });
+  await action.waitFor();
+  assert.equal(await action.count(), 1);
+  await action.click();
+  await page.getByRole("button", { name: "Set exam admission requirements" }).click();
+  const eligibilityDialog = page.getByRole("dialog", { name: "Exam eligibility" });
+  await eligibilityDialog.getByRole("button", { name: "Add condition" }).click();
+  await eligibilityDialog.getByRole("button", { name: "Save", exact: true }).click();
+  const eligibility = page.getByRole("region", { name: "Exam eligibility" });
+  await eligibility.getByText("Still to meet", { exact: true }).waitFor();
+  await eligibility.getByText("Results still needed to check eligibility: ZH").waitFor();
+
+  await page.getByText("Try possible results", { exact: true }).click();
+  await page.getByLabel("Assessment or class").selectOption("zh|n:1");
+  await page.getByRole("button", { name: "Add to scenario" }).click();
+  const trial = page.locator("details").filter({ has: page.getByText("Try possible results", { exact: true }) });
+  const trialScore = trial.getByRole("textbox", { name: /ZH/ });
+  await trialScore.fill("68"); await trialScore.press("Tab");
+  await trial.getByText("Eligible in this scenario", { exact: true }).waitFor();
+  await trialScore.fill("40"); await trialScore.press("Tab");
+  await trial.getByRole("row", { name: /Exam eligibility/ }).getByRole("cell").last().getByText("Still to meet", { exact: true }).waitFor();
+  await page.getByLabel("Assessment or class").selectOption("retake|n:1");
+  await page.getByRole("button", { name: "Add to scenario" }).click();
+  const trialRetake = trial.getByRole("textbox", { name: "ZH retake", exact: true });
+  await trialRetake.fill("70"); await trialRetake.press("Tab");
+  await trial.getByText("Eligible in this scenario", { exact: true }).waitFor();
+  await page.getByLabel("Assessment or class").selectOption("jelen|scenario:1");
+  await page.getByRole("button", { name: "Add to scenario" }).click();
+  await trial.getByLabel("Practice attendance · Additional class 1", { exact: true }).selectOption("unexcused");
+  assert.equal(h.saved().requirementResults.length, 0);
+  if (shots) { await mkdir(shots, { recursive: true }); await trial.screenshot({ path: `${shots}/scenario-mobile.png` }); }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  if (shots) await trial.screenshot({ path: `${shots}/scenario-desktop.png` });
+
+  await page.getByRole("button", { name: "Edit", exact: true }).last().click();
+  const editor = page.getByRole("dialog", { name: "Rules (JSON)" });
+  const json = editor.getByRole("textbox", { name: "Rules", exact: true });
+  const draft = JSON.parse(await json.inputValue());
+  draft.components[0].limit.maxAbsences = 2;
+  await json.fill(JSON.stringify(draft));
+  await editor.getByRole("button", { name: "Save", exact: true }).click();
+  const preview = page.getByRole("region", { name: "Preview changes to requirements" });
+  await preview.getByText("Effect on your standing", { exact: true }).waitFor();
+  await preview.getByText(/at most 2 absences/).waitFor();
+  await page.getByRole("button", { name: "Save connections", exact: true }).click();
+  await until(() => h.saved().requirementRules[0].components[0].limit.maxAbsences === 2);
+
+  await page.getByRole("button", { name: "Separate a course", exact: true }).click();
+  const split = page.getByRole("dialog", { name: "Separate a course" });
+  await split.getByText("Preview where records will go", { exact: true }).waitFor();
+  await split.getByRole("button", { name: "Separate course", exact: true }).click();
+  await page.getByRole("button", { name: "Undo separation", exact: true }).click();
+  await page.getByRole("heading", { name: "Shared requirement system", exact: true }).waitFor();
+  assert.deepEqual(h.errors, []);
+});
+
+test("re-reading a PDF shows its changed absence limit and source text before confirmation", { timeout: 120_000 }, async (t) => {
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_EXECUTABLE_PATH }); t.after(() => browser.close());
+  const initial = seed();
+  initial.requirementRules = [rules("gy")];
+  initial.requirementRules[0].components[0].limit.maxAbsences = 4;
+  const h = await setup(browser, initial); const { page } = h;
+  await h.context.route("**/api/kovetelmeny/elemzes", (route) => route.fulfill({ status: 503, json: {} }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${origin}/targy/gy#course-requirements`);
+  await page.getByRole("button", { name: "Read again", exact: true }).click();
+  await page.getByRole("dialog").locator('input[type="file"]').setInputFiles("fixtures/kovetelmeny/progelm/source.pdf");
+  await page.getByRole("dialog").getByRole("button", { name: "Read it", exact: true }).click();
+  await page.getByRole("button", { name: "Yes, every absence counts", exact: true }).click();
+  await page.getByRole("button", { name: "Fail (1)", exact: true }).nth(0).click();
+  await page.getByRole("button", { name: "Fail (1)", exact: true }).nth(1).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Save", exact: true }).click();
+  const preview = page.getByRole("region", { name: "Preview changes to requirements" });
+  await preview.getByText(/at most 3 absences/).first().waitFor();
+  await preview.getByText(/at most 4 absences/).first().waitFor();
+  assert.match(await preview.locator("blockquote").first().textContent(), /4 vagy több hiányzás/);
+  assert.equal(h.saved().requirementRules[0].components[0].limit.maxAbsences, 4);
+  assert.deepEqual(h.errors, []);
+});

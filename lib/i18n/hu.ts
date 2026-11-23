@@ -1,3 +1,4 @@
+import { trackerPlanningHu } from "./trackerPlanning.hu";
 import { requirementSystemHu } from "./requirementSystem.hu";
 import { attendanceHu } from "./attendance.hu";
 // The source dictionary. Grouped by area, accessed as `t.nav.week`; strings with variables or
@@ -9,6 +10,7 @@ import { trackerHu } from "./tracker.hu";
 
 export const hu = {
   attendance: attendanceHu,
+  trackerPlanning: trackerPlanningHu,
   requirementSystem: requirementSystemHu,
   meta: {
     manifestDescription: "Tárgyak, határidők és linkek egy helyen.",

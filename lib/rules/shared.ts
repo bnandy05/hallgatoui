@@ -139,6 +139,7 @@ export function shareableRules(rules: SubjectRules): SubjectRules {
     derived: rules.derived,
     tables: rules.tables,
     outcomes: rules.outcomes,
+    ...(rules.examEligibility?.length && { examEligibility: rules.examEligibility }),
     flags: rules.flags.map((f) => ({ ...f, resolved: false })),
   };
 }

@@ -510,6 +510,21 @@ export function collectRefs(ast: Ast, out: Set<string> = new Set()): Set<string>
   return out;
 }
 
+/** All dependencies of a formula, including grade outcomes, tables and retakes. */
+export function formulaReferences(ast: Ast): string[] {
+  switch (ast.k) {
+    case "ref": case "raw": return [ast.id];
+    case "count": return ast.ids;
+    case "grade": return [ast.outcome];
+    case "taken": return [ast.retake];
+    case "table": return [ast.table, ...formulaReferences(ast.e)];
+    case "bin": return [...formulaReferences(ast.l), ...formulaReferences(ast.r)];
+    case "neg": case "not": return formulaReferences(ast.e);
+    case "fn": return ast.args.flatMap(formulaReferences);
+    case "num": return [];
+  }
+}
+
 // ----- rendering (Hungarian or English) -----
 
 const OP_TEXT = (locale: Locale): Record<BinOp, string> => {

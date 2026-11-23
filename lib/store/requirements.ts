@@ -3,15 +3,51 @@ import { resultId, type RequirementResult, type RequirementRules } from "@/lib/r
 import { normalizeSemesterStart } from "@/lib/timetable/semester";
 import { reconcileAttendance } from "@/lib/attendance";
 import { componentCourseIds, planRequirementSystem, rulesForCourse, sameSemester, systemCourseIds } from "@/lib/rules/system";
+import { previewRequirementSplit } from "@/lib/rules/splitSystem";
+import { same } from "@/lib/sync/merge";
 import { syncNow } from "@/lib/sync/clock";
 
 type RequirementActions = Pick<AppStore,
-  "configureRequirementSystem" | "setAttendancePrefs" | "reconcileAttendance" | "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
+  "splitRequirementSystem" | "undoRequirementSplit" | "configureRequirementSystem" | "setAttendancePrefs" | "reconcileAttendance" | "setRequirementRules" | "setRequirementResult" | "setRequirementResults" |
   "setComponentLink" | "applyAutoLinks" | "setSemester" | "markCatchUpPrompted" | "setBellAlertKinds"
 >;
 
 export function requirementActions(set: StoreSet): RequirementActions {
   return {
+    splitRequirementSystem: (original, detachedId, expectedResults) => {
+      let saved = false;
+      set((state) => {
+        if (state.requirementResults !== expectedResults || !state.requirementRules.includes(original)) return state;
+        const plan = previewRequirementSplit(original, detachedId, {
+          sessions: state.classSessions, deadlines: state.deadlines, semester: state.semester, results: state.requirementResults,
+        });
+        if (!plan) return state;
+        const removed = new Set(plan.originals.map((r) => r.id));
+        saved = true;
+        return {
+          requirementRules: [...state.requirementRules.filter((r) => r !== original), plan.remaining.rules, plan.detached.rules],
+          requirementResults: [...state.requirementResults.filter((r) => !removed.has(r.id)), ...plan.remaining.results, ...plan.detached.results],
+        };
+      });
+      return saved;
+    },
+    undoRequirementSplit: (original, originals, split, splitResults, movedIds) => {
+      let saved = false;
+      set((state) => {
+        const ids = new Set(split.map((r) => r.id));
+        const owners = new Set(split.map((r) => r.courseId));
+        const current = state.requirementRules.filter((r) => ids.has(r.id));
+        const results = state.requirementResults.filter((r) => owners.has(r.courseId));
+        if (split.length !== 2 || !same(current, split) || !same(results, splitResults)) return state;
+        const replaced = new Set([...movedIds, ...originals.map((result) => result.id)]);
+        saved = true;
+        return {
+          requirementRules: [...state.requirementRules.filter((r) => !ids.has(r.id)), original],
+          requirementResults: [...state.requirementResults.filter((r) => !replaced.has(r.id)), ...originals],
+        };
+      });
+      return saved;
+    },
     configureRequirementSystem: (selected, members, scopes, choices = {}) => {
       let saved = false;
       set((state) => {

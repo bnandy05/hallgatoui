@@ -158,6 +158,7 @@ export interface SubjectRules {
   tables: GradeTable[];
   outcomes: Outcome[]; // grade(id) may only reference an earlier outcome
   flags: RuleFlag[];
+  examEligibility?: Gate[]; // explicit admission conditions, evaluated separately from grades
 }
 
 /** One course's rules as stored (synced) in AppData.requirementRules. */

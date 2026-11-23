@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { RulesChangePreview } from "./RulesChangePreview";
 import { RulesPreview } from "./RulesPreview";
 
 export function resultText(result: RequirementResult, t: Messages["requirementSystem"]): string {
@@ -51,8 +52,8 @@ export function RequirementSystemHistory({ rules }: { rules: RequirementRules })
   </details>;
 }
 
-export function RequirementSystemDialog({ courseId, draft, documentCodes = [], onDone, onCancel }: {
-  courseId: string; draft?: RequirementRules; documentCodes?: string[];
+export function RequirementSystemDialog({ courseId, draft, documentCodes = [], sourceText, evidence, onDone, onCancel }: {
+  courseId: string; draft?: RequirementRules; documentCodes?: string[]; sourceText?: string; evidence?: string[];
   onDone: (rules: RequirementRules, codes: string[]) => void; onCancel: () => void;
 }) {
   const t = useT().requirementSystem;
@@ -63,6 +64,8 @@ export function RequirementSystemDialog({ courseId, draft, documentCodes = [], o
   const updateCourse = useStore((s) => s.updateCourse);
   const current = courses.find((c) => c.id === courseId)!;
   const systems = allRules.filter((r) => courses.some((c) => c.id === r.courseId && sameSemester(c, current)));
+  const prior = rulesForCourse(allRules, courseId);
+  const [today] = useState(() => new Date());
   const initial = draft ?? rulesForCourse(allRules, courseId) ?? systems[0];
   const [sourceId, setSourceId] = useState(initial?.courseId ?? "");
   const selected = draft ?? systems.find((r) => r.courseId === sourceId);
@@ -98,6 +101,8 @@ export function RequirementSystemDialog({ courseId, draft, documentCodes = [], o
   return <Dialog open onClose={onCancel} title={t.title} size="lg">
     <div className="flex flex-col gap-5">
       <p className="text-body text-muted">{t.intro}</p>
+      {draft && prior && plan && <RulesChangePreview current={prior} proposed={plan.rules}
+        results={allResults.filter((r) => r.courseId === prior.courseId)} kept={plan.results} sourceText={sourceText} evidence={evidence} today={today} />}
       {!selected ? <p className="text-body text-muted">{t.noSystems}</p> : <>
         {!draft && systems.length > 1 && <label className="flex flex-col gap-2 text-body font-semibold text-heading">{t.source}
           <Select value={sourceId} onChange={(e) => changeSource(e.target.value)}>{systems.map((r) => <option key={r.id} value={r.courseId}>{courses.find((c) => c.id === r.courseId)?.name}</option>)}</Select>

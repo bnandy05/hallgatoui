@@ -1,3 +1,4 @@
+import { trackerPlanningEn } from "./trackerPlanning.en";
 import { requirementSystemEn } from "./requirementSystem.en";
 import { attendanceEn } from "./attendance.en";
 import type { Messages } from "./index";
@@ -8,6 +9,7 @@ import { trackerEn } from "./tracker.en";
 
 export const en: Messages = {
   attendance: attendanceEn,
+  trackerPlanning: trackerPlanningEn,
   requirementSystem: requirementSystemEn,
   meta: {
     manifestDescription: "Courses, deadlines and links in one place.",

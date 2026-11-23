@@ -205,12 +205,11 @@ export function assessmentNotes(input: GradeAlertInput, days: number, locale: Lo
   return notes;
 }
 
-export function gradeAlerts(input: GradeAlertInput, locale: Locale = "hu"): GradeAlert[] {
+export function gradeAlerts(input: GradeAlertInput, locale: Locale = "hu", linked = linkedInstances(input)): GradeAlert[] {
   const t = getMessages(locale).gradeAlerts.text;
   const standing = getMessages(locale).rules.standing;
   const { now } = input;
   const courseIds = new Set(input.courses.map((c) => c.id));
-  const linked = linkedInstances(input);
   const upcoming = upcomingAssessments(input, linked, LOOKAHEAD_DAYS, true);
   const out: GradeAlert[] = [];
 

@@ -26,6 +26,7 @@ import { Pill } from "@/components/ui/Pill";
 import { CourseTable } from "@/components/week/CourseTable";
 import { WeekBoard } from "@/components/week/WeekBoard";
 import { WeekNav } from "@/components/week/WeekNav";
+import { StudentActions } from "@/components/week/StudentActions";
 import { WorkloadNote } from "@/components/week/WorkloadNote";
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -169,6 +170,7 @@ export default function WeekHome() {
           <>
             <DiscoveryBanner />
             <TimetableBanner />
+            {isCurrent && <StudentActions now={now} sessions={classSessions} deadlines={deadlines} />}
           </>
         )}
 

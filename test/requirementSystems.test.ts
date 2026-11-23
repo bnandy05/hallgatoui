@@ -165,3 +165,90 @@ test("changing attendance assignments retains old class attendance on its actual
   const view = attendanceGroups({ courses: h.get().courses, sessions: h.get().classSessions, rules: h.get().requirementRules, results: h.get().requirementResults });
   assert.equal(view.find((g) => !g.linked && g.courseId === "gy")?.instances[0].result?.state, "na");
 });
+
+test("exam admission shows the outstanding assessment and survives backup validation without becoming a grade", () => {
+  const i = input();
+  const original = shared();
+  original.examEligibility = [{ id: "entry", label: "Pass the practice", test: "grade(gyak) >= 2", onFail: "none" }];
+  const restored = parseAppData({ ...emptyAppData(), courses: i.courses, requirementRules: [original] }).requirementRules[0];
+  assert.deepEqual(restored.examEligibility, original.examEligibility);
+  const pending = evaluate(restored, [], i.now, "en");
+  assert.equal(pending.examEligibility?.status, "pending");
+  assert.deepEqual(pending.examEligibility?.pendingLabels, ["ZH"]);
+  assert.equal(evaluate(restored, [result("ea", 65)], i.now).examEligibility?.status, "eligible");
+  assert.equal(evaluate(restored, [result("ea", 35)], i.now).examEligibility?.status, "blocked");
+  assert.equal(pending.outcomes.length, 2);
+});
+
+test("a revised absence limit reuses attendance entries and links in the preview and saved tracker", () => {
+  const original = shared();
+  const attendance = original.components[0];
+  if (attendance.kind !== "attendance" || !attendance.limit) throw new Error("Missing attendance rule");
+  const revised: RequirementRules = { ...original, components: [
+    { ...attendance, limit: { ...attendance.limit, maxAbsences: 0 } }, original.components[1],
+  ] };
+  const absence: RequirementResult = { id: "ea|jelen|s:uid-gy", courseId: "ea", componentId: "jelen",
+    instanceKey: "s:uid-gy", state: "recorded", value: { kind: "attendance", status: "unexcused" } };
+  const h = storeHarness();
+  h.set({ requirementRules: [original], requirementResults: [absence, result("ea", 60)] });
+  const plan = planRequirementSystem([original], h.get().requirementResults, revised, ["ea", "gy"], revised.componentCourses!);
+  assert.equal(evaluate(original, plan.results, input().now).outcomes[0].current, 4);
+  assert.equal(evaluate(plan.rules, plan.results, input().now).outcomes[0].current, 0);
+  assert.equal(h.get().configureRequirementSystem(revised, ["ea", "gy"], revised.componentCourses!), true);
+  assert.deepEqual(h.get().requirementRules[0].calendarLinks?.jelen, original.calendarLinks?.jelen);
+  assert.ok(h.get().requirementResults.some((r) => r.id === absence.id));
+});
+
+test("separating a course moves attendance once, archives a cross-course grade, and supports guarded undo", async () => {
+  const { previewRequirementSplit } = await import("@/lib/rules/splitSystem");
+  const original = shared();
+  original.componentCourses = { ...original.componentCourses, zh: ["ea"] };
+  const absence: RequirementResult = { id: "ea|jelen|s:uid-gy", courseId: "ea", componentId: "jelen",
+    instanceKey: "s:uid-gy", state: "recorded", value: { kind: "attendance", status: "unexcused" } };
+  const h = storeHarness();
+  const originals = [absence, result("ea", 60)];
+  h.set({ requirementRules: [original], requirementResults: originals });
+  const plan = previewRequirementSplit(original, "gy", { ...input(), results: originals })!;
+  assert.deepEqual(plan.historyOutcomes.map((o) => o.id), ["gyak", "ajanlott"]);
+  assert.equal(plan.detached.results[0].id, "gy|jelen|s:uid-gy");
+  assert.deepEqual(plan.detached.rules.calendarLinks?.jelen, original.calendarLinks?.jelen);
+  assert.equal(h.get().splitRequirementSystem(original, "gy", originals), true);
+  const split = h.get().requirementRules;
+  const records = h.get().requirementResults;
+  assert.equal(records.length, 2);
+  assert.equal(parseAppData(h.get()).requirementRules.length, 2);
+  const movedIds = [...plan.remaining.results, ...plan.detached.results].map((entry) => entry.id);
+  assert.equal(h.get().undoRequirementSplit(original, originals, split, records, movedIds), true);
+  assert.deepEqual(h.get().requirementResults, originals);
+  assert.equal(h.get().requirementRules.length, 1);
+  assert.equal(h.get().splitRequirementSystem(original, "gy", [...originals]), false);
+});
+
+test("weekly actions show a shared assessment once and link to its actual teaching course", async () => {
+  const { studentActions } = await import("@/lib/rules/studentActions");
+  const i = input();
+  i.deadlines = [{ id: "upcoming-zh", title: "ZH", due: "2026-11-20T08:00:00Z", source: "manual", done: false, critical: false, courseId: "gy" }];
+  const { deadlineIdentity } = await import("@/lib/ical/dedupe");
+  i.rules[0].calendarLinks!.zh = { mode: "deadlines", identities: [deadlineIdentity(i.deadlines[0])] };
+  const assessments = studentActions(i, "en").filter((a) => a.key.startsWith("assessment:"));
+  assert.equal(assessments.length, 1);
+  assert.equal(assessments[0].courseId, "gy");
+  assert.match(assessments[0].label, /ZH/);
+});
+
+test("undoing a separation preserves an existing result occupying the detached result key", async () => {
+  const { previewRequirementSplit } = await import("@/lib/rules/splitSystem");
+  const original = shared();
+  const originalResult = result("ea", 70);
+  const existing = result("gy", 92);
+  const before = [originalResult, existing];
+  const h = storeHarness();
+  h.set({ requirementRules: [original], requirementResults: before });
+  const plan = previewRequirementSplit(original, "gy", { ...input(), results: before })!;
+  assert.deepEqual(plan.historyOnly, [originalResult]);
+  assert.equal(h.get().splitRequirementSystem(original, "gy", before), true);
+  const { requirementRules: split, requirementResults: after } = h.get();
+  assert.deepEqual(after, [existing]);
+  assert.equal(h.get().undoRequirementSplit(original, [originalResult], split, after, []), true);
+  assert.deepEqual(h.get().requirementResults.map((r) => r.id).sort(), before.map((r) => r.id).sort());
+});

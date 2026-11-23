@@ -9,7 +9,7 @@ import { getMessages, type Locale } from "@/lib/i18n";
 import { evaluate, type ComponentEval } from "@/lib/rules/engine";
 import { isDemoMode } from "@/lib/demoMode";
 import { courseCodes, documentCourseCode, linkedCourseCode, linkedCourseCodes } from "@/lib/rules/courseCode";
-import { componentCourseIds, rulesForCourse, systemCourseIds } from "@/lib/rules/system";
+import { componentCourseIds, rulesForCourse, subjectRules, systemCourseIds } from "@/lib/rules/system";
 import { RequirementSystemDialog, RequirementSystemHistory } from "./RequirementSystemDialog";
 import Link from "next/link";
 import { normalizeSemester, type TemplateOffer } from "@/lib/rules/shared";
@@ -37,6 +37,10 @@ import { LinkedComponent } from "@/components/requirements/LinkedComponent";
 import { RulesBreakdown } from "@/components/requirements/RulesBreakdown";
 import { RulesStanding } from "./RulesStanding";
 import { RulesSolver } from "./RulesSolver";
+import { ExamEligibility } from "./ExamEligibility";
+import { GradeScenario } from "./GradeScenario";
+import { SplitRequirementDialog } from "./SplitRequirementDialog";
+import { validateRules } from "@/lib/rules/validate";
 import { RulesJsonForm } from "./RulesJsonForm";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -46,12 +50,6 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 // valid rule set lays out the same way.
 
 const EMPTY_RESULTS: RequirementResult[] = [];
-
-/** The rule set without its storage fields, as edited and validated. */
-function subjectRulesOf(rules: RequirementRules): SubjectRules {
-  const { schemaVersion, components, retakes, derived, tables, outcomes, flags } = rules;
-  return { schemaVersion, components, retakes, derived, tables, outcomes, flags };
-}
 
 const rulesJson = (rules: SubjectRules) => JSON.stringify(rules, null, 2);
 
@@ -65,7 +63,8 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const allResults = useStore((s) => s.requirementResults);
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
   const courses = useStore((s) => s.courses);
-  const [systemSetup, setSystemSetup] = useState<{ draft?: RequirementRules; codes?: string[]; share?: boolean } | null>(null);
+  const [systemSetup, setSystemSetup] = useState<{ draft?: RequirementRules; codes?: string[]; share?: boolean; sourceText?: string; evidence?: string[] } | null>(null);
+  const [splitOpen, setSplitOpen] = useState(false);
   const feeds = useStore((s) => s.feeds);
   const semesterStart = useStore((s) => s.semester?.start);
   const updateCourse = useStore((s) => s.updateCourse);
@@ -131,7 +130,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   }
 
   function openJson(initial: SubjectRules | undefined, back: boolean) {
-    const base = initial ?? (rules ? subjectRulesOf(rules) : undefined);
+    const base = initial ?? (rules ? subjectRules(rules) : undefined);
     setJson({ initial: base ? rulesJson(base) : "", back, fromForm: back && initial !== undefined });
     setJsonDirty(false);
     setView("json");
@@ -180,10 +179,12 @@ export function RulesPanel({ courseId }: { courseId: string }) {
             replacing={!!rules}
             sharingAvailable={!!shared.state?.university}
             onSave={(next, details) => {
-              const draft: RequirementRules = { ...next, id: rules?.id ?? `rules:${courseId}`, courseId: rules?.courseId ?? courseId, source: details.source,
+              const eligibility = rules?.examEligibility;
+              const keepEligibility = eligibility && validateRules({ ...next, examEligibility: eligibility }).ok;
+              const draft: RequirementRules = { ...next, ...(keepEligibility && { examEligibility: eligibility }), id: rules?.id ?? `rules:${courseId}`, courseId: rules?.courseId ?? courseId, source: details.source,
                 ...(rules?.courseIds && { courseIds: rules.courseIds }), ...(rules?.componentCourses && { componentCourses: rules.componentCourses }) };
               closeAll();
-              setSystemSetup({ draft, codes: details.codes, share: details.share });
+              setSystemSetup({ draft, codes: details.codes, share: details.share, sourceText: details.sourceText, evidence: details.evidence });
             }}
             onManual={(built) => openJson(built, true)}
             onCancel={requestClose}
@@ -209,11 +210,11 @@ export function RulesPanel({ courseId }: { courseId: string }) {
   const dialogs = (
     <>
       {rulesDialog}
-      {systemSetup && <RequirementSystemDialog courseId={courseId} draft={systemSetup.draft} documentCodes={systemSetup.codes}
+      {systemSetup && <RequirementSystemDialog courseId={courseId} draft={systemSetup.draft} documentCodes={systemSetup.codes} sourceText={systemSetup.sourceText} evidence={systemSetup.evidence}
         onCancel={() => setSystemSetup(null)} onDone={(configured, codes) => {
           const sharing = systemSetup.share;
           setSystemSetup(null);
-          if (sharing && codes.length) void publish(subjectRulesOf(configured), codes.join(","));
+          if (sharing && codes.length) void publish(subjectRules(configured), codes.join(","));
         }} />}
       {review && (
         <SharedRequirementsReview
@@ -242,6 +243,7 @@ export function RulesPanel({ courseId }: { courseId: string }) {
           onCancel={() => setReview(null)}
         />
       )}
+      {splitOpen && rules && <SplitRequirementDialog rules={rules} courseId={courseId} onClose={() => setSplitOpen(false)} />}
       {confirmDialog}
     </>
   );
@@ -287,7 +289,10 @@ export function RulesPanel({ courseId }: { courseId: string }) {
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-small">{memberCourses.map((c) => <Link key={c.id} className="link-text" href={`/targy/${c.id}#course-requirements`}>{c.name}</Link>)}</div>
           {systemCourseIds(rules).length > 1 && <p className="mt-2 text-small text-muted">{tAll.requirementSystem.sameRules}</p>}
         </div>
-        <Button variant="secondary" size="sm" className="max-sm:h-auto max-sm:whitespace-normal max-sm:py-2" onClick={() => setSystemSetup({})}>{tAll.requirementSystem.manage}</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" className="max-sm:h-auto max-sm:whitespace-normal max-sm:py-2" onClick={() => setSystemSetup({})}>{tAll.requirementSystem.manage}</Button>
+          {systemCourseIds(rules).length > 1 && <Button variant="ghost" size="sm" onClick={() => setSplitOpen(true)}>{tAll.trackerPlanning.split}</Button>}
+        </div>
       </div>
       {pendingShare && (
         <div className="sheet-paper mb-4 flex flex-wrap items-center gap-3 px-4 py-3">
@@ -372,7 +377,7 @@ function RulesView({
 
   function resolveFlag(index: number) {
     const flags = rules.flags.map((f, i) => (i === index ? { ...f, resolved: true } : f));
-    setRequirementRules(courseId, { ...subjectRulesOf(rules), flags, source: rules.source, templateId: rules.templateId });
+    setRequirementRules(courseId, { ...subjectRules(rules), flags, source: rules.source, templateId: rules.templateId });
   }
 
   async function removeRules() {
@@ -514,6 +519,7 @@ function RulesView({
   return (
     <div className="@container flex flex-col gap-4">
       <RulesStanding outcomes={evaluation.outcomes} />
+      <ExamEligibility rules={rules} evaluation={evaluation.examEligibility} />
 
       {openFlags.length > 0 && (
         <div className="slip bg-canary px-4 py-3 sm:px-5">
@@ -565,6 +571,7 @@ function RulesView({
       </section>
 
       <RulesSolver rules={rules} results={results} labelOf={labelOf} />
+      <GradeScenario rules={rules} results={results} />
 
       <RulesBreakdown
         rules={rules}

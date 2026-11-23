@@ -5,7 +5,7 @@
 // project folder plans/requirements-tracker/schema.md §4.
 
 import { getMessages, type Locale } from "@/lib/i18n";
-import { EPS, evalAst, parseFormula, collectRefs, type Ast, type FormulaEnv, type Pred } from "./expr";
+import { formulaReferences, EPS, evalAst, parseFormula, collectRefs, type Ast, type FormulaEnv, type Pred } from "./expr";
 import {
   instanceOrder,
   type AssignmentComponent,
@@ -66,8 +66,15 @@ export interface ComponentEval {
   overdueEntry: boolean; // due < now and nothing recorded
 }
 
+export interface ExamEligibilityEval {
+  pendingLabels: string[];
+  status: "eligible" | "pending" | "blocked";
+  gates: GateEval[];
+}
+
 export interface Evaluation {
   outcomes: OutcomeEval[];
+  examEligibility?: ExamEligibilityEval;
   components: ComponentEval[];
   derived: Record<string, { best: number; worst: number }>;
   warnings: string[];
@@ -787,9 +794,54 @@ export function evaluate(rules: SubjectRules, results: RequirementResult[], now:
   const derived: Record<string, { best: number; worst: number }> = {};
   for (const d of rules.derived) derived[d.id] = { best: bestRuns[0].env.ref(d.id), worst: worstRun.env.ref(d.id) };
 
+  const evaluatedComponents = componentEvals(m, worstRun);
+  const eligibility = rules.examEligibility;
+  let examEligibility: ExamEligibilityEval | undefined;
+  if (eligibility?.length) {
+    const pendingDependencies = new Set<string>();
+    const visited = new Set<string>();
+    function visit(formula: string | undefined) {
+      if (!formula) return;
+      const parsed = parseFormula(formula);
+      if (!parsed.ok) return;
+      for (const id of formulaReferences(parsed.ast)) {
+        if (visited.has(id)) continue;
+        visited.add(id);
+        pendingDependencies.add(id);
+        const derived = rules.derived.find((d) => d.id === id);
+        visit(derived?.expr);
+        const outcome = rules.outcomes.find((o) => o.id === id);
+        if (!outcome) continue;
+        outcomeGates(rules, outcome, locale).forEach((g) => visit(g.test));
+        for (const path of outcome.paths) {
+          visit(path.when);
+          visit(path.grade);
+          path.gates?.forEach((g) => visit(g.test));
+          path.post?.forEach((step) => { if (step.kind === "add") visit(step.when); });
+        }
+      }
+    }
+    eligibility.filter((g) => !gateTrue(g, worstRun)).forEach((g) => visit(g.test));
+    const allMet = eligibility.every((g) => gateTrue(g, worstRun));
+    const possible = allMet || bestRuns.some((run) => eligibility.every((g) => gateTrue(g, run)));
+    examEligibility = {
+      pendingLabels: evaluatedComponents
+        .filter((component) => pendingDependencies.has(component.id) && component.kind !== "attendance"
+          && (component.pending > 0 || (component.status === "open" && component.recorded + component.na < component.total)))
+        .map((component) => component.label),
+      status: allMet ? "eligible" : possible ? "pending" : "blocked",
+      gates: eligibility.map((g) => ({
+        id: g.id,
+        label: g.label,
+        status: gateTrue(g, worstRun) ? "met" : bestRuns.some((run) => gateTrue(g, run)) ? "open" : "failed",
+      })),
+    };
+  }
+
   return {
     outcomes,
-    components: componentEvals(m, worstRun),
+    ...(examEligibility && { examEligibility }),
+    components: evaluatedComponents,
     derived,
     warnings: [...m.warnings, ...worstRun.vals.notes],
   };

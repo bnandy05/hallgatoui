@@ -16,8 +16,8 @@ export function componentCourseIds(rules: Pick<RequirementRules, "courseId" | "c
 }
 
 export function subjectRules(rules: SubjectRules): SubjectRules {
-  const { schemaVersion, components, retakes, derived, tables, outcomes, flags } = rules;
-  return { schemaVersion, components, retakes, derived, tables, outcomes, flags };
+  const { schemaVersion, components, retakes, derived, tables, outcomes, flags, examEligibility } = rules;
+  return { schemaVersion, components, retakes, derived, tables, outcomes, flags, ...(examEligibility?.length && { examEligibility }) };
 }
 
 export function sameSemester(a: Course, b: Course): boolean {
@@ -33,7 +33,11 @@ const definition = (rules: SubjectRules, id: string) => rules.components.find((c
 function compatible(a: unknown, b: unknown): boolean {
   if (!a || !b) return false;
   const clean = (v: unknown) => { const { label: _l, note: _n, ...rest } = v as Record<string, unknown>; void _l; void _n; return rest; };
-  return stable(clean(a)) === stable(clean(b));
+  const old = clean(a);
+  const next = clean(b);
+  // An attendance entry is a fact about the class, even if the permitted absence count changes.
+  if (old.kind === "attendance" && next.kind === "attendance") return true;
+  return stable(old) === stable(next);
 }
 export interface SystemConflict { key: string; componentId: string; instanceKey: string; options: RequirementResult[] }
 export interface SystemPlan {
@@ -82,7 +86,27 @@ export function planRequirementSystem(allRules: RequirementRules[], allResults: 
     const winner = options.find((r) => r.id === choices[key]) ?? options.find((r) => r.courseId === selected.courseId) ?? options[0];
     results.push({ ...winner, id: key, courseId: selected.courseId });
   }
-  return { rules: { ...selected, courseIds: members, componentCourses: scopes }, conflicts, results, previousSystems, affected, consumedIds: [...byKey.values()].flatMap((items) => items.map((r) => r.id)) };
+  const calendarLinks: RequirementRules["calendarLinks"] = {};
+  const autoLinked = new Set<string>();
+  const selectedTargets = [...selected.components, ...selected.retakes];
+  for (const target of selectedTargets) {
+    const assigned = scopes[target.id] ?? [];
+    const source = affected.find((r) => {
+      const oldScope = componentCourseIds(r, target.id);
+      const previous = definition(r, target.id);
+      const kind = (item: typeof target) => "kind" in item ? item.kind : "retake";
+      return oldScope.length === assigned.length && oldScope.every((id) => assigned.includes(id))
+        && previous && kind(target) === kind(previous) && (r.calendarLinks?.[target.id] || r.autoLinked?.includes(target.id));
+    });
+    const link = source?.calendarLinks?.[target.id];
+    if (link) calendarLinks[target.id] = link;
+    if (source?.autoLinked?.includes(target.id)) autoLinked.add(target.id);
+  }
+  return {
+    rules: { ...selected, courseIds: members, componentCourses: scopes, calendarLinks, autoLinked: [...autoLinked] },
+    conflicts, results, previousSystems, affected,
+    consumedIds: [...byKey.values()].flatMap((items) => items.map((r) => r.id)),
+  };
 }
 
 /** A member can be deleted without deleting the shared ledger of its surviving courses. */

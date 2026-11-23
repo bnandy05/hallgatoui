@@ -69,7 +69,7 @@ export function ExtractForm({
   onReviewShared?: () => void;
   replacing: boolean;
   sharingAvailable: boolean;
-  onSave: (rules: SubjectRules, details: { code?: string; codes?: string[]; share: boolean; source: "extracted" | "manual" }) => void;
+  onSave: (rules: SubjectRules, details: { code?: string; codes?: string[]; sourceText?: string; evidence?: string[]; share: boolean; source: "extracted" | "manual" }) => void;
   /** Continue in the JSON, starting from the rules the review builds when it builds any. */
   onManual: (rules?: SubjectRules) => void;
   onCancel: () => void;
@@ -99,8 +99,16 @@ export function ExtractForm({
   const canShare = sharingAvailable && (!!courseCode || documentCodes.length > 0) && !manual;
   const isDirty = text.trim().length > 0 || pdf?.reading === true || step.kind === "survey" || step.kind === "parser";
 
+  const result = useMemo(() => (step.kind === "parser" ? extractRules(text, mine, new Date(), locale) : null), [step.kind, text, mine, locale]);
+
   function saveReview(rules: SubjectRules, share: boolean) {
-    onSave(rules, { code: courseCode, codes: documentCodes, share: canShare && share, source: manual ? "manual" : "extracted" });
+    const evidence = step.kind === "survey"
+      ? Object.values(step.draft.fields).flatMap((field) => field.hidden || !field.quote ? [] : [field.quote])
+      : result?.sources.map((item) => item.quote);
+    onSave(rules, {
+      code: courseCode, codes: documentCodes, sourceText: text.trim() || undefined,
+      evidence, share: canShare && share, source: manual ? "manual" : "extracted",
+    });
   }
 
   useEffect(() => () => request.current?.abort(), []);
@@ -128,8 +136,6 @@ export function ExtractForm({
     setPdf(null);
     setText("");
   }
-
-  const result = useMemo(() => (step.kind === "parser" ? extractRules(text, mine, new Date(), locale) : null), [step.kind, text, mine, locale]);
 
   /** Jev is unavailable: the parser reads the text here, or the form starts empty. */
   function fallback() {

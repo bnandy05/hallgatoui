@@ -163,6 +163,8 @@ export interface AppStore extends AppData {
   ) => void;
   removeResource: (courseId: string, resourceId: string) => void;
 
+  splitRequirementSystem: (original: RequirementRules, detachedId: string, expectedResults: RequirementResult[]) => boolean;
+  undoRequirementSplit: (original: RequirementRules, originals: RequirementResult[], split: RequirementRules[], splitResults: RequirementResult[], movedIds: string[]) => boolean;
   configureRequirementSystem: (selected: RequirementRules, members: string[], scopes: Record<string, string[]>, choices?: Record<string, string>) => boolean;
   setAttendancePrefs: (enabled: boolean) => void;
   reconcileAttendance: () => void;
